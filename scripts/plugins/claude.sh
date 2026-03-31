@@ -57,6 +57,12 @@ claude plugin marketplace add astral-sh/claude-code-plugins
 # https://github.com/astral-sh/claude-code-plugins/tree/main/plugins/astral
 claude plugin install astral@astral-sh
 
+# Codex for Claude Code
+# https://github.com/openai/codex-plugin-cc
+claude plugin marketplace add openai/codex-plugin-cc
+# https://github.com/openai/codex-plugin-cc/tree/main/codex-plugin-cc
+claude plugin install codex@openai-codex
+
 # Global MCP servers (user scoped)
 # https://docs.tessl.io/reference/custom-agent-setup
 claude mcp add --scope user tessl -- tessl mcp start
