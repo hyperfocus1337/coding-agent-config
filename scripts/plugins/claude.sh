@@ -63,6 +63,11 @@ claude plugin marketplace add openai/codex-plugin-cc
 # https://github.com/openai/codex-plugin-cc/tree/main/codex-plugin-cc
 claude plugin install codex@openai-codex
 
+# Caveman skill
+# https://github.com/JuliusBrussee/caveman
+claude plugin marketplace add JuliusBrussee/caveman
+claude plugin install caveman@caveman
+
 # Global MCP servers (user scoped)
 # https://docs.tessl.io/reference/custom-agent-setup
 claude mcp add --scope user tessl -- tessl mcp start
@@ -72,8 +77,5 @@ claude mcp add --scope user context7 -- npx -y @upstash/context7-mcp
 claude mcp add --scope user jcodemunch -- uvx jcodemunch-mcp
 # https://github.com/jgravelle/jdocmunch-mcp?tab=readme-ov-file#configure-an-mcp-client
 claude mcp add --scope user jdocmunch -- uvx jdocmunch-mcp
-
-# Caveman skill
-# https://github.com/JuliusBrussee/caveman
-claude plugin marketplace add JuliusBrussee/caveman
-claude plugin install caveman@caveman
+# https://stitch.withgoogle.com/docs/mcp/setup
+claude mcp add stitch --transport http https://stitch.googleapis.com/mcp --header "X-Goog-Api-Key: api-key" -s user
