@@ -2,6 +2,10 @@
 
 set -e
 
+# Use caller-provided CLAUDE_CONFIG_DIR if set, otherwise default to $HOME/.claude.
+# Lets (dev)containers and host installs share this script.
+export CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+
 if ! command -v claude &>/dev/null; then
     echo "ERROR: 'claude' not found in PATH. Check that the Claude Code install placed its binary in a directory on PATH." >&2
     echo "PATH=$PATH" >&2
@@ -100,4 +104,4 @@ claude mcp add --scope user jdocmunch -- uvx jdocmunch-mcp
 # https://stitch.withgoogle.com/docs/mcp/setup
 claude mcp add --scope user stitch --transport http https://stitch.googleapis.com/mcp --header "X-Goog-Api-Key: api-key"
 # https://directus.io/docs/guides/ai/mcp
-claude mcp add --transport http directus https://your-directus-url.com/mcp --header "Authorization: Bearer your-generated-token"
+claude mcp add --scope user --transport http directus https://your-directus-url.com/mcp --header "Authorization: Bearer your-generated-token"
