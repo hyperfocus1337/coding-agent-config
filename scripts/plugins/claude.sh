@@ -8,6 +8,11 @@ if ! command -v claude &>/dev/null; then
     exit 1
 fi
 
+# Force HTTPS for any github SSH URLs declared by plugin marketplaces.
+# Avoids SSH key requirement inside containers.
+git config --global url."https://github.com/".insteadOf "git@github.com:"
+git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+
 # Official plugins
 # Official marketplace should be already installed (added for debugging)
 # https://github.com/anthropics/claude-code/tree/main/plugins/
