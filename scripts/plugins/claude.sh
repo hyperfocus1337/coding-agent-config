@@ -75,6 +75,12 @@ claude plugin install caveman@caveman
 claude plugin marketplace add makenotion/claude-code-notion-plugin
 claude plugin install notion-workspace-plugin@notion-plugin-marketplace
 
+# Playwright skills (only if playwright-cli present)
+# https://github.com/microsoft/playwright-cli
+if command -v playwright-cli &>/dev/null; then
+    playwright-cli install --skills
+fi
+
 # Global MCP servers (user scoped)
 # https://docs.tessl.io/reference/custom-agent-setup
 claude mcp add --scope user tessl -- tessl mcp start
