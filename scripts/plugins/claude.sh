@@ -99,3 +99,5 @@ claude mcp add --scope user jcodemunch -- uvx jcodemunch-mcp
 claude mcp add --scope user jdocmunch -- uvx jdocmunch-mcp
 # https://stitch.withgoogle.com/docs/mcp/setup
 claude mcp add --scope user stitch --transport http https://stitch.googleapis.com/mcp --header "X-Goog-Api-Key: api-key"
+# https://directus.io/docs/guides/ai/mcp
+claude mcp add --transport http directus https://your-directus-url.com/mcp --header "Authorization: Bearer your-generated-token"
