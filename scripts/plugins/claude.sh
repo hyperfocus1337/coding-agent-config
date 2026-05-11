@@ -70,6 +70,11 @@ claude plugin install codex@openai-codex
 claude plugin marketplace add JuliusBrussee/caveman
 claude plugin install caveman@caveman
 
+# Notion plugin
+# https://github.com/makenotion/claude-code-notion-plugin
+claude plugin marketplace add makenotion/claude-code-notion-plugin
+claude plugin install notion-workspace-plugin@notion-plugin-marketplace
+
 # Global MCP servers (user scoped)
 # https://docs.tessl.io/reference/custom-agent-setup
 claude mcp add --scope user tessl -- tessl mcp start
@@ -80,4 +85,4 @@ claude mcp add --scope user jcodemunch -- uvx jcodemunch-mcp
 # https://github.com/jgravelle/jdocmunch-mcp?tab=readme-ov-file#configure-an-mcp-client
 claude mcp add --scope user jdocmunch -- uvx jdocmunch-mcp
 # https://stitch.withgoogle.com/docs/mcp/setup
-claude mcp add stitch --transport http https://stitch.googleapis.com/mcp --header "X-Goog-Api-Key: api-key" -s user
+claude mcp add --scope user stitch --transport http https://stitch.googleapis.com/mcp --header "X-Goog-Api-Key: api-key"
