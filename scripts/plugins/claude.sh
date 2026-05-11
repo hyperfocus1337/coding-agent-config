@@ -18,6 +18,8 @@ claude plugin install code-review@claude-plugins-official
 claude plugin install commit-commands@claude-plugins-official
 # https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev
 claude plugin install feature-dev@claude-plugins-official
+# https://github.com/obra/superpowers
+claude plugin install superpowers@claude-plugins-official
 
 # Install pyright for lsp server
 npm install -g pyright
