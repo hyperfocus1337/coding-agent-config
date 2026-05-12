@@ -27,8 +27,15 @@ every `Write`/`Edit`). Configured in `settings.json` and stored in `hooks/`.
 ## Status line
 
 `statusline-command.sh` renders Claude Code's bottom status line. Wired up via
-the `statusLine` block in `settings.json`. The current implementation prints the
-working directory in bold blue (mirrors the `\w` segment of a typical bash PS1).
+the `statusLine` block in `settings.json`. Reads the JSON context Claude Code
+provides on stdin and prints:
+
+- current directory basename (cyan)
+- git branch (magenta), when inside a git repository
+- model display name, prefixed by `via` (blue)
+- output style name in `[brackets]` (yellow), when not `default`
+
+Requires `jq` and `git` on `$PATH`.
 
 ## Skills
 
