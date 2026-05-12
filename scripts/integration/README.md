@@ -6,11 +6,13 @@ This repository ships a `.claude/` directory containing slash commands, skills, 
 
 Understanding the load paths matters before choosing an integration strategy:
 
-| Asset         | Load paths                                                                                             |
-| ------------- | ------------------------------------------------------------------------------------------------------ |
-| **Commands**  | `~/.claude/commands/` (personal, always loaded) · `.claude/commands/` in the current project directory |
-| **Skills**    | `~/.claude/skills/` (personal) · `.claude/skills/` in directories added via `--add-dir` or `/add-dir`  |
-| **CLAUDE.md** | `~/.claude/CLAUDE.md` (global) · `CLAUDE.md` / `.claude/CLAUDE.md` in the current project              |
+| Asset             | Load paths                                                                                             |
+| ----------------- | ------------------------------------------------------------------------------------------------------ |
+| **Commands**      | `~/.claude/commands/` (personal, always loaded) · `.claude/commands/` in the current project directory |
+| **Skills**        | `~/.claude/skills/` (personal) · `.claude/skills/` in directories added via `--add-dir` or `/add-dir`  |
+| **CLAUDE.md**     | `~/.claude/CLAUDE.md` (global) · `CLAUDE.md` / `.claude/CLAUDE.md` in the current project              |
+| **Hooks**         | Wired via `settings.json` — scripts can live anywhere; this repo stores them under `.claude/hooks/`    |
+| **settings.json** | `~/.claude/settings.json` (global) · `.claude/settings.json` in the current project                    |
 
 The key asymmetry: **`--add-dir` loads skills but not commands.** Commands from a `.claude/commands/` folder in an added directory are not picked up — they must live under `~/.claude/commands/` or the current project's `.claude/commands/` to be discovered.
 
@@ -67,6 +69,9 @@ ln -s ~/repos/claude-marketplace/.claude/commands/simple ~/.claude/commands/simp
 
 # Skills — symlink each skill directly into the personal skills load path
 ln -s ~/repos/claude-marketplace/.claude/skills/gh-cli ~/.claude/skills/gh-cli
+
+# Hooks — symlink the whole directory; settings.json references scripts by absolute $HOME path
+ln -s ~/repos/claude-marketplace/.claude/hooks ~/.claude/hooks
 ```
 
 ### CLAUDE.md
@@ -77,6 +82,15 @@ ln -s ~/repos/claude-marketplace/.claude/CLAUDE.md ~/.claude/CLAUDE.md
 ```
 
 If you already have your own `~/.claude/CLAUDE.md`, append the contents manually rather than symlinking — symlinking would replace your existing file.
+
+### settings.json
+
+```bash
+# If you don't have a ~/.claude/settings.json yet
+ln -s ~/repos/claude-marketplace/.claude/settings.json ~/.claude/settings.json
+```
+
+If you already have your own `~/.claude/settings.json`, merge the repo's `hooks` block into it by hand — symlinking would replace your existing config.
 
 **Best for:** permanent, always-on global integration. Changes from `git pull` are immediately live with no further steps.
 
@@ -129,5 +143,6 @@ alias claude='claude --add-dir ~/repos/claude-marketplace'
 | Slash commands (e.g. `/git:changelog`) | Yes                   | No          |
 | Skills (e.g. `gh-cli`)                 | Yes                   | Yes         |
 | CLAUDE.md global instructions          | Yes (or manual merge) | No          |
+| Hooks (e.g. markdown auto-format)      | Yes (or manual merge) | No          |
 
 See [`.claude/README.md`](../.claude/README.md) for the full list of available commands and skills.
