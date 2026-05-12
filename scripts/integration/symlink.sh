@@ -88,6 +88,20 @@ else
 fi
 echo
 
+# ── Status line ──────────────────────────────────────────────────────────────
+# Referenced from settings.json as $HOME/.claude/statusline-command.sh.
+if [[ -f "$REPO/.claude/statusline-command.sh" ]]; then
+  info "Linking statusline-command.sh..."
+  if [[ -f "$CLAUDE_HOME/statusline-command.sh" && ! -L "$CLAUDE_HOME/statusline-command.sh" ]]; then
+    warn "~/.claude/statusline-command.sh already exists and is not a symlink."
+    warn "Replace it manually if you want the repo's version:"
+    warn "  diff '$CLAUDE_HOME/statusline-command.sh' '$REPO/.claude/statusline-command.sh'"
+  else
+    symlink "$REPO/.claude/statusline-command.sh" "$CLAUDE_HOME/statusline-command.sh"
+  fi
+  echo
+fi
+
 # ── settings.json ────────────────────────────────────────────────────────────
 # Global settings file. Cannot be safely merged automatically — warn if the
 # user already has their own and let them merge by hand.
@@ -103,5 +117,5 @@ if [[ -f "$REPO/.claude/settings.json" ]]; then
   echo
 fi
 
-success "Done. Commands, skills, hooks, and settings are available globally."
+success "Done. Commands, skills, hooks, statusline, and settings are available globally."
 info  "Keep assets up to date:  git -C '$REPO' pull"
