@@ -29,6 +29,8 @@ claude plugin install code-review@claude-plugins-official
 claude plugin install commit-commands@claude-plugins-official
 # https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev
 claude plugin install feature-dev@claude-plugins-official
+# https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier
+claude plugin install code-simplifier@claude-plugins-official
 # https://github.com/obra/superpowers
 claude plugin install superpowers@claude-plugins-official
 
@@ -85,6 +87,11 @@ claude plugin install caveman@caveman
 # https://github.com/makenotion/claude-code-notion-plugin
 claude plugin marketplace add makenotion/claude-code-notion-plugin
 claude plugin install notion-workspace-plugin@notion-plugin-marketplace
+
+# Claude video plugin
+# https://github.com/bradautomates/claude-video
+claude plugin marketplace add bradautomates/claude-video
+claude plugin install watch@claude-video
 
 # Playwright skills (only if playwright-cli present)
 # https://github.com/microsoft/playwright-cli
