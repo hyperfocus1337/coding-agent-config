@@ -24,6 +24,12 @@ every `Write`/`Edit`). Configured in `settings.json` and stored in `hooks/`.
 | -------------------------- | ------------------------------------- | --------------------------------------------------------------------------------- |
 | `hooks/format-markdown.sh` | `PostToolUse` on Write/Edit/MultiEdit | Runs `prettier --prose-wrap always --write` on any `.md` / `.markdown` file path. |
 
+## Status line
+
+`statusline-command.sh` renders Claude Code's bottom status line. Wired up via
+the `statusLine` block in `settings.json`. The current implementation prints the
+working directory in bold blue (mirrors the `\w` segment of a typical bash PS1).
+
 ## Skills
 
 Skills are on-demand reference documents that Claude reads when a task calls for
