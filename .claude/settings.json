@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/format-markdown.sh"
+            "command": "bash \"$HOME/.claude/hooks/format-markdown.sh\""
           }
         ]
       }
