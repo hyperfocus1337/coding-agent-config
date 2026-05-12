@@ -68,6 +68,15 @@ for src in "$REPO/.claude/skills"/*/; do
 done
 echo
 
+# ── Hooks ────────────────────────────────────────────────────────────────────
+# Symlink the whole hooks/ directory if the repo provides one. Scripts inside
+# are referenced from settings.json by absolute path ($HOME/.claude/hooks/...).
+if [[ -d "$REPO/.claude/hooks" ]]; then
+  info "Linking hooks..."
+  symlink "$REPO/.claude/hooks" "$CLAUDE_HOME/hooks"
+  echo
+fi
+
 # ── CLAUDE.md ────────────────────────────────────────────────────────────────
 info "Linking CLAUDE.md..."
 if [[ -f "$CLAUDE_HOME/CLAUDE.md" && ! -L "$CLAUDE_HOME/CLAUDE.md" ]]; then
@@ -79,5 +88,20 @@ else
 fi
 echo
 
-success "Done. Commands and skills are available globally."
+# ── settings.json ────────────────────────────────────────────────────────────
+# Global settings file. Cannot be safely merged automatically — warn if the
+# user already has their own and let them merge by hand.
+if [[ -f "$REPO/.claude/settings.json" ]]; then
+  info "Linking settings.json..."
+  if [[ -f "$CLAUDE_HOME/settings.json" && ! -L "$CLAUDE_HOME/settings.json" ]]; then
+    warn "~/.claude/settings.json already exists and is not a symlink."
+    warn "Merge the repo's settings.json manually (e.g. with jq) to preserve your config:"
+    warn "  diff '$CLAUDE_HOME/settings.json' '$REPO/.claude/settings.json'"
+  else
+    symlink "$REPO/.claude/settings.json" "$CLAUDE_HOME/settings.json"
+  fi
+  echo
+fi
+
+success "Done. Commands, skills, hooks, and settings are available globally."
 info  "Keep assets up to date:  git -C '$REPO' pull"
