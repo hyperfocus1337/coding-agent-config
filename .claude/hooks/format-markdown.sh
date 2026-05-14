@@ -9,7 +9,7 @@ if [[ -z "$FILE_PATH" ]]; then
 fi
 
 if [[ "$FILE_PATH" == *.md || "$FILE_PATH" == *.markdown ]]; then
-  if command -v prettier >/dev/null 2>&1; then
+  if command -v markdownlint-cli2 >/dev/null 2>&1; then
     markdownlint-cli2 --fix "$FILE_PATH" "$FILE_PATH" >/dev/null 2>&1 || true
   fi
 fi
