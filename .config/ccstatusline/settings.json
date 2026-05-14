@@ -1,0 +1,97 @@
+{
+  "version": 3,
+  "lines": [
+    [
+      {
+        "id": "3",
+        "type": "model",
+        "color": "brightBlack",
+        "rawValue": true
+      },
+      {
+        "id": "1",
+        "type": "current-working-dir",
+        "color": "cyan",
+        "rawValue": true
+      },
+      {
+        "id": "5",
+        "type": "claude-account-email",
+        "color": "magenta",
+        "rawValue": true
+      }
+    ],
+    [
+      {
+        "id": "e6ca98eb-6fb2-46e7-8478-e7067e022228",
+        "type": "session-usage",
+        "backgroundColor": "bgBrightWhite",
+        "rawValue": false
+      },
+      {
+        "id": "017b1f48-7547-4a6b-8dc1-d744c7b3db3a",
+        "type": "weekly-usage",
+        "backgroundColor": "bgBrightWhite",
+        "rawValue": false
+      },
+      {
+        "id": "7ea30f96-a902-44ff-896f-856bd53c9004",
+        "type": "session-cost",
+        "backgroundColor": "bgBrightGreen",
+        "rawValue": true
+      }
+    ],
+    [
+      {
+        "id": "0db3339e-9fc0-4f83-872b-39ab5efd38ec",
+        "type": "tokens-total",
+        "backgroundColor": "bgYellow",
+        "rawValue": false
+      },
+      {
+        "id": "20a0debd-47e4-40aa-a75e-13ee3df9f569",
+        "type": "tokens-cached",
+        "backgroundColor": "bgGreen",
+        "rawValue": false
+      }
+    ],
+    [
+      {
+        "id": "3e0abdc5-37b9-4db0-8c80-b1af3dfeabee",
+        "type": "compaction-counter",
+        "backgroundColor": "bgBrightMagenta"
+      },
+      {
+        "id": "eb877854-8d6e-4084-a88b-e06460bc3e13",
+        "type": "context-bar",
+        "backgroundColor": "bgBrightBlue",
+        "rawValue": true
+      }
+    ]
+  ],
+  "flexMode": "full-minus-40",
+  "compactThreshold": 60,
+  "colorLevel": 2,
+  "inheritSeparatorColors": false,
+  "globalBold": false,
+  "minimalistMode": false,
+  "powerline": {
+    "enabled": true,
+    "separators": [
+      ""
+    ],
+    "separatorInvertBackground": [
+      false
+    ],
+    "startCaps": [],
+    "endCaps": [],
+    "autoAlign": true,
+    "continueThemeAcrossLines": true,
+    "theme": "minimal"
+  },
+  "installation": {
+    "method": "auto-update",
+    "packageManager": "npm"
+  },
+  "defaultPadding": " "
+}

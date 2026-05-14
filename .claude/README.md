@@ -20,22 +20,28 @@ this repo instructs Claude to prefer LSP-based code intelligence
 Hooks are shell commands Claude Code runs on tool lifecycle events (e.g. after
 every `Write`/`Edit`). Configured in `settings.json` and stored in `hooks/`.
 
-| Hook                       | Trigger                               | Action                                                                            |
-| -------------------------- | ------------------------------------- | --------------------------------------------------------------------------------- |
-| `hooks/format-markdown.sh` | `PostToolUse` on Write/Edit/MultiEdit | Runs `prettier --prose-wrap always --write` on any `.md` / `.markdown` file path. |
+| Hook                       | Trigger                               | Action                                                          |
+| -------------------------- | ------------------------------------- | --------------------------------------------------------------- |
+| `hooks/format-markdown.sh` | `PostToolUse` on Write/Edit/MultiEdit | Runs `markdownlint-cli2 --fix` on any `.md` / `.markdown` file. |
 
 ## Status line
 
-`statusline-command.sh` renders Claude Code's bottom status line. Wired up via
-the `statusLine` block in `settings.json`. Reads the JSON context Claude Code
-provides on stdin and prints:
+The status line is rendered by [ccstatusline](https://github.com/sirmalloc/ccstatusline),
+invoked from the `statusLine` block in `settings.json` as
+`npx -y ccstatusline@latest`. Claude Code pipes session context (cwd, model,
+git, etc.) to it on stdin and the rendered line is shown at the bottom of the
+TUI.
 
-- current directory basename (cyan)
-- git branch (magenta), when inside a git repository
-- model display name, prefixed by `via` (blue)
-- output style name in `[brackets]` (yellow), when not `default`
+Run `npx ccstatusline@latest` (no flags) for the interactive TUI to pick
+widgets, colours, and ordering — choices are persisted to
+`~/.claude/ccstatusline.json` and picked up on the next refresh.
 
-Requires `jq` and `git` on `$PATH`.
+The setup flow also installs [Powerline fonts](https://github.com/powerline/fonts),
+needed so the separator glyphs (e.g. ``) render correctly. Set your
+terminal to a Powerline-patched font (e.g. `Meslo LG M for Powerline`) after
+install.
+
+Requires `npx` (Node) on `$PATH`.
 
 ## Skills
 
