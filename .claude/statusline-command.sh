@@ -7,6 +7,8 @@ input=$(cat)
 cwd=$(echo "$input" | jq -r '.workspace.current_dir')
 model=$(echo "$input" | jq -r '.model.display_name')
 output_style=$(echo "$input" | jq -r '.output_style.name // "default"')
+user=$(jq -r '.oauthAccount.displayName // .oauthAccount.emailAddress // empty' ~/.claude/.claude.json 2>/dev/null)
+org_type=$(jq -r '.oauthAccount.organizationType // empty' ~/.claude/.claude.json 2>/dev/null)
 
 # Get short directory name (basename)
 dir_name=$(basename "$cwd")
@@ -21,7 +23,13 @@ else
 fi
 
 # Build status line with colors (using printf for ANSI codes)
-# Format: directory [on branch] via model [style]
+# Format: [user] directory [on branch] via model [style]
+if [ -n "$user" ]; then
+    printf "$(printf '\033[32m')%s$(printf '\033[0m') " "$user"
+fi
+if [ -n "$org_type" ]; then
+    printf "$(printf '\033[90m')(%s)$(printf '\033[0m') " "$org_type"
+fi
 printf "$(printf '\033[36m')%s$(printf '\033[0m')%s $(printf '\033[34m')via$(printf '\033[0m') %s" \
     "$dir_name" \
     "$git_info" \
