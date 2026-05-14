@@ -75,6 +75,23 @@ echo
 if [[ -d "$REPO/.claude/hooks" ]]; then
   info "Linking hooks..."
   symlink "$REPO/.claude/hooks" "$CLAUDE_HOME/hooks"
+
+  # Install npm deps for any hook subdirectory with a package.json.
+  for hook_pkg in "$REPO/.claude/hooks"/*/package.json; do
+    [[ -f "$hook_pkg" ]] || continue
+    hook_dir="$(dirname "$hook_pkg")"
+    hook_name="$(basename "$hook_dir")"
+    if [[ -d "$hook_dir/node_modules" ]]; then
+      success "Hook deps already installed: $hook_name"
+    elif command -v npm >/dev/null 2>&1; then
+      info "Installing hook deps: $hook_name"
+      (cd "$hook_dir" && npm install --silent) \
+        && success "Installed $hook_name deps" \
+        || warn "npm install failed for $hook_name"
+    else
+      warn "npm not found — skipping deps for $hook_name"
+    fi
+  done
   echo
 fi
 
