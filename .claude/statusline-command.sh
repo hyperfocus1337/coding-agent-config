@@ -7,7 +7,11 @@ input=$(cat)
 cwd=$(echo "$input" | jq -r '.workspace.current_dir')
 model=$(echo "$input" | jq -r '.model.display_name')
 output_style=$(echo "$input" | jq -r '.output_style.name // "default"')
-user=$(jq -r '.oauthAccount.displayName // .oauthAccount.emailAddress // empty' ~/.claude/.claude.json 2>/dev/null)
+
+# Extract user info from Claude config file (falls back to email if display name not set)
+# user=$(jq -r '.oauthAccount.displayName // .oauthAccount.emailAddress // empty' ~/.claude/.claude.json 2>/dev/null)
+
+# Extract organization type (e.g., "personal", "enterprise") from Claude config
 org_type=$(jq -r '.oauthAccount.organizationType // empty' ~/.claude/.claude.json 2>/dev/null)
 
 # Get short directory name (basename)
@@ -22,14 +26,18 @@ else
     git_info=""
 fi
 
-# Build status line with colors (using printf for ANSI codes)
-# Format: [user] directory [on branch] via model [style]
-if [ -n "$user" ]; then
-    printf "$(printf '\033[32m')%s$(printf '\033[0m') " "$user"
-fi
+# Print user name if available (in green)
+# if [ -n "$user" ]; then
+#     printf "$(printf '\033[32m')%s$(printf '\033[0m') " "$user"
+# fi
+
+# Print organization type if available (in gray)
 if [ -n "$org_type" ]; then
     printf "$(printf '\033[90m')(%s)$(printf '\033[0m') " "$org_type"
 fi
+
+# Build status line with colors (using printf for ANSI codes)
+# Format: [user] directory [on branch] via model [style]
 printf "$(printf '\033[36m')%s$(printf '\033[0m')%s $(printf '\033[34m')via$(printf '\033[0m') %s" \
     "$dir_name" \
     "$git_info" \
