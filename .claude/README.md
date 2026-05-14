@@ -20,9 +20,21 @@ this repo instructs Claude to prefer LSP-based code intelligence
 Hooks are shell commands Claude Code runs on tool lifecycle events (e.g. after
 every `Write`/`Edit`). Configured in `settings.json` and stored in `hooks/`.
 
-| Hook                       | Trigger                               | Action                                                          |
-| -------------------------- | ------------------------------------- | --------------------------------------------------------------- |
-| `hooks/format-markdown.sh` | `PostToolUse` on Write/Edit/MultiEdit | Runs `markdownlint-cli2 --fix` on any `.md` / `.markdown` file. |
+| Hook                                | Trigger                               | Action                                                                                                                                                       |
+|-------------------------------------|---------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `hooks/prettify-md-tables/hook.mjs` | `PostToolUse` on Write/Edit/MultiEdit | Aligns markdown table columns in any edited `.md` / `.markdown` file via [`markdown-table-prettify`](https://www.npmjs.com/package/markdown-table-prettify). |
+
+Surgical by design — only table formatting is touched; prose and code blocks
+pass through unchanged. The hook silently no-ops on non-markdown files,
+malformed JSON input, or read/write errors, so a formatting hiccup never blocks
+a Claude tool call. Failures are swallowed; the 10s timeout in `settings.json`
+caps worst-case runtime.
+
+Node-based hooks declare their own `package.json` next to `hook.mjs`. The
+[`scripts/integration/symlink.sh`](../scripts/integration/symlink.sh) setup
+script runs `npm install` for every `hooks/*/package.json` it finds (skipping
+directories that already have `node_modules/`), so deps are provisioned
+automatically on first link and idempotently on subsequent runs.
 
 ## Status line
 
@@ -50,7 +62,7 @@ specialised knowledge. They live in `skills/<name>/SKILL.md` and are loaded
 explicitly rather than injected into every prompt, keeping context lean.
 
 | Skill    | Description                                                                           |
-| -------- | ------------------------------------------------------------------------------------- |
+|----------|---------------------------------------------------------------------------------------|
 | `gh-cli` | Comprehensive GitHub CLI reference — repos, issues, PRs, Actions, releases, and more. |
 
 ## Commands
