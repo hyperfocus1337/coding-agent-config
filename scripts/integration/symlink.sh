@@ -12,6 +12,7 @@ set -euo pipefail
 # Override by setting REPO before running:  REPO=~/my/path ./symlink.sh
 REPO="${REPO:-"$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"}"
 CLAUDE_HOME="${CLAUDE_HOME:-"$HOME/.claude"}"
+CONFIG_HOME="${XDG_CONFIG_HOME:-"$HOME/.config"}"
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 info()    { printf '\033[1;34m  →\033[0m %s\n' "$*"; }
@@ -113,6 +114,23 @@ if [[ -f "$REPO/.claude/settings.json" ]]; then
     warn "  diff '$CLAUDE_HOME/settings.json' '$REPO/.claude/settings.json'"
   else
     symlink "$REPO/.claude/settings.json" "$CLAUDE_HOME/settings.json"
+  fi
+  echo
+fi
+
+# ── ccstatusline settings ────────────────────────────────────────────────────
+# Lives outside ~/.claude, at $XDG_CONFIG_HOME/ccstatusline/settings.json.
+if [[ -f "$REPO/.config/ccstatusline/settings.json" ]]; then
+  info "Linking ccstatusline/settings.json..."
+  ccs_dst_dir="$CONFIG_HOME/ccstatusline"
+  ccs_dst="$ccs_dst_dir/settings.json"
+  mkdir -p "$ccs_dst_dir"
+  if [[ -f "$ccs_dst" && ! -L "$ccs_dst" ]]; then
+    warn "$ccs_dst already exists and is not a symlink."
+    warn "Replace it manually if you want the repo's version:"
+    warn "  diff '$ccs_dst' '$REPO/.config/ccstatusline/settings.json'"
+  else
+    symlink "$REPO/.config/ccstatusline/settings.json" "$ccs_dst"
   fi
   echo
 fi
