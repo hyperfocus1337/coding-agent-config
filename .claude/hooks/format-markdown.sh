@@ -10,6 +10,6 @@ fi
 
 if [[ "$FILE_PATH" == *.md || "$FILE_PATH" == *.markdown ]]; then
   if command -v prettier >/dev/null 2>&1; then
-    prettier --prose-wrap always --write "$FILE_PATH" >/dev/null 2>&1 || true
+    markdownlint-cli2 --fix "$FILE_PATH" "$FILE_PATH" >/dev/null 2>&1 || true
   fi
 fi
