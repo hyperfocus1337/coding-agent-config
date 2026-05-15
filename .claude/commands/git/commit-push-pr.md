@@ -18,3 +18,6 @@ Based on the above changes:
 3. Push the branch to origin
 4. Create a pull request using `gh pr create`
 5. You have the capability to call multiple tools in a single response. You MUST do all of the above in a single message. Do not use any other tools or do anything else. Do not send any other text or messages besides these tool calls.
+
+- Use the git author username and email from `~/.gitconfig`.
+- Do not stamp the commit with "committed by Claude" (or any Co-Authored-By / Claude attribution).
