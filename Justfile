@@ -62,7 +62,6 @@ doctor:
     }
     check "{{CLAUDE_HOME}}/settings.json"        "{{REPO}}/.claude/settings.json"
     check "{{CLAUDE_HOME}}/CLAUDE.md"            "{{REPO}}/.claude/CLAUDE.md"
-    check "{{CLAUDE_HOME}}/statusline-command.sh" "{{REPO}}/.claude/statusline-command.sh"
     for rule in "{{REPO}}"/.claude/rules/*.md; do
       [[ "$(basename "$rule")" == "README.md" ]] && continue
       check "{{CLAUDE_HOME}}/rules/$(basename "$rule")" "$rule"

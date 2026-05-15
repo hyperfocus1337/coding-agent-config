@@ -15,10 +15,13 @@ CLAUDE_HOME="${CLAUDE_HOME:-"$HOME/.claude"}"
 CONFIG_HOME="${XDG_CONFIG_HOME:-"$HOME/.config"}"
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
-info()    { printf '\033[1;34m  →\033[0m %s\n' "$*"; }
+info() { printf '\033[1;34m  →\033[0m %s\n' "$*"; }
 success() { printf '\033[1;32m  ✓\033[0m %s\n' "$*"; }
-warn()    { printf '\033[1;33m  !\033[0m %s\n' "$*"; }
-die()     { printf '\033[1;31m  ✗\033[0m %s\n' "$*" >&2; exit 1; }
+warn() { printf '\033[1;33m  !\033[0m %s\n' "$*"; }
+die() {
+  printf '\033[1;31m  ✗\033[0m %s\n' "$*" >&2
+  exit 1
+}
 
 symlink() {
   local src="$1" dst="$2"
@@ -33,8 +36,8 @@ symlink() {
 }
 
 # ── Validate repo ─────────────────────────────────────────────────────────────
-[[ -d "$REPO/.claude" ]] \
-  || die "Expected a .claude/ directory inside REPO='$REPO'. Set REPO to the repo root."
+[[ -d "$REPO/.claude" ]] ||
+  die "Expected a .claude/ directory inside REPO='$REPO'. Set REPO to the repo root."
 
 info "Repo:        $REPO"
 info "Claude home: $CLAUDE_HOME"
@@ -74,7 +77,7 @@ if [[ -d "$REPO/.claude/rules" ]]; then
   info "Linking rules..."
   for rule_src in "$REPO/.claude/rules"/*.md; do
     [[ -f "$rule_src" ]] || continue
-    [[ "$(basename "$rule_src")" == "README.md" ]] && continue  # skip docs, not a rule
+    [[ "$(basename "$rule_src")" == "README.md" ]] && continue # skip docs, not a rule
     symlink "$rule_src" "$CLAUDE_HOME/rules/$(basename "$rule_src")"
   done
   echo
@@ -99,9 +102,11 @@ if [[ -d "$REPO/.claude/hooks" ]]; then
       success "Hook deps already installed: $hook_name"
     elif command -v npm >/dev/null 2>&1; then
       info "Installing hook deps: $hook_name"
-      (cd "$hook_src" && npm install --silent) \
-        && success "Installed $hook_name deps" \
-        || warn "npm install failed for $hook_name"
+      if (cd "$hook_src" && npm install --silent); then
+        success "Installed $hook_name deps"
+      else
+        warn "npm install failed for $hook_name"
+      fi
     else
       warn "npm not found — skipping deps for $hook_name"
     fi
@@ -112,27 +117,13 @@ fi
 # ── CLAUDE.md ────────────────────────────────────────────────────────────────
 info "Linking CLAUDE.md..."
 if [[ -f "$CLAUDE_HOME/CLAUDE.md" && ! -L "$CLAUDE_HOME/CLAUDE.md" ]]; then
-  warn "~/.claude/CLAUDE.md already exists and is not a symlink."
+  warn "$HOME/.claude/CLAUDE.md already exists and is not a symlink."
   warn "Append the repo's CLAUDE.md manually to preserve your existing file:"
   warn "  cat '$REPO/.claude/CLAUDE.md' >> '$CLAUDE_HOME/CLAUDE.md'"
 else
   symlink "$REPO/.claude/CLAUDE.md" "$CLAUDE_HOME/CLAUDE.md"
 fi
 echo
-
-# ── Status line ──────────────────────────────────────────────────────────────
-# Referenced from settings.json as $HOME/.claude/statusline-command.sh.
-if [[ -f "$REPO/.claude/statusline-command.sh" ]]; then
-  info "Linking statusline-command.sh..."
-  if [[ -f "$CLAUDE_HOME/statusline-command.sh" && ! -L "$CLAUDE_HOME/statusline-command.sh" ]]; then
-    warn "~/.claude/statusline-command.sh already exists and is not a symlink."
-    warn "Replace it manually if you want the repo's version:"
-    warn "  diff '$CLAUDE_HOME/statusline-command.sh' '$REPO/.claude/statusline-command.sh'"
-  else
-    symlink "$REPO/.claude/statusline-command.sh" "$CLAUDE_HOME/statusline-command.sh"
-  fi
-  echo
-fi
 
 # ── settings.json ────────────────────────────────────────────────────────────
 # Global settings file. Repo version is the source of truth across machines.
@@ -182,4 +173,4 @@ if [[ -f "$REPO/.config/ccstatusline/settings.json" ]]; then
 fi
 
 success "Done. Commands, skills, rules, hooks, statusline, and settings are available globally."
-info  "Keep assets up to date:  git -C '$REPO' pull"
+info "Keep assets up to date:  git -C '$REPO' pull"
