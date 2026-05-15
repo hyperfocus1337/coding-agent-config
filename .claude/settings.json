@@ -8,8 +8,6 @@
     "pr": ""
   },
   "model": "sonnet[1m]",
-  "alwaysThinkingEnabled": true,
-  "skipDangerousModePermissionPrompt": true,
   "hooks": {
     "PostToolUse": [
       {
@@ -119,5 +117,7 @@
         "repo": "wshobson/agents"
       }
     }
-  }
+  },
+  "alwaysThinkingEnabled": true,
+  "skipDangerousModePermissionPrompt": true
 }

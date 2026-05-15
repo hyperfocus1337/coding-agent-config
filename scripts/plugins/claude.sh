@@ -13,6 +13,14 @@ if ! command -v claude &>/dev/null; then
     exit 1
 fi
 
+# Sync ~/.claude with repo before installing plugins. settings.json wires hooks
+# and statusline by absolute path, so it must be in place before plugin install.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SYMLINK_SH="$SCRIPT_DIR/../integration/symlink.sh"
+if [ -x "$SYMLINK_SH" ]; then
+    "$SYMLINK_SH"
+fi
+
 # Only mutate global git config inside ephemeral build environments
 # (Docker, GitHub Actions, devcontainer/Codespaces) — never on a user's host.
 if [ -f /.dockerenv ] \
@@ -111,11 +119,10 @@ claude plugin install watch@claude-video
 claude plugin marketplace add https://gitlab.com/gitlab-org/ai/skills.git
 claude plugin install glab@gitlab-skills
 
-# Playwright skills (only if playwright-cli present)
+# Playwright skills
 # https://github.com/microsoft/playwright-cli
-if command -v playwright-cli &>/dev/null; then
-    playwright-cli install --skills
-fi
+# npm install -g @playwright/cli@latest
+# playwright-cli install --skills # only installed locally
 
 # Global MCP servers (user scoped)
 # https://docs.tessl.io/reference/custom-agent-setup

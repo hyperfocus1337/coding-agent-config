@@ -135,16 +135,31 @@ if [[ -f "$REPO/.claude/statusline-command.sh" ]]; then
 fi
 
 # ── settings.json ────────────────────────────────────────────────────────────
-# Global settings file. Cannot be safely merged automatically — warn if the
-# user already has their own and let them merge by hand.
+# Global settings file. Repo version is the source of truth across machines.
+# Existing non-symlink files are timestamp-backed-up, then replaced.
 if [[ -f "$REPO/.claude/settings.json" ]]; then
   info "Linking settings.json..."
-  if [[ -f "$CLAUDE_HOME/settings.json" && ! -L "$CLAUDE_HOME/settings.json" ]]; then
-    warn "~/.claude/settings.json already exists and is not a symlink."
-    warn "Merge the repo's settings.json manually (e.g. with jq) to preserve your config:"
-    warn "  diff '$CLAUDE_HOME/settings.json' '$REPO/.claude/settings.json'"
+  src="$REPO/.claude/settings.json"
+  dst="$CLAUDE_HOME/settings.json"
+  if [[ -L "$dst" ]]; then
+    current="$(readlink "$dst")"
+    if [[ "$current" != "$src" ]]; then
+      warn "Symlink points to: $current — repointing to repo."
+      rm "$dst"
+      ln -s "$src" "$dst"
+      success "Repointed $dst → $src"
+    else
+      success "Already linked: $dst"
+    fi
+  elif [[ -f "$dst" ]]; then
+    backup="$dst.bak.$(date +%Y%m%d%H%M%S)"
+    warn "Existing settings.json — backup: $backup"
+    mv "$dst" "$backup"
+    ln -s "$src" "$dst"
+    success "Linked $dst → $src (backup: $backup)"
   else
-    symlink "$REPO/.claude/settings.json" "$CLAUDE_HOME/settings.json"
+    ln -s "$src" "$dst"
+    success "Linked $dst → $src"
   fi
   echo
 fi
