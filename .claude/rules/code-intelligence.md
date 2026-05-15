@@ -1,3 +1,8 @@
+---
+paths:
+  - "**"
+---
+
 ### Code Intelligence
 
 Prefer LSP over Grep/Glob/Read for code navigation:

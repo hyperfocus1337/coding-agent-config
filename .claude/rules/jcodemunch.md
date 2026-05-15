@@ -1,3 +1,8 @@
+---
+paths:
+  - "**"
+---
+
 ### jcodemunch MCP
 
 Use jcodemunch for codebase orientation and bulk symbol lookup:

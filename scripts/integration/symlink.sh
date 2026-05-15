@@ -41,8 +41,8 @@ info "Claude home: $CLAUDE_HOME"
 echo
 
 # ── Ensure ~/.claude structure exists ────────────────────────────────────────
-mkdir -p "$CLAUDE_HOME/commands" "$CLAUDE_HOME/skills"
-success "Ensured $CLAUDE_HOME/{commands,skills}/"
+mkdir -p "$CLAUDE_HOME/commands" "$CLAUDE_HOME/skills" "$CLAUDE_HOME/rules"
+success "Ensured $CLAUDE_HOME/{commands,skills,rules}/"
 echo
 
 # ── Commands ─────────────────────────────────────────────────────────────────
@@ -68,6 +68,17 @@ for src in "$REPO/.claude/skills"/*/; do
   symlink "$src" "$CLAUDE_HOME/skills/$(basename "$src")"
 done
 echo
+
+# ── Rules ────────────────────────────────────────────────────────────────────
+if [[ -d "$REPO/.claude/rules" ]]; then
+  info "Linking rules..."
+  for rule_src in "$REPO/.claude/rules"/*.md; do
+    [[ -f "$rule_src" ]] || continue
+    [[ "$(basename "$rule_src")" == "README.md" ]] && continue  # skip docs, not a rule
+    symlink "$rule_src" "$CLAUDE_HOME/rules/$(basename "$rule_src")"
+  done
+  echo
+fi
 
 # ── Hooks ────────────────────────────────────────────────────────────────────
 # Symlink each hook subdirectory individually (like commands) so an existing
@@ -155,5 +166,5 @@ if [[ -f "$REPO/.config/ccstatusline/settings.json" ]]; then
   echo
 fi
 
-success "Done. Commands, skills, hooks, statusline, and settings are available globally."
+success "Done. Commands, skills, rules, hooks, statusline, and settings are available globally."
 info  "Keep assets up to date:  git -C '$REPO' pull"

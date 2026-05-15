@@ -1,3 +1,8 @@
+---
+paths:
+  - "**"
+---
+
 ### ast-grep
 
 Use ast-grep (via `/ast-grep` skill) for structural pattern search:
