@@ -2,9 +2,10 @@
 
 set -e
 
-# Use caller-provided CLAUDE_CONFIG_DIR if set, otherwise default to $HOME/.claude.
-# Lets (dev)containers and host installs share this script.
-export CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+# Honor caller-provided CLAUDE_CONFIG_DIR if set; otherwise leave unset so claude
+# uses its built-in defaults ($HOME/.claude.json sibling of $HOME/.claude/).
+# Forcing a default here breaks installs where .claude.json lives at $HOME.
+[ -n "${CLAUDE_CONFIG_DIR:-}" ] && export CLAUDE_CONFIG_DIR
 
 if ! command -v claude &>/dev/null; then
     echo "ERROR: 'claude' not found in PATH. Check that the Claude Code install placed its binary in a directory on PATH." >&2
