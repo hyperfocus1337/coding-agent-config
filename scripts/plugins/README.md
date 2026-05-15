@@ -22,6 +22,16 @@ Provides slash commands for generating and managing git commits. Use when you wa
 
 Adds a guided feature development workflow. Use when starting work on a new feature — it helps Claude break down requirements, plan implementation steps, scaffold code, and track progress through a structured development loop.
 
+#### `code-simplifier`
+
+Adds workflows for simplifying and refining existing code without changing behavior. Use when you want Claude to focus on clarity, consistency, and maintainability — removing dead code, flattening control flow, and tightening naming — typically against recently modified code.
+
+#### `superpowers`
+
+Source: [github.com/obra/superpowers](https://github.com/obra/superpowers)
+
+Bundles a collection of opinionated skills and workflows that extend Claude's default capabilities. Use as a general-purpose productivity layer on top of the base Claude Code experience.
+
 ---
 
 ### Pyright LSP (`piebald-ai/claude-code-lsps`)
@@ -76,6 +86,54 @@ Bundles skills for Astral's Python toolchain: **uv** (package and project manage
 
 ---
 
+### Codex (`openai/codex-plugin-cc`)
+
+Source: [github.com/openai/codex-plugin-cc](https://github.com/openai/codex-plugin-cc/tree/main/codex-plugin-cc)
+
+#### `codex`
+
+Integrates OpenAI Codex as a second-opinion engine inside Claude Code. Use when you want a parallel implementation or diagnosis pass, deeper root-cause investigation, or to hand off a substantial coding task to Codex through the shared runtime.
+
+---
+
+### Caveman (`JuliusBrussee/caveman`)
+
+Source: [github.com/JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman)
+
+#### `caveman`
+
+Ultra-compressed communication mode that cuts token usage by speaking tersely while keeping full technical accuracy. Use when you want shorter responses, reviews, or commit messages without losing actionable signal.
+
+---
+
+### Notion (`makenotion/claude-code-notion-plugin`)
+
+Source: [github.com/makenotion/claude-code-notion-plugin](https://github.com/makenotion/claude-code-notion-plugin)
+
+#### `notion-workspace-plugin`
+
+Connects Claude to a Notion workspace for searching pages and databases, creating pages and tasks, and querying database rows. Use when work involves Notion-managed docs, tasks, or knowledge bases.
+
+---
+
+### Claude Video (`bradautomates/claude-video`)
+
+Source: [github.com/bradautomates/claude-video](https://github.com/bradautomates/claude-video)
+
+#### `watch`
+
+Lets Claude watch a video from a URL or local path. Downloads with `yt-dlp`, extracts frames with `ffmpeg`, transcribes from native captions or Whisper fallback, then answers questions about the content. Add `GROQ_API_KEY` (preferred) or `OPENAI_API_KEY` to `~/.config/watch/.env` to enable the Whisper fallback.
+
+---
+
+### Playwright Skills (`microsoft/playwright-cli`)
+
+Source: [github.com/microsoft/playwright-cli](https://github.com/microsoft/playwright-cli)
+
+Installed conditionally when `playwright-cli` is on `PATH`, via `playwright-cli install --skills`. Adds browser automation skills (navigation, interaction, assertions) for end-to-end testing and UI verification workflows.
+
+---
+
 ## MCP Servers (User-Scoped)
 
 MCP servers are registered globally at user scope and available across all Claude sessions.
@@ -109,3 +167,19 @@ An MCP server that enables deep code analysis and understanding across a codebas
 Docs: [github.com/jgravelle/jdocmunch-mcp](https://github.com/jgravelle/jdocmunch-mcp?tab=readme-ov-file#configure-an-mcp-client)
 
 An MCP server focused on ingesting and querying documentation. Use when you need Claude to reason over large volumes of markdown, HTML, or plain-text documentation — useful for answering questions about internal docs, runbooks, or any documentation that isn't indexed by Context7.
+
+---
+
+### `stitch`
+
+Docs: [stitch.withgoogle.com/docs/mcp/setup](https://stitch.withgoogle.com/docs/mcp/setup)
+
+Google Stitch MCP server (HTTP transport). Use for Stitch-powered workflows that depend on its hosted tooling. Requires a valid `X-Goog-Api-Key` header — replace the placeholder in `claude.sh` with your real key before use.
+
+---
+
+### `directus`
+
+Docs: [directus.io/docs/guides/ai/mcp](https://directus.io/docs/guides/ai/mcp)
+
+Directus MCP server (HTTP transport) for interacting with a Directus instance — collections, fields, items, files, flows, and schema. Replace the placeholder URL and bearer token in `claude.sh` with your Directus instance URL and a generated token before use.
