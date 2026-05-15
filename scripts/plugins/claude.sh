@@ -14,11 +14,14 @@ if ! command -v claude &>/dev/null; then
 fi
 
 # Force HTTPS for any github SSH URLs declared by plugin marketplaces.
-# Avoids SSH key requirement inside containers. Use --add since
-# url.<base>.insteadOf is multi-valued; plain `git config` would overwrite.
-git config --global --add url."https://github.com/".insteadOf "git@github.com:"
-git config --global --add url."https://github.com/".insteadOf "ssh://git@github.com/"
-git config --global --add url."https://github.com/".insteadOf "git://github.com/"
+# Avoids SSH key requirement inside containers. Multi-valued, so --add
+# duplicates on re-run; gate each value on whether it's already present.
+for from in "git@github.com:" "ssh://git@github.com/" "git://github.com/"; do
+    # -x exact line, -F literal (URLs contain regex metachars like '/').
+    if ! git config --global --get-all url."https://github.com/".insteadOf 2>/dev/null | grep -qxF "$from"; then
+        git config --global --add url."https://github.com/".insteadOf "$from"
+    fi
+done
 
 # Official plugins
 # Official marketplace should be already installed (added for debugging)
