@@ -15,6 +15,11 @@
             "type": "command",
             "command": "node \"$HOME/.claude/hooks/prettify-md-tables/hook.mjs\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/stage-edited-file/hook.sh\"",
+            "timeout": 5
           }
         ]
       }
