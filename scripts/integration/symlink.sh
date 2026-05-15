@@ -70,22 +70,25 @@ done
 echo
 
 # ── Hooks ────────────────────────────────────────────────────────────────────
-# Symlink the whole hooks/ directory if the repo provides one. Scripts inside
-# are referenced from settings.json by absolute path ($HOME/.claude/hooks/...).
+# Symlink each hook subdirectory individually (like commands) so an existing
+# ~/.claude/hooks/ directory doesn't block per-hook linking. Scripts inside are
+# referenced from settings.json by absolute path ($HOME/.claude/hooks/...).
 if [[ -d "$REPO/.claude/hooks" ]]; then
   info "Linking hooks..."
-  symlink "$REPO/.claude/hooks" "$CLAUDE_HOME/hooks"
+  mkdir -p "$CLAUDE_HOME/hooks"
+  for hook_src in "$REPO/.claude/hooks"/*/; do
+    [[ -d "$hook_src" ]] || continue
+    hook_name="$(basename "$hook_src")"
+    symlink "${hook_src%/}" "$CLAUDE_HOME/hooks/$hook_name"
 
-  # Install npm deps for any hook subdirectory with a package.json.
-  for hook_pkg in "$REPO/.claude/hooks"/*/package.json; do
+    # Install npm deps in the repo subdir (the symlink target).
+    hook_pkg="${hook_src}package.json"
     [[ -f "$hook_pkg" ]] || continue
-    hook_dir="$(dirname "$hook_pkg")"
-    hook_name="$(basename "$hook_dir")"
-    if [[ -d "$hook_dir/node_modules" ]]; then
+    if [[ -d "${hook_src}node_modules" ]]; then
       success "Hook deps already installed: $hook_name"
     elif command -v npm >/dev/null 2>&1; then
       info "Installing hook deps: $hook_name"
-      (cd "$hook_dir" && npm install --silent) \
+      (cd "$hook_src" && npm install --silent) \
         && success "Installed $hook_name deps" \
         || warn "npm install failed for $hook_name"
     else
