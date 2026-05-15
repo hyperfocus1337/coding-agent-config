@@ -119,6 +119,5 @@
     }
   },
   "alwaysThinkingEnabled": true,
-  "skipDangerousModePermissionPrompt": true,
-  "effortLevel": "max"
+  "skipDangerousModePermissionPrompt": true
 }
