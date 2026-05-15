@@ -106,6 +106,11 @@ claude plugin install notion-workspace-plugin@notion-plugin-marketplace
 claude plugin marketplace add bradautomates/claude-video
 claude plugin install watch@claude-video
 
+# Gitlab skills
+# https://gitlab.com/gitlab-org/ai/skills
+claude plugin marketplace add https://gitlab.com/gitlab-org/ai/skills.git
+claude plugin install glab@gitlab-skills
+
 # Playwright skills (only if playwright-cli present)
 # https://github.com/microsoft/playwright-cli
 if command -v playwright-cli &>/dev/null; then
