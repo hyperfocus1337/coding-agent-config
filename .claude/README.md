@@ -6,7 +6,17 @@ Clone this repo and symlink (or copy) the `.claude/` directory into any project 
 
 ## CLAUDE.md
 
-`CLAUDE.md` is loaded by Claude Code as system-wide context at the start of every session. Use it to encode standing instructions, conventions, and preferences that should apply across all projects — things like preferred code navigation strategies, coding style rules, or tool usage guidelines. The one in this repo instructs Claude to prefer LSP-based code intelligence (go-to-definition, find-references) over file searches wherever possible.
+`CLAUDE.md` is loaded by Claude Code as system-wide context at the start of every session. Use it to encode standing instructions, conventions, and preferences that should apply across all projects — things like preferred code navigation strategies, coding style rules, or tool usage guidelines.
+
+The file itself is kept minimal — just `@rules/<name>.md` imports. Each rule lives as its own file under `rules/`, making it easy to add, remove, or share individual rules without touching the others.
+
+### `rules/` — Composable standing instructions
+
+| Rule                         | What it governs                                                                                        |
+|------------------------------|--------------------------------------------------------------------------------------------------------|
+| `rules/code-intelligence.md` | Prefer LSP (go-to-definition, find-references) over file searches; run diagnostics after every edit.   |
+| `rules/ast-grep.md`          | Use ast-grep for structural pattern search when LSP doesn't apply.                                     |
+| `rules/jcodemunch.md`        | Use jcodemunch for codebase orientation and bulk symbol lookup; defines tool-selection priority order. |
 
 ## Hooks
 
@@ -44,6 +54,18 @@ Skills are on-demand reference documents that Claude reads when a task calls for
 ## Commands
 
 ### `git/` — Version control helpers
+
+#### /git:commit
+
+Stage all changes and create a single commit with an appropriate message. Scoped to `git add`, `git status`, and `git commit` — nothing else runs.
+
+#### /git:commit-push
+
+Commit all changes and push the current branch to origin.
+
+#### /git:commit-push-pr
+
+Commit, push, and open a pull request in one shot. Creates a new branch first if currently on `main`. Uses `gh pr create` for the PR step.
 
 #### /git:changelog
 
