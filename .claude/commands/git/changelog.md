@@ -58,8 +58,3 @@ List each feature commit with:
 ### Bug Fixes
 List each fix commit with:
 - '[hash]' Description (by author on date)
-
-## Author attribution
-
-- Use the git author username and email from `~/.gitconfig` for any commit that records this changelog.
-- Do not stamp the commit with "committed by Claude" (or any Co-Authored-By / Claude attribution).

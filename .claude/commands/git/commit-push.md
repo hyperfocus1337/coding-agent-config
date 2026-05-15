@@ -15,6 +15,3 @@ Based on the above changes:
 
 1. Create a single commit with an appropriate message
 2. Push the branch to origin
-
-- Use the git author username and email from `~/.gitconfig`.
-- Do not stamp the commit with "committed by Claude" (or any Co-Authored-By / Claude attribution).

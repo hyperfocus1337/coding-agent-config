@@ -14,7 +14,4 @@ description: Create a git commit
 
 Based on the above changes, create a single git commit.
 
-- Use the git author username and email from `~/.gitconfig`.
-- Do not stamp the commit with "committed by Claude" (or any Co-Authored-By / Claude attribution).
-
 You have the capability to call multiple tools in a single response. Stage and create the commit using a single message. Do not use any other tools or do anything else. Do not send any other text or messages besides these tool calls.
