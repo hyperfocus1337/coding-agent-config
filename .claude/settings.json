@@ -22,6 +22,11 @@
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/stage-edited-file/hook.sh\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/lint-all-languages/hook.sh\"",
+            "timeout": 5
           }
         ]
       }
