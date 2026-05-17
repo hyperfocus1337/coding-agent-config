@@ -23,4 +23,5 @@ case "${F##*.}" in
   js|jsx|ts|tsx|mjs|cjs) lint eslint --quiet "$F" ;;
   sh|bash)               lint shellcheck -S warning "$F" ;;
   yml|yaml)              lint yamllint -d relaxed "$F" ;;
+  tf|tfvars)             lint terraform fmt -check -diff "$F" ;;
 esac
