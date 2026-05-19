@@ -119,6 +119,11 @@ claude plugin install watch@claude-video
 claude plugin marketplace add https://gitlab.com/gitlab-org/ai/skills.git
 claude plugin install glab@gitlab-skills
 
+# Cloudflare skills
+# https://developers.cloudflare.com/agent-setup/claude-code/
+claude plugin marketplace add cloudflare/skills
+claude plugin install cloudflare@cloudflare
+
 # Playwright skills
 # https://github.com/microsoft/playwright-cli
 # npm install -g @playwright/cli@latest
