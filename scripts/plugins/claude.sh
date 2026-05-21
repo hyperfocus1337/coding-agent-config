@@ -124,6 +124,11 @@ claude plugin install glab@gitlab-skills
 claude plugin marketplace add cloudflare/skills
 claude plugin install cloudflare@cloudflare
 
+# Terraform skills
+# https://github.com/antonbabenko/terraform-skill
+claude plugin marketplace add antonbabenko/agent-plugins
+claude plugin install terraform-skill@antonbabenko
+
 # Playwright skills
 # https://github.com/microsoft/playwright-cli
 # npm install -g @playwright/cli@latest
