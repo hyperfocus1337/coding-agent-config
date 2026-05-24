@@ -4,6 +4,16 @@ Utility script for installing and managing Claude plugins and Model Context Prot
 
 ---
 
+## Layout
+
+- `install.sh` — entry point. Runs the env preamble (PATH check, `~/.claude` symlink sync, container-only git URL rewrites) and then invokes `claude.sh` and `skills.sh` in order.
+- `claude.sh` — Claude-native plugin and MCP server installs via `claude plugin ...` / `claude mcp ...`.
+- `skills.sh` — third-party skills installed outside the Claude plugin marketplace (e.g. `npx skills@latest add ...`).
+
+Run `./install.sh` to install everything. The child scripts can be run individually but assume the preamble has already executed.
+
+---
+
 ## Plugins
 
 ### Official Anthropic Plugins (`anthropics/claude-plugins-official`)
@@ -123,6 +133,22 @@ Source: [github.com/bradautomates/claude-video](https://github.com/bradautomates
 #### `watch`
 
 Lets Claude watch a video from a URL or local path. Downloads with `yt-dlp`, extracts frames with `ffmpeg`, transcribes from native captions or Whisper fallback, then answers questions about the content. Add `GROQ_API_KEY` (preferred) or `OPENAI_API_KEY` to `~/.config/watch/.env` to enable the Whisper fallback.
+
+---
+
+### Matt Pocock Skills (`mattpocock/skills`)
+
+Source: [github.com/mattpocock/skills](https://github.com/mattpocock/skills)
+
+Installed via `npx skills@latest add` in `skills.sh` rather than the Claude plugin marketplace. Bundles Matt Pocock's opinionated skill set for Claude Code, Cursor, and OpenCode:
+
+- `grill-me`, `grill-with-docs` — interrogate code and concepts against fresh docs.
+- `handoff` — structured session/context handoff between agents.
+- `improve-codebase-architecture` — review and refactor codebase structure.
+- `setup-matt-pocock-skills` — bootstrap the rest of the skill set.
+- `tdd` — guided test-driven development loop.
+- `triage` — incoming-issue triage workflow.
+- `to-issues`, `to-prd` — convert raw notes/specs into GitHub issues or a PRD.
 
 ---
 

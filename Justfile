@@ -14,7 +14,7 @@ symlink:
 
 # Install plugins, MCP servers, and dependencies. Runs symlink first.
 plugins:
-    "{{SCRIPTS}}/plugins/claude.sh"
+    "{{SCRIPTS}}/plugins/install.sh"
 
 # Full bootstrap: symlink + plugins. Idempotent.
 setup: plugins
