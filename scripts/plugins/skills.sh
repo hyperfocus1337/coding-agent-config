@@ -17,4 +17,5 @@ npx skills@latest add mattpocock/skills \
   --agent claude-code \
   --agent cursor \
   --agent opencode \
+  --global \
   --yes
