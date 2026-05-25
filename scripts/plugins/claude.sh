@@ -9,7 +9,7 @@ claude plugin marketplace add anthropics/claude-plugins-official
 # https://github.com/anthropics/claude-code/tree/main/plugins/code-review
 claude plugin install code-review@claude-plugins-official
 # https://github.com/anthropics/claude-code/tree/main/plugins/commit-commands
-claude plugin install commit-commands@claude-plugins-official
+# claude plugin install commit-commands@claude-plugins-official # imported a few directly in this repository under /git
 # https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev
 claude plugin install feature-dev@claude-plugins-official
 # https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier
