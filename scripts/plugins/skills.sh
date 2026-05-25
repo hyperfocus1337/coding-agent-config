@@ -18,4 +18,4 @@ npx skills@latest add mattpocock/skills \
   --agent cursor \
   --agent opencode \
   --global \
-  --yes
+  -y
