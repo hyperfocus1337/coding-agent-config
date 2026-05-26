@@ -42,14 +42,14 @@ Use the file's native comment character (`#`, `//`, `;`, `--`, etc.). Keep banne
 
 ## Comment characters by file type
 
-| Family | Example files | Line comment |
-|---|---|---|
-| Shell, YAML, TOML, Python, Ruby, Nginx, Dockerfile, gitconfig, Makefile, tfvars | `.sh`, `.zshrc`, `.bashrc`, `config.fish`, `.yml`, `.toml`, `.conf` | `#` |
-| C-family, Terraform HCL, JS, Go, Rust | `.tf`, `.js`, `.go`, `.rs` | `//` |
-| INI, some Windows configs | `.ini` | `;` |
-| SQL | `.sql` | `--` |
-| Emacs Lisp | `.el` | `;;;` for section headers (Elisp convention), `;;` inline |
-| Apache, XML, HTML | `.htaccess`, `.xml`, `.html` | `<!-- ... -->` |
+| Family                                                                          | Example files                                                       | Line comment                                              |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------- |
+| Shell, YAML, TOML, Python, Ruby, Nginx, Dockerfile, gitconfig, Makefile, tfvars | `.sh`, `.zshrc`, `.bashrc`, `config.fish`, `.yml`, `.toml`, `.conf` | `#`                                                       |
+| C-family, Terraform HCL, JS, Go, Rust                                           | `.tf`, `.js`, `.go`, `.rs`                                          | `//`                                                      |
+| INI, some Windows configs                                                       | `.ini`                                                              | `;`                                                       |
+| SQL                                                                             | `.sql`                                                              | `--`                                                      |
+| Emacs Lisp                                                                      | `.el`                                                               | `;;;` for section headers (Elisp convention), `;;` inline |
+| Apache, XML, HTML                                                               | `.htaccess`, `.xml`, `.html`                                        | `<!-- ... -->`                                            |
 
 JSON does not support comments. If the file is `.json`, tell the user and offer JSONC (`.jsonc`) or a YAML/TOML rewrite instead.
 
