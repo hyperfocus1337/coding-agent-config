@@ -53,7 +53,10 @@
     "caveman@caveman": true,
     "notion-workspace-plugin@notion-plugin-marketplace": true,
     "watch@claude-video": true,
-    "glab@gitlab-skills": true
+    "glab@gitlab-skills": true,
+    "cloudflare@cloudflare": true,
+    "terraform-skill@antonbabenko": true
+
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
@@ -121,9 +124,22 @@
         "source": "github",
         "repo": "wshobson/agents"
       }
+    },
+    "cloudflare": {
+      "source": {
+        "source": "github",
+        "repo": "cloudflare/skills"
+      }
+    },
+    "antonbabenko": {
+      "source": {
+        "source": "github",
+        "repo": "antonbabenko/agent-plugins"
+      }
     }
   },
   "alwaysThinkingEnabled": true,
   "skipDangerousModePermissionPrompt": true,
+  "skipAutoPermissionPrompt": true,
   "effortLevel": "max"
 }
