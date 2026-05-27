@@ -17,6 +17,13 @@ claude plugin install code-simplifier@claude-plugins-official
 # https://github.com/obra/superpowers
 claude plugin install superpowers@claude-plugins-official
 
+# https://github.com/prime-radiant-inc/prime-radiant-marketplace
+claude plugin marketplace add prime-radiant-inc/prime-radiant-marketplace
+# https://github.com/prime-radiant-inc/iterative-development
+claude plugin install iterative-development@prime-radiant-marketplace
+# https://github.com/prime-radiant-inc/greenfield
+claude plugin install greenfield@prime-radiant-marketplace
+
 # Install pyright for lsp server
 npm install -g pyright
 
