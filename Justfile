@@ -1,8 +1,16 @@
 set shell := ["bash", "-cu"]
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Variables
+# ──────────────────────────────────────────────────────────────────────────────
+
 REPO     := justfile_directory()
 SCRIPTS  := REPO / "scripts"
 CLAUDE_HOME := env("CLAUDE_HOME", env("HOME") / ".claude")
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Setup & integration
+# ──────────────────────────────────────────────────────────────────────────────
 
 # Run `just` with no args to show available commands.
 default:
@@ -24,6 +32,19 @@ update:
     git pull --ff-only
     @just setup
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Sync
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Pull the repo, then re-run symlink to refresh ~/.claude.
+pull:
+    git pull
+    @just symlink
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Lint & format
+# ──────────────────────────────────────────────────────────────────────────────
+
 # Shellcheck all scripts.
 lint:
     shellcheck "{{SCRIPTS}}"/integration/*.sh "{{SCRIPTS}}"/plugins/*.sh
@@ -35,6 +56,10 @@ fmt:
 # Check formatting without writing. Non-zero exit if anything would change.
 fmt-check:
     shfmt -d -i 2 -ci "{{SCRIPTS}}"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Inspect
+# ──────────────────────────────────────────────────────────────────────────────
 
 # Show user-scoped MCP servers configured for Claude Code.
 mcp-list:
@@ -67,6 +92,10 @@ doctor:
       check "{{CLAUDE_HOME}}/rules/$(basename "$rule")" "$rule"
     done
     exit "$fail"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Cleanup
+# ──────────────────────────────────────────────────────────────────────────────
 
 # Remove timestamped settings.json backups left by symlink.sh.
 clean-backups:
