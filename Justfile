@@ -29,7 +29,7 @@ setup: plugins
 
 # git pull, then re-run setup. Use after upstream changes.
 update:
-    git pull --ff-only
+    git pull
     @just setup
 
 # ──────────────────────────────────────────────────────────────────────────────
