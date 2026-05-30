@@ -56,7 +56,6 @@
     "glab@gitlab-skills": true,
     "cloudflare@cloudflare": true,
     "terraform-skill@antonbabenko": true
-
   },
   "extraKnownMarketplaces": {
     "claude-plugins-official": {
