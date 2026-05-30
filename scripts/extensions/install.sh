@@ -16,7 +16,7 @@ fi
 # Sync ~/.claude with repo before installing plugins. settings.json wires hooks
 # and statusline by absolute path, so it must be in place before plugin install.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SYMLINK_SH="$SCRIPT_DIR/../integration/symlink.sh"
+SYMLINK_SH="$SCRIPT_DIR/../sync/symlink.sh"
 if [ -x "$SYMLINK_SH" ]; then
   "$SYMLINK_SH"
 fi
@@ -40,5 +40,6 @@ if [ -f /.dockerenv ] ||
   done
 fi
 
-"$SCRIPT_DIR/claude.sh"
-"$SCRIPT_DIR/skills.sh"
+"$SCRIPT_DIR/plugins/install.sh"
+"$SCRIPT_DIR/mcp/install.sh"
+"$SCRIPT_DIR/skills/install.sh"

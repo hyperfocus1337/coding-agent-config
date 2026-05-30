@@ -98,10 +98,10 @@ A common pattern is to clone a configuration repository and then run an integrat
 git clone https://github.com/your-username/your-config-repo.git /root/my-config
 
 # Run an integration script that symlinks commands, skills, CLAUDE.md, etc.
-REPO=/root/my-config /root/my-config/scripts/integration/symlink.sh
+REPO=/root/my-config /root/my-config/scripts/sync/symlink.sh
 ```
 
-The integration script (e.g. `symlink.sh`) would create the necessary symlinks from your cloned repo into `~/.claude`, making your commands and skills available globally to the agent. See [`scripts/integration/symlink.sh`](../../scripts/integration/symlink.sh) for a reference implementation.
+The integration script (e.g. `symlink.sh`) would create the necessary symlinks from your cloned repo into `~/.claude`, making your commands and skills available globally to the agent. See [`scripts/sync/symlink.sh`](../../scripts/sync/symlink.sh) for a reference implementation.
 
 ### Specialised CLI Tools
 
@@ -129,16 +129,6 @@ if [ "$CLAUDE_CODE_REMOTE" != "true" ]; then
   exit 0
 fi
 
-# ── System packages ───────────────────────────────────────────────────────────
-# Install a CLI tool distributed via a package manager (example: gh CLI)
-(type -p wget >/dev/null || (apt update && apt install wget -y)) \
-  && mkdir -p -m 755 /etc/apt/keyrings \
-  && wget -qO- https://example-keyring-url.gpg | tee /etc/apt/keyrings/tool-keyring.gpg > /dev/null \
-  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/tool-keyring.gpg] https://example.packages.io/stable main" \
-     | tee /etc/apt/sources.list.d/tool.list > /dev/null \
-  && apt update \
-  && apt install example-cli -y
-
 # ── Specialised tools ─────────────────────────────────────────────────────────
 # Install tools your workflow depends on
 uv tool install my-analysis-tool
@@ -147,7 +137,7 @@ curl -fsSL https://get.my-platform.io | sh
 # ── Personal configuration ────────────────────────────────────────────────────
 # Clone your config repo and wire it up
 git clone https://github.com/your-username/your-config-repo.git /root/my-config
-REPO=/root/my-config /root/my-config/scripts/integration/symlink.sh
+REPO=/root/my-config /root/my-config/scripts/sync/symlink.sh
 
 # ── Project dependencies ──────────────────────────────────────────────────────
 source .venv/bin/activate

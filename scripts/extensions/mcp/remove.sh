@@ -13,10 +13,10 @@ set -e
 #
 #   The only way to fully turn off a user-scoped MCP server is to remove it
 #   with `claude mcp remove <name> --scope user`. To bring them back, re-run
-#   `scripts/plugins/claude.sh`, which contains the canonical add commands.
+#   `scripts/extensions/mcp/install.sh`, which contains the canonical add commands.
 #
 # Usage:
-#   ./scripts/plugins/remove.sh # remove all listed servers
+#   ./scripts/extensions/mcp/remove.sh # remove all listed servers
 #   Comment out any line below to keep that server installed.
 
 # https://docs.tessl.io/reference/custom-agent-setup

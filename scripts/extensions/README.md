@@ -6,9 +6,11 @@ Utility script for installing and managing Claude plugins and Model Context Prot
 
 ## Layout
 
-- `install.sh` — entry point. Runs the env preamble (PATH check, `~/.claude` symlink sync, container-only git URL rewrites) and then invokes `claude.sh` and `skills.sh` in order.
-- `claude.sh` — Claude-native plugin and MCP server installs via `claude plugin ...` / `claude mcp ...`.
-- `skills.sh` — third-party skills installed outside the Claude plugin marketplace (e.g. `npx skills@latest add ...`).
+- `install.sh` — entry point. Runs the env preamble (PATH check, `~/.claude` symlink sync, container-only git URL rewrites) and then invokes `plugins/install.sh`, `mcp/install.sh`, and `skills/install.sh` in order.
+- `plugins/install.sh` — Claude plugin and marketplace installs via `claude plugin ...` (each marketplace add paired with its installs).
+- `mcp/install.sh` — user-scoped MCP server installs via `claude mcp add ...`. Mirrored by `mcp/remove.sh`.
+- `mcp/remove.sh` — tears down the MCP servers added by `mcp/install.sh`. Keep the two lists in sync.
+- `skills/install.sh` — third-party skills installed outside the Claude plugin marketplace (e.g. `npx skills@latest add ...`).
 
 Run `./install.sh` to install everything. The child scripts can be run individually but assume the preamble has already executed.
 
@@ -140,7 +142,7 @@ Lets Claude watch a video from a URL or local path. Downloads with `yt-dlp`, ext
 
 Source: [github.com/mattpocock/skills](https://github.com/mattpocock/skills)
 
-Installed via `npx skills@latest add` in `skills.sh` rather than the Claude plugin marketplace. Bundles Matt Pocock's opinionated skill set for Claude Code, Cursor, and OpenCode:
+Installed via `npx skills@latest add` in `skills/install.sh` rather than the Claude plugin marketplace. Bundles Matt Pocock's opinionated skill set for Claude Code, Cursor, and OpenCode:
 
 - `grill-me`, `grill-with-docs` — interrogate code and concepts against fresh docs.
 - `handoff` — structured session/context handoff between agents.
@@ -200,7 +202,7 @@ An MCP server focused on ingesting and querying documentation. Use when you need
 
 Docs: [stitch.withgoogle.com/docs/mcp/setup](https://stitch.withgoogle.com/docs/mcp/setup)
 
-Google Stitch MCP server (HTTP transport). Use for Stitch-powered workflows that depend on its hosted tooling. Requires a valid `X-Goog-Api-Key` header — replace the placeholder in `claude.sh` with your real key before use.
+Google Stitch MCP server (HTTP transport). Use for Stitch-powered workflows that depend on its hosted tooling. Requires a valid `X-Goog-Api-Key` header — replace the placeholder in `mcp/install.sh` with your real key before use.
 
 ---
 
@@ -208,4 +210,4 @@ Google Stitch MCP server (HTTP transport). Use for Stitch-powered workflows that
 
 Docs: [directus.io/docs/guides/ai/mcp](https://directus.io/docs/guides/ai/mcp)
 
-Directus MCP server (HTTP transport) for interacting with a Directus instance — collections, fields, items, files, flows, and schema. Replace the placeholder URL and bearer token in `claude.sh` with your Directus instance URL and a generated token before use.
+Directus MCP server (HTTP transport) for interacting with a Directus instance — collections, fields, items, files, flows, and schema. Replace the placeholder URL and bearer token in `mcp/install.sh` with your Directus instance URL and a generated token before use.

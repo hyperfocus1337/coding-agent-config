@@ -10,7 +10,7 @@ available globally.
 Understanding the load paths matters before choosing an integration strategy:
 
 | Asset             | Load paths                                                                                             |
-| ----------------- | ------------------------------------------------------------------------------------------------------ |
+|-------------------|--------------------------------------------------------------------------------------------------------|
 | **Commands**      | `~/.claude/commands/` (personal, always loaded) · `.claude/commands/` in the current project directory |
 | **Skills**        | `~/.claude/skills/` (personal) · `.claude/skills/` in directories added via `--add-dir` or `/add-dir`  |
 | **CLAUDE.md**     | `~/.claude/CLAUDE.md` (global) · `CLAUDE.md` / `.claude/CLAUDE.md` in the current project              |
@@ -51,14 +51,14 @@ available globally with zero per-session effort.
 A setup script handles all of the steps below for you:
 
 ```bash
-./docs/integration/symlink.sh
+./scripts/sync/symlink.sh
 ```
 
 By default it resolves the repo root from the script's own location. To run it
 from anywhere, or to point at a different clone, set `REPO` explicitly:
 
 ```bash
-REPO=~/repos/claude-marketplace ./docs/integration/symlink.sh
+REPO=~/repos/claude-marketplace ./scripts/sync/symlink.sh
 ```
 
 The script is idempotent — re-running it after a clone move or a new top-level
@@ -144,7 +144,7 @@ this with symlinks for the `commands/` subdirectories (or run the setup script).
 ## Comparison
 
 |                                   | Symlink                 | `--add-dir` flag      |
-| --------------------------------- | ----------------------- | --------------------- |
+|-----------------------------------|-------------------------|-----------------------|
 | Loads commands                    | Yes                     | **No**                |
 | Loads skills                      | Yes                     | Yes                   |
 | Persistent across sessions        | Yes                     | Only with shell alias |
@@ -159,7 +159,7 @@ this with symlinks for the `commands/` subdirectories (or run the setup script).
 ## What gets loaded
 
 | Asset                                  | Symlink               | `--add-dir` |
-| -------------------------------------- | --------------------- | ----------- |
+|----------------------------------------|-----------------------|-------------|
 | Slash commands (e.g. `/git:changelog`) | Yes                   | No          |
 | Skills (e.g. `gh-cli`)                 | Yes                   | Yes         |
 | CLAUDE.md global instructions          | Yes (or manual merge) | No          |
