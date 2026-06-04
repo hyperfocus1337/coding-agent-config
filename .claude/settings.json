@@ -1,91 +1,91 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "env": {
-    "ENABLE_LSP_TOOL": "1"
-  },
+  "alwaysThinkingEnabled": true,
   "attribution": {
     "commit": "",
     "pr": ""
   },
-  "model": "opus",
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$HOME/.claude/hooks/prettify-md-tables/hook.mjs\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/stage-edited-file/hook.sh\"",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/lint-all-languages/hook.sh\"",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "npx -y ccstatusline@latest",
-    "padding": 0,
-    "refreshInterval": 10
-  },
   "enabledPlugins": {
-    "code-review@claude-plugins-official": true,
-    "commit-commands@claude-plugins-official": false,
-    "feature-dev@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": false,
-    "pyright@claude-code-lsps": true,
-    "context7-plugin@context7-marketplace": true,
-    "code-refactoring@claude-code-workflows": true,
     "ast-grep@ast-grep-marketplace": true,
     "astral@astral-sh": true,
-    "codex@openai-codex": true,
     "caveman@caveman": true,
-    "notion-workspace-plugin@notion-plugin-marketplace": true,
-    "watch@claude-video": true,
-    "glab@gitlab-skills": true,
     "cloudflare@cloudflare": true,
-    "terraform-skill@antonbabenko": true
+    "code-refactoring@claude-code-workflows": true,
+    "code-review@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "codex@openai-codex": true,
+    "commit-commands@claude-plugins-official": false,
+    "context7-plugin@context7-marketplace": true,
+    "feature-dev@claude-plugins-official": true,
+    "glab@gitlab-skills": true,
+    "notion-workspace-plugin@notion-plugin-marketplace": true,
+    "pyright@claude-code-lsps": true,
+    "superpowers@claude-plugins-official": false,
+    "terraform-skill@antonbabenko": true,
+    "watch@claude-video": true
+  },
+  "env": {
+    "ENABLE_LSP_TOOL": "1"
   },
   "extraKnownMarketplaces": {
-    "claude-plugins-official": {
+    "antonbabenko": {
       "source": {
-        "source": "github",
-        "repo": "anthropics/claude-plugins-official"
+        "repo": "antonbabenko/agent-plugins",
+        "source": "github"
       }
     },
     "ast-grep-marketplace": {
       "source": {
-        "source": "github",
-        "repo": "ast-grep/agent-skill"
-      }
-    },
-    "claude-code-lsps": {
-      "source": {
-        "source": "github",
-        "repo": "piebald-ai/claude-code-lsps"
+        "repo": "ast-grep/agent-skill",
+        "source": "github"
       }
     },
     "astral-sh": {
       "source": {
-        "source": "github",
-        "repo": "astral-sh/claude-code-plugins"
+        "repo": "astral-sh/claude-code-plugins",
+        "source": "github"
       }
     },
-    "openai-codex": {
+    "caveman": {
       "source": {
-        "source": "github",
-        "repo": "openai/codex-plugin-cc"
+        "repo": "JuliusBrussee/caveman",
+        "source": "github"
+      }
+    },
+    "claude-code-lsps": {
+      "source": {
+        "repo": "piebald-ai/claude-code-lsps",
+        "source": "github"
+      }
+    },
+    "claude-code-workflows": {
+      "source": {
+        "repo": "wshobson/agents",
+        "source": "github"
+      }
+    },
+    "claude-plugins-official": {
+      "source": {
+        "repo": "anthropics/claude-plugins-official",
+        "source": "github"
+      }
+    },
+    "claude-video": {
+      "source": {
+        "repo": "bradautomates/claude-video",
+        "source": "github"
+      }
+    },
+    "cloudflare": {
+      "source": {
+        "repo": "cloudflare/skills",
+        "source": "github"
+      }
+    },
+    "context7-marketplace": {
+      "source": {
+        "repo": "upstash/context7",
+        "source": "github"
       }
     },
     "gitlab-skills": {
@@ -94,50 +94,122 @@
         "url": "https://gitlab.com/gitlab-org/ai/skills.git"
       }
     },
-    "caveman": {
-      "source": {
-        "source": "github",
-        "repo": "JuliusBrussee/caveman"
-      }
-    },
     "notion-plugin-marketplace": {
       "source": {
-        "source": "github",
-        "repo": "makenotion/claude-code-notion-plugin"
+        "repo": "makenotion/claude-code-notion-plugin",
+        "source": "github"
       }
     },
-    "claude-video": {
+    "openai-codex": {
       "source": {
-        "source": "github",
-        "repo": "bradautomates/claude-video"
-      }
-    },
-    "context7-marketplace": {
-      "source": {
-        "source": "github",
-        "repo": "upstash/context7"
-      }
-    },
-    "claude-code-workflows": {
-      "source": {
-        "source": "github",
-        "repo": "wshobson/agents"
-      }
-    },
-    "cloudflare": {
-      "source": {
-        "source": "github",
-        "repo": "cloudflare/skills"
-      }
-    },
-    "antonbabenko": {
-      "source": {
-        "source": "github",
-        "repo": "antonbabenko/agent-plugins"
+        "repo": "openai/codex-plugin-cc",
+        "source": "github"
       }
     }
   },
-  "alwaysThinkingEnabled": true,
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' blocked",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "node \"$HOME/.claude/hooks/prettify-md-tables/hook.mjs\"",
+            "timeout": 10,
+            "type": "command"
+          },
+          {
+            "command": "bash \"$HOME/.claude/hooks/stage-edited-file/hook.sh\"",
+            "timeout": 5,
+            "type": "command"
+          },
+          {
+            "command": "bash \"$HOME/.claude/hooks/lint-all-languages/hook.sh\"",
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": "Write|Edit|MultiEdit"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' working",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' release",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' idle",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' idle",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' working",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ]
+  },
+  "model": "opus",
+  "skipAutoPermissionPrompt": true,
   "skipDangerousModePermissionPrompt": true,
-  "skipAutoPermissionPrompt": true
-}
+  "statusLine": {
+    "command": "npx -y ccstatusline@latest",
+    "padding": 0,
+    "refreshInterval": 10,
+    "type": "command"
+  }
+} 
