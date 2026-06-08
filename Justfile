@@ -6,6 +6,8 @@ set shell := ["bash", "-cu"]
 
 REPO := justfile_directory()
 SCRIPTS := REPO / "scripts"
+SKILLS := REPO / ".claude" / "skills"
+DIST := REPO / "dist" / "skills"
 CLAUDE_HOME := env("CLAUDE_HOME", env("HOME") / ".claude")
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -56,6 +58,31 @@ fmt:
 # Check formatting without writing. Non-zero exit if anything would change.
 fmt-check:
     shfmt -d -i 2 -ci "{{ SCRIPTS }}"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Package
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Zip each skill folder into dist/skills/<name>.zip for Claude desktop install.
+zip-skills:
+    #!/usr/bin/env bash
+    set -euo pipefail # exit on error, unset var, or failed pipe
+    rm -rf "{{ DIST }}" # wipe stale zips so deleted skills don't linger
+    mkdir -p "{{ DIST }}"
+    shopt -s nullglob # empty loop instead of literal '*/' when no skills
+    found=0
+    for dir in "{{ SKILLS }}"/*/; do
+      [[ -f "$dir/SKILL.md" ]] || continue # skip dirs that aren't skills (no manifest)
+      name="$(basename "$dir")"
+      # cd into skills/ first so paths in the zip are relative: archive root is
+      # <name>/SKILL.md, which is the layout Claude desktop's importer expects.
+      # -r recurse into reference/ etc, -X drop macOS extra attrs, -x skip .DS_Store.
+      ( cd "{{ SKILLS }}" && zip -r -X "{{ DIST }}/$name.zip" "$name" -x '*.DS_Store' )
+      found=$((found + 1))
+    done
+    # nullglob makes a skill-less dir silently produce nothing; fail loudly instead.
+    if (( found == 0 )); then echo "No skills found in {{ SKILLS }}/."; exit 1; fi
+    echo "Zipped $found skill(s) to {{ DIST }}/."
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Inspect
