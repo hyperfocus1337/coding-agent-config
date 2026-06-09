@@ -1,3 +1,8 @@
+---
+description: Plan, implement, test, and ship a GitHub issue end-to-end using gh
+allowed-tools: Bash(gh *), Bash(git *)
+---
+
 # Github coding process
 
 Follow these steps:

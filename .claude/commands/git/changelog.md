@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git log:*), Bash (git branch:*), Bash (date:*), Bash(mkdir:*), Write, Read
+allowed-tools: Bash(git log:*), Bash(git branch:*), Bash(date:*), Bash(mkdir:*), Write, Read
 argument-hint: [period]
 description: Generate a changelog file for the specified time period (day, week, month, year, or number of days)
 ---
@@ -15,16 +15,16 @@ Get today's date for the filename:
 Parse the time period argument to determine the git log time filter:
 - If "$ARGUMENTS" is "day", use "--since='1 day ago'"
 - If "$ARGUMENTS" is "week", use "--since='1 week ago'"
-- If "$ARGUMENTS" is "month", use "--since="1 month ago'"
+- If "$ARGUMENTS" is "month", use "--since='1 month ago'"
 - If "$ARGUMENTS" is "year", use "--since='1 year ago'"
-- If "$ARGUMENTS" is a number. use "--since='$ARGUMENTS days ado'"
+- If "$ARGUMENTS" is a number, use "--since='$ARGUMENTS days ago'"
 - It no argument provided, default to "week"
 
 Get the current branch:
 !git branch --show-current
 
 Fetch all commits from the specified period:
-!git log --since='[appropriate time filter based on $ARGUMENTS]' —-pretty=format:'h|%as|%s|%an' --reverse
+!git log --since='[appropriate time filter based on $ARGUMENTS]' --pretty=format:'%h|%as|%s|%an' --reverse
 
 Process the commits and organize them by type:
 1. Parse each commit message for conventional commit types (feat:, fix:, refactor:, docs:, test:, chore:)
