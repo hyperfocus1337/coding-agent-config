@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' blocked",
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" blocked",
             "timeout": 10
           }
         ]
@@ -49,7 +49,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' working",
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" working",
             "timeout": 10
           }
         ]
@@ -61,7 +61,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' release",
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" release",
             "timeout": 10
           }
         ]
@@ -73,7 +73,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' idle",
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" idle",
             "timeout": 10
           }
         ]
@@ -85,7 +85,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' idle",
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" idle",
             "timeout": 10
           }
         ]
@@ -97,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' working",
+            "command": "bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" working",
             "timeout": 10
           }
         ]
