@@ -1,9 +1,114 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "alwaysThinkingEnabled": true,
+  "env": {
+    "ENABLE_LSP_TOOL": "1"
+  },
   "attribution": {
     "commit": "",
     "pr": ""
+  },
+  "model": "opus",
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' blocked",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/hooks/prettify-md-tables/hook.mjs\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/stage-edited-file/hook.sh\"",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/lint-all-languages/hook.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' working",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' release",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' idle",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' idle",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' working",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "npx -y ccstatusline@latest",
+    "padding": 0,
+    "refreshInterval": 10
   },
   "enabledPlugins": {
     "ast-grep@ast-grep-marketplace": true,
@@ -22,70 +127,69 @@
     "pyright@claude-code-lsps": true,
     "superpowers@claude-plugins-official": false,
     "terraform-skill@antonbabenko": true,
-    "watch@claude-video": true
-  },
-  "env": {
-    "ENABLE_LSP_TOOL": "1"
+    "watch@claude-video": true,
+    "iterative-development@prime-radiant-marketplace": true,
+    "greenfield@prime-radiant-marketplace": true
   },
   "extraKnownMarketplaces": {
     "antonbabenko": {
       "source": {
-        "repo": "antonbabenko/agent-plugins",
-        "source": "github"
+        "source": "github",
+        "repo": "antonbabenko/agent-plugins"
       }
     },
     "ast-grep-marketplace": {
       "source": {
-        "repo": "ast-grep/agent-skill",
-        "source": "github"
+        "source": "github",
+        "repo": "ast-grep/agent-skill"
       }
     },
     "astral-sh": {
       "source": {
-        "repo": "astral-sh/claude-code-plugins",
-        "source": "github"
+        "source": "github",
+        "repo": "astral-sh/claude-code-plugins"
       }
     },
     "caveman": {
       "source": {
-        "repo": "JuliusBrussee/caveman",
-        "source": "github"
+        "source": "github",
+        "repo": "JuliusBrussee/caveman"
       }
     },
     "claude-code-lsps": {
       "source": {
-        "repo": "piebald-ai/claude-code-lsps",
-        "source": "github"
+        "source": "github",
+        "repo": "piebald-ai/claude-code-lsps"
       }
     },
     "claude-code-workflows": {
       "source": {
-        "repo": "wshobson/agents",
-        "source": "github"
+        "source": "github",
+        "repo": "wshobson/agents"
       }
     },
     "claude-plugins-official": {
       "source": {
-        "repo": "anthropics/claude-plugins-official",
-        "source": "github"
+        "source": "github",
+        "repo": "anthropics/claude-plugins-official"
       }
     },
     "claude-video": {
       "source": {
-        "repo": "bradautomates/claude-video",
-        "source": "github"
+        "source": "github",
+        "repo": "bradautomates/claude-video"
       }
     },
     "cloudflare": {
       "source": {
-        "repo": "cloudflare/skills",
-        "source": "github"
+        "source": "github",
+        "repo": "cloudflare/skills"
       }
     },
     "context7-marketplace": {
       "source": {
-        "repo": "upstash/context7",
-        "source": "github"
+        "source": "github",
+        "repo": "upstash/context7"
       }
     },
     "gitlab-skills": {
@@ -96,120 +200,24 @@
     },
     "notion-plugin-marketplace": {
       "source": {
-        "repo": "makenotion/claude-code-notion-plugin",
-        "source": "github"
+        "source": "github",
+        "repo": "makenotion/claude-code-notion-plugin"
       }
     },
     "openai-codex": {
       "source": {
-        "repo": "openai/codex-plugin-cc",
-        "source": "github"
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
+    },
+    "prime-radiant-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "prime-radiant-inc/prime-radiant-marketplace"
       }
     }
   },
-  "hooks": {
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' blocked",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
-      }
-    ],
-    "PostToolUse": [
-      {
-        "hooks": [
-          {
-            "command": "node \"$HOME/.claude/hooks/prettify-md-tables/hook.mjs\"",
-            "timeout": 10,
-            "type": "command"
-          },
-          {
-            "command": "bash \"$HOME/.claude/hooks/stage-edited-file/hook.sh\"",
-            "timeout": 5,
-            "type": "command"
-          },
-          {
-            "command": "bash \"$HOME/.claude/hooks/lint-all-languages/hook.sh\"",
-            "timeout": 5,
-            "type": "command"
-          }
-        ],
-        "matcher": "Write|Edit|MultiEdit"
-      }
-    ],
-    "PreToolUse": [
-      {
-        "hooks": [
-          {
-            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' working",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' release",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' idle",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' idle",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "command": "bash '/home/node/.claude/hooks/herdr-agent-state.sh' working",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
-      }
-    ]
-  },
-  "model": "opus",
-  "skipAutoPermissionPrompt": true,
+  "alwaysThinkingEnabled": true,
   "skipDangerousModePermissionPrompt": true,
-  "statusLine": {
-    "command": "npx -y ccstatusline@latest",
-    "padding": 0,
-    "refreshInterval": 10,
-    "type": "command"
-  }
-} 
+  "skipAutoPermissionPrompt": true
+}
