@@ -14,8 +14,10 @@ claude plugin install code-review@claude-plugins-official
 claude plugin install feature-dev@claude-plugins-official
 # https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier
 claude plugin install code-simplifier@claude-plugins-official
+
+# Superpowers (consumes too many tokens)
 # https://github.com/obra/superpowers
-claude plugin install superpowers@claude-plugins-official
+# claude plugin install superpowers@claude-plugins-official
 
 # https://github.com/prime-radiant-inc/prime-radiant-marketplace
 claude plugin marketplace add prime-radiant-inc/prime-radiant-marketplace
