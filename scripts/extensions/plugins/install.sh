@@ -75,6 +75,11 @@ claude plugin install codex@openai-codex
 claude plugin marketplace add JuliusBrussee/caveman
 claude plugin install caveman@caveman
 
+# Ponytail
+# https://github.com/DietrichGebert/ponytail
+claude plugin marketplace add DietrichGebert/ponytail
+claude plugin install ponytail@ponytail
+
 # Notion plugin
 # https://github.com/makenotion/claude-code-notion-plugin
 claude plugin marketplace add makenotion/claude-code-notion-plugin

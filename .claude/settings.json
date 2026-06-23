@@ -9,8 +9,7 @@
   },
   "model": "opus",
   "hooks": {
-    "PermissionRequest": [
-    ],
+    "PermissionRequest": [],
     "PostToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
@@ -59,7 +58,8 @@
     "terraform-skill@antonbabenko": true,
     "watch@claude-video": true,
     "iterative-development@prime-radiant-marketplace": true,
-    "greenfield@prime-radiant-marketplace": true
+    "greenfield@prime-radiant-marketplace": true,
+    "ponytail@ponytail": true
   },
   "extraKnownMarketplaces": {
     "antonbabenko": {
@@ -144,6 +144,12 @@
       "source": {
         "source": "github",
         "repo": "prime-radiant-inc/prime-radiant-marketplace"
+      }
+    },
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "DietrichGebert/ponytail"
       }
     }
   },
