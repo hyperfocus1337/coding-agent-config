@@ -52,10 +52,12 @@ claude plugin marketplace add wshobson/agents
 # https://github.com/wshobson/agents/tree/main/plugins/code-refactoring
 claude plugin install code-refactoring@claude-code-workflows
 
-# Ast-grep plugin
+# terraform-skill moved to apm.yml (cross-agent skill). ast-grep and glab
+# stay here: apm 0.23.1 can't deploy them. See docs/apm/plugin-migration.md.
+
+# Ast-grep plugin (nested plugin layout, apm discovers 0 skills)
 # https://github.com/ast-grep/agent-skill
 claude plugin marketplace add ast-grep/agent-skill
-# https://github.com/ast-grep/agent-skill/tree/main/ast-grep
 claude plugin install ast-grep
 
 # Astral plugins
@@ -90,7 +92,7 @@ claude plugin install notion-workspace-plugin@notion-plugin-marketplace
 claude plugin marketplace add bradautomates/claude-video
 claude plugin install watch@claude-video
 
-# Gitlab skills
+# Gitlab skills (stays on CLI: apm 0.23.1 --frozen sync-check rejects GitLab packages)
 # https://gitlab.com/gitlab-org/ai/skills
 claude plugin marketplace add https://gitlab.com/gitlab-org/ai/skills.git
 claude plugin install glab@gitlab-skills
@@ -99,11 +101,6 @@ claude plugin install glab@gitlab-skills
 # https://developers.cloudflare.com/agent-setup/claude-code/
 claude plugin marketplace add cloudflare/skills
 claude plugin install cloudflare@cloudflare
-
-# Terraform skills
-# https://github.com/antonbabenko/terraform-skill
-claude plugin marketplace add antonbabenko/agent-plugins
-claude plugin install terraform-skill@antonbabenko
 
 # Playwright skills
 # https://github.com/microsoft/playwright-cli
