@@ -52,5 +52,15 @@ dependencies:
     command: uvx
     args:
     - jdocmunch-mcp
+  # LSP servers. Binary must be on $PATH at install time.
+  lsp:
+  - name: pyright
+    command: pyright-langserver
+    args:
+    - --stdio
+    transport: stdio
+    extensionToLanguage:
+      .py: python
+      .pyi: python
 includes: auto
 scripts: {}
