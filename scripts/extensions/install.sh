@@ -7,6 +7,7 @@ set -e
 # Forcing a default here breaks installs where .claude.json lives at $HOME.
 [ -n "${CLAUDE_CONFIG_DIR:-}" ] && export CLAUDE_CONFIG_DIR
 
+# Ensure 'claude' CLI is available in PATH before proceeding.
 if ! command -v claude &>/dev/null; then
   echo "ERROR: 'claude' not found in PATH. Check that the Claude Code install placed its binary in a directory on PATH." >&2
   echo "PATH=$PATH" >&2
@@ -43,6 +44,9 @@ if [ -f /.dockerenv ] ||
   done
 fi
 
+# Install Claude plugins via marketplace (Claude-specific skills and plugins)
 "$SCRIPT_DIR/plugins/install.sh"
-"$SCRIPT_DIR/mcp/install.sh"
-"$SCRIPT_DIR/skills/install.sh"
+
+# MCP servers and third-party skills are deployed via APM (apm.yml) so the
+# same declarations can target other agents (not just Claude).
+"$SCRIPT_DIR/apm/install.sh"

@@ -1,0 +1,21 @@
+lockfile_version: '1'
+generated_at: '2026-07-01T17:47:42.392105+00:00'
+apm_version: 0.23.1
+dependencies:
+- repo_url: mattpocock/skills
+  name: mattpocock-skills
+  host: github.com
+  resolved_commit: b38badf7091afc614dedffc03ea8c8ad2b643cb4
+  version: b38badf
+  package_type: marketplace_plugin
+  content_hash: sha256:4ebae95119a5369a1b21fc16f9b202eaa0456419f654acf3f37831ef8347c756
+  skill_subset:
+  - grill-me
+  - grill-with-docs
+  - handoff
+  - improve-codebase-architecture
+  - setup-matt-pocock-skills
+  - tdd
+  - to-issues
+  - to-prd
+  - triage

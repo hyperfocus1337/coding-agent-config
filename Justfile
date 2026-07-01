@@ -30,6 +30,14 @@ chezmoi-diff:
 plugins:
     "{{ SCRIPTS }}/extensions/install.sh"
 
+# Deploy APM deps (MCP servers + skills from apm.yml) to user scope only.
+apm-install:
+    "{{ SCRIPTS }}/extensions/apm/install.sh"
+
+# Preview APM changes without writing (reads repo apm.yml, user scope).
+apm-diff:
+    apm install -g --dry-run
+
 # Full bootstrap: chezmoi apply + plugins. Idempotent.
 setup: chezmoi plugins
 
@@ -51,7 +59,7 @@ pull:
 # Lint & format
 # ──────────────────────────────────────────────────────────────────────────────
 
-# Shellcheck all scripts. find recurses, so nested dirs (e.g. extensions/mcp/) are covered.
+# Shellcheck all scripts. find recurses, so nested dirs (e.g. extensions/apm/) are covered.
 lint:
     find "{{ SCRIPTS }}" -name '*.sh' -print0 | xargs -0 shellcheck
 
@@ -95,6 +103,10 @@ zip-skills:
 # Show user-scoped MCP servers configured for Claude Code.
 mcp-list:
     claude mcp list
+
+# Show APM-managed deps resolved in the lockfile.
+apm-list:
+    apm list
 
 # Show installed plugins.
 plugin-list:

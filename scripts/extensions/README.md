@@ -1,16 +1,19 @@
-# Claude Plugins and MCP Servers Installation Scripts
+# Extension installation scripts
 
-Utility script for installing and managing Claude plugins and Model Context Protocol (MCP) servers across different environments.
+Scripts for installing and managing agent extensions across environments. Two mechanisms, split by portability:
+
+- **Claude plugins** stay on the `claude plugin` CLI. Claude's plugin marketplace is Claude-specific and has no cross-agent equivalent.
+- **MCP servers and third-party skills** are deployed via [APM](https://microsoft.github.io/apm/) (Agent Package Manager) from the repo-root `apm.yml`. APM writes them to Claude today (`targets: [claude]`) but the same manifest can fan out to Cursor, Codex, Gemini, and others by adding entries under `targets:`.
 
 ---
 
 ## Layout
 
-- `install.sh` — entry point. Runs the env preamble (PATH check, `chezmoi apply` to sync `$HOME` from the repo, container-only git URL rewrites) and then invokes `plugins/install.sh`, `mcp/install.sh`, and `skills/install.sh` in order.
+- `install.sh` — entry point. Runs the env preamble (PATH check, `chezmoi apply` to sync `$HOME` from the repo, container-only git URL rewrites) and then invokes `plugins/install.sh` and `apm/install.sh` in order.
 - `plugins/install.sh` — Claude plugin and marketplace installs via `claude plugin ...` (each marketplace add paired with its installs).
-- `mcp/install.sh` — user-scoped MCP server installs via `claude mcp add ...`. Mirrored by `mcp/remove.sh`.
-- `mcp/remove.sh` — tears down the MCP servers added by `mcp/install.sh`. Keep the two lists in sync.
-- `skills/install.sh` — third-party skills installed outside the Claude plugin marketplace (e.g. `npx skills@latest add ...`).
+- `apm/install.sh` — runs `apm install -g` from the repo root, deploying the `apm.yml` MCP servers and skills to user scope (`~/.claude.json`, `~/.claude/skills/`). Idempotent; reconciles against `apm.lock.yaml`.
+
+The declared MCP servers and skills live in `apm.yml` at the repo root; exact resolved versions are pinned in `apm.lock.yaml` (committed). To add or drop one, edit `apm.yml` and re-run `just apm-install` (then `apm prune` to remove orphans).
 
 Run `./install.sh` to install everything. The child scripts can be run individually but assume the preamble has already executed.
 
@@ -142,7 +145,7 @@ Lets Claude watch a video from a URL or local path. Downloads with `yt-dlp`, ext
 
 Source: [github.com/mattpocock/skills](https://github.com/mattpocock/skills)
 
-Installed via `npx skills@latest add` in `skills/install.sh` rather than the Claude plugin marketplace. Bundles Matt Pocock's opinionated skill set for Claude Code, Cursor, and OpenCode:
+Installed via APM (declared in `apm.yml` as a `mattpocock/skills` bundle with a `skills:` allowlist) rather than the Claude plugin marketplace. Bundles Matt Pocock's opinionated skill set, deployable to any agent listed in `targets:`:
 
 - `grill-me`, `grill-with-docs` — interrogate code and concepts against fresh docs.
 - `handoff` — structured session/context handoff between agents.
@@ -164,7 +167,7 @@ Installed conditionally when `playwright-cli` is on `PATH`, via `playwright-cli 
 
 ## MCP Servers (User-Scoped)
 
-MCP servers are registered globally at user scope and available across all Claude sessions.
+MCP servers are declared in `apm.yml` and deployed globally at user scope via `apm install -g`, available across all Claude sessions. Servers needing secrets read them from the environment at install time (`${VAR}`), so no keys are committed. Set the relevant vars before running `just apm-install`: `STITCH_API_KEY` for stitch; `DIRECTUS_TOKEN` for directus (its `url:` is a placeholder in `apm.yml` to edit directly).
 
 ### `tessl`
 
@@ -202,7 +205,7 @@ An MCP server focused on ingesting and querying documentation. Use when you need
 
 Docs: [stitch.withgoogle.com/docs/mcp/setup](https://stitch.withgoogle.com/docs/mcp/setup)
 
-Google Stitch MCP server (HTTP transport). Use for Stitch-powered workflows that depend on its hosted tooling. Requires a valid `X-Goog-Api-Key` header — replace the placeholder in `mcp/install.sh` with your real key before use.
+Google Stitch MCP server (HTTP transport). Use for Stitch-powered workflows that depend on its hosted tooling. Requires a valid `X-Goog-Api-Key` header — export `STITCH_API_KEY` before running the install; `apm.yml` interpolates it into the header.
 
 ---
 
@@ -210,4 +213,4 @@ Google Stitch MCP server (HTTP transport). Use for Stitch-powered workflows that
 
 Docs: [directus.io/docs/guides/ai/mcp](https://directus.io/docs/guides/ai/mcp)
 
-Directus MCP server (HTTP transport) for interacting with a Directus instance — collections, fields, items, files, flows, and schema. Replace the placeholder URL and bearer token in `mcp/install.sh` with your Directus instance URL and a generated token before use.
+Directus MCP server (HTTP transport) for interacting with a Directus instance — collections, fields, items, files, flows, and schema. Replace the placeholder `url:` in `apm.yml` with your instance's `/mcp` endpoint (APM validates the URL, so it can't be an env var), and export `DIRECTUS_TOKEN` (a generated token) before running the install.
