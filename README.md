@@ -1,35 +1,63 @@
-# claude-marketplace
+# coding-agent-config
 
-Personal Claude Code plugins, skills, and integration docs — a self-hosted marketplace for AI tooling configuration.
+Single source of truth for coding-agent dependencies: skills, MCP servers, plugins, hooks, and agent instructions. Installs them consistently across every environment where an agent runs.
 
 ## Motivation
 
-Coding agent configuration tends to drift in different contexts. This repository contains Claude config that provides a single source of truth that keeps the setup consistent across all of them:
+Coding-agent configuration drifts across contexts. This repository centralises it so any change propagates everywhere by pulling the latest config and applying it:
 
-| Environment               | Notes                                                                                                                           |
-|---------------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| GitHub Actions            | CI/CD workflows use this repo to bootstrap                                                                                      |
-| Claude on the web         | Shared config synced via this repository                                                                                        |
-| Claude CLI (local macOS)  | Installed on the MacBook and configured from this repo                                                                          |
-| Claude CLI (devcontainer) | Cannot share config with the local macOS install due to path and OS compatibility differences — this container bridges that gap |
+| Environment               | Notes                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------- |
+| GitHub Actions            | CI/CD workflows use this repo to bootstrap                                                    |
+| Claude on the web         | Shared config synced via this repository                                                      |
+| Claude CLI (local macOS)  | Installed on the MacBook and configured from this repo                                        |
+| Claude CLI (devcontainer) | Cannot share config with the local macOS install due to path and OS compatibility differences |
 
-By centralising tools, plugins, MCP servers, shell config, and agent instructions here, any change propagates to all environments by simply pulling the latest config and applying it to `$HOME` with chezmoi (`just chezmoi`, or `chezmoi apply`).
+## Two install paths
+
+The repo installs dependencies two ways, each covering a different layer.
+
+### chezmoi: files into `$HOME`
+
+The repo root is a [chezmoi](https://www.chezmoi.io/) source directory. Source names map to home paths (`dot_claude/` becomes `~/.claude`, `dot_config/` becomes `~/.config`, `dot_gemini/` becomes `~/.gemini`). Applying it lays down portable config that is just files: commands, skills, rules, hooks, statusline, and global agent instructions.
+
+```
+just chezmoi        # apply repo to $HOME
+just chezmoi-diff   # preview without writing
+```
+
+### APM: cross-agent dependencies
+
+APM (agent package manager) resolves the deps that are not plain files: third-party skills pulled from git and MCP servers. `apm.yml` is the manifest, `apm.lock.yaml` pins versions, and `targets:` decides which agent platforms they fan out to (Claude today, Gemini/Codex/Cursor later). Secrets stay out of the manifest by resolving from the environment at install time.
+
+```
+just apm-install    # deploy apm.yml deps to user scope (frozen against the lockfile)
+just apm-diff       # preview without writing
+just apm-list       # show resolved deps from the lockfile
+```
+
+## Setup
+
+```
+just setup          # chezmoi apply + install plugins, MCP servers, deps
+just update         # git pull, then re-run setup
+```
+
+Run `just` with no arguments to list every recipe.
 
 ## Structure
 
 ```
 .
-├── .claude/          # Portable Claude Code config (commands, skills, CLAUDE.md)
-├── .claude-plugin/   # Marketplace plugin registry (marketplace.json)
-└── docs/             # Integration guides and setup instructions
+├── apm.yml           # Cross-agent dependency manifest (skills + MCP servers)
+├── apm.lock.yaml     # Pinned versions for reproducible installs
+├── Justfile          # Install, sync, lint, and package recipes
+├── dot_claude/       # Portable Claude Code config (commands, skills, hooks, rules, CLAUDE.md)
+├── dot_config/       # ~/.config entries (e.g. ccstatusline)
+├── dot_gemini/       # Gemini CLI config
+├── scripts/          # Install/bootstrap scripts (extensions/, apm/)
+├── templates/        # Copyable config templates
+└── docs/             # Integration guides (apm/, agents/, mcp/)
 ```
 
-## Contents
-
-### `.claude/`
-
-Portable Claude Code configuration — commands, skills, and a global `CLAUDE.md` — applied to `$HOME` with chezmoi (the `dot_claude/` source maps to `~/.claude`). See [`dot_claude/README.md`](dot_claude/README.md) for the full breakdown.
-
-### `docs/`
-
-Platform-specific MCP server setup guides and plugin installation references. See [`docs/README.md`](docs/README.md) for the full breakdown.
+See [`dot_claude/README.md`](dot_claude/README.md) and [`docs/README.md`](docs/README.md) for the detailed breakdowns.
