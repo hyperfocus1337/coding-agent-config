@@ -1,6 +1,6 @@
 # Which Claude plugins could move to APM
 
-The MCP servers and Matt Pocock skills already live in [`apm.yml`](../../apm.yml). The 18 enabled Claude plugins stay on the `claude plugin` CLI. This doc classifies each for a *possible future* APM move. Not executed, reference only.
+The MCP servers and Matt Pocock skills already live in [`apm.yml`](../../apm.yml). This doc classifies the enabled Claude plugins for an APM move. One (terraform-skill) has since moved; the rest stay on the `claude plugin` CLI, either by design (hooks/LSP/binaries) or because of apm 0.23.1 tooling limits. See "What actually moved" at the bottom for the tested outcome; the classification below is the portability assessment that predates the attempt.
 
 ## "APM supports plugins" vs "APM can carry this plugin"
 
@@ -18,28 +18,28 @@ One MCP nuance worth recording: when a plugin declares no `mcpServers`, APM auto
 
 ## Classification
 
-`SKILL-ONLY` = clean move. `MIXED` = skills migrate, some pieces don't. `TRUE-PLUGIN` = keep on Claude CLI.
+`SKILL-ONLY` = portable, clean move on paper. `MIXED` = skills migrate, some pieces don't. `TRUE-PLUGIN` = keep on Claude CLI. The "Blocker / note" now folds in the tested apm 0.23.1 outcome where one exists.
 
-| Plugin                  | Class       | Blocker / note                               |
-|-------------------------|-------------|----------------------------------------------|
-| code-simplifier         | SKILL-ONLY  | just a subagent markdown                     |
-| code-refactoring        | SKILL-ONLY  | subagents + commands, all portable           |
-| ast-grep                | SKILL-ONLY  | Agent Skills open format already             |
-| glab                    | SKILL-ONLY  | Agent Skills open format already             |
-| terraform-skill         | SKILL-ONLY  | Agent Skills open format already             |
-| code-review             | MIXED       | command-only, portable as APM prompt         |
-| feature-dev             | MIXED       | 3 agents + 1 command, portable               |
-| iterative-development   | MIXED       | skills lean on bundled Python helpers        |
-| greenfield              | MIXED       | skills + agents + commands, multi-primitive  |
-| astral                  | MIXED       | uv/ruff skills migrate; `ty` LSP does not    |
-| caveman                 | MIXED       | ships MCP middleware + JS/Py runtime         |
-| ponytail                | MIXED       | activation via Node.js hooks (APM weak spot) |
-| pyright                 | TRUE-PLUGIN | Claude LSP wiring, no portable primitives    |
-| context7-plugin         | TRUE-PLUGIN | MCP bridge (could move just the server)      |
-| notion-workspace-plugin | TRUE-PLUGIN | hosted-MCP bridge                            |
-| cloudflare              | TRUE-PLUGIN | 5 wired MCP servers are the point            |
-| codex                   | TRUE-PLUGIN | SessionStart/Stop hooks + external CLI       |
-| watch                   | TRUE-PLUGIN | SessionStart hook + yt-dlp/ffmpeg binaries   |
+| Plugin                  | Class       | Blocker / note                                            |
+|-------------------------|-------------|-----------------------------------------------------------|
+| code-simplifier         | SKILL-ONLY  | subagent markdown, but buried in a ~40-plugin monorepo    |
+| code-refactoring        | SKILL-ONLY  | subagents + commands, but buried in a ~80-plugin monorepo |
+| ast-grep                | SKILL-ONLY  | portable, but apm 0.23.1 finds 0 skills (nested layout)   |
+| glab                    | SKILL-ONLY  | portable, but apm 0.23.1 --frozen rejects GitLab host     |
+| terraform-skill         | SKILL-ONLY  | **moved to APM** (flat skill_bundle, deploys clean)       |
+| code-review             | MIXED       | command-only, portable as APM prompt                      |
+| feature-dev             | MIXED       | 3 agents + 1 command, portable                            |
+| iterative-development   | MIXED       | skills lean on bundled Python helpers                     |
+| greenfield              | MIXED       | skills + agents + commands, multi-primitive               |
+| astral                  | MIXED       | uv/ruff skills migrate; `ty` LSP does not                 |
+| caveman                 | MIXED       | ships MCP middleware + JS/Py runtime                      |
+| ponytail                | MIXED       | activation via Node.js hooks (APM weak spot)              |
+| pyright                 | TRUE-PLUGIN | Claude LSP wiring, no portable primitives                 |
+| context7-plugin         | TRUE-PLUGIN | MCP bridge (could move just the server)                   |
+| notion-workspace-plugin | TRUE-PLUGIN | hosted-MCP bridge                                         |
+| cloudflare              | TRUE-PLUGIN | 5 wired MCP servers are the point                         |
+| codex                   | TRUE-PLUGIN | SessionStart/Stop hooks + external CLI                    |
+| watch                   | TRUE-PLUGIN | SessionStart hook + yt-dlp/ffmpeg binaries                |
 
 Counts: 5 SKILL-ONLY, 7 MIXED, 6 TRUE-PLUGIN.
 
