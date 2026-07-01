@@ -6,7 +6,7 @@ Utility script for installing and managing Claude plugins and Model Context Prot
 
 ## Layout
 
-- `install.sh` — entry point. Runs the env preamble (PATH check, `~/.claude` symlink sync, container-only git URL rewrites) and then invokes `plugins/install.sh`, `mcp/install.sh`, and `skills/install.sh` in order.
+- `install.sh` — entry point. Runs the env preamble (PATH check, `chezmoi apply` to sync `$HOME` from the repo, container-only git URL rewrites) and then invokes `plugins/install.sh`, `mcp/install.sh`, and `skills/install.sh` in order.
 - `plugins/install.sh` — Claude plugin and marketplace installs via `claude plugin ...` (each marketplace add paired with its installs).
 - `mcp/install.sh` — user-scoped MCP server installs via `claude mcp add ...`. Mirrored by `mcp/remove.sh`.
 - `mcp/remove.sh` — tears down the MCP servers added by `mcp/install.sh`. Keep the two lists in sync.

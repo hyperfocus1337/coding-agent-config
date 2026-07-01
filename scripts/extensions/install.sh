@@ -13,12 +13,15 @@ if ! command -v claude &>/dev/null; then
   exit 1
 fi
 
-# Sync ~/.claude with repo before installing plugins. settings.json wires hooks
+# Sync $HOME with repo before installing plugins. settings.json wires hooks
 # and statusline by absolute path, so it must be in place before plugin install.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SYMLINK_SH="$SCRIPT_DIR/../sync/symlink.sh"
-if [ -x "$SYMLINK_SH" ]; then
-  "$SYMLINK_SH"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+if command -v chezmoi &>/dev/null; then
+  chezmoi apply --source "$REPO_ROOT" --destination "$HOME"
+else
+  echo "ERROR: 'chezmoi' not found in PATH. Install it, then re-run." >&2
+  exit 1
 fi
 
 # Only mutate global git config inside ephemeral build environments

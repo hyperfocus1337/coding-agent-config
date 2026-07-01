@@ -18,16 +18,20 @@ CLAUDE_HOME := env("CLAUDE_HOME", env("HOME") / ".claude")
 default:
     @just --list
 
-# Wire ~/.claude into the repo (symlinks settings, hooks, skills, rules).
-symlink:
-    "{{ SCRIPTS }}/sync/symlink.sh"
+# Apply this repo to $HOME with chezmoi. Repo root is the chezmoi source dir.
+chezmoi:
+    chezmoi apply --source "{{ REPO }}" --destination "{{ env('HOME') }}"
 
-# Install plugins, MCP servers, and dependencies. Runs symlink first.
+# Preview what `just chezmoi` would change without writing anything.
+chezmoi-diff:
+    chezmoi diff --source "{{ REPO }}" --destination "{{ env('HOME') }}"
+
+# Install plugins, MCP servers, and dependencies. Runs chezmoi first.
 plugins:
     "{{ SCRIPTS }}/extensions/install.sh"
 
-# Full bootstrap: symlink + plugins. Idempotent.
-setup: plugins
+# Full bootstrap: chezmoi apply + plugins. Idempotent.
+setup: chezmoi plugins
 
 # git pull, then re-run setup. Use after upstream changes.
 update:
@@ -38,10 +42,10 @@ update:
 # Sync
 # ──────────────────────────────────────────────────────────────────────────────
 
-# Pull the repo, then re-run symlink to refresh ~/.claude.
+# Pull the repo, then re-run chezmoi to refresh $HOME.
 pull:
     git pull
-    @just symlink
+    @just chezmoi
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Lint & format
@@ -96,35 +100,11 @@ mcp-list:
 plugin-list:
     claude plugin list
 
-# Verify ~/.claude symlinks resolve back to this repo.
-doctor:
-    #!/usr/bin/env bash
-    set -u
-    fail=0
-    check() {
-      local path="$1" expected="$2"
-      if [[ ! -L "$path" ]]; then
-        printf '  ✗ %s — not a symlink\n' "$path"; fail=1; return
-      fi
-      local target; target="$(readlink "$path")"
-      if [[ "$target" != "$expected" ]]; then
-        printf '  ✗ %s → %s (expected %s)\n' "$path" "$target" "$expected"; fail=1; return
-      fi
-      printf '  ✓ %s\n' "$path"
-    }
-    check "{{ CLAUDE_HOME }}/settings.json"        "{{ REPO }}/.claude/settings.json"
-    check "{{ CLAUDE_HOME }}/CLAUDE.md"            "{{ REPO }}/.claude/CLAUDE.md"
-    for rule in "{{ REPO }}"/.claude/rules/*.md; do
-      [[ "$(basename "$rule")" == "README.md" ]] && continue
-      check "{{ CLAUDE_HOME }}/rules/$(basename "$rule")" "$rule"
-    done
-    exit "$fail"
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Cleanup
 # ──────────────────────────────────────────────────────────────────────────────
 
-# Remove timestamped settings.json backups left by symlink.sh.
+# Remove timestamped settings.json backups
 clean-backups:
     #!/usr/bin/env bash
     set -u # error on unbound variables

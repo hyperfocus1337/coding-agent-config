@@ -2,7 +2,7 @@
 
 Portable Claude configuration — commands, skills, and Claude artifacts shareable across Claude Code installations.
 
-Clone this repo and symlink (or copy) the `.claude/` directory into any project to bring your commands, skills, and settings with you.
+Clone this repo and run `chezmoi apply` (or `just chezmoi` from the repo root) to render the `dot_claude/` source into `~/.claude`, bringing your commands, skills, and settings with you.
 
 ## CLAUDE.md
 
@@ -30,7 +30,7 @@ Hooks are shell commands Claude Code runs on tool lifecycle events (e.g. after e
 
 Surgical by design — only table formatting is touched; prose and code blocks pass through unchanged. The prettify hook silently no-ops on non-markdown files, malformed JSON input, or read/write errors, so a formatting hiccup never blocks a Claude tool call. Failures are swallowed; the 10s timeout in `settings.json` caps worst-case runtime. The staging hook follows the same swallow-and-exit-0 contract with a 5s timeout, gates on `tool_response.success`, prefers `$CLAUDE_PROJECT_DIR` for the repo root, and self-disables if `jq` is missing.
 
-Node-based hooks declare their own `package.json` next to `hook.mjs`. The [`scripts/integration/symlink.sh`](../scripts/integration/symlink.sh) setup script runs `npm install` for every `hooks/*/package.json` it finds (skipping directories that already have `node_modules/`), so deps are provisioned automatically on first link and idempotently on subsequent runs.
+Node-based hooks declare their own `package.json` next to `hook.mjs`. After `chezmoi apply` renders them into `~/.claude`, run `npm install` in each `hooks/*/` directory that has a `package.json` (skip any that already have `node_modules/`) so the deps are provisioned.
 
 Shell-based hooks (e.g. `stage-edited-file/hook.sh`) parse the JSON payload with [`jq`](https://jqlang.github.io/jq/), so `jq` must be on `$PATH` (install via `brew install jq` on macOS).
 
