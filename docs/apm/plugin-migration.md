@@ -63,7 +63,7 @@ Of the five, only **terraform-skill** moved cleanly. The other four hit real APM
 | code-simplifier  | `anthropics/claude-plugins-official` → `plugins/code-simplifier` | **Skipped.** Single subagent in a ~40-plugin monorepo; APM clones the whole monorepo (13+ min observed) for one file.                                                                                                                                            |
 | code-refactoring | `wshobson/agents` → `plugins/code-refactoring`                   | **Skipped.** Single subagent in a ~80-plugin monorepo; same clone cost.                                                                                                                                                                                          |
 
-Lessons baked into `apm.yml`:
+Lessons for future moves:
 
 - A flat `skill_bundle` repo (skill or `skills/` at root) deploys with a bare `git:` entry. A `marketplace_plugin`-type repo needs a `skills:` subset, and even then apm only finds skills it can resolve to a top-level `skills/` dir. ast-grep buries its skill one level deeper, so apm sees none.
 - `apm` validates every ref against the GitHub API: 60 req/hour unauthenticated, exhausted fast (refs then fail "not accessible or doesn't exist"). Authenticate with `GH_TOKEN=$(gh auth token)` before locking, especially in CI.

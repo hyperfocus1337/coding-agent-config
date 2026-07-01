@@ -23,12 +23,8 @@ dependencies:
     - triage
     - to-issues
     - to-prd
-  # terraform-skill moved off the `claude plugin` CLI (see
-  # docs/apm/plugin-migration.md): flat skill_bundle repo, deploys cleanly.
-  # ast-grep and glab were candidates but stay on the CLI due to apm 0.23.1
-  # limits (ast-grep: nested plugin layout, apm discovers 0 skills; glab:
-  # GitLab-hosted, --frozen sync-check rejects it). code-simplifier and
-  # code-refactoring stay too (monorepo clone cost).
+  # terraform-skill, moved off the `claude plugin` CLI. Which other plugins
+  # were considered and why they stayed: docs/apm/plugin-migration.md.
   - git: antonbabenko/terraform-skill#v1.17.1
   # User-scoped MCP servers. Secrets come from the environment at install time
   # (${VAR}) so this manifest stays committable.
