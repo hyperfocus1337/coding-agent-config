@@ -2,5 +2,6 @@ apm_modules
 dist
 docs
 scripts
+templates
 Justfile
 *.md

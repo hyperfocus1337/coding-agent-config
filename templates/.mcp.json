@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "stitch": {
+      "type": "http",
+      "url": "https://stitch.googleapis.com/mcp",
+      "headers": {
+        "X-Goog-Api-Key": "${STITCH_API_KEY}"
+      }
+    },
+    "directus": {
+      "type": "http",
+      "url": "https://your-directus-url.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${DIRECTUS_TOKEN}"
+      }
+    }
+  }
+}
