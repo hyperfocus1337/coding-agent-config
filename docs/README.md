@@ -6,6 +6,8 @@ General integration documentation and setup instructions for this repository.
 
 ```
 docs/
+├── apm/          # APM (agent package manager) notes
+│   └── plugin-migration.md  — Which Claude plugins could move to APM (audit)
 ├── agents/       # Agent environment and session guides
 │   └── bootstrap.md  — Bootstrapping remote environments (claude.ai/code, CI, containers)
 └── mcp/          # MCP server configuration guides
