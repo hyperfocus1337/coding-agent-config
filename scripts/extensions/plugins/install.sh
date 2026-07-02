@@ -44,7 +44,7 @@ claude plugin install pyright@claude-code-lsps
 # https://github.com/upstash/context7/
 claude plugin marketplace add upstash/context7
 # https://github.com/upstash/context7/tree/master/plugins/claude/context7
-claude plugin install context7-plugin@context7-marketplace
+claude plugin install context7@context7-marketplace
 
 # Whobson plugin
 # https://github.com/wshobson/agents
