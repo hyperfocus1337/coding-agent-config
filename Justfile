@@ -26,8 +26,8 @@ chezmoi:
 chezmoi-diff:
     chezmoi diff --source "{{ REPO }}" --destination "{{ env('HOME') }}"
 
-# Install plugins, MCP servers, and dependencies. Runs chezmoi first.
-plugins:
+# Run the full extension installer: chezmoi apply, node hook deps, Claude plugins, APM deps.
+extensions:
     "{{ SCRIPTS }}/extensions/install.sh"
 
 # Deploy APM deps (MCP servers + skills from apm.yml) to user scope only.
@@ -38,8 +38,8 @@ apm-install:
 apm-diff:
     apm install -g --dry-run
 
-# Full bootstrap: chezmoi apply + plugins. Idempotent.
-setup: chezmoi plugins
+# Full bootstrap: chezmoi apply + extensions. Idempotent.
+setup: chezmoi extensions
 
 # git pull, then re-run setup. Use after upstream changes.
 update:
