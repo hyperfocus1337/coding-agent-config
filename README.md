@@ -7,7 +7,7 @@ Single source of truth for coding-agent dependencies: skills, MCP servers, plugi
 Coding-agent configuration drifts across contexts. This repository centralises it so any change propagates everywhere by pulling the latest config and applying it:
 
 | Environment               | Notes                                                                                         |
-| ------------------------- | --------------------------------------------------------------------------------------------- |
+|---------------------------|-----------------------------------------------------------------------------------------------|
 | GitHub Actions            | CI/CD workflows use this repo to bootstrap                                                    |
 | Claude on the web         | Shared config synced via this repository                                                      |
 | Claude CLI (local macOS)  | Installed on the MacBook and configured from this repo                                        |
@@ -28,12 +28,12 @@ just chezmoi-diff   # preview without writing
 
 ### APM: cross-agent dependencies
 
-APM (agent package manager) resolves the deps that are not plain files: third-party skills pulled from git and MCP servers. `apm.yml` is the manifest, `apm.lock.yaml` pins versions, and `targets:` decides which agent platforms they fan out to (Claude today, Gemini/Codex/Cursor later). Secrets stay out of the manifest by resolving from the environment at install time.
+APM (agent package manager) resolves the deps that are not plain files: third-party skills pulled from git and MCP servers. `apm.yml` is the manifest, and `targets:` decides which agent platforms they fan out to (Claude today, Gemini/Codex/Cursor later). No lockfile is committed: install re-resolves refs to latest upstream every run, so you always get the newest skills. Secrets stay out of the manifest by resolving from the environment at install time.
 
 ```
-just apm-install    # deploy apm.yml deps to user scope (frozen against the lockfile)
+just apm-install    # deploy apm.yml deps to user scope (latest upstream)
 just apm-diff       # preview without writing
-just apm-list       # show resolved deps from the lockfile
+just apm-list       # show installed deps
 ```
 
 ## Setup
@@ -50,7 +50,6 @@ Run `just` with no arguments to list every recipe.
 ```
 .
 ├── apm.yml           # Cross-agent dependency manifest (skills + MCP servers)
-├── apm.lock.yaml     # Pinned versions for reproducible installs
 ├── Justfile          # Install, sync, lint, and package recipes
 ├── dot_claude/       # Portable Claude Code config (commands, skills, hooks, rules, CLAUDE.md)
 ├── dot_config/       # ~/.config entries (e.g. ccstatusline)

@@ -11,9 +11,9 @@ Scripts for installing and managing agent extensions across environments. Two me
 
 - `install.sh` — entry point. Runs the env preamble (PATH check, `chezmoi apply` to sync `$HOME` from the repo, container-only git URL rewrites) and then invokes `plugins/install.sh` and `apm/install.sh` in order.
 - `plugins/install.sh` — Claude plugin and marketplace installs via `claude plugin ...` (each marketplace add paired with its installs).
-- `apm/install.sh` — runs `apm install -g` from the repo root, deploying the `apm.yml` MCP servers and skills to user scope (`~/.claude.json`, `~/.claude/skills/`). Idempotent; reconciles against `apm.lock.yaml`.
+- `apm/install.sh` — runs `apm install -g --update` from the repo root, deploying the `apm.yml` MCP servers and skills to user scope (`~/.claude.json`, `~/.claude/skills/`). Idempotent; re-resolves refs to latest upstream every run (no committed lockfile).
 
-The declared MCP servers and skills live in `apm.yml` at the repo root; exact resolved versions are pinned in `apm.lock.yaml` (committed). To add or drop one, edit `apm.yml` and re-run `just apm-install` (then `apm prune` to remove orphans).
+The declared MCP servers and skills live in `apm.yml` at the repo root; no lockfile is committed, so each install pulls the latest upstream ref. To add or drop one, edit `apm.yml` and re-run `just apm-install` (then `apm prune` to remove orphans).
 
 Run `./install.sh` to install everything. The child scripts can be run individually but assume the preamble has already executed.
 
