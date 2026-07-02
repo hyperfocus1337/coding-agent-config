@@ -167,7 +167,7 @@ Installed conditionally when `playwright-cli` is on `PATH`, via `playwright-cli 
 
 ## MCP Servers (User-Scoped)
 
-MCP servers are declared in `apm.yml` and deployed globally at user scope via `apm install -g`, available across all Claude sessions. Servers needing secrets read them from the environment at install time (`${VAR}`), so no keys are committed. Set the relevant vars before running `just apm-install`: `STITCH_API_KEY` for stitch; `DIRECTUS_TOKEN` for directus (its `url:` is a placeholder in `apm.yml` to edit directly).
+MCP servers are declared in `apm.yml` and deployed globally at user scope via `apm install -g`, available across all Claude sessions. None of the user-scoped servers require secrets. Project-scoped servers that do (stitch, directus) live in `templates/.mcp.json`; see [`templates/README.md`](../../templates/README.md).
 
 ### `tessl`
 
@@ -198,19 +198,3 @@ An MCP server that enables deep code analysis and understanding across a codebas
 Docs: [github.com/jgravelle/jdocmunch-mcp](https://github.com/jgravelle/jdocmunch-mcp?tab=readme-ov-file#configure-an-mcp-client)
 
 An MCP server focused on ingesting and querying documentation. Use when you need Claude to reason over large volumes of markdown, HTML, or plain-text documentation — useful for answering questions about internal docs, runbooks, or any documentation that isn't indexed by Context7.
-
----
-
-### `stitch`
-
-Docs: [stitch.withgoogle.com/docs/mcp/setup](https://stitch.withgoogle.com/docs/mcp/setup)
-
-Google Stitch MCP server (HTTP transport). Use for Stitch-powered workflows that depend on its hosted tooling. Requires a valid `X-Goog-Api-Key` header — export `STITCH_API_KEY` before running the install; `apm.yml` interpolates it into the header.
-
----
-
-### `directus`
-
-Docs: [directus.io/docs/guides/ai/mcp](https://directus.io/docs/guides/ai/mcp)
-
-Directus MCP server (HTTP transport) for interacting with a Directus instance — collections, fields, items, files, flows, and schema. Replace the placeholder `url:` in `apm.yml` with your instance's `/mcp` endpoint (APM validates the URL, so it can't be an env var), and export `DIRECTUS_TOKEN` (a generated token) before running the install.
