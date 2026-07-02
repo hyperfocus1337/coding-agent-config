@@ -1,5 +1,5 @@
 lockfile_version: '1'
-generated_at: '2026-07-01T22:04:18.288502+00:00'
+generated_at: '2026-07-02T07:40:19.401546+00:00'
 apm_version: 0.23.1
 dependencies:
 - repo_url: antonbabenko/terraform-skill
@@ -13,10 +13,10 @@ dependencies:
 - repo_url: mattpocock/skills
   name: mattpocock-skills
   host: github.com
-  resolved_commit: b38badf7091afc614dedffc03ea8c8ad2b643cb4
-  version: b38badf
+  resolved_commit: 7a83a3a682adf699f24dbc06613de87f4e52a0a0
+  version: 7a83a3a
   package_type: marketplace_plugin
-  content_hash: sha256:4ebae95119a5369a1b21fc16f9b202eaa0456419f654acf3f37831ef8347c756
+  content_hash: sha256:2ecd6b6d516a689e1ba3c078d29aba86f123cc8858b511175b5f734587645a02
   skill_subset:
   - grill-me
   - grill-with-docs
