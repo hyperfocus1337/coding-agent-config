@@ -59,7 +59,9 @@
     "watch@claude-video": true,
     "iterative-development@prime-radiant-marketplace": true,
     "greenfield@prime-radiant-marketplace": true,
-    "ponytail@ponytail": true
+    "ponytail@ponytail": true,
+    "context7@context7-marketplace": true,
+    "chrome-devtools-mcp@chrome-devtools-plugins": true
   },
   "extraKnownMarketplaces": {
     "antonbabenko": {
@@ -150,6 +152,12 @@
       "source": {
         "source": "github",
         "repo": "DietrichGebert/ponytail"
+      }
+    },
+    "chrome-devtools-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "ChromeDevTools/chrome-devtools-mcp"
       }
     }
   },
