@@ -5,3 +5,4 @@ scripts
 templates
 Justfile
 *.md
+apm.yml
