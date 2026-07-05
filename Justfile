@@ -26,6 +26,10 @@ chezmoi:
 chezmoi-diff:
     chezmoi diff --source "{{ REPO }}" --destination "{{ env('HOME') }}"
 
+# Track a $HOME file in this repo: `just chezmoi-add ~/.config/foo`.
+chezmoi-add +PATHS:
+    chezmoi add --source "{{ REPO }}" {{ PATHS }}
+
 # Deploy APM deps (MCP servers + skills from apm.yml) to user scope only.
 apm:
     "{{ SCRIPTS }}/extensions/apm/install.sh"
