@@ -102,6 +102,10 @@ claude plugin install glab@gitlab-skills
 claude plugin marketplace add cloudflare/skills
 claude plugin install cloudflare@cloudflare
 
+# Chrome DevTools plugin
+claude plugin marketplace add ChromeDevTools/chrome-devtools-mcp
+claude plugin install chrome-devtools-mcp@chrome-devtools-plugins
+
 # Playwright skills
 # https://github.com/microsoft/playwright-cli
 # npm install -g @playwright/cli@latest
