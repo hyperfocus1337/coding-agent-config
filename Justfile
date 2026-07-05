@@ -38,6 +38,10 @@ apm-diff:
 extensions:
     "{{ SCRIPTS }}/extensions/install.sh"
 
+# Update all installed plugin marketplaces from their sources.
+update-marketplaces:
+    "{{ SCRIPTS }}/extensions/plugins/update.sh"
+
 # git pull, then re-run extensions. Use after upstream changes.
 update:
     git pull
