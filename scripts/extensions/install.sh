@@ -67,4 +67,9 @@ fi
 
 # MCP servers and third-party skills are deployed via APM (apm.yml) so the
 # same declarations can target other agents (not just Claude).
+
+# Update APM to latest version
+apm self-update
+
+# Install MCP servers and third-party skills via APM (apm.yml)
 "$SCRIPT_DIR/apm/install.sh"
