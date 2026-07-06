@@ -16,19 +16,3 @@ Links point to files on the filesystem
 | **VS Code**        | `~/Library/Application Support/Code/User/mcp.json`                |
 | **OpenAI Codex**   | `~/.codex/config.toml`                                            |
 | **Gemini CLI**     | `~/.gemini/settings.json`                                         |
-
-## Install
-
-### Tessl
-
-Command compiled based on official [setup](https://docs.tessl.io/reference/custom-agent-setup)
-```bash
-claude mcp add --scope user tessl -- tessl mcp start
-```
-
-### Context7
-
-Official [repository](https://github.com/upstash/context7)
-```bash
-claude mcp add --scope user context7 -- npx -y @upstash/context7-mcp --api-key YOUR_API_KEY
-```
