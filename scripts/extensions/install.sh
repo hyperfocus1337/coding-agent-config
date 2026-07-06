@@ -73,3 +73,7 @@ apm self-update
 
 # Install MCP servers and third-party skills via APM (apm.yml)
 "$SCRIPT_DIR/apm/install.sh"
+
+# Register MCP servers manually. Works around an MCP bug that writes to
+# ~/.claude.json instead of $CLAUDE_CONFIG_DIR/.claude.json.
+"$SCRIPT_DIR/mcp/install.sh"

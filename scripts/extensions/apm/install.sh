@@ -7,6 +7,7 @@ set -e
 # APM resolves the Claude target relative to CLAUDE_CONFIG_DIR. Point it at the
 # container user's home when that home exists and no caller value is set. On the
 # host (no /home/$USER) we leave it unset so APM uses claude's built-in default.
+# waiting for bug fix: https://github.com/microsoft/apm/issues/2060
 CONTAINER_HOME="/home/$(whoami)"
 if [ -z "${CLAUDE_CONFIG_DIR:-}" ] && [ -d "$CONTAINER_HOME" ]; then
   export CLAUDE_CONFIG_DIR="$CONTAINER_HOME/.claude"

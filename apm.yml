@@ -28,37 +28,37 @@ dependencies:
   - git: antonbabenko/terraform-skill
   # User-scoped MCP servers. Secrets come from the environment at install time
   # (${VAR}) so this manifest stays committable.
-  mcp:
-  - name: tessl
-    registry: false
-    transport: stdio
-    command: tessl
-    args:
-    - mcp
-    - start
-  - name: context7
-    registry: false
-    transport: stdio
-    command: npx
-    args:
-    - -y
-    - '@upstash/context7-mcp'
-  - name: jcodemunch
-    registry: false
-    transport: stdio
-    command: uvx
-    args:
-    - jcodemunch-mcp
-  - name: jdocmunch
-    registry: false
-    transport: stdio
-    command: uvx
-    args:
-    - jdocmunch-mcp
-  - name: claude-design
-    registry: false
-    transport: http
-    url: https://api.anthropic.com/v1/design/mcp
+  # mcp:
+  # - name: tessl
+  #   registry: false
+  #   transport: stdio
+  #   command: tessl
+  #   args:
+  #   - mcp
+  #   - start
+  # - name: context7
+  #   registry: false
+  #   transport: stdio
+  #   command: npx
+  #   args:
+  #   - -y
+  #   - '@upstash/context7-mcp'
+  # - name: jcodemunch
+  #   registry: false
+  #   transport: stdio
+  #   command: uvx
+  #   args:
+  #   - jcodemunch-mcp
+  # - name: jdocmunch
+  #   registry: false
+  #   transport: stdio
+  #   command: uvx
+  #   args:
+  #   - jdocmunch-mcp
+  # - name: claude-design
+  #   registry: false
+  #   transport: http
+  #   url: https://api.anthropic.com/v1/design/mcp
   # LSP servers. Binary must be on $PATH at install time.
   lsp:
   - name: pyright
