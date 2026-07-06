@@ -162,7 +162,10 @@
     }
   },
   "disabledMcpjsonServers": [
+    "stitch",
     "notion",
+    "jdocmunch",
+    "jcodemunch",
     "cloudflare-api",
     "cloudflare-bindings",
     "cloudflare-builds",
