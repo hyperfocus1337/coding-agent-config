@@ -108,5 +108,7 @@ claude plugin install chrome-devtools-mcp@chrome-devtools-plugins
 
 # Playwright skills
 # https://github.com/microsoft/playwright-cli
-# npm install -g @playwright/cli@latest
-# playwright-cli install --skills # only installed locally
+# Depends on playwright-cli
+npm install -g @playwright/cli@latest
+# Installing locally from home directory installs it globally
+cd $HOME && playwright-cli install --skills
