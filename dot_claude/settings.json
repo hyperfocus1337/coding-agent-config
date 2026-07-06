@@ -161,16 +161,6 @@
       }
     }
   },
-  "disabledMcpjsonServers": [
-    "stitch",
-    "notion",
-    "jdocmunch",
-    "jcodemunch",
-    "cloudflare-api",
-    "cloudflare-bindings",
-    "cloudflare-builds",
-    "cloudflare-observability"
-  ],
   "alwaysThinkingEnabled": true,
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
