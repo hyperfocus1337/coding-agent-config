@@ -18,6 +18,7 @@ fi
 # and statusline by absolute path, so it must be in place before plugin install.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+echo "==> Syncing \$HOME with chezmoi"
 if command -v chezmoi &>/dev/null; then
   chezmoi apply --source "$REPO_ROOT" --destination "$HOME"
 else
@@ -29,6 +30,7 @@ fi
 # lays down the source without installing deps. Install them in place, or the
 # hook dies with ERR_MODULE_NOT_FOUND on every trigger. Prefer `npm ci` (honors
 # the committed lockfile); fall back to `npm install` if no lockfile is present.
+echo "==> Installing node hook deps"
 if command -v npm &>/dev/null; then
   for pkg in "$HOME"/.claude/hooks/*/package.json; do
     [ -e "$pkg" ] || continue # nullglob-free guard: skip the literal glob if no matches
@@ -63,21 +65,28 @@ if [ -f /.dockerenv ] ||
 fi
 
 # Install Claude plugins via marketplace (Claude-specific skills and plugins)
+echo "==> Installing Claude plugins"
 "$SCRIPT_DIR/plugins/install.sh"
 
 # MCP servers and third-party skills are deployed via APM (apm.yml) so the
 # same declarations can target other agents (not just Claude).
 
 # Update APM to latest version
+echo "==> Updating APM"
 apm self-update
 
 # Install MCP servers and third-party skills via APM (apm.yml)
+echo "==> Installing MCP servers and skills via APM"
 "$SCRIPT_DIR/apm/install.sh"
 
 # Register MCP servers manually. Works around an MCP bug that writes to
 # ~/.claude.json instead of $CLAUDE_CONFIG_DIR/.claude.json.
+echo "==> Registering MCP servers"
 "$SCRIPT_DIR/mcp/install.sh"
 
 # Disable plugins and MCP servers we don't want enabled by default.
+echo "==> Disabling unwanted plugins and MCP servers"
 "$SCRIPT_DIR/mcp/remove.sh"
 "$SCRIPT_DIR/plugins/disable.sh"
+
+echo "==> Done"

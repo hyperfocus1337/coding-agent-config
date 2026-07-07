@@ -18,6 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 # Stage manifest: `apm install -g` reads ~/.apm/, not $PWD.
+echo "==> Staging apm.yml manifest"
 mkdir -p "$HOME/.apm"
 cp "$REPO_ROOT/apm.yml" "$HOME/.apm/apm.yml"
 
@@ -25,4 +26,6 @@ cp "$REPO_ROOT/apm.yml" "$HOME/.apm/apm.yml"
 # --update: re-resolve refs to latest every run (else the ~/.apm lock apm writes
 # on first run pins subsequent runs). --force: overwrite on collision (idempotent
 # re-runs, adopt pre-existing skills).
+echo "==> Installing apm deps (MCP servers + skills)"
 apm install -g --update --force
+echo "==> APM install done"
