@@ -77,3 +77,7 @@ apm self-update
 # Register MCP servers manually. Works around an MCP bug that writes to
 # ~/.claude.json instead of $CLAUDE_CONFIG_DIR/.claude.json.
 "$SCRIPT_DIR/mcp/install.sh"
+
+# Disable plugins and MCP servers we don't want enabled by default.
+"$SCRIPT_DIR/mcp/remove.sh"
+"$SCRIPT_DIR/plugins/disable.sh"
