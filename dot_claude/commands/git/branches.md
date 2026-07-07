@@ -5,7 +5,7 @@ description: Delete local branches whose remote tracking branch no longer exists
 
 ## Your Task
 
-Prune stale local branches: branches that used to track a remote branch which has since been deleted. Do not touch worktrees (use `/clwt` for that).
+Prune stale local branches: branches that used to track a remote branch which has since been deleted. Do not touch worktrees (use `/worktrees` for that).
 
 ## Commands to Execute
 
@@ -38,4 +38,4 @@ After running these commands you will:
 - List local branches whose remote counterpart was deleted
 - Delete each of those local branches
 
-Never delete the current branch or a branch with an existing remote. If no branches are `[gone]`, report that no cleanup was needed. Branches with associated worktrees will fail a plain `git branch -D`; for those, direct the user to `/clwt`.
+Never delete the current branch or a branch with an existing remote. If no branches are `[gone]`, report that no cleanup was needed. Branches with associated worktrees will fail a plain `git branch -D`; for those, direct the user to `/worktrees`.

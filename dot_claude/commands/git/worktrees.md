@@ -1,11 +1,11 @@
 ---
 allowed-tools: Bash(git branch:*), Bash(git worktree:*), Bash(git rev-parse:*)
-description: Remove git worktrees whose branch is [gone] on the remote, then delete those branches. For branch-only cleanup use /clbr.
+description: Remove git worktrees whose branch is [gone] on the remote, then delete those branches. For branch-only cleanup use /branches.
 ---
 
 ## Your Task
 
-You need to execute the following bash commands to remove worktrees tied to `[gone]` branches (deleted on the remote) and then delete those branches. For branches without worktrees, use `/clbr` instead.
+You need to execute the following bash commands to remove worktrees tied to `[gone]` branches (deleted on the remote) and then delete those branches. For branches without worktrees, use `/branches` instead.
 
 ## Commands to Execute
 
