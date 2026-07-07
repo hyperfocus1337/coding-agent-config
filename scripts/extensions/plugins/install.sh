@@ -120,11 +120,3 @@ echo "==> Installing chrome-devtools plugin"
 # Chrome DevTools plugin
 claude plugin marketplace add ChromeDevTools/chrome-devtools-mcp
 claude plugin install chrome-devtools-mcp@chrome-devtools-plugins
-
-echo "==> Installing playwright skills"
-# Playwright skills
-# https://github.com/microsoft/playwright-cli
-# Depends on playwright-cli
-npm install -g @playwright/cli@latest
-# Installing locally from home directory installs it globally
-cd $HOME && playwright-cli install --skills

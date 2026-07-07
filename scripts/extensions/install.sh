@@ -68,6 +68,10 @@ fi
 echo "==> Installing Claude plugins"
 "$SCRIPT_DIR/plugins/install.sh"
 
+# Install standalone skills (playwright, orbit).
+echo "==> Installing skills"
+"$SCRIPT_DIR/skills/install.sh"
+
 # MCP servers and third-party skills are deployed via APM (apm.yml) so the
 # same declarations can target other agents (not just Claude).
 
