@@ -21,8 +21,10 @@ fi
 
 # MCP servers to remove. Adjust this list as needed.
 SERVERS=(
-  jcodemunch 
-  jdocmunch
+  tessl
+  claude-design
+  # jcodemunch 
+  # jdocmunch
 )
 
 for name in "${SERVERS[@]}"; do
