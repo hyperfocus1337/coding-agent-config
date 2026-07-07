@@ -1,11 +1,11 @@
 ---
-allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git commit:*)
-description: Cleans up all git branches marked as [gone] (branches that have been deleted on the remote but still exist locally), including removing associated worktrees.
+allowed-tools: Bash(git branch:*), Bash(git worktree:*), Bash(git rev-parse:*)
+description: Remove git worktrees whose branch is [gone] on the remote, then delete those branches. For branch-only cleanup use /clbr.
 ---
 
 ## Your Task
 
-You need to execute the following bash commands to clean up stale local branches that have been deleted from the remote repository.
+You need to execute the following bash commands to remove worktrees tied to `[gone]` branches (deleted on the remote) and then delete those branches. For branches without worktrees, use `/clbr` instead.
 
 ## Commands to Execute
 
