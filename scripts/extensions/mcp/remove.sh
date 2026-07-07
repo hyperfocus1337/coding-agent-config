@@ -21,6 +21,7 @@ fi
 
 # MCP servers to remove. Adjust this list as needed.
 SERVERS=(
+  orbit
   tessl
   directus
   claude-design

@@ -59,6 +59,10 @@ dependencies:
   #   registry: false
   #   transport: http
   #   url: https://api.anthropic.com/v1/design/mcp
+  # - name: orbit
+  #   registry: false
+  #   transport: http
+  #   url: https://gitlab.com/api/v4/orbit/mcp
   # LSP servers. Binary must be on $PATH at install time.
   lsp:
   - name: pyright
