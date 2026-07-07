@@ -1,3 +1,4 @@
 dist/skills/
 .DS_Store
 apm_modules/
+.env

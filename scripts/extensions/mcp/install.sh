@@ -14,6 +14,10 @@ if [ -z "${CLAUDE_CONFIG_DIR:-}" ] && [ -d "$CONTAINER_HOME" ]; then
   export CLAUDE_CONFIG_DIR="$CONTAINER_HOME/.claude"
 fi
 
+# Load secrets (e.g. CONTEXT7_API_KEY) from a gitignored .env beside this script.
+ENV_FILE="$(dirname "$0")/.env"
+[ -f "$ENV_FILE" ] && set -a && . "$ENV_FILE" && set +a
+
 if ! command -v claude &>/dev/null; then
   echo "ERROR: 'claude' not found in PATH." >&2
   exit 1
@@ -33,7 +37,7 @@ add_mcp tessl '{"type":"stdio","command":"tessl","args":["mcp","start"]}'
 add_mcp jcodemunch '{"type":"stdio","command":"uvx","args":["jcodemunch-mcp"]}'
 add_mcp jdocmunch '{"type":"stdio","command":"uvx","args":["jdocmunch-mcp"]}'
 add_mcp claude-design '{"type":"http","url":"https://api.anthropic.com/v1/design/mcp"}'
-add_mcp context7 '{"type":"stdio","command":"npx","args":["-y","@upstash/context7-mcp"]}'
+add_mcp context7 "{\"type\":\"stdio\",\"command\":\"npx\",\"args\":[\"-y\",\"@upstash/context7-mcp\",\"--api-key\",\"${CONTEXT7_API_KEY}\"]}"
 
 echo "Done. Configured MCP servers:"
 claude mcp list || true
