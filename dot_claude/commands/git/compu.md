@@ -1,6 +1,6 @@
 ---
 allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git push:*), Bash(git commit:*) 
-description: Commit and push
+description: Git commit and push
 ---
 
 ## Context
