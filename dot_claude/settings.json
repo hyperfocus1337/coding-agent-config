@@ -61,7 +61,8 @@
     "greenfield@prime-radiant-marketplace": true,
     "ponytail@ponytail": true,
     "context7@context7-marketplace": true,
-    "chrome-devtools-mcp@chrome-devtools-plugins": false
+    "chrome-devtools-mcp@chrome-devtools-plugins": false,
+    "pyright-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "antonbabenko": {
