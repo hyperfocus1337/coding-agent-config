@@ -28,6 +28,11 @@
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/lint-all-languages/hook.sh\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/type-check-all-languages/hook.sh\"",
+            "timeout": 30
           }
         ]
       }
