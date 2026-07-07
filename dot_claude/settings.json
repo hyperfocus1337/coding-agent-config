@@ -43,7 +43,7 @@
     "ast-grep@ast-grep-marketplace": true,
     "astral@astral-sh": true,
     "caveman@caveman": true,
-    "cloudflare@cloudflare": true,
+    "cloudflare@cloudflare": false,
     "code-refactoring@claude-code-workflows": true,
     "code-review@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
@@ -52,7 +52,7 @@
     "context7-plugin@context7-marketplace": true,
     "feature-dev@claude-plugins-official": true,
     "glab@gitlab-skills": true,
-    "notion-workspace-plugin@notion-plugin-marketplace": true,
+    "notion-workspace-plugin@notion-plugin-marketplace": false,
     "pyright@claude-code-lsps": true,
     "superpowers@claude-plugins-official": false,
     "terraform-skill@antonbabenko": true,
@@ -61,7 +61,7 @@
     "greenfield@prime-radiant-marketplace": true,
     "ponytail@ponytail": true,
     "context7@context7-marketplace": true,
-    "chrome-devtools-mcp@chrome-devtools-plugins": true
+    "chrome-devtools-mcp@chrome-devtools-plugins": false
   },
   "extraKnownMarketplaces": {
     "antonbabenko": {
@@ -162,7 +162,7 @@
     }
   },
   "alwaysThinkingEnabled": true,
+  "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
-  "skipAutoPermissionPrompt": true,
-  "tui": "fullscreen"
+  "skipAutoPermissionPrompt": true
 }

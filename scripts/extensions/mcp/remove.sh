@@ -22,6 +22,7 @@ fi
 # MCP servers to remove. Adjust this list as needed.
 SERVERS=(
   tessl
+  directus
   claude-design
   # jcodemunch 
   # jdocmunch

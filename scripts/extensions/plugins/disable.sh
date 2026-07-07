@@ -15,6 +15,7 @@ fi
 PLUGINS=(
   cloudflare@cloudflare
   notion-workspace-plugin@notion-plugin-marketplace
+  chrome-devtools-mcp@chrome-devtools-plugins
 )
 
 for plugin in "${PLUGINS[@]}"; do
