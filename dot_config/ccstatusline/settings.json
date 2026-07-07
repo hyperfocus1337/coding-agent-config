@@ -15,10 +15,9 @@
         "rawValue": true
       },
       {
-        "id": "5",
-        "type": "claude-account-email",
-        "color": "magenta",
-        "rawValue": true
+        "id": "49993b0b-bc1d-458f-b310-ff16eb3ddc08",
+        "type": "git-branch",
+        "backgroundColor": "bgBrightYellow"
       }
     ],
     [
@@ -72,22 +71,27 @@
   "flexMode": "full-minus-40",
   "compactThreshold": 60,
   "colorLevel": 2,
+  "defaultPadding": " ",
   "inheritSeparatorColors": false,
   "globalBold": false,
+  "gitCacheTtlSeconds": 5,
   "minimalistMode": false,
   "powerline": {
     "enabled": true,
-    "separators": [""],
-    "separatorInvertBackground": [false],
+    "separators": [
+      ""
+    ],
+    "separatorInvertBackground": [
+      false
+    ],
     "startCaps": [],
     "endCaps": [],
+    "theme": "minimal",
     "autoAlign": true,
-    "continueThemeAcrossLines": true,
-    "theme": "minimal"
+    "continueThemeAcrossLines": true
   },
   "installation": {
     "method": "auto-update",
     "packageManager": "npm"
-  },
-  "defaultPadding": " "
+  }
 }
