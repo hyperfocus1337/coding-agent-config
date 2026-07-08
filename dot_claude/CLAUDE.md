@@ -16,4 +16,4 @@
 
 <!-- codebase orientation + symbol lookup -->
 
-<!-- @rules/jcodemunch.md -->
+@rules/jcodemunch.md
