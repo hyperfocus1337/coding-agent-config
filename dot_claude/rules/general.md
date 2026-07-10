@@ -5,7 +5,7 @@ paths:
 
 ### General
 
-- Never wrap any sentences in your output, always use full prose paragraphs (the only exception are comments)
+- Never wrap sentences in your output (especially markdown files), always use full prose paragraphs (except for maybe code comments)
 - Don't put excessive spaces between code and a comment afterwards on the same line (keep it to a single space) 
 - Don't use em dashes (—) in any of the text you generate (use something more natural instead)
 - When creating markdown headings don't use Title Case (just capitalize the first letter of the sentence)
