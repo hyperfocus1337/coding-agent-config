@@ -89,8 +89,9 @@ echo "==> Registering MCP servers"
 "$SCRIPT_DIR/mcp/install.sh"
 
 # Disable plugins and MCP servers we don't want enabled by default.
-echo "==> Disabling unwanted plugins and MCP servers"
+echo "==> Disabling unwanted plugins, skills and MCP servers"
 "$SCRIPT_DIR/mcp/remove.sh"
 "$SCRIPT_DIR/plugins/disable.sh"
+"$SCRIPT_DIR/skills/remove.sh"
 
 echo "==> Done"
