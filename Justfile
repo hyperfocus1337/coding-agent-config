@@ -19,6 +19,12 @@ CONTAINER := "coding-agent-sandbox-devcontainer"
 default:
     @just --list
 
+# Run chezmoi, apm, and extensions both locally and inside the devcontainer.
+all:
+    @just chezmoi-all
+    @just apm-all
+    @just extensions-all
+
 # --- chezmoi ---
 
 # Apply this repo to $HOME with chezmoi. Repo root is the chezmoi source dir.
