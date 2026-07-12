@@ -2,10 +2,10 @@
 
 set -e
 
-# Remove plugin-provided skills from disk. Deletes only the marketplace copy;
-# cache copies under plugins/cache/ remain and a `claude plugin update` re-sync
-# may restore them. For a durable disable prefer `claude plugin disable`, or add
-# a `Skill(...)` deny rule in settings.json.
+# Remove plugin-provided skills from disk: the marketplace copy, every cache
+# copy, and the backing slash-command files. A `claude plugin update` re-sync
+# can still restore them, so for a durable disable prefer `claude plugin
+# disable`, or add a `Skill(...)` deny rule in settings.json.
 
 # Honors CLAUDE_CONFIG_DIR, same container workaround as mcp/remove.sh: target
 # the container user's home when it exists and no caller value is set; leave
@@ -22,7 +22,14 @@ SKILLS=(
 )
 
 for skill in "${SKILLS[@]}"; do
-  dir="$CONFIG_DIR/plugins/marketplaces/$skill"
+  plugin="${skill%%/*}" # first path segment, e.g. caveman
+  name="${skill##*/}" # basename, e.g. caveman-commit
   echo "==> Removing skill: $skill"
-  rm -rf "$dir" # best-effort: absent is fine
+  # skill dirs: marketplace + every cache ref-hash copy (unquoted glob so * expands)
+  rm -rf "$CONFIG_DIR/plugins/marketplaces/$skill"
+  rm -rf "$CONFIG_DIR"/plugins/cache/"$plugin"/"$plugin"/*/skills/"$name"
+  # backing slash-command files, same two trees. cache is the live tree, so
+  # leaving its copies keeps /$name invocable.
+  rm -f "$CONFIG_DIR/plugins/marketplaces/$plugin/commands/$name".{md,toml}
+  rm -f "$CONFIG_DIR"/plugins/cache/"$plugin"/"$plugin"/*/commands/"$name".{md,toml}
 done
