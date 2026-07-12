@@ -9,6 +9,7 @@ SCRIPTS := REPO / "scripts"
 SKILLS := REPO / ".claude" / "skills"
 DIST := REPO / "dist" / "skills"
 CLAUDE_HOME := env("CLAUDE_HOME", env("HOME") / ".claude")
+CONTAINER := "coding-agent-sandbox-devcontainer"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Setup & integration
@@ -18,9 +19,20 @@ CLAUDE_HOME := env("CLAUDE_HOME", env("HOME") / ".claude")
 default:
     @just --list
 
+# --- chezmoi ---
+
 # Apply this repo to $HOME with chezmoi. Repo root is the chezmoi source dir.
 chezmoi:
     chezmoi apply --source "{{ REPO }}" --destination "{{ env('HOME') }}"
+
+# Run `just chezmoi` inside the devcontainer.
+chezmoi-devcontainer:
+    docker exec -w /workspaces/coding-agent-config -it {{ CONTAINER }} just chezmoi
+
+# Run `just chezmoi` both locally and inside the devcontainer.
+chezmoi-all:
+    @just chezmoi
+    @just chezmoi-devcontainer
 
 # Preview what `just chezmoi` would change without writing anything.
 chezmoi-diff:
@@ -30,17 +42,39 @@ chezmoi-diff:
 chezmoi-add +PATHS:
     chezmoi add --source "{{ REPO }}" {{ PATHS }}
 
+# --- APM ---
+
 # Deploy APM deps (MCP servers + skills from apm.yml) to user scope only.
 apm:
     "{{ SCRIPTS }}/extensions/apm/install.sh"
+
+# Run `just apm` inside the devcontainer.
+apm-devcontainer:
+    docker exec -w /workspaces/coding-agent-config -it {{ CONTAINER }} just apm
+
+# Run `just apm` both locally and inside the devcontainer.
+apm-all:
+    @just apm
+    @just apm-devcontainer
 
 # Preview APM changes without writing (reads repo apm.yml, user scope).
 apm-diff:
     apm install -g --dry-run
 
+# --- Extensions ---
+
 # Run the full extension installer: chezmoi apply, node hook deps, Claude plugins, APM deps.
 extensions:
     "{{ SCRIPTS }}/extensions/install.sh"
+
+# Run `just extensions` inside the devcontainer.
+extensions-devcontainer:
+    docker exec -w /workspaces/coding-agent-config -it {{ CONTAINER }} just extensions
+
+# Run `just extensions` both locally and inside the devcontainer.
+extensions-all:
+    @just extensions
+    @just extensions-devcontainer
 
 # Update all installed plugin marketplaces from their sources.
 update-marketplaces:
