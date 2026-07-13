@@ -19,10 +19,9 @@ CONTAINER := "coding-agent-sandbox-devcontainer"
 default:
     @just --list
 
-# Run chezmoi, apm, and extensions both locally and inside the devcontainer.
+# Run chezmoi and extensions both locally and inside the devcontainer.
 all:
     @just chezmoi-all
-    @just apm-all
     @just extensions-all
 
 # --- chezmoi ---
