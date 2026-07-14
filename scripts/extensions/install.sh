@@ -45,25 +45,6 @@ else
   echo "WARN: 'npm' not found; skipping node hook deps. Markdown/format hooks may fail." >&2
 fi
 
-# Only mutate global git config inside ephemeral build environments
-# (Docker, GitHub Actions, devcontainer/Codespaces) — never on a user's host.
-if [ -f /.dockerenv ] ||
-  [ "${GITHUB_ACTIONS:-}" = "true" ] ||
-  [ "${REMOTE_CONTAINERS:-}" = "true" ] ||
-  [ -n "${CODESPACES:-}" ] ||
-  [ -n "${DEVCONTAINER:-}" ] ||
-  [ -f /.devcontainer.json ]; then
-  # Force HTTPS for any github SSH URLs declared by plugin marketplaces.
-  # Avoids SSH key requirement inside containers. Multi-valued, so --add
-  # duplicates on re-run; gate each value on whether it's already present.
-  for from in "git@github.com:" "ssh://git@github.com/" "git://github.com/"; do
-    # -x exact line, -F literal (URLs contain regex metachars like '/').
-    if ! git config --global --get-all url."https://github.com/".insteadOf 2>/dev/null | grep -qxF "$from"; then
-      git config --global --add url."https://github.com/".insteadOf "$from"
-    fi
-  done
-fi
-
 # Install Claude plugins via marketplace (Claude-specific skills and plugins)
 echo "==> Installing Claude plugins"
 "$SCRIPT_DIR/plugins/install.sh"
@@ -75,28 +56,9 @@ echo "==> Installing skills"
 # MCP servers and third-party skills are deployed via APM (apm.yml) so the
 # same declarations can target other agents (not just Claude).
 
-# Update APM only if a newer version exists. `apm self-update` always installs
-# to /usr/local/bin, but the apm on PATH usually lives elsewhere and shadows it,
-# so the update never takes and every run loops. Update through the channel that
-# owns the on-PATH binary instead.
-if command -v brew >/dev/null 2>&1 && brew list --formula apm >/dev/null 2>&1; then
-  # macOS: apm is a Homebrew formula under the brew prefix. Upgrade via brew so
-  # the binary that actually gets updated is the one on PATH.
-  if [ -n "$(brew outdated --formula apm)" ]; then
-    echo "==> Updating APM (via Homebrew)"
-    HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade apm
-  else
-    echo "==> APM already up to date"
-  fi
-elif apm self-update --check 2>&1 | grep -qi "update available"; then
-  # Linux containers (no brew): the on-PATH apm is in ~/.local/bin. Point
-  # APM_INSTALL_DIR at its directory so self-update lands there, not in
-  # /usr/local/bin. This also avoids the sudo prompt.
-  echo "==> Updating APM"
-  APM_INSTALL_DIR="$(dirname "$(command -v apm)")" apm self-update
-else
-  echo "==> APM already up to date"
-fi
+# Update APM only if a newer version exists (through the channel that owns the
+# on-PATH binary).
+"$SCRIPT_DIR/apm/update.sh"
 
 # Install MCP servers and third-party skills via APM (apm.yml)
 echo "==> Installing MCP servers and skills via APM"
