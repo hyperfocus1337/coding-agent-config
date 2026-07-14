@@ -19,10 +19,16 @@ CONTAINER := "coding-agent-sandbox-devcontainer"
 default:
     @just --list
 
-# Run chezmoi and extensions both locally and inside the devcontainer.
-all:
+# Pull, then run chezmoi and extensions locally and inside the devcontainer (full refresh).
+update-all:
+    git pull origin main
     @just chezmoi-all
     @just extensions-all
+
+# Pull the repo, then re-run chezmoi to refresh $HOME (light, local only).
+pull:
+    git pull origin main
+    @just chezmoi
 
 # --- chezmoi ---
 
@@ -84,20 +90,6 @@ extensions-all:
 # Update all installed plugin marketplaces from their sources.
 update-marketplaces:
     "{{ SCRIPTS }}/extensions/plugins/update.sh"
-
-# git pull, then re-run extensions. Use after upstream changes.
-update:
-    git pull
-    @just extensions
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Sync
-# ──────────────────────────────────────────────────────────────────────────────
-
-# Pull the repo, then re-run chezmoi to refresh $HOME.
-pull:
-    git pull
-    @just chezmoi
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Lint & format
