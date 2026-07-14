@@ -26,10 +26,16 @@ for skill in "${SKILLS[@]}"; do
   name="${skill##*/}" # basename, e.g. caveman-commit
   echo "==> Removing skill: $skill"
   # skill dirs: marketplace + every cache ref-hash copy (unquoted glob so * expands)
-  rm -rf "$CONFIG_DIR/plugins/marketplaces/$skill"
-  rm -rf "$CONFIG_DIR"/plugins/cache/"$plugin"/"$plugin"/*/skills/"$name"
-  # backing slash-command files, same two trees. cache is the live tree, so
-  # leaving its copies keeps /$name invocable.
-  rm -f "$CONFIG_DIR/plugins/marketplaces/$plugin/commands/$name".{md,toml}
-  rm -f "$CONFIG_DIR"/plugins/cache/"$plugin"/"$plugin"/*/commands/"$name".{md,toml}
+  targets=(
+    "$CONFIG_DIR/plugins/marketplaces/$skill"
+    "$CONFIG_DIR"/plugins/cache/"$plugin"/"$plugin"/*/skills/"$name"
+    # backing slash-command files, same two trees. cache is the live tree, so
+    # leaving its copies keeps /$name invocable.
+    "$CONFIG_DIR/plugins/marketplaces/$plugin/commands/$name".{md,toml}
+    "$CONFIG_DIR"/plugins/cache/"$plugin"/"$plugin"/*/commands/"$name".{md,toml}
+  )
+  for t in "${targets[@]}"; do
+    [ -e "$t" ] && echo "$t"
+  done
+  rm -rf "${targets[@]}"
 done
