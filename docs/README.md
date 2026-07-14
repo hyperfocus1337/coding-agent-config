@@ -7,10 +7,10 @@ General integration documentation and setup instructions for this repository.
 ```
 docs/
 ├── apm/          # APM (agent package manager) notes
-│   ├── plugin-migration.md  — Which Claude plugins could move to APM (audit)
-│   └── skills.md            — Matt Pocock skill bundle and per-skill reference URLs
+│   └── plugin-migration.md  — Which Claude plugins could move to APM (audit)
 ├── agents/       # Agent environment and session guides
-│   └── bootstrap.md  — Bootstrapping remote environments (claude.ai/code, CI, containers)
+│   ├── bootstrap.md  — Bootstrapping remote environments (claude.ai/code, CI, containers)
+│   └── skills.md     — Every channel a skill reaches an agent through (local, plugins, CLI, APM)
 └── mcp/          # MCP server configuration guides
     ├── android.md    — Enable MCP servers on Android
     ├── desktop.md    — Enable MCP servers on Desktop

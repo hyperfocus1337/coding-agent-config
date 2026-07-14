@@ -11,7 +11,7 @@ dependencies:
   # Portable skills. mattpocock/skills is a bundle; only the named skills are
   # deployed (basenames resolve across the repo's category subdirs). No lockfile:
   # install re-resolves to latest upstream every run (--update in install.sh).
-  # Per-skill reference URLs: docs/apm/skills.md.
+  # Per-skill reference URLs: docs/agents/skills.md.
   apm:
   - git: mattpocock/skills
     skills:
