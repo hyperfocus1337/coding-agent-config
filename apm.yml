@@ -11,22 +11,23 @@ dependencies:
   # Portable skills. mattpocock/skills is a bundle; only the named skills are
   # deployed (basenames resolve across the repo's category subdirs). No lockfile:
   # install re-resolves to latest upstream every run (--update in install.sh).
+  # Per-skill reference URLs: docs/apm/skills.md.
   apm:
   - git: mattpocock/skills
     skills:
-    - grilling # https://www.aihero.dev/skills-grilling
-    - grill-me # https://www.aihero.dev/skills-grill-me
-    - grill-with-docs # https://www.aihero.dev/skills-grill-with-docs
-    - codebase-design # https://www.aihero.dev/skills-codebase-design
-    - domain-modeling # https://www.aihero.dev/skills-domain-modeling
-    - wayfinder # https://www.aihero.dev/skills-wayfinder
-    - handoff # https://www.aihero.dev/skills-handoff
-    - improve-codebase-architecture # https://www.aihero.dev/skills-improve-codebase-architecture
-    - setup-matt-pocock-skills # https://www.aihero.dev/skills-setup-matt-pocock-skills
-    - tdd # https://www.aihero.dev/skills-tdd
-    - triage # https://www.aihero.dev/skills-triage
-    - to-issues # https://www.aihero.dev/skills-to-issues
-    - to-spec # https://www.aihero.dev/skills-to-spec
+    - grilling
+    - grill-me
+    - grill-with-docs
+    - codebase-design
+    - domain-modeling
+    - wayfinder
+    - handoff
+    - improve-codebase-architecture
+    - setup-matt-pocock-skills
+    - tdd
+    - triage
+    - to-tickets
+    - to-spec
   # terraform-skill, moved off the `claude plugin` CLI. Which other plugins
   # were considered and why they stayed: docs/apm/plugin-migration.md.
   - git: antonbabenko/terraform-skill

@@ -28,7 +28,7 @@ just chezmoi-diff   # preview without writing
 
 ### APM: cross-agent dependencies
 
-APM (agent package manager) resolves the deps that are not plain files: third-party skills pulled from git and MCP servers. `apm.yml` is the manifest, and `targets:` decides which agent platforms they fan out to (Claude today, Gemini/Codex/Cursor later). No lockfile is committed: install re-resolves refs to latest upstream every run, so you always get the newest skills. Secrets stay out of the manifest by resolving from the environment at install time.
+APM (agent package manager) resolves the deps that are not plain files: third-party skills pulled from git and MCP servers. `apm.yml` is the manifest, and `targets:` decides which agent platforms they fan out to (Claude today, Gemini/Codex/Cursor later). No lockfile is committed: install re-resolves refs to latest upstream every run, so you always get the newest skills. Secrets stay out of the manifest by resolving from the environment at install time. The Matt Pocock skill bundle and its per-skill reference URLs are documented in [`docs/apm/skills.md`](docs/apm/skills.md).
 
 ```
 just apm-install    # deploy apm.yml deps to user scope (latest upstream)

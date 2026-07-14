@@ -7,7 +7,8 @@ General integration documentation and setup instructions for this repository.
 ```
 docs/
 ├── apm/          # APM (agent package manager) notes
-│   └── plugin-migration.md  — Which Claude plugins could move to APM (audit)
+│   ├── plugin-migration.md  — Which Claude plugins could move to APM (audit)
+│   └── skills.md            — Matt Pocock skill bundle and per-skill reference URLs
 ├── agents/       # Agent environment and session guides
 │   └── bootstrap.md  — Bootstrapping remote environments (claude.ai/code, CI, containers)
 └── mcp/          # MCP server configuration guides
