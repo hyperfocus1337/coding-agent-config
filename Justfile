@@ -22,14 +22,19 @@ default:
 # Pull, then run chezmoi and extensions locally and inside the devcontainer (full refresh).
 [group('sync')]
 update-all:
+    @echo "==> Pulling latest from origin/main"
     git pull origin main
+    @echo "==> Applying chezmoi (local + devcontainer)"
     @just chezmoi-all
+    @echo "==> Installing extensions (local + devcontainer)"
     @just extensions-all
 
 # Pull the repo, then re-run chezmoi to refresh $HOME (light, local only).
 [group('sync')]
 pull:
+    @echo "==> Pulling latest from origin/main"
     git pull origin main
+    @echo "==> Applying chezmoi"
     @just chezmoi
 
 # --- chezmoi ---
@@ -47,7 +52,9 @@ chezmoi-devcontainer:
 # Run `just chezmoi` both locally and inside the devcontainer.
 [group('chezmoi')]
 chezmoi-all:
+    @echo "==> chezmoi: local"
     @just chezmoi
+    @echo "==> chezmoi: devcontainer"
     @just chezmoi-devcontainer
 
 # Preview what `just chezmoi` would change without writing anything.
@@ -75,7 +82,9 @@ apm-devcontainer:
 # Run `just apm` both locally and inside the devcontainer.
 [group('apm')]
 apm-all:
+    @echo "==> apm: local"
     @just apm
+    @echo "==> apm: devcontainer"
     @just apm-devcontainer
 
 # Preview APM changes without writing (reads repo apm.yml, user scope).
@@ -98,7 +107,9 @@ extensions-devcontainer:
 # Run `just extensions` both locally and inside the devcontainer.
 [group('extensions')]
 extensions-all:
+    @echo "==> extensions: local"
     @just extensions
+    @echo "==> extensions: devcontainer"
     @just extensions-devcontainer
 
 # Update all installed plugin marketplaces from their sources.
