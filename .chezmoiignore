@@ -7,3 +7,5 @@ Justfile
 apm.yml
 README.md
 .claude/README.md
+.claude/commands/git/README.md
+.claude/rules/README.md
