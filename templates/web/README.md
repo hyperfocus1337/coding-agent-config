@@ -79,8 +79,18 @@ The bootstrap registers the user-scoped MCP servers from [`apm.yml`](../../apm.y
 
 To also add project-scoped MCP servers, use the [`templates/mcp`](../mcp/) pack and its [`.mcp.json`](../mcp/.mcp.json), and set the referenced env vars in the cloud environment settings. Enabling MCP per platform is covered in [`docs/mcp/enabling/web.md`](../../docs/mcp/enabling/web.md).
 
+## Lessons learned
+
+The apm-related steps look unusual because a cloud session is not a normal shell. Three things bit us, and the fixes are why the script reads the way it does.
+
+**apm installs from PyPI, not its official installer.** The documented way to install apm is `curl -sSL https://aka.ms/apm-unix | sh`, which downloads a release binary from the `microsoft/apm` GitHub repo. Cloud sessions scope GitHub access to only the session's whitelisted repo, so that download fails with "GitHub access to this repository is not enabled for this session. Use `add_repo` to request access." `add_repo` does not help here: it is an interactive, per-session grant, and the bootstrap runs unattended from the `SessionStart` hook before any interactive turn, so nothing is there to call it. It also only grants a repo's API, while the binary is a release asset served from a separate host that the grant may not cover. apm also ships as the `apm-cli` wheel on PyPI, which the proxy does reach, and the base image already has `uv`, so `uv tool install apm-cli` sidesteps GitHub entirely and needs no grant and no interaction.
+
+**A failed apm step must not abort the rest.** The script runs under `set -euo pipefail`. apm is installed and used before the config clone and `chezmoi apply`, so when the apm install aborted, everything after it, the actually-portable config, never ran, and the failure was silent because `SessionStart` hook errors are not surfaced. Both apm invocations now warn and continue (`|| echo WARN`), so the config lands even when apm cannot.
+
+**`apm install -g` reads a global manifest, not the project one.** `-g` installs to user scope from the global manifest at `~/.apm/apm.yml`, not from the `apm.yml` in the current directory. Some apm builds never read the project manifest under `-g` and abort with "No `~/.apm/apm.yml` found" even when run from inside the repo, which is why the earlier `cd "$REPO_DIR" && apm install -g` produced a complete-but-empty install. The script now copies the repo's `apm.yml` to `~/.apm/apm.yml` before installing, which is deterministic across builds and cwd. It also drops `--refresh`, which the [apm install reference](https://microsoft.github.io/apm/reference/cli/install/) documents as not valid with `--global`.
+
 ## Tips
 
 - **Idempotent by design.** Cloud sessions may restart. Every prerequisite is guarded by `command -v`, and the repo is refreshed with fetch plus hard reset, so a re-run is cheap and safe.
-- **Fail fast.** The script runs under `set -euo pipefail`, so a failed prerequisite install aborts before the agent proceeds without required tools.
+- **Fail fast, except for apm.** The script runs under `set -euo pipefail`, so a failed prerequisite aborts before the agent proceeds without required tools. The two apm steps are the deliberate exception: they warn and continue so the portable config still lands when apm is unavailable (see [Lessons learned](#lessons-learned)).
 - **Test before relying on it.** Run `bootstrap.sh` in a clean Debian or Ubuntu container with `CLAUDE_CODE_REMOTE=true` to catch missing dependencies before a live session hits them.

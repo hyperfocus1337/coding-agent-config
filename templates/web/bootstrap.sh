@@ -41,12 +41,9 @@ fi
 
 if ! command -v apm &>/dev/null; then
   echo "==> Installing apm (agent package manager)"
-  # The official aka.ms/apm-unix installer pulls a release binary from GitHub,
-  # which cloud sessions scope out (access denied on microsoft/apm). apm also
-  # ships as the apm-cli wheel on PyPI, which is reachable, so install that with
-  # uv (present on the base image). uv tool drops the `apm` entrypoint in
-  # ~/.local/bin, already on PATH above. Non-fatal: warn and continue so the
-  # portable config (clone + chezmoi apply) still lands if this fails.
+  # Install the apm-cli wheel from PyPI with uv, not the aka.ms/apm-unix binary
+  # installer (GitHub-scoped out in cloud sessions). Non-fatal so the config
+  # still lands if it fails. See README "Lessons learned" for why.
   uv tool install apm-cli \
     || echo "WARN: apm-cli install failed; skipping APM manifest." >&2
 fi
@@ -87,16 +84,11 @@ else
 fi
 
 # --- APM dependencies (full manifest) ---
-# `apm install -g` installs to user scope from the GLOBAL manifest at
-# ~/.apm/apm.yml, not from ./apm.yml. Seed that global manifest from the repo's
-# apm.yml first, so the install is deterministic regardless of cwd or apm build
-# (some versions never read ./apm.yml under -g and just report the global
-# manifest missing). The manifest resolves skills, MCP servers, and the LSP
-# block. MCP servers that interpolate secrets (${CONTEXT7_API_KEY}) register
-# with whatever is in the environment; unset vars leave those servers
-# non-functional but do not fail the install. The pyright LSP registers only if
-# pyright-langserver is on $PATH. --force overwrites on collision, keeping
-# re-runs idempotent. (--refresh is not valid with -g, so it is omitted.)
+# `apm install -g` reads the GLOBAL manifest at ~/.apm/apm.yml, not ./apm.yml,
+# so seed it from the repo's apm.yml first (deterministic across apm builds and
+# cwd). --refresh is omitted (not valid with -g); --force keeps re-runs
+# idempotent. This resolves the skills, MCP servers, and pyright LSP. See
+# README "Lessons learned" for the manifest-resolution and secrets details.
 if command -v apm &>/dev/null; then
   echo "==> Installing APM dependencies (skills, MCP, LSP)"
   mkdir -p "$HOME/.apm"
