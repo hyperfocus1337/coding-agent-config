@@ -16,14 +16,15 @@ Replace `~/.claude/` with `<project>/.claude/` to scope to a project.
 - **Auto**: ask Claude to "organize", "tidy", "group", "compartmentalize", or "section" a file. The skill prompts you to pick a comment style before it starts.
 - **Style-specific commands**: skip the prompt by naming the style up front.
 
-| Command                         | Header style                                      |
-| ------------------------------- | ------------------------------------------------- |
-| `/organize:plain-comments`      | Just the comment character and the name           |
-| `/organize:minimal-comments`    | Single-line divider                               |
-| `/organize:banner-comments`     | Three-line rule around the name                   |
-| `/organize:numbered-comments`   | Numbered banner plus a numbered table of contents |
-| `/organize:underlined-comments` | Name with a rule on the line beneath it           |
-| `/organize:boxed-comments`      | Full box around the name                          |
+| Command                            | Header style                                      |
+|------------------------------------|---------------------------------------------------|
+| `/organize:plain-comments`         | Just the comment character and the name           |
+| `/organize:minimal-comments`       | Single-line divider                               |
+| `/organize:trailing-rule-comments` | Name flush-left with a rule trailing to width     |
+| `/organize:banner-comments`        | Three-line rule around the name                   |
+| `/organize:numbered-comments`      | Numbered banner plus a numbered table of contents |
+| `/organize:underlined-comments`    | Name with a rule on the line beneath it           |
+| `/organize:boxed-comments`         | Full box around the name                          |
 
 Each command takes a `<file-path-or-glob>` argument and is a thin wrapper that invokes the skill with the style pre-selected, so `SKILL.md` stays the single source of truth for the technique.
 
