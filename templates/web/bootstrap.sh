@@ -42,8 +42,11 @@ fi
 if ! command -v apm &>/dev/null; then
   echo "==> Installing apm (agent package manager)"
   # aka.ms/apm-unix is the official installer; APM_INSTALL_DIR keeps it sudo-free
-  # and lands the binary in ~/.local/bin.
-  curl -sSL https://aka.ms/apm-unix | APM_INSTALL_DIR="$LOCAL_BIN" sh
+  # and lands the binary in ~/.local/bin. Non-fatal: cloud sessions scope GitHub
+  # access to the whitelisted repo, so the apm release repo is blocked. Warn and
+  # continue so the portable config (clone + chezmoi apply) still lands.
+  curl -sSL https://aka.ms/apm-unix | APM_INSTALL_DIR="$LOCAL_BIN" sh \
+    || echo "WARN: apm install failed (GitHub access likely scoped out); skipping APM manifest." >&2
 fi
 
 # --- Clone or update the config repo ---
@@ -90,7 +93,12 @@ fi
 # apm reads its apm.yml; -g installs to user scope. --refresh re-fetches upstream
 # and re-resolves ref pins to latest, --force overwrites on collision, keeping
 # re-runs idempotent.
-echo "==> Installing APM dependencies (skills, MCP, LSP)"
-(cd "$REPO_DIR" && apm install -g --refresh --force)
+if command -v apm &>/dev/null; then
+  echo "==> Installing APM dependencies (skills, MCP, LSP)"
+  (cd "$REPO_DIR" && apm install -g --refresh --force) \
+    || echo "WARN: apm install failed; skills/MCP/LSP from apm.yml not installed." >&2
+else
+  echo "WARN: 'apm' not found; skipping APM manifest (skills, MCP, LSP)." >&2
+fi
 
 echo "==> Bootstrap complete"
