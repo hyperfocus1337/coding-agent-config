@@ -87,17 +87,21 @@ else
 fi
 
 # --- APM dependencies (full manifest) ---
-# A bare `apm install` resolves the whole apm.yml: skills, MCP servers, and the
-# LSP block. MCP servers that interpolate secrets (${TESSL_TOKEN},
-# ${CONTEXT7_API_KEY}) register with whatever is in the environment; unset vars
-# leave those servers non-functional but do not fail the install. The pyright
-# LSP registers only if pyright-langserver is on $PATH. Run from $REPO_DIR so
-# apm reads its apm.yml; -g installs to user scope. --refresh re-fetches upstream
-# and re-resolves ref pins to latest, --force overwrites on collision, keeping
-# re-runs idempotent.
+# `apm install -g` installs to user scope from the GLOBAL manifest at
+# ~/.apm/apm.yml, not from ./apm.yml. Seed that global manifest from the repo's
+# apm.yml first, so the install is deterministic regardless of cwd or apm build
+# (some versions never read ./apm.yml under -g and just report the global
+# manifest missing). The manifest resolves skills, MCP servers, and the LSP
+# block. MCP servers that interpolate secrets (${CONTEXT7_API_KEY}) register
+# with whatever is in the environment; unset vars leave those servers
+# non-functional but do not fail the install. The pyright LSP registers only if
+# pyright-langserver is on $PATH. --force overwrites on collision, keeping
+# re-runs idempotent. (--refresh is not valid with -g, so it is omitted.)
 if command -v apm &>/dev/null; then
   echo "==> Installing APM dependencies (skills, MCP, LSP)"
-  (cd "$REPO_DIR" && apm install -g --refresh --force) \
+  mkdir -p "$HOME/.apm"
+  cp "$REPO_DIR/apm.yml" "$HOME/.apm/apm.yml"
+  apm install -g --force \
     || echo "WARN: apm install failed; skills/MCP/LSP from apm.yml not installed." >&2
 else
   echo "WARN: 'apm' not found; skipping APM manifest (skills, MCP, LSP)." >&2
