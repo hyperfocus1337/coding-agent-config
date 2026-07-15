@@ -4,11 +4,11 @@
 # The SessionStart hook in this folder's settings.json fetches this file raw over
 # https and pipes it to bash, so it must be self-contained.
 #
-# It installs the portable config only: the whole ~/.claude (skills, commands,
-# rules, hooks, CLAUDE.md, statusline) plus the APM skill bundles. It deliberately
-# skips the Claude plugin marketplace, playwright browsers, and MCP/LSP servers,
-# which would turn a per-session hook into a multi-minute install. See README.md
-# for the trade-off and how to get full parity when you need it.
+# It installs the portable config: the whole ~/.claude (skills, commands, rules,
+# hooks, CLAUDE.md, statusline) plus the full APM manifest (skill bundles, MCP
+# servers, and the pyright LSP). It deliberately skips the Claude plugin
+# marketplace and playwright browsers, which would turn a per-session hook into a
+# multi-minute install. See README.md for the trade-off and MCP secret setup.
 #
 # No-op on local machines, where the config already exists.
 
@@ -30,9 +30,9 @@ LOCAL_BIN="$HOME/.local/bin"
 export PATH="$LOCAL_BIN:$PATH"
 
 # --- Prerequisites ---
-# Only chezmoi (config files) and apm (skills) are needed for the lite install.
-# The cloud base image ships git, npm, and the claude CLI. Each guard lets a
-# restarted session skip work already done.
+# Only chezmoi (config files) and apm (dependencies) are needed here. The cloud
+# base image ships git, npm, and the claude CLI. Each guard lets a restarted
+# session skip work already done.
 
 if ! command -v chezmoi &>/dev/null; then
   echo "==> Installing chezmoi"
@@ -81,13 +81,16 @@ else
   echo "WARN: 'npm' not found; skipping node hook deps. Markdown/format hooks may fail." >&2
 fi
 
-# --- APM skills only ---
-# --only apm installs just the skill deps, skipping the mcp: and lsp: blocks so
-# no MCP/LSP servers are registered. Run from $REPO_DIR so apm reads its apm.yml;
-# -g still installs to user scope. --refresh re-fetches upstream and re-resolves
-# ref pins to latest and --force overwrites on collision, keeping re-runs
-# idempotent.
-echo "==> Installing APM skills"
-(cd "$REPO_DIR" && apm install -g --only apm --refresh --force)
+# --- APM dependencies (full manifest) ---
+# A bare `apm install` resolves the whole apm.yml: skills, MCP servers, and the
+# LSP block. MCP servers that interpolate secrets (${TESSL_TOKEN},
+# ${CONTEXT7_API_KEY}) register with whatever is in the environment; unset vars
+# leave those servers non-functional but do not fail the install. The pyright
+# LSP registers only if pyright-langserver is on $PATH. Run from $REPO_DIR so
+# apm reads its apm.yml; -g installs to user scope. --refresh re-fetches upstream
+# and re-resolves ref pins to latest, --force overwrites on collision, keeping
+# re-runs idempotent.
+echo "==> Installing APM dependencies (skills, MCP, LSP)"
+(cd "$REPO_DIR" && apm install -g --refresh --force)
 
 echo "==> Bootstrap complete"
