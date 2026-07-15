@@ -62,6 +62,7 @@ fi
 echo "==> Applying config with chezmoi"
 chezmoi apply --source "$REPO_DIR" --destination "$HOME"
 
+# --- Node hook dependencies ---
 # Node-based hooks ship source but node_modules is gitignored, so chezmoi lays down
 # the source without installing deps. Install them in place, or the hook dies with
 # ERR_MODULE_NOT_FOUND on every trigger.
@@ -81,15 +82,11 @@ else
 fi
 
 # --- APM skills only ---
-# Stage a manifest with just dependencies.apm (skills), dropping the mcp: and lsp:
-# blocks so no MCP/LSP servers are registered. `apm install -g` reads ~/.apm/apm.yml.
+# --only apm installs just the skill deps, skipping the mcp: and lsp: blocks so
+# no MCP/LSP servers are registered. Run from $REPO_DIR so apm reads its apm.yml;
+# -g still installs to user scope. --update re-resolves to latest upstream and
+# --force overwrites on collision, keeping re-runs idempotent.
 echo "==> Installing APM skills"
-
-mkdir -p "$HOME/.apm"
-awk '/^  mcp:/{skip=1} /^[^[:space:]]/{skip=0} skip==0{print}' \
-  "$REPO_DIR/apm.yml" >"$HOME/.apm/apm.yml"
-# --update re-resolves to latest upstream; --force overwrites on collision so
-# re-runs stay idempotent.
-apm install -g --update --force
+(cd "$REPO_DIR" && apm install -g --only apm --update --force)
 
 echo "==> Bootstrap complete"

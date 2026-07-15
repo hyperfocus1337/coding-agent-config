@@ -54,7 +54,7 @@ Claude Code sets `CLAUDE_CODE_REMOTE=true` in cloud environments. `bootstrap.sh`
 
 - **chezmoi apply**, which lays down the whole `~/.claude` (commands, skills, rules, hooks, `CLAUDE.md`, statusline), plus `~/.config` and `~/.gemini`
 - **node hook deps**, so the markdown and format hooks run
-- **APM skills** from [`apm.yml`](../../apm.yml): the third-party skill bundles only (it stages a manifest with the `dependencies.apm` block, dropping `mcp:` and `lsp:`)
+- **APM skills** from [`apm.yml`](../../apm.yml): the third-party skill bundles only, via `apm install --only apm`, which restricts the install to the `dependencies.apm` block and skips `mcp:` and `lsp:` (see the [apm install reference](https://microsoft.github.io/apm/reference/cli/install/))
 
 It deliberately **skips**, to keep session start fast:
 
