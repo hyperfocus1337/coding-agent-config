@@ -9,7 +9,6 @@ docs/
 ├── apm/          # APM (agent package manager) notes
 │   └── plugin-migration.md  — Which Claude plugins could move to APM (audit)
 ├── agents/       # Agent environment and session guides
-│   ├── bootstrap.md  — Bootstrapping remote environments (claude.ai/code, CI, containers)
 │   └── skills.md     — Every channel a skill reaches an agent through (local, plugins, CLI, APM)
 └── mcp/          # MCP server configuration guides
     ├── disabling-servers.md  — Disable MCP servers not wanted by default
@@ -21,7 +20,9 @@ docs/
 
 ## Agent environments
 
-The `agents/` folder covers how to configure and prepare Claude Code sessions in remote environments, including session hooks and bootstrap scripts. It also documents skills in [`skills.md`](agents/skills.md), which maps every channel a skill reaches an agent through: local files, standalone CLIs, plugins, and the APM bundle.
+The `agents/` folder documents skills in [`skills.md`](agents/skills.md), which maps every channel a skill reaches an agent through: local files, standalone CLIs, plugins, and the APM bundle.
+
+To bootstrap a fresh repository so a Claude Code cloud session (web, Android, CI) gets the same environment as a local machine, use the [`templates/web`](../templates/web/) pack. It ships a drop-in `SessionStart` hook and the bootstrap script it runs.
 
 ## MCP servers
 

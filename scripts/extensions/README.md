@@ -167,7 +167,7 @@ Installed conditionally when `playwright-cli` is on `PATH`, via `playwright-cli 
 
 ## MCP Servers (User-Scoped)
 
-MCP servers are declared in `apm.yml` and deployed globally at user scope via `apm install -g`, available across all Claude sessions. None of the user-scoped servers require secrets. Project-scoped servers that do (stitch, directus) live in `templates/.mcp.json`; see [`templates/README.md`](../../templates/README.md).
+MCP servers are declared in `apm.yml` and deployed globally at user scope via `apm install -g`, available across all Claude sessions. None of the user-scoped servers require secrets. Project-scoped servers that do (stitch, directus) live in `templates/mcp/.mcp.json`; see [`templates/mcp/README.md`](../../templates/mcp/README.md).
 
 ### `tessl`
 
