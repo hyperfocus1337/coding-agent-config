@@ -22,10 +22,18 @@ root="${CLAUDE_PROJECT_DIR:-$PWD}"
 # --- Danger classifier (allowlist checked first so templates pass) ---
 is_dangerous() {
   case "$1" in
+    # allowlist: templates are safe to commit
     .env.example|.env.sample|.env.template|.env.dist) return 1 ;;
-    .env|.env.*|.envrc)                                 return 0 ;;
-    id_rsa|id_dsa|id_ecdsa|id_ed25519|credentials.json) return 0 ;;
-    *.pem|*.key|*.pfx|*.p12|*.pkcs12|*.keystore|*.jks)  return 0 ;;
+    # env files
+    .env|.env.*|.envrc) return 0 ;;
+    # private keys (ssh + generic)
+    id_rsa|id_dsa|id_ecdsa|id_ed25519) return 0 ;;
+    *.pem|*.key|*.p8|*.pkcs8|*.ppk) return 0 ;;
+    # keystores / pkcs bundles
+    *.pfx|*.p12|*.pkcs12|*.keystore|*.jks) return 0 ;;
+    # credential / auth files
+    .netrc|.pgpass|.htpasswd|.git-credentials|.dockercfg) return 0 ;;
+    credentials.json|*.ovpn|*.kubeconfig) return 0 ;;
   esac
   return 1
 }
@@ -47,7 +55,7 @@ done < <(git ls-files -z --cached --others --exclude-standard 2>/dev/null)
   echo
   echo "Fix one of:"
   echo "  * add the file(s) to .gitignore (recommended), or"
-  echo "  * touch $root/.claude-allow  (persistent, per-repo override), or"
-  echo "  * set CLAUDE_ALLOW_ENV_COMMIT=1  (one-off override)"
+  echo "  * touch $root/.claude-allow (persistent, per-repo override), or"
+  echo "  * set CLAUDE_ALLOW_ENV_COMMIT=1 (one-off override)"
 } 1>&2
 exit 2
