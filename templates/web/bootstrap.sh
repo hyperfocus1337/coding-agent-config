@@ -14,7 +14,7 @@
 
 set -euo pipefail
 
-# ── Guard: remote only ────────────────────────────────────────────────────────
+# --- Guard: remote only ---
 # Claude Code sets CLAUDE_CODE_REMOTE=true in cloud environments. Exit immediately
 # elsewhere so running this on a local machine changes nothing.
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
@@ -29,7 +29,7 @@ LOCAL_BIN="$HOME/.local/bin"
 # the rest of this run so they resolve.
 export PATH="$LOCAL_BIN:$PATH"
 
-# ── Prerequisites ─────────────────────────────────────────────────────────────
+# --- Prerequisites ---
 # Only chezmoi (config files) and apm (skills) are needed for the lite install.
 # The cloud base image ships git, npm, and the claude CLI. Each guard lets a
 # restarted session skip work already done.
@@ -46,7 +46,7 @@ if ! command -v apm &>/dev/null; then
   curl -sSL https://aka.ms/apm-unix | APM_INSTALL_DIR="$LOCAL_BIN" sh
 fi
 
-# ── Clone or update the config repo ───────────────────────────────────────────
+# --- Clone or update the config repo ---
 if [ -d "$REPO_DIR/.git" ]; then
   echo "==> Updating coding-agent-config"
   # fetch + hard reset is idempotent and survives any divergence in the throwaway
@@ -58,7 +58,7 @@ else
   git clone --depth 1 "$REPO_URL" "$REPO_DIR"
 fi
 
-# ── Apply portable config to $HOME ────────────────────────────────────────────
+# --- Apply portable config to $HOME ---
 echo "==> Applying config with chezmoi"
 chezmoi apply --source "$REPO_DIR" --destination "$HOME"
 
@@ -80,18 +80,10 @@ else
   echo "WARN: 'npm' not found; skipping node hook deps. Markdown/format hooks may fail." >&2
 fi
 
-# ── APM skills only ───────────────────────────────────────────────────────────
+# --- APM skills only ---
 # Stage a manifest with just dependencies.apm (skills), dropping the mcp: and lsp:
 # blocks so no MCP/LSP servers are registered. `apm install -g` reads ~/.apm/apm.yml.
 echo "==> Installing APM skills"
-
-# Match apm/install.sh: target the container user's home when it exists and no
-# caller value is set, working around an apm bug (microsoft/apm#2060). On a host
-# ($HOME not under /home) we leave it unset so apm uses claude's default.
-CONTAINER_HOME="/home/$(whoami)"
-if [ -z "${CLAUDE_CONFIG_DIR:-}" ] && [ -d "$CONTAINER_HOME" ]; then
-  export CLAUDE_CONFIG_DIR="$CONTAINER_HOME/.claude"
-fi
 
 mkdir -p "$HOME/.apm"
 awk '/^  mcp:/{skip=1} /^[^[:space:]]/{skip=0} skip==0{print}' \
