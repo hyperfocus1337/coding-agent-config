@@ -18,10 +18,27 @@ The list is deliberately **filename-based**, not content-based. The key-file nam
 
 ## Overrides
 
-Two escape hatches for when committing such a file is legitimate:
+The hook checks three escape hatches, in this order, and allows the command as soon as one matches.
 
-- Create a `.claude-allow` file in the project root. Persistent and per-repo, and you can commit the marker itself so the whole team inherits the exemption.
-- Set `CLAUDE_ALLOW_ENV_COMMIT` to a non-empty value in the environment. Good for a one-off or session-scoped skip that leaves no trace in the repo.
+**1. gitignore (preferred).** If the file is gitignored, the hook never sees it, because the scan uses `--exclude-standard`. This is the right answer almost every time: a secret that should never be committed belongs in `.gitignore`, and then the hook stays silent with no override needed. Reach for the two explicit overrides below only when you genuinely intend to commit a secret-shaped file (an encrypted env, a fixture, a template that happens to match a pattern).
+
+**2. Per-repo marker file.** Create an empty `.claude-allow-secrets` file in the repo root:
+
+```sh
+touch .claude-allow-secrets
+```
+
+This disables the hook for that repo only. It is persistent and survives across sessions, and because it lives in the repo you can commit it so the whole team inherits the exemption. Use it when a repo legitimately and repeatedly tracks a secret-shaped file.
+
+**3. Environment variable.** Set `CLAUDE_ALLOW_SECRETS` to any non-empty value:
+
+```sh
+CLAUDE_ALLOW_SECRETS=1
+```
+
+This disables the hook wherever that variable is exported, so it is best for a one-off or session-scoped skip that leaves no trace in the repo. Export it in your shell for the rest of a session, or prefix a single command.
+
+Note that overrides 2 and 3 are all-or-nothing: they disable the whole check, not a single file. To exempt just one path while keeping the guard active for everything else, gitignore that path (override 1) instead.
 
 ## Files
 
