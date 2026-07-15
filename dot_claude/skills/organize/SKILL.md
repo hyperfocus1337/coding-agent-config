@@ -51,6 +51,12 @@ Some file types conventionally use multiple comment characters for headers (`##`
 # --- Section name ---
 ```
 
+**Trailing rule** — the name flush-left with a light box-drawing rule trailing to a fixed width; single line, more presence than Minimal without the height of Banner:
+
+```
+# ── Section name ──────────────────────────────────────────
+```
+
 **Banner** (default) — a three-line rule, most visible when scrolling fast:
 
 ```

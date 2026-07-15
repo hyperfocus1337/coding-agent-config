@@ -6,6 +6,7 @@ set shell := ["bash", "-cu"]
 
 REPO := justfile_directory()
 SCRIPTS := REPO / "scripts"
+TEMPLATES := REPO / "templates"
 SKILLS := REPO / ".claude" / "skills"
 DIST := REPO / "dist" / "skills"
 CLAUDE_HOME := env("CLAUDE_HOME", env("HOME") / ".claude")
@@ -121,20 +122,20 @@ update-marketplaces:
 # Lint & format
 # ──────────────────────────────────────────────────────────────────────────────
 
-# Shellcheck all scripts. find recurses, so nested dirs (e.g. extensions/apm/) are covered.
+# Shellcheck all scripts. find recurses, so nested dirs (e.g. extensions/apm/, templates/web/) are covered.
 [group('lint & format')]
 lint:
-    find "{{ SCRIPTS }}" -name '*.sh' -print0 | xargs -0 shellcheck
+    find "{{ SCRIPTS }}" "{{ TEMPLATES }}" -name '*.sh' -print0 | xargs -0 shellcheck
 
-# Format scripts in place. shfmt walks scripts/ recursively (by shebang/.sh).
+# Format scripts in place. shfmt walks the roots recursively (by shebang/.sh).
 [group('lint & format')]
 fmt:
-    shfmt -w -i 2 -ci "{{ SCRIPTS }}"
+    shfmt -w -i 2 -ci "{{ SCRIPTS }}" "{{ TEMPLATES }}"
 
 # Check formatting without writing. Non-zero exit if anything would change.
 [group('lint & format')]
 fmt-check:
-    shfmt -d -i 2 -ci "{{ SCRIPTS }}"
+    shfmt -d -i 2 -ci "{{ SCRIPTS }}" "{{ TEMPLATES }}"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Package

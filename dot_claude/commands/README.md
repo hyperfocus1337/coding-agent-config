@@ -25,14 +25,15 @@ The three history-rewriting commands (`amend-author`, `amend-date`, `shift-dates
 
 Six variants of the same operation: reorganize a file into comment-delimited sections, differing only in header style.
 
-| Command                         | Header style                                         |
-|---------------------------------|------------------------------------------------------|
-| `/organize:banner-comments`     | Three-line banner headers.                           |
-| `/organize:boxed-comments`      | Full-box headers.                                    |
-| `/organize:numbered-comments`   | Numbered sections with a matching table of contents. |
-| `/organize:underlined-comments` | Name with a rule beneath it.                         |
-| `/organize:plain-comments`      | Just the comment character and the name.             |
-| `/organize:minimal-comments`    | Single-line divider headers.                         |
+| Command                            | Header style                                         |
+|------------------------------------|------------------------------------------------------|
+| `/organize:banner-comments`        | Three-line banner headers.                           |
+| `/organize:boxed-comments`         | Full-box headers.                                    |
+| `/organize:numbered-comments`      | Numbered sections with a matching table of contents. |
+| `/organize:underlined-comments`    | Name with a rule beneath it.                         |
+| `/organize:plain-comments`         | Just the comment character and the name.             |
+| `/organize:minimal-comments`       | Single-line divider headers.                         |
+| `/organize:trailing-rule-comments` | Name flush-left with a rule trailing to width.       |
 
 ## issues/ — GitHub issue workflow
 

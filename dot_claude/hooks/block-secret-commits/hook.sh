@@ -15,9 +15,10 @@ esac
 # --- Repo root (fall back to cwd if Claude did not set the project dir) ---
 root="${CLAUDE_PROJECT_DIR:-$PWD}"
 
-# --- Overrides ---
-[ -f "$root/.claude-allow" ] && exit 0
-[ -n "${CLAUDE_ALLOW_ENV_COMMIT:-}" ] && exit 0
+# --- Overrides (see README) ---
+# per-repo marker file, or an env var for one-off / session-scoped skips
+[ -f "$root/.claude-allow-secrets" ] && exit 0
+[ -n "${CLAUDE_ALLOW_SECRETS:-}" ] && exit 0
 
 # --- Danger classifier (allowlist checked first so templates pass) ---
 is_dangerous() {
@@ -39,11 +40,14 @@ is_dangerous() {
 }
 
 # --- Scan committable files (non-repo → ls-files errors → empty → allow) ---
-cd "$root" 2>/dev/null || exit 0
+cd "$root" 2>/dev/null || exit 0 # run from repo root so git sees this repo's files
+
+# git ls-files flags: --cached=tracked, --others=untracked,
+# --exclude-standard=drop gitignored, -z=NUL-separate names (spaces/newlines safe)
 offenders=()
-while IFS= read -r -d '' f; do
-  is_dangerous "${f##*/}" && offenders+=("$f")
-done < <(git ls-files -z --cached --others --exclude-standard 2>/dev/null)
+while IFS= read -r -d '' path; do # read one NUL-terminated filename per iteration
+  is_dangerous "${path##*/}" && offenders+=("$path") # ${path##*/} = basename (builtin, no fork)
+done < <(git ls-files -z --cached --others --exclude-standard 2>/dev/null) # < <() not a pipe, so offenders survives the loop
 
 # nothing dangerous found → allow the command
 [ ${#offenders[@]} -eq 0 ] && exit 0
@@ -55,7 +59,7 @@ done < <(git ls-files -z --cached --others --exclude-standard 2>/dev/null)
   echo
   echo "Fix one of:"
   echo "  * add the file(s) to .gitignore (recommended), or"
-  echo "  * touch $root/.claude-allow (persistent, per-repo override), or"
-  echo "  * set CLAUDE_ALLOW_ENV_COMMIT=1 (one-off override)"
+  echo "  * touch $root/.claude-allow-secrets (persistent, per-repo override), or"
+  echo "  * set CLAUDE_ALLOW_SECRETS=1 (one-off override)"
 } 1>&2
 exit 2
