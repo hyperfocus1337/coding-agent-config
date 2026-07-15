@@ -1,33 +1,23 @@
-# Templates
+# Templates: project-scoped MCP servers
 
-Copyable, project-scoped config. Repo-only (chezmoi-ignored, never deployed to `$HOME`).
+Copyable, project-scoped MCP config for Claude Code. Repo-only (chezmoi-ignored, never deployed to `$HOME`). These servers are scoped to a single project rather than installed user-wide through `apm.yml`.
 
-## Project-scoped MCP servers (`.mcp.json`)
+Each server lives in its own folder with a standalone `.mcp.json` fragment and README:
 
-MCP servers for Claude Code scoped to a single project, not user-wide. Kept out of the global `apm.yml` on purpose.
+- [`tessl/`](tessl/) Tessl platform MCP server (stdio via the `tessl` CLI). Needs `TESSL_TOKEN` or `tessl auth login`.
+- [`stitch/`](stitch/) Google Stitch MCP server (HTTP transport). Needs `STITCH_API_KEY`.
+- [`directus/`](directus/) Directus MCP server (HTTP transport). Needs `DIRECTUS_TOKEN` and a real instance URL.
+- [`claude-design/`](claude-design/) Anthropic hosted design MCP server (HTTP transport, no extra secrets).
+- [`orbit/`](orbit/) GitLab Orbit MCP server (HTTP transport). May need a GitLab token.
+- [`jcodemunch/`](jcodemunch/) deep code analysis and indexing (stdio via `uvx`, no secrets).
+- [`jdocmunch/`](jdocmunch/) documentation ingestion and querying (stdio via `uvx`, no secrets).
 
-### Installing into a project
+## Installing into a project
 
-Copy into a target project's root:
+Copy a server's fragment into the target project's root `.mcp.json`. If the project already has a `.mcp.json`, merge the entry under `mcpServers` rather than overwriting the file:
 
 ```bash
-cp templates/mcp/.mcp.json <project>/.mcp.json
+cp templates/mcp/<server>/.mcp.json <project>/.mcp.json
 ```
 
-Then set the env vars and fix the placeholder URL:
-
-- `STITCH_API_KEY` — stitch API key
-- `DIRECTUS_TOKEN` — directus bearer token
-- `url` for directus is a placeholder; replace with your instance's `/mcp` endpoint
-
-### Server: `stitch`
-
-Docs: [stitch.withgoogle.com/docs/mcp/setup](https://stitch.withgoogle.com/docs/mcp/setup)
-
-Google Stitch MCP server (HTTP transport). Use for Stitch-powered workflows that depend on its hosted tooling. Requires a valid `X-Goog-Api-Key` header; export `STITCH_API_KEY` before use and `.mcp.json` interpolates it into the header.
-
-### Server: `directus`
-
-Docs: [directus.io/docs/guides/ai/mcp](https://directus.io/docs/guides/ai/mcp)
-
-Directus MCP server (HTTP transport) for interacting with a Directus instance: collections, fields, items, files, flows, and schema. Replace the placeholder `url` in `.mcp.json` with your instance's `/mcp` endpoint, and export `DIRECTUS_TOKEN` (a generated token).
+See each server's README for its required env vars and any placeholder URLs to replace.

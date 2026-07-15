@@ -167,34 +167,10 @@ Installed conditionally when `playwright-cli` is on `PATH`, via `playwright-cli 
 
 ## MCP Servers (User-Scoped)
 
-MCP servers are declared in `apm.yml` and deployed globally at user scope via `apm install -g`, available across all Claude sessions. None of the user-scoped servers require secrets. Project-scoped servers that do (stitch, directus) live in `templates/mcp/.mcp.json`; see [`templates/mcp/README.md`](../../templates/mcp/README.md).
-
-### `tessl`
-
-Docs: [docs.tessl.io](https://docs.tessl.io/reference/custom-agent-setup)
-
-Connects Claude to the Tessl platform for AI-assisted software engineering workflows. Use when working within a Tessl-managed environment to enable agent capabilities, custom workflow integrations, and project-level context provided by the Tessl infrastructure.
-
----
+MCP servers are declared in `apm.yml` and deployed globally at user scope via `apm install -g`, available across all Claude sessions. The one user-scoped server, `context7`, reads a `CONTEXT7_API_KEY` from the environment at install time (`apm.yml` interpolates it via `${CONTEXT7_API_KEY}`). Project-scoped servers (tessl, stitch, directus, claude-design, orbit, jcodemunch, jdocmunch) each live in their own folder under `templates/mcp/<server>/`; see [`templates/mcp/README.md`](../../templates/mcp/README.md).
 
 ### `context7`
 
 Docs: [github.com/upstash/context7](https://github.com/upstash/context7?tab=readme-ov-file#installation)
 
 MCP server counterpart to the Context7 plugin. Provides Claude with on-demand access to current library documentation for any framework or package. Use for code generation, API lookups, and setup instructions where accurate, version-specific documentation is critical.
-
----
-
-### `jcodemunch`
-
-Docs: [github.com/jgravelle/jcodemunch-mcp](https://github.com/jgravelle/jcodemunch-mcp?tab=readme-ov-file#configure-mcp-client)
-
-An MCP server that enables deep code analysis and understanding across a codebase. Use when you need Claude to ingest, index, and reason over large amounts of source code — particularly useful for onboarding to unfamiliar repositories or performing cross-file analysis.
-
----
-
-### `jdocmunch`
-
-Docs: [github.com/jgravelle/jdocmunch-mcp](https://github.com/jgravelle/jdocmunch-mcp?tab=readme-ov-file#configure-an-mcp-client)
-
-An MCP server focused on ingesting and querying documentation. Use when you need Claude to reason over large volumes of markdown, HTML, or plain-text documentation — useful for answering questions about internal docs, runbooks, or any documentation that isn't indexed by Context7.

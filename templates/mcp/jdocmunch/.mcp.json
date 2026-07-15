@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "jdocmunch": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["jdocmunch-mcp"]
+    }
+  }
+}
