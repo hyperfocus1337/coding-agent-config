@@ -84,9 +84,10 @@ fi
 # --- APM skills only ---
 # --only apm installs just the skill deps, skipping the mcp: and lsp: blocks so
 # no MCP/LSP servers are registered. Run from $REPO_DIR so apm reads its apm.yml;
-# -g still installs to user scope. --update re-resolves to latest upstream and
-# --force overwrites on collision, keeping re-runs idempotent.
+# -g still installs to user scope. --refresh re-fetches upstream and re-resolves
+# ref pins to latest and --force overwrites on collision, keeping re-runs
+# idempotent.
 echo "==> Installing APM skills"
-(cd "$REPO_DIR" && apm install -g --only apm --update --force)
+(cd "$REPO_DIR" && apm install -g --only apm --refresh --force)
 
 echo "==> Bootstrap complete"
