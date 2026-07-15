@@ -30,6 +30,13 @@ dependencies:
     - to-spec
     - implement
     - code-review
+    - research
+    - prototype
+    - ask-matt
+    - diagnosing-bugs
+    - resolving-merge-conflicts
+    - teach
+    - writing-great-skills
   # terraform-skill, moved off the `claude plugin` CLI. Which other plugins
   # were considered and why they stayed: docs/apm/plugin-migration.md.
   - git: antonbabenko/terraform-skill
