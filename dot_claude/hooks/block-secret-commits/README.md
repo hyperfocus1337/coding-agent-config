@@ -1,14 +1,14 @@
 # block-secret-commits
 
-A `PreToolUse` hook that blocks git commits which would include secret files (`.env`, `.envrc`, private keys, credential blobs) that are not gitignored. It is a safety net for accidental `git add . && git commit`, not a replacement for a good `.gitignore`.
+A `PreToolUse` hook that blocks `git add` and `git commit` commands which would stage or commit secret files (`.env`, `.envrc`, private keys, credential blobs) that are not gitignored. It is a safety net for accidental `git add .`, not a replacement for a good `.gitignore`.
 
 ## How it works
 
-The hook is wired to the `Bash` tool in `settings.json`, so it runs before every shell command. It exits immediately unless the command text mentions a git commit, so the cost on ordinary commands is a single fast bail (roughly 12ms of process startup, no external tools spawned).
+The hook is wired to the `Bash` tool in `settings.json`, so it runs before every shell command. It exits immediately unless the command text contains `git add` or a `git ... commit`, so the cost on ordinary commands is a single fast bail (roughly 12ms of process startup, no external tools spawned).
 
-When it does see a commit, it lists everything git would actually track with `git ls-files --cached --others --exclude-standard`. That set is tracked files plus untracked-but-not-ignored files, and it deliberately excludes anything gitignored. So a properly gitignored `.env` is silently allowed, because git could never commit it anyway, and gitignore is the natural first escape hatch. Each basename is checked against the ruleset; if any match, the commit is blocked with exit code 2 and a message naming the offending files.
+When it does see one, it lists everything git would actually track with `git ls-files --cached --others --exclude-standard`. That set is tracked files plus untracked-but-not-ignored files, and it deliberately excludes anything gitignored. So a properly gitignored `.env` is silently allowed, because git could never stage it anyway, and gitignore is the natural first escape hatch. Each basename is checked against the ruleset; if any match, the command is blocked with exit code 2 and a message naming the offending files.
 
-The scan covers the whole repo rooted at `CLAUDE_PROJECT_DIR`, not just the paths in this particular commit. That is intentional: a non-ignored secret anywhere in the repo blocks the commit. The trade-off is that a stray non-ignored secret nags on every commit until you gitignore it or override.
+The scan covers the whole repo rooted at `CLAUDE_PROJECT_DIR`, not just the paths in this particular command. That is intentional: a non-ignored secret anywhere in the repo blocks the add or commit. The trade-off is that a stray non-ignored secret nags on every `git add`/`git commit` until you gitignore it or override.
 
 ## The ruleset
 

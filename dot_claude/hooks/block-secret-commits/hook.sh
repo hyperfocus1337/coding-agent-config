@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 set -u
 
-# --- Trigger filter (git commit only) ---
-# loose substring match on the raw payload; only over-triggers into a harmless
-# scan, never a false block (blocking is gated by real files below).
+# --- Trigger filter (git add / git commit only) ---
+# Look for the command text inside the raw JSON payload. Matching too widely is
+# harmless: a wrong match just runs the scan below, which only ever blocks on a
+# real secret file. We look for the exact phrase "git add" because "add" by
+# itself turns up in too many unrelated paths and words.
 IFS= read -r -d '' payload
-[[ $payload == *git* && $payload == *commit* ]] || exit 0
+case $payload in
+  *"git add"*|*git*commit*) ;;
+  *) exit 0 ;;
+esac
 
+# --- Repo root (fall back to cwd if Claude did not set the project dir) ---
 root="${CLAUDE_PROJECT_DIR:-$PWD}"
 
 # --- Overrides ---
@@ -31,11 +37,12 @@ while IFS= read -r -d '' f; do
   is_dangerous "${f##*/}" && offenders+=("$f")
 done < <(git ls-files -z --cached --others --exclude-standard 2>/dev/null)
 
+# nothing dangerous found → allow the command
 [ ${#offenders[@]} -eq 0 ] && exit 0
 
 # --- Block and report ---
 {
-  echo "Blocked: git commit would include secret file(s) that are not gitignored:"
+  echo "Blocked: this git command would stage or commit secret file(s) that are not gitignored:"
   printf '  - %s\n' "${offenders[@]}"
   echo
   echo "Fix one of:"

@@ -34,13 +34,13 @@ Slash commands are prompt templates invoked as `/<namespace>:<name>`, stored one
 
 Hooks are shell commands Claude Code runs on tool lifecycle events (e.g. after every `Write`/`Edit`, or before a `Bash` call). They are configured in `settings.json` and stored one directory per hook under `hooks/`, each with its own README covering behavior, dependencies, and install steps.
 
-| Hook                                                                   | Event                      | Summary                                                                                  |
-|------------------------------------------------------------------------|----------------------------|------------------------------------------------------------------------------------------|
-| [`prettify-md-tables`](hooks/prettify-md-tables/README.md)             | `PostToolUse` (Write/Edit) | Aligns markdown table columns in edited `.md` files. Node hook, needs `npm install`.     |
-| [`stage-edited-file`](hooks/stage-edited-file/README.md)               | `PostToolUse` (Write/Edit) | Runs `git add` on each edited file so writes land pre-staged. Skips secret-shaped names. |
-| [`lint-all-languages`](hooks/lint-all-languages/README.md)             | `PostToolUse` (Write/Edit) | Lints the edited file by extension (ruff, eslint, shellcheck, yamllint).                 |
-| [`type-check-all-languages`](hooks/type-check-all-languages/README.md) | `PostToolUse` (Write/Edit) | Type-checks the whole project by extension (pyrefly, tsc).                               |
-| [`block-secret-commits`](hooks/block-secret-commits/README.md)         | `PreToolUse` (Bash)        | Blocks git commits that would include non-gitignored secret files (`.env`, keys, creds). |
+| Hook                                                                   | Event                      | Summary                                                                                           |
+|------------------------------------------------------------------------|----------------------------|---------------------------------------------------------------------------------------------------|
+| [`prettify-md-tables`](hooks/prettify-md-tables/README.md)             | `PostToolUse` (Write/Edit) | Aligns markdown table columns in edited `.md` files. Node hook, needs `npm install`.              |
+| [`stage-edited-file`](hooks/stage-edited-file/README.md)               | `PostToolUse` (Write/Edit) | Runs `git add` on each edited file so writes land pre-staged. Skips secret-shaped names.          |
+| [`lint-all-languages`](hooks/lint-all-languages/README.md)             | `PostToolUse` (Write/Edit) | Lints the edited file by extension (ruff, eslint, shellcheck, yamllint).                          |
+| [`type-check-all-languages`](hooks/type-check-all-languages/README.md) | `PostToolUse` (Write/Edit) | Type-checks the whole project by extension (pyrefly, tsc).                                        |
+| [`block-secret-commits`](hooks/block-secret-commits/README.md)         | `PreToolUse` (Bash)        | Blocks `git add`/`git commit` that would touch non-gitignored secret files (`.env`, keys, creds). |
 
 Every hook caps its runtime with a timeout in `settings.json` and self-disables cleanly when its tools are missing. The advisory hooks (table formatting, staging) swallow failures and exit 0, so a hiccup never blocks a tool call; the lint, type-check, and secret-commit hooks exit 2 to surface errors or a block back to Claude. Shell hooks parse the payload with [`jq`](https://jqlang.github.io/jq/), so `jq` must be on `$PATH` (`brew install jq` on macOS); the Node hook needs `npm install` in its directory after `chezmoi apply`. See each hook's README for its specific dependencies and install commands.
 
