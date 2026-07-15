@@ -2,11 +2,13 @@
 
 Drop-in pack that brings the full coding-agent-config environment into a Claude Code cloud session, so a fresh repository opened on [claude.ai/code](https://claude.ai/code), on Android, or in CI gets the same skills, commands, hooks, plugins, and MCP servers as a local machine.
 
-Cloud sessions start from a minimal base image. None of the config in this repo is present until something installs it. This pack wires a `SessionStart` hook that runs once at the beginning of every session and installs everything before the agent starts working.
+Cloud sessions start from a minimal base image. None of the config in this repo is present until something installs it. This pack wires a `SessionStart` hook that runs once at the beginning of every session and installs the config before the agent starts working.
+
+It is a **lite** install by design: cloud sessions are usually ephemeral, so the hook re-runs from scratch every time. A full-parity install (all 21 Claude plugins, playwright browsers, MCP and LSP servers) takes 5 to 12 minutes per session, which is too slow for a per-session hook. This pack installs only the portable config and the APM skill bundles, which lands in roughly 1 to 2 minutes. See [What gets installed](#what-gets-installed) for the exact scope and how to get full parity when you need it.
 
 ## What is in here
 
-`bootstrap.sh` is the real installer. It is self-contained: it installs its own prerequisites (chezmoi, apm, uv), clones this repo, then runs the normal install chain. It is hosted in this public repo and fetched raw over https, so it always runs the latest version and lives in exactly one place.
+`bootstrap.sh` is the real installer. It is self-contained: it installs its own prerequisites (chezmoi, apm), clones this repo, applies the config, and installs the APM skills. It is hosted in this public repo and fetched raw over https, so it always runs the latest version and lives in exactly one place.
 
 `settings.json` is the tiny drop-in a fresh repo commits. It contains only the `SessionStart` hook that curls `bootstrap.sh`.
 
@@ -48,21 +50,36 @@ Claude Code sets `CLAUDE_CODE_REMOTE=true` in cloud environments. `bootstrap.sh`
 
 ## What gets installed
 
-`bootstrap.sh` installs any missing prerequisites, clones this repo to `~/coding-agent-config`, and then runs [`scripts/extensions/install.sh`](../../scripts/extensions/install.sh). That script is the same entry point used everywhere else, and it performs the full install:
+`bootstrap.sh` installs any missing prerequisites (chezmoi, apm), clones this repo to `~/coding-agent-config`, and then:
 
-- chezmoi apply, which lays down `~/.claude` (commands, skills, rules, hooks, `CLAUDE.md`), `~/.config`, and `~/.gemini`
-- node dependencies for the node-based hooks
-- Claude plugins via the marketplace
-- standalone skills
-- APM deps from [`apm.yml`](../../apm.yml): MCP servers and third-party skills
+- **chezmoi apply**, which lays down the whole `~/.claude` (commands, skills, rules, hooks, `CLAUDE.md`, statusline), plus `~/.config` and `~/.gemini`
+- **node hook deps**, so the markdown and format hooks run
+- **APM skills** from [`apm.yml`](../../apm.yml): the third-party skill bundles only (it stages a manifest with the `dependencies.apm` block, dropping `mcp:` and `lsp:`)
 
-For the split between the chezmoi layer and the APM layer, see the root [README.md](../../README.md).
+It deliberately **skips**, to keep session start fast:
 
-## Secrets and env vars
+- the 21 Claude plugins from the marketplace
+- playwright browser binaries
+- MCP servers and the pyright LSP
 
-MCP servers declared in [`apm.yml`](../../apm.yml) interpolate secrets from the environment (for example `${CONTEXT7_API_KEY}`). Set the required variables in the cloud environment settings before the first session, or those servers will fail to authenticate. `apm.yml` is the source of truth for which variables are needed.
+You keep every local skill, command, rule, hook, and the APM skill bundles. You lose the plugin-provided skills and the MCP tools in cloud sessions. For the split between the chezmoi layer and the APM layer, see the root [README.md](../../README.md).
 
-Project-scoped MCP servers are separate from this pack. To add servers scoped to a single project rather than user-wide, use the [`templates/mcp`](../mcp/) pack and its [`.mcp.json`](../mcp/.mcp.json). Enabling MCP servers per platform is covered in [`docs/mcp/enabling/web.md`](../../docs/mcp/enabling/web.md).
+### Getting full parity
+
+If a cloud session needs the full environment, run the complete chain manually once it has started:
+
+```bash
+~/coding-agent-config/scripts/extensions/install.sh
+```
+
+That installs the plugins, standalone skills, and all APM deps (MCP + LSP included). It is the same entry point local `just setup` uses.
+
+## MCP servers and secrets
+
+The lite install registers no MCP servers, so no secrets are needed for it to run. To add MCP servers to a cloud session:
+
+- **Project-scoped:** use the [`templates/mcp`](../mcp/) pack and its [`.mcp.json`](../mcp/.mcp.json), and set the referenced env vars in the cloud environment settings. Enabling MCP per platform is covered in [`docs/mcp/enabling/web.md`](../../docs/mcp/enabling/web.md).
+- **User-scoped (all the servers in [`apm.yml`](../../apm.yml)):** run the full-parity chain above, and set the env vars those servers interpolate (for example `${CONTEXT7_API_KEY}`) beforehand.
 
 ## Tips
 

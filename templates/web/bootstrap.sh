@@ -1,10 +1,14 @@
 #!/bin/bash
 #
-# Bootstrap a Claude Code cloud session (claude.ai/code web, Android, CI) with the
-# full coding-agent-config environment. The SessionStart hook in this folder's
-# settings.json fetches this file raw over https and pipes it to bash, so it must be
-# self-contained: it installs its own prerequisites, clones this repo, then hands off
-# to the normal install chain.
+# Lite bootstrap for Claude Code cloud sessions (claude.ai/code web, Android, CI).
+# The SessionStart hook in this folder's settings.json fetches this file raw over
+# https and pipes it to bash, so it must be self-contained.
+#
+# It installs the portable config only: the whole ~/.claude (skills, commands,
+# rules, hooks, CLAUDE.md, statusline) plus the APM skill bundles. It deliberately
+# skips the Claude plugin marketplace, playwright browsers, and MCP/LSP servers,
+# which would turn a per-session hook into a multi-minute install. See README.md
+# for the trade-off and how to get full parity when you need it.
 #
 # No-op on local machines, where the config already exists.
 
@@ -22,12 +26,13 @@ REPO_DIR="$HOME/coding-agent-config"
 LOCAL_BIN="$HOME/.local/bin"
 
 # The prereq installers below drop binaries into ~/.local/bin. Put it on PATH for
-# the rest of this run (and for the install chain we invoke) so they resolve.
+# the rest of this run so they resolve.
 export PATH="$LOCAL_BIN:$PATH"
 
 # ── Prerequisites ─────────────────────────────────────────────────────────────
-# Each guarded by command -v so a restarted session skips work already done. The
-# cloud base image ships git and the claude CLI; the rest we install here.
+# Only chezmoi (config files) and apm (skills) are needed for the lite install.
+# The cloud base image ships git, npm, and the claude CLI. Each guard lets a
+# restarted session skip work already done.
 
 if ! command -v chezmoi &>/dev/null; then
   echo "==> Installing chezmoi"
@@ -37,19 +42,9 @@ fi
 if ! command -v apm &>/dev/null; then
   echo "==> Installing apm (agent package manager)"
   # aka.ms/apm-unix is the official installer; APM_INSTALL_DIR keeps it sudo-free
-  # and lands the binary where update.sh expects it (~/.local/bin).
+  # and lands the binary in ~/.local/bin.
   curl -sSL https://aka.ms/apm-unix | APM_INSTALL_DIR="$LOCAL_BIN" sh
 fi
-
-if ! command -v uv &>/dev/null; then
-  echo "==> Installing uv"
-  # uv/uvx launch several MCP servers declared in apm.yml at runtime.
-  curl -fsSL https://astral.sh/uv/install.sh | sh
-fi
-
-# node/npm power the markdown and format hooks. The cloud base image ships them; if
-# they are ever absent, install.sh warns and skips those hooks rather than failing,
-# so we do not install node here (heavy, distro-specific) and parity is unaffected.
 
 # ── Clone or update the config repo ───────────────────────────────────────────
 if [ -d "$REPO_DIR/.git" ]; then
@@ -63,11 +58,46 @@ else
   git clone --depth 1 "$REPO_URL" "$REPO_DIR"
 fi
 
-# ── Install ───────────────────────────────────────────────────────────────────
-# install.sh does the rest: chezmoi apply ($HOME config), node hook deps, Claude
-# plugins, standalone skills, and APM (MCP servers + third-party skills). Call it
-# directly so we do not depend on `just` being present.
-echo "==> Running install chain"
-"$REPO_DIR/scripts/extensions/install.sh"
+# ── Apply portable config to $HOME ────────────────────────────────────────────
+echo "==> Applying config with chezmoi"
+chezmoi apply --source "$REPO_DIR" --destination "$HOME"
+
+# Node-based hooks ship source but node_modules is gitignored, so chezmoi lays down
+# the source without installing deps. Install them in place, or the hook dies with
+# ERR_MODULE_NOT_FOUND on every trigger.
+if command -v npm &>/dev/null; then
+  echo "==> Installing node hook deps"
+  for pkg in "$HOME"/.claude/hooks/*/package.json; do
+    [ -e "$pkg" ] || continue # skip the literal glob if no matches
+    dir="$(dirname "$pkg")"
+    if [ -f "$dir/package-lock.json" ]; then
+      npm ci --prefix "$dir" --silent
+    else
+      npm install --prefix "$dir" --silent
+    fi
+  done
+else
+  echo "WARN: 'npm' not found; skipping node hook deps. Markdown/format hooks may fail." >&2
+fi
+
+# ── APM skills only ───────────────────────────────────────────────────────────
+# Stage a manifest with just dependencies.apm (skills), dropping the mcp: and lsp:
+# blocks so no MCP/LSP servers are registered. `apm install -g` reads ~/.apm/apm.yml.
+echo "==> Installing APM skills"
+
+# Match apm/install.sh: target the container user's home when it exists and no
+# caller value is set, working around an apm bug (microsoft/apm#2060). On a host
+# ($HOME not under /home) we leave it unset so apm uses claude's default.
+CONTAINER_HOME="/home/$(whoami)"
+if [ -z "${CLAUDE_CONFIG_DIR:-}" ] && [ -d "$CONTAINER_HOME" ]; then
+  export CLAUDE_CONFIG_DIR="$CONTAINER_HOME/.claude"
+fi
+
+mkdir -p "$HOME/.apm"
+awk '/^  mcp:/{skip=1} /^[^[:space:]]/{skip=0} skip==0{print}' \
+  "$REPO_DIR/apm.yml" >"$HOME/.apm/apm.yml"
+# --update re-resolves to latest upstream; --force overwrites on collision so
+# re-runs stay idempotent.
+apm install -g --update --force
 
 echo "==> Bootstrap complete"
