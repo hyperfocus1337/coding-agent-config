@@ -1,3 +1,5 @@
+.env
+.envrc
 apm_modules
 dist
 docs
