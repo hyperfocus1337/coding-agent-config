@@ -31,7 +31,7 @@ export PATH="$LOCAL_BIN:$PATH"
 
 # --- Prerequisites ---
 # Only chezmoi (config files) and apm (dependencies) are needed here. The cloud
-# base image ships git, npm, and the claude CLI. Each guard lets a restarted
+# base image ships git, npm, uv, and the claude CLI. Each guard lets a restarted
 # session skip work already done.
 
 if ! command -v chezmoi &>/dev/null; then
@@ -41,12 +41,14 @@ fi
 
 if ! command -v apm &>/dev/null; then
   echo "==> Installing apm (agent package manager)"
-  # aka.ms/apm-unix is the official installer; APM_INSTALL_DIR keeps it sudo-free
-  # and lands the binary in ~/.local/bin. Non-fatal: cloud sessions scope GitHub
-  # access to the whitelisted repo, so the apm release repo is blocked. Warn and
-  # continue so the portable config (clone + chezmoi apply) still lands.
-  curl -sSL https://aka.ms/apm-unix | APM_INSTALL_DIR="$LOCAL_BIN" sh \
-    || echo "WARN: apm install failed (GitHub access likely scoped out); skipping APM manifest." >&2
+  # The official aka.ms/apm-unix installer pulls a release binary from GitHub,
+  # which cloud sessions scope out (access denied on microsoft/apm). apm also
+  # ships as the apm-cli wheel on PyPI, which is reachable, so install that with
+  # uv (present on the base image). uv tool drops the `apm` entrypoint in
+  # ~/.local/bin, already on PATH above. Non-fatal: warn and continue so the
+  # portable config (clone + chezmoi apply) still lands if this fails.
+  uv tool install apm-cli \
+    || echo "WARN: apm-cli install failed; skipping APM manifest." >&2
 fi
 
 # --- Clone or update the config repo ---
