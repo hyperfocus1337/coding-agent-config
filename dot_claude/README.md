@@ -20,57 +20,29 @@ The file itself is kept minimal — just `@rules/<name>.md` imports. Each rule l
 | `rules/ast-grep.md`          | Use ast-grep for structural pattern search when LSP doesn't apply.                                     |
 | `rules/jcodemunch.md`        | Use jcodemunch for codebase orientation and bulk symbol lookup; defines tool-selection priority order. |
 
+## Commands
+
+Slash commands are prompt templates invoked as `/<namespace>:<name>`, stored one file per command under `commands/`. The full catalog with per-command descriptions is in [`commands/README.md`](commands/README.md).
+
+- `git/` — commit, push, PR, changelog, branch and worktree cleanup, and history rewriting (amend author, amend date, shift dates).
+- `organize/` — six variants that section a file into comment-delimited blocks, differing only in header style.
+- `issues/` — improve a GitHub issue (in place or as pasteable text), or run the full issue-to-PR coding process.
+- `summarize/` — turn a meeting or transcript into structured notes with an action-items table.
+- `simple/` — explain a code snippet, proofread text, or convert files to Markdown.
+
 ## Hooks
 
-Hooks are shell commands Claude Code runs on tool lifecycle events (e.g. after every `Write`/`Edit`). Configured in `settings.json` and stored in `hooks/`.
+Hooks are shell commands Claude Code runs on tool lifecycle events (e.g. after every `Write`/`Edit`, or before a `Bash` call). They are configured in `settings.json` and stored one directory per hook under `hooks/`, each with its own README covering behavior, dependencies, and install steps.
 
-| Hook                                     | Trigger                               | Action                                                                                                                                                                                                                                                                                                                                                                                              |
-|------------------------------------------|---------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `hooks/prettify-md-tables/hook.mjs`      | `PostToolUse` on Write/Edit/MultiEdit | Aligns markdown table columns in any edited `.md` / `.markdown` file via [`markdown-table-prettify`](https://www.npmjs.com/package/markdown-table-prettify).                                                                                                                                                                                                                                        |
-| `hooks/stage-edited-file/hook.sh`        | `PostToolUse` on Write/Edit/MultiEdit | Runs `git add` on the edited file so each Claude write lands pre-staged in `git status`. Skips failed tool calls, secret-shaped filenames (`.env`, `*.pem`, `*.key`, `id_rsa*`, `id_ed25519*`), and paths outside a git repo. Note: re-stages whole file even if you had a partial `git add -p` selection.                                                                                          |
-| `hooks/lint-all-languages/hook.sh`       | `PostToolUse` on Write/Edit/MultiEdit | Lints the edited file by extension: `.py` via [`ruff`](https://docs.astral.sh/ruff/), `.js`/`.jsx`/`.ts`/`.tsx`/`.mjs`/`.cjs` via [`eslint`](https://eslint.org/), `.sh`/`.bash` via [`shellcheck`](https://www.shellcheck.net/), `.yml`/`.yaml` via [`yamllint`](https://yamllint.readthedocs.io/). Missing linter = silent skip; lint failure exits 2 so Claude sees the errors and can fix them. |
-| `hooks/type-check-all-languages/hook.sh` | `PostToolUse` on Write/Edit/MultiEdit | Type-checks project-wide (not just the file) by the edited file's extension: `.py` via [`pyrefly`](https://pyrefly.org/), `.ts`/`.tsx`/`.mts`/`.cts` via `tsc --noEmit`. Runs at the project root because type checkers need whole-project context. Missing checker = silent skip; errors go to stderr with exit 2 so Claude fixes them before moving on.                                           |
+| Hook                                                                   | Event                      | Summary                                                                                  |
+|------------------------------------------------------------------------|----------------------------|------------------------------------------------------------------------------------------|
+| [`prettify-md-tables`](hooks/prettify-md-tables/README.md)             | `PostToolUse` (Write/Edit) | Aligns markdown table columns in edited `.md` files. Node hook, needs `npm install`.     |
+| [`stage-edited-file`](hooks/stage-edited-file/README.md)               | `PostToolUse` (Write/Edit) | Runs `git add` on each edited file so writes land pre-staged. Skips secret-shaped names. |
+| [`lint-all-languages`](hooks/lint-all-languages/README.md)             | `PostToolUse` (Write/Edit) | Lints the edited file by extension (ruff, eslint, shellcheck, yamllint).                 |
+| [`type-check-all-languages`](hooks/type-check-all-languages/README.md) | `PostToolUse` (Write/Edit) | Type-checks the whole project by extension (pyrefly, tsc).                               |
+| [`block-secret-commits`](hooks/block-secret-commits/README.md)         | `PreToolUse` (Bash)        | Blocks git commits that would include non-gitignored secret files (`.env`, keys, creds). |
 
-Surgical by design — only table formatting is touched; prose and code blocks pass through unchanged. The prettify hook silently no-ops on non-markdown files, malformed JSON input, or read/write errors, so a formatting hiccup never blocks a Claude tool call. Failures are swallowed; the 10s timeout in `settings.json` caps worst-case runtime. The staging hook follows the same swallow-and-exit-0 contract with a 5s timeout, gates on `tool_response.success`, prefers `$CLAUDE_PROJECT_DIR` for the repo root, and self-disables if `jq` is missing.
-
-Node-based hooks declare their own `package.json` next to `hook.mjs`. After `chezmoi apply` renders them into `~/.claude`, run `npm install` in each `hooks/*/` directory that has a `package.json` (skip any that already have `node_modules/`) so the deps are provisioned.
-
-Shell-based hooks (e.g. `stage-edited-file/hook.sh`) parse the JSON payload with [`jq`](https://jqlang.github.io/jq/), so `jq` must be on `$PATH` (install via `brew install jq` on macOS).
-
-### Installing the lint binaries
-
-`lint-all-languages/hook.sh` calls each binary directly (no `npx`-fetched fallback), and the `command -v` check skips cleanly when a binary is missing. Install whichever you want active — anything skipped is a no-op.
-
-**macOS (Homebrew):**
-
-```sh
-brew install ruff shellcheck yamllint
-npm install -g eslint
-uv tool install pyrefly # for the type-check hook
-```
-
-**Debian / Ubuntu:**
-
-```sh
-apt install -y shellcheck yamllint
-uv tool install ruff # apt's ruff lags; uv tracks upstream
-uv tool install pyrefly # for the type-check hook
-npm install -g eslint
-```
-
-`ruff` on Debian/Ubuntu via `uv tool install` keeps it isolated from system Python and gets you the current release; `apt install ruff` works on recent distros but ships an older build. Global `eslint` matches the hook's bare `eslint` invocation; per-project `.eslintrc` is still picked up from the file's directory.
-
-The type-check hook additionally needs `pyrefly` (installed above) for Python and `tsc` for TypeScript. `tsc` normally comes from each project's own `typescript` dev dependency, so no global install is needed; the hook skips silently where it is absent.
-
-## Status line
-
-The status line is rendered by [ccstatusline](https://github.com/sirmalloc/ccstatusline), invoked from the `statusLine` block in `settings.json` as `npx -y ccstatusline@latest`. Claude Code pipes session context (cwd, model, git, etc.) to it on stdin and the rendered line is shown at the bottom of the TUI.
-
-Run `npx ccstatusline@latest` (no flags) for the interactive TUI to pick widgets, colours, and ordering — choices are persisted to `~/.claude/ccstatusline.json` and picked up on the next refresh.
-
-The setup flow also installs [Powerline fonts](https://github.com/powerline/fonts), needed so the separator glyphs (e.g. ``) render correctly. Set your terminal to a Powerline-patched font (e.g. `Meslo LG M for Powerline`) after install.
-
-Requires `npx` (Node) on `$PATH`.
+Every hook caps its runtime with a timeout in `settings.json` and self-disables cleanly when its tools are missing. The advisory hooks (table formatting, staging) swallow failures and exit 0, so a hiccup never blocks a tool call; the lint, type-check, and secret-commit hooks exit 2 to surface errors or a block back to Claude. Shell hooks parse the payload with [`jq`](https://jqlang.github.io/jq/), so `jq` must be on `$PATH` (`brew install jq` on macOS); the Node hook needs `npm install` in its directory after `chezmoi apply`. See each hook's README for its specific dependencies and install commands.
 
 ## Skills
 
@@ -82,48 +54,12 @@ Skills are on-demand reference documents that Claude reads when a task calls for
 | `meeting-summarizer` | Turn a meeting/call transcript into a structured English summary with decisions and action items. |
 | `organize`           | Reorganize a config or code file into labeled, comment-delimited sections (prompts for a style).  |
 
-## Commands
+## Status line
 
-### `git/` — Version control helpers
+The status line is rendered by [ccstatusline](https://github.com/sirmalloc/ccstatusline), invoked from the `statusLine` block in `settings.json` as `npx -y ccstatusline@latest`. Claude Code pipes session context (cwd, model, git, etc.) to it on stdin and the rendered line is shown at the bottom of the TUI.
 
-Ten commands in three groups. See `commands/git/README.md` for the full table plus calling notes for the history-rewriting commands.
+Run `npx ccstatusline@latest` (no flags) for the interactive TUI to pick widgets, colours, and ordering — choices are persisted to `~/.claude/ccstatusline.json` and picked up on the next refresh.
 
-Everyday flow: `/git:commit` (stage all, single commit), `/git:multiple` (split into a logical sequence of commits), `/git:push` (commit and push), `/git:pr` (commit, push, open a PR), `/git:changelog` (structured changelog by commit type, saved as a dated file).
+The setup flow also installs [Powerline fonts](https://github.com/powerline/fonts), needed so the separator glyphs (e.g. ``) render correctly. Set your terminal to a Powerline-patched font (e.g. `Meslo LG M for Powerline`) after install.
 
-Branch hygiene: `/git:branches` (delete stale local branches whose remote is gone), `/git:worktrees` (remove worktrees tied to `[gone]` branches, then delete them).
-
-History rewriting (all show current commits and confirm before running): `/git:amend-author` (rewrite the author of the whole branch or last N commits), `/git:amend-date` (set an absolute date on the most recent commit), `/git:shift-dates` (shift the last N commit dates by signed hours, GNU and BSD `date` compatible).
-
-### `organize/` — Section a config or code file
-
-Six variants of the same operation: reorganize a file into comment-delimited sections, differing only in header style. `/organize:banner-comments` (three-line banners), `/organize:boxed-comments` (full-box headers), `/organize:numbered-comments` (numbered sections with a matching table of contents), `/organize:underlined-comments` (name with a rule beneath), `/organize:plain-comments` (just the comment character and name), `/organize:minimal-comments` (single-line dividers).
-
-### `summarize/` — Transcript summaries
-
-#### /summarize:transscripts
-
-Summarize a meeting or transcript into structured sections with an action-items table.
-
-### `issues/` — GitHub issue workflow
-
-#### /issues:improve-issue
-
-Rewrite a GitHub issue to be clearer and more actionable (outputs text ready to paste).
-
-#### /issues:improve-issue-in-place
-
-Same as above, but edits the issue directly via `gh`.
-
-#### /issues:github-coding-process
-
-Full plan → branch → implement → test → PR workflow driven by a GitHub issue number.
-
-### `simple/` — Everyday utilities
-
-#### /simple:explain
-
-Step-by-step breakdown of a selected code snippet.
-
-#### /simple:proofread
-
-Spelling, grammar, and readability pass on selected text.
+Requires `npx` (Node) on `$PATH`.
