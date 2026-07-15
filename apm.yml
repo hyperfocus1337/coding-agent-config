@@ -28,6 +28,8 @@ dependencies:
     - triage
     - to-tickets
     - to-spec
+    - implement
+    - code-review
   # terraform-skill, moved off the `claude plugin` CLI. Which other plugins
   # were considered and why they stayed: docs/apm/plugin-migration.md.
   - git: antonbabenko/terraform-skill

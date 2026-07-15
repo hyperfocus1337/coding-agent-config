@@ -30,7 +30,9 @@ Most skills arrive bundled inside Claude plugins. The full list, with the market
 
 ## APM bundle skills (Matt Pocock)
 
-The [`mattpocock/skills`](https://github.com/mattpocock/skills) bundle in [`apm.yml`](../../apm.yml) is deployed selectively: only the skills listed below are installed, by basename (they resolve across the bundle's category subdirs). APM re-resolves the bundle to latest upstream on every install (no lockfile), so this list is the source of truth for which skills are pulled, not a pinned snapshot. `antonbabenko/terraform-skill` is also pulled via APM as a flat skill bundle.
+### Overview
+
+The [`mattpocock/skills`](https://github.com/mattpocock/skills) bundle in [`apm.yml`](../../apm.yml) is deployed selectively: only the skills listed below are installed, by basename (they resolve across the bundle's category subdirs). APM re-resolves the bundle to latest upstream on every install (no lockfile), so this list is the source of truth for which skills are pulled, not a pinned snapshot.
 
 | Skill                                                                                        | SKILL.md                                                                                                                                                       |
 |----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -47,5 +49,23 @@ The [`mattpocock/skills`](https://github.com/mattpocock/skills) bundle in [`apm.
 | [triage](https://www.aihero.dev/skills-triage)                                               | [engineering/triage/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/triage/SKILL.md)                                               |
 | [to-tickets](https://www.aihero.dev/skills-to-tickets)                                       | [engineering/to-tickets/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-tickets/SKILL.md)                                       |
 | [to-spec](https://www.aihero.dev/skills-to-spec)                                             | [engineering/to-spec/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-spec/SKILL.md)                                             |
+| [implement](https://www.aihero.dev/skills-implement)                                         | [engineering/implement/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/implement/SKILL.md)                                         |
+| [code-review](https://www.aihero.dev/skills-code-review)                                     | [engineering/code-review/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)                                     |
 
 To add or drop a Matt Pocock skill, edit the `skills:` list under `mattpocock/skills` in [`apm.yml`](../../apm.yml) and keep this table in sync.
+
+### Main build chain
+
+The intended end-to-end flow for building a feature is:
+
+[grill-with-docs](https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md) → [to-spec](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-spec/SKILL.md) → [to-tickets](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-tickets/SKILL.md) → [implement](https://github.com/mattpocock/skills/blob/main/skills/engineering/implement/SKILL.md) → [code-review](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)
+
+You interrogate the idea against docs (grill-with-docs), turn the settled intent into a written spec (to-spec), break the spec into discrete tickets (to-tickets), build each ticket (implement), then review the result (code-review). All five are in the installed set above.
+
+## APM bundle skills (other)
+
+Other skill bundles pulled via APM, one row per bundle. These are flat bundles (the whole repo is one skill), so there is no per-skill selection like the Matt Pocock table above. Add a row here whenever a new non-Matt-Pocock bundle is added to `apm.yml`.
+
+| Skill                                                              | SKILL.md                                                                                                                       |
+|--------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| [terraform-skill](https://github.com/antonbabenko/terraform-skill) | [skills/terraform-skill/SKILL.md](https://github.com/antonbabenko/terraform-skill/blob/master/skills/terraform-skill/SKILL.md) |
