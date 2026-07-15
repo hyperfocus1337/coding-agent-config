@@ -20,7 +20,7 @@ Plugin-provided MCP servers (prefix `plugin:<plugin>:<name>`) cannot be removed 
 
 ## Practical takeaway
 
-- User-scope servers: script them with `claude mcp remove` (see [scripts/extensions/mcp/remove.sh](../../scripts/extensions/mcp/remove.sh)).
+- User-scope servers: script them with `claude mcp remove <name> --scope user` (best-effort, wrapped in `|| true`).
 - Plugin servers: accept them, or disable the whole plugin (see [scripts/extensions/plugins/disable.sh](../../scripts/extensions/plugins/disable.sh)). No per-server option.
 
 ## Related

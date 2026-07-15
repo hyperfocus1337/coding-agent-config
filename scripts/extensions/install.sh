@@ -64,15 +64,8 @@ echo "==> Installing skills"
 echo "==> Installing MCP servers and skills via APM"
 "$SCRIPT_DIR/apm/install.sh"
 
-# Register MCP servers manually. Works around an MCP bug that writes to
-# ~/.claude.json instead of $CLAUDE_CONFIG_DIR/.claude.json.
-# Bug fixed in: https://github.com/microsoft/apm/pull/2096
-# echo "==> Registering MCP servers"
-# "$SCRIPT_DIR/mcp/install.sh"
-
-# Disable plugins and MCP servers we don't want enabled by default.
-echo "==> Disabling unwanted plugins, skills and MCP servers"
-"$SCRIPT_DIR/mcp/remove.sh"
+# Disable plugins and skills we don't want enabled by default.
+echo "==> Disabling unwanted plugins and skills"
 "$SCRIPT_DIR/plugins/disable.sh"
 "$SCRIPT_DIR/skills/remove.sh"
 
