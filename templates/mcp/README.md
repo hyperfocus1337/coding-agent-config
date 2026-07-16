@@ -14,10 +14,12 @@ Each server lives in its own folder with a standalone `.mcp.json` fragment and R
 
 ## Installing into a project
 
-Copy a server's fragment into the target project's root `.mcp.json`. If the project already has a `.mcp.json`, merge the entry under `mcpServers` rather than overwriting the file:
+Preferred: use the `install-mcp` skill (`dot_claude/skills/install-mcp/`). It prompts for the server and the agent(s) to target, fills in any placeholder URLs, checks required secrets and stdio commands, and installs through a project `apm.yml` so the config fans out to Claude, Cursor, Codex, and Gemini in one step. It reads its own registry (mirrored from these fragments), so you do not copy anything by hand.
+
+Manual fallback: copy a server's fragment into the target project's root `.mcp.json`. If the project already has a `.mcp.json`, merge the entry under `mcpServers` rather than overwriting the file:
 
 ```bash
 cp templates/mcp/<server>/.mcp.json <project>/.mcp.json
 ```
 
-See each server's README for its required env vars and any placeholder URLs to replace.
+Either way, see each server's README for its required env vars and any placeholder URLs to replace.

@@ -1,0 +1,106 @@
+{
+  "_comment": "Registry of project-scoped MCP servers, mirroring templates/mcp/ (hand-maintained; update the matching dep when a template changes). Each `dep` is an apm.yml `dependencies.mcp` self-defined entry. `secrets` stay as ${VAR} and are env-checked only; `prompts` are values substituted for the {{KEY}} placeholder before writing (never env-interpolated).",
+  "servers": {
+    "tessl": {
+      "summary": "Tessl platform for AI-assisted software engineering workflows.",
+      "docs": "https://docs.tessl.io/reference/custom-agent-setup",
+      "secrets": ["TESSL_TOKEN"],
+      "prompts": [],
+      "notes": "Either run `tessl auth login` once, or export TESSL_TOKEN (generate with `tessl api-key create`).",
+      "dep": {
+        "name": "tessl",
+        "registry": false,
+        "transport": "stdio",
+        "command": "tessl",
+        "args": ["mcp", "start"],
+        "env": { "TESSL_TOKEN": "${TESSL_TOKEN}" }
+      }
+    },
+    "stitch": {
+      "summary": "Google Stitch hosted tooling over HTTP.",
+      "docs": "https://stitch.withgoogle.com/docs/mcp/setup",
+      "secrets": ["STITCH_API_KEY"],
+      "prompts": [],
+      "notes": "Requires a valid X-Goog-Api-Key header from STITCH_API_KEY.",
+      "dep": {
+        "name": "stitch",
+        "registry": false,
+        "transport": "http",
+        "url": "https://stitch.googleapis.com/mcp",
+        "headers": { "X-Goog-Api-Key": "${STITCH_API_KEY}" }
+      }
+    },
+    "directus": {
+      "summary": "Directus instance: collections, fields, items, files, flows, schema.",
+      "docs": "https://directus.io/docs/guides/ai/mcp",
+      "secrets": ["DIRECTUS_TOKEN"],
+      "prompts": [
+        { "key": "DIRECTUS_URL", "target": "url", "ask": "Your Directus instance /mcp endpoint URL (e.g. https://cms.example.com/mcp)" }
+      ],
+      "notes": "DIRECTUS_TOKEN is a generated bearer token.",
+      "dep": {
+        "name": "directus",
+        "registry": false,
+        "transport": "http",
+        "url": "{{DIRECTUS_URL}}",
+        "headers": { "Authorization": "Bearer ${DIRECTUS_TOKEN}" }
+      }
+    },
+    "claude-design": {
+      "summary": "Anthropic hosted design MCP backing Claude's design/artifact styling.",
+      "docs": "https://api.anthropic.com/v1/design/mcp",
+      "secrets": [],
+      "prompts": [],
+      "notes": "Authenticates through existing Claude Code credentials, no extra secret needed.",
+      "dep": {
+        "name": "claude-design",
+        "registry": false,
+        "transport": "http",
+        "url": "https://api.anthropic.com/v1/design/mcp"
+      }
+    },
+    "orbit": {
+      "summary": "GitLab Orbit tooling over the GitLab API.",
+      "docs": "https://gitlab.com/api/v4/orbit/mcp",
+      "secrets": [],
+      "prompts": [
+        { "key": "ORBIT_URL", "target": "url", "ask": "Orbit MCP endpoint URL", "default": "https://gitlab.com/api/v4/orbit/mcp" }
+      ],
+      "notes": "If your GitLab instance rejects unauthenticated requests, add an `Authorization: Bearer ${GITLAB_TOKEN}` header to the dep and export GITLAB_TOKEN. Point the URL at your own instance if not gitlab.com.",
+      "dep": {
+        "name": "orbit",
+        "registry": false,
+        "transport": "http",
+        "url": "{{ORBIT_URL}}"
+      }
+    },
+    "jcodemunch": {
+      "summary": "Deep code analysis and indexing across a codebase (via uvx).",
+      "docs": "https://github.com/jgravelle/jcodemunch-mcp",
+      "secrets": [],
+      "prompts": [],
+      "notes": "uvx must be on PATH. Indexes under ~/.code-index/; run index_folder once per project. Ships a tool-selection rule (templates/mcp/jcodemunch/rule.md) worth dropping into .claude/rules/ of the target project.",
+      "dep": {
+        "name": "jcodemunch",
+        "registry": false,
+        "transport": "stdio",
+        "command": "uvx",
+        "args": ["jcodemunch-mcp"]
+      }
+    },
+    "jdocmunch": {
+      "summary": "Ingest and query documentation (markdown, HTML, plain text) via uvx.",
+      "docs": "https://github.com/jgravelle/jdocmunch-mcp",
+      "secrets": [],
+      "prompts": [],
+      "notes": "uvx must be on PATH. Index a documentation source once before querying it.",
+      "dep": {
+        "name": "jdocmunch",
+        "registry": false,
+        "transport": "stdio",
+        "command": "uvx",
+        "args": ["jdocmunch-mcp"]
+      }
+    }
+  }
+}
