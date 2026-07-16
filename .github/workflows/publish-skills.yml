@@ -3,12 +3,14 @@ name: publish-skills
 # --- Triggers ---
 # Publish changed skills as versioned GitHub Release assets on push to main.
 on:
+  # Push to main touching a skill or the publish tooling
   push:
     branches: [main]
     paths:
       - "dot_claude/skills/**"
       - "scripts/publish/**"
       - ".github/workflows/publish-skills.yml"
+  # Manual run from the Actions tab
   workflow_dispatch:
 
 # --- Permissions ---
@@ -26,6 +28,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      # Full history so tag lookups and the lock diff resolve
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
