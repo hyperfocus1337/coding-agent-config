@@ -17,6 +17,14 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
+# APM prompts for API keys when they're absent from the env. direnv normally
+# loads .envrc, but a fresh checkout (no `direnv allow`) leaves it unset. Source
+# .envrc directly so this works with or without direnv.
+if [ -z "${CONTEXT7_API_KEY:-}" ] && [ -f "$REPO_ROOT/.envrc" ]; then
+  # shellcheck disable=SC1091
+  . "$REPO_ROOT/.envrc"
+fi
+
 # Stage manifest: `apm install -g` reads ~/.apm/, not $PWD.
 echo "==> Staging apm.yml manifest"
 mkdir -p "$HOME/.apm"
