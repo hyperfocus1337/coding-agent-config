@@ -11,7 +11,8 @@ docs/
 ├── agents/       # Agent environment and session guides
 │   ├── skills.md                — Every channel a skill reaches an agent through (local, plugins, CLI, APM)
 │   ├── codex-compat.md          — Sharing skills and instructions between Claude Code and Codex
-│   └── slash-command-origin.md  — Trace a live /command back to its source (name, picker, grep, debug)
+│   ├── slash-command-origin.md  — Trace a live /command back to its source (name, picker, grep, debug)
+│   └── skills-context.md        — Context budget consumed by installed skill breadcrumbs
 └── mcp/          # MCP server configuration guides
     ├── disabling-servers.md  — Disable MCP servers not wanted by default
     └── enabling/             — Enable MCP servers per platform
@@ -22,7 +23,7 @@ docs/
 
 ## Agent environments
 
-The `agents/` folder documents skills in [`skills.md`](agents/skills.md), which maps every channel a skill reaches an agent through: local files, standalone CLIs, plugins, and the APM bundle. [`codex-compat.md`](agents/codex-compat.md) covers where Claude Code and Codex each look for skills and instructions, and what works today to share content across both. [`slash-command-origin.md`](agents/slash-command-origin.md) is the runtime counterpart to `skills.md`: how to trace a live `/command` back to its source when names collide or a command behaves unlike the file you edited.
+The `agents/` folder documents skills in [`skills.md`](agents/skills.md), which maps every channel a skill reaches an agent through: local files, standalone CLIs, plugins, and the APM bundle. [`codex-compat.md`](agents/codex-compat.md) covers where Claude Code and Codex each look for skills and instructions, and what works today to share content across both. [`slash-command-origin.md`](agents/slash-command-origin.md) is the runtime counterpart to `skills.md`: how to trace a live `/command` back to its source when names collide or a command behaves unlike the file you edited. [`skills-context.md`](agents/skills-context.md) estimates the session-start context cost of every installed skill's listing breadcrumb, and explains why the real constraint is description truncation rather than token count.
 
 To bootstrap a fresh repository so a Claude Code cloud session (web, Android, CI) gets the same environment as a local machine, use the [`templates/web`](../templates/web/) pack. It ships a drop-in `SessionStart` hook and the bootstrap script it runs.
 
