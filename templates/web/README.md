@@ -77,7 +77,7 @@ That adds the plugins, standalone skills, and playwright browsers on top of what
 
 The bootstrap registers the user-scoped MCP servers from [`apm.yml`](../../apm.yml). The ones that interpolate secrets (`${TESSL_TOKEN}`, `${CONTEXT7_API_KEY}`) register regardless, but only work if those env vars are set in the cloud environment before the session starts. An unset var leaves that server registered but non-functional; it does not fail the install. Set the vars in the platform's environment settings to activate them.
 
-To also add project-scoped MCP servers, use the [`templates/mcp`](../mcp/) pack and its [`.mcp.json`](../mcp/.mcp.json), and set the referenced env vars in the cloud environment settings. Enabling MCP per platform is covered in [`docs/mcp/enabling/web.md`](../../docs/mcp/enabling/web.md).
+To also add project-scoped MCP servers, install them per-project with the `install-mcp` skill (catalog in [`docs/mcp/project-servers.md`](../../docs/mcp/project-servers.md)) and set the referenced env vars in the cloud environment settings. Enabling MCP per platform is covered in [`docs/mcp/enabling/web.md`](../../docs/mcp/enabling/web.md).
 
 ## Lessons learned
 

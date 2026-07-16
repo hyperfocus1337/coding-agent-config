@@ -167,7 +167,7 @@ Installed conditionally when `playwright-cli` is on `PATH`, via `playwright-cli 
 
 ## MCP Servers (User-Scoped)
 
-MCP servers are declared in `apm.yml` and deployed globally at user scope via `apm install -g`, available across all Claude sessions. The one user-scoped server, `context7`, reads a `CONTEXT7_API_KEY` from the environment at install time (`apm.yml` interpolates it via `${CONTEXT7_API_KEY}`). Project-scoped servers (tessl, stitch, directus, claude-design, orbit, jcodemunch, jdocmunch) each live in their own folder under `templates/mcp/<server>/`; see [`templates/mcp/README.md`](../../templates/mcp/README.md).
+MCP servers are declared in `apm.yml` and deployed globally at user scope via `apm install -g`, available across all Claude sessions. The one user-scoped server, `context7`, reads a `CONTEXT7_API_KEY` from the environment at install time (`apm.yml` interpolates it via `${CONTEXT7_API_KEY}`). Project-scoped servers (tessl, stitch, directus, claude-design, orbit, jcodemunch, jdocmunch) are installed per-project with the `install-mcp` skill rather than deployed user-wide; see [`docs/mcp/project-servers.md`](../../docs/mcp/project-servers.md).
 
 ### `context7`
 

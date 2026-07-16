@@ -1,5 +1,5 @@
 {
-  "_comment": "Registry of project-scoped MCP servers, mirroring templates/mcp/ (hand-maintained; update the matching dep when a template changes). Each `dep` is an apm.yml `dependencies.mcp` self-defined entry. `secrets` stay as ${VAR} and are env-checked only; `prompts` are values substituted for the {{KEY}} placeholder before writing (never env-interpolated).",
+  "_comment": "Registry of project-scoped MCP servers: the source of truth for the install-mcp skill (human catalog at docs/mcp/project-servers.md; keep both in sync). Each `dep` is an apm.yml `dependencies.mcp` self-defined entry. `secrets` stay as ${VAR} and are env-checked only; `prompts` are values substituted for the {{KEY}} placeholder before writing (never env-interpolated).",
   "servers": {
     "tessl": {
       "summary": "Tessl platform for AI-assisted software engineering workflows.",
@@ -79,7 +79,7 @@
       "docs": "https://github.com/jgravelle/jcodemunch-mcp",
       "secrets": [],
       "prompts": [],
-      "notes": "uvx must be on PATH. Indexes under ~/.code-index/; run index_folder once per project. Ships a tool-selection rule (templates/mcp/jcodemunch/rule.md) worth dropping into .claude/rules/ of the target project.",
+      "notes": "uvx must be on PATH. Indexes under ~/.code-index/; run index_folder once per project. Ships a tool-selection rule (references/rules/jcodemunch.md) the skill can drop into .claude/rules/ of the target project.",
       "dep": {
         "name": "jcodemunch",
         "registry": false,

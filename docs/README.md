@@ -14,6 +14,7 @@ docs/
 │   ├── slash-command-origin.md  — Trace a live /command back to its source (name, picker, grep, debug)
 │   └── skills-context.md        — Context budget consumed by installed skill breadcrumbs
 └── mcp/          # MCP server configuration guides
+    ├── project-servers.md    — Catalog of project-scoped servers (install via the install-mcp skill)
     ├── disabling-servers.md  — Disable MCP servers not wanted by default
     └── enabling/             — Enable MCP servers per platform
         ├── android.md  — Android
@@ -29,4 +30,4 @@ To bootstrap a fresh repository so a Claude Code cloud session (web, Android, CI
 
 ## MCP servers
 
-The `mcp/` folder contains platform-specific guides for configuring MCP (Model Context Protocol) servers across different Claude Code environments. `enabling/` covers turning servers on per platform — web, desktop, and Android — including repository configuration, authentication, and environment variable setup. `disabling-servers.md` covers turning off servers not wanted by default.
+The `mcp/` folder contains guides for configuring MCP (Model Context Protocol) servers. [`project-servers.md`](mcp/project-servers.md) is the catalog of project-scoped servers (tessl, stitch, directus, claude-design, orbit, jcodemunch, jdocmunch) that are installed per-project with the `install-mcp` skill rather than user-wide. `enabling/` covers turning servers on per platform (web, desktop, and Android), including repository configuration, authentication, and environment variable setup. `disabling-servers.md` covers turning off servers not wanted by default.

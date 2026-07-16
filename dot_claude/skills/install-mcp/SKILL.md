@@ -5,7 +5,7 @@ description: Install a project-scoped, cross-agent MCP server into the current p
 
 # install-mcp
 
-Installs project-scoped MCP servers into the current project and fans them out to whichever coding agents the user names (Claude Code, Cursor, Codex, Gemini, ...). All translation is delegated to `apm` via a project `apm.yml`; this skill never hand-writes per-agent config formats. It replaces the manual copy-paste of `templates/mcp/` fragments.
+Installs project-scoped MCP servers into the current project and fans them out to whichever coding agents the user names (Claude Code, Cursor, Codex, Gemini, ...). All translation is delegated to `apm` via a project `apm.yml`; this skill never hand-writes per-agent config formats. The available servers are cataloged for humans in [`docs/mcp/project-servers.md`](../../../docs/mcp/project-servers.md); the machine source this skill reads is [`references/servers.json`](references/servers.json).
 
 ## When to use
 
@@ -33,7 +33,8 @@ For each selected server, take its `dep` and:
 
 - **`prompts`**: each entry marks a value that must be filled in (e.g. a Directus instance URL). Ask the user, using `default` if present, and substitute the answer for the `{{KEY}}` placeholder in the `dep`. These are baked in as literals, not env vars.
 - **`secrets`**: leave every `${VAR}` in the dep exactly as written (apm/the agent interpolates them at launch). For each secret, check whether it is set in the environment (`printenv VAR`) and warn the user, pointing at the server's `notes`/`docs`, if it is missing. Never ask for or write the secret value itself.
-- **`notes`**: surface these to the user (optional auth headers, post-install steps like jcodemunch's `index_folder` or its tool-selection rule).
+- **`notes`**: surface these to the user (optional auth headers, post-install steps like jcodemunch's `index_folder`).
+- **bundled rules**: if a chosen server has a companion rule file in [`references/rules/`](references/rules/) (currently `jcodemunch.md`), offer to copy it into the target project's `.claude/rules/` so its tool-selection guidance loads there. Only jcodemunch ships one today.
 
 ### 3. Preflight
 
@@ -67,5 +68,5 @@ apm install --only mcp
 
 ## Notes
 
-- The registry mirrors [`templates/mcp/`](../../../templates/mcp/) (the human-facing fragments) and its curated `secrets`/`prompts`/`notes` metadata is hand-maintained. When a template's connection details change, update the matching `dep` here too.
+- [`references/servers.json`](references/servers.json) is the source of truth for the server set; its human companion is [`docs/mcp/project-servers.md`](../../../docs/mcp/project-servers.md). Update both when adding a server or changing connection details.
 - Verified output paths (apm 0.25): Claude -> project `.mcp.json`, Cursor -> `.cursor/mcp.json`, Codex -> `.codex/config.toml`, Gemini -> `.gemini/settings.json`. Claude, Cursor, and Gemini need their dir pre-created (step 4); Codex does not. Always report apm's actual per-agent output rather than assuming.

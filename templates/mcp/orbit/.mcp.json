@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "orbit": {
-      "type": "http",
-      "url": "https://gitlab.com/api/v4/orbit/mcp"
-    }
-  }
-}

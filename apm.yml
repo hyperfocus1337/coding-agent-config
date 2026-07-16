@@ -61,7 +61,8 @@ dependencies:
     env:
       CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}
   # tessl, jcodemunch, jdocmunch, claude-design and orbit are project-scoped
-  # opt-in templates now, not user-scoped installs: see templates/mcp/<server>/.
+  # opt-in servers, not user-scoped installs: install them per-project with the
+  # install-mcp skill. Catalog: docs/mcp/project-servers.md.
   # LSP servers. Binary must be on $PATH at install time.
   lsp:
   - name: pyright
