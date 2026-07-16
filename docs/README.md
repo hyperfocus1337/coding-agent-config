@@ -9,8 +9,9 @@ docs/
 ├── apm/          # APM (agent package manager) notes
 │   └── plugin-migration.md  — Which Claude plugins could move to APM (audit)
 ├── agents/       # Agent environment and session guides
-│   ├── skills.md        — Every channel a skill reaches an agent through (local, plugins, CLI, APM)
-│   └── codex-compat.md  — Sharing skills and instructions between Claude Code and Codex
+│   ├── skills.md                — Every channel a skill reaches an agent through (local, plugins, CLI, APM)
+│   ├── codex-compat.md          — Sharing skills and instructions between Claude Code and Codex
+│   └── slash-command-origin.md  — Trace a live /command back to its source (name, picker, grep, debug)
 └── mcp/          # MCP server configuration guides
     ├── disabling-servers.md  — Disable MCP servers not wanted by default
     └── enabling/             — Enable MCP servers per platform
@@ -21,7 +22,7 @@ docs/
 
 ## Agent environments
 
-The `agents/` folder documents skills in [`skills.md`](agents/skills.md), which maps every channel a skill reaches an agent through: local files, standalone CLIs, plugins, and the APM bundle. [`codex-compat.md`](agents/codex-compat.md) covers where Claude Code and Codex each look for skills and instructions, and what works today to share content across both.
+The `agents/` folder documents skills in [`skills.md`](agents/skills.md), which maps every channel a skill reaches an agent through: local files, standalone CLIs, plugins, and the APM bundle. [`codex-compat.md`](agents/codex-compat.md) covers where Claude Code and Codex each look for skills and instructions, and what works today to share content across both. [`slash-command-origin.md`](agents/slash-command-origin.md) is the runtime counterpart to `skills.md`: how to trace a live `/command` back to its source when names collide or a command behaves unlike the file you edited.
 
 To bootstrap a fresh repository so a Claude Code cloud session (web, Android, CI) gets the same environment as a local machine, use the [`templates/web`](../templates/web/) pack. It ships a drop-in `SessionStart` hook and the bootstrap script it runs.
 
