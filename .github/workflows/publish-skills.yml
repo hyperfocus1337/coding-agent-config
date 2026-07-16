@@ -1,0 +1,48 @@
+name: publish-skills
+
+# --- Triggers ---
+# Publish changed skills as versioned GitHub Release assets on push to main.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dot_claude/skills/**"
+      - "scripts/publish/**"
+      - ".github/workflows/publish-skills.yml"
+  workflow_dispatch:
+
+# --- Permissions ---
+# Needed to create releases/tags and commit the updated lock file back.
+permissions:
+  contents: write
+
+# --- Concurrency ---
+concurrency:
+  group: publish-skills
+  cancel-in-progress: false
+
+# --- Jobs ---
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Publish changed skills
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: scripts/publish/publish-skills.sh
+
+      - name: Commit updated lock file
+        run: |
+          if git diff --quiet -- scripts/publish/skills.lock.json; then
+            echo "lock unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add scripts/publish/skills.lock.json
+          git commit -m "chore(skills): bump published versions [skip ci]"
+          git push

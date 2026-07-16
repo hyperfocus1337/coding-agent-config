@@ -7,8 +7,6 @@ set shell := ["bash", "-cu"]
 REPO := justfile_directory()
 SCRIPTS := REPO / "scripts"
 TEMPLATES := REPO / "templates"
-SKILLS := REPO / ".claude" / "skills"
-DIST := REPO / "dist" / "skills"
 CLAUDE_HOME := env("CLAUDE_HOME", env("HOME") / ".claude")
 CONTAINER := "coding-agent-sandbox-devcontainer"
 
@@ -141,27 +139,15 @@ fmt-check:
 # Package
 # ──────────────────────────────────────────────────────────────────────────────
 
-# Zip each skill folder into dist/skills/<name>.zip for Claude desktop install.
+# Publish changed skills as versioned GitHub Release assets (patch-bumps on content change).
 [group('package')]
-zip-skills:
-    #!/usr/bin/env bash
-    set -euo pipefail # exit on error, unset var, or failed pipe
-    rm -rf "{{ DIST }}" # wipe stale zips so deleted skills don't linger
-    mkdir -p "{{ DIST }}"
-    shopt -s nullglob # empty loop instead of literal '*/' when no skills
-    found=0
-    for dir in "{{ SKILLS }}"/*/; do
-      [[ -f "$dir/SKILL.md" ]] || continue # skip dirs that aren't skills (no manifest)
-      name="$(basename "$dir")"
-      # cd into skills/ first so paths in the zip are relative: archive root is
-      # <name>/SKILL.md, which is the layout Claude desktop's importer expects.
-      # -r recurse into reference/ etc, -X drop macOS extra attrs, -x skip .DS_Store.
-      ( cd "{{ SKILLS }}" && zip -r -X "{{ DIST }}/$name.zip" "$name" -x '*.DS_Store' )
-      found=$((found + 1))
-    done
-    # nullglob makes a skill-less dir silently produce nothing; fail loudly instead.
-    if (( found == 0 )); then echo "No skills found in {{ SKILLS }}/."; exit 1; fi
-    echo "Zipped $found skill(s) to {{ DIST }}/."
+publish-skills:
+    "{{ SCRIPTS }}/publish/publish-skills.sh"
+
+# Show which skills would publish without creating releases or touching the lock file.
+[group('package')]
+publish-skills-dry:
+    "{{ SCRIPTS }}/publish/publish-skills.sh" --dry-run
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Inspect

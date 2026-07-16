@@ -1,0 +1,18 @@
+{
+  "gh-cli": {
+    "version": "0.1.0",
+    "hash": "5923dbe48aef4eccea7af95eda8be9493b74176943809d8a8c8125162878c492"
+  },
+  "install-mcp": {
+    "version": "0.1.0",
+    "hash": "e105560d77f9cb4c82ec177396f0c6c4b0e02ca785d5ef0a4d92ed6244b68b0d"
+  },
+  "meeting-summarizer": {
+    "version": "0.1.0",
+    "hash": "a94da707f7f265db7d18faecde540315b1dd06e2f4d86dd8d04b6dcf1656e743"
+  },
+  "organize": {
+    "version": "0.1.0",
+    "hash": "2fb8ed97b4d4a10b39a907f7e324d8a46dc13391a297feceed0252e2c8c81e97"
+  }
+}
