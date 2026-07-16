@@ -4,12 +4,12 @@
     "hash": "5923dbe48aef4eccea7af95eda8be9493b74176943809d8a8c8125162878c492"
   },
   "install-mcp": {
-    "version": "0.1.0",
-    "hash": "e105560d77f9cb4c82ec177396f0c6c4b0e02ca785d5ef0a4d92ed6244b68b0d"
+    "version": "0.1.1",
+    "hash": "bbea4699a80d472cfcd780ede6f08bcd454cd3da615ea6e17317cf2aa6850195"
   },
   "meeting-summarizer": {
-    "version": "0.1.0",
-    "hash": "a94da707f7f265db7d18faecde540315b1dd06e2f4d86dd8d04b6dcf1656e743"
+    "version": "0.1.1",
+    "hash": "942699a64df5582c8a3771737acf0099c10ee38af201670cc6cb8648cbaf5220"
   },
   "organize": {
     "version": "0.1.0",
