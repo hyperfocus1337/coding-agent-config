@@ -10,7 +10,7 @@ The skill needs `apm` and `uv` on `PATH`. It writes each agent's native config (
 
 ## Catalog
 
-Secrets shown as `${VAR}` stay as literal placeholders in the config and are interpolated from the environment when the agent launches, so export them before starting a session. Values marked "prompted" are asked for at install time and baked into the config as literals.
+Secrets shown as `${VAR}` stay as literal placeholders in the config and are interpolated from the environment when the agent launches. If a required secret is not already set, the skill offers to scaffold a `.env` or `.envrc` in the project root (empty placeholders, never real values) for you to fill in, or points you at the server's official auth flow instead. Add that file to `.gitignore`, and note the value only reaches the agent if it is in the environment at launch (direnv loads `.envrc` automatically; a plain `.env` needs your shell or tooling to load it). Values marked "prompted" are asked for at install time and baked into the config as literals.
 
 ### tessl (stdio)
 

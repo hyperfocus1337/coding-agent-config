@@ -32,7 +32,11 @@ Load [`references/servers.json`](references/servers.json). Show the user the ava
 For each selected server, take its `dep` and:
 
 - **`prompts`**: each entry marks a value that must be filled in (e.g. a Directus instance URL). Ask the user, using `default` if present, and substitute the answer for the `{{KEY}}` placeholder in the `dep`. These are baked in as literals, not env vars.
-- **`secrets`**: leave every `${VAR}` in the dep exactly as written (apm/the agent interpolates them at launch). For each secret, check whether it is set in the environment (`printenv VAR`) and warn the user, pointing at the server's `notes`/`docs`, if it is missing. Never ask for or write the secret value itself.
+- **`secrets`**: leave every `${VAR}` in the dep exactly as written (the agent interpolates it from the environment at launch). For each secret, check whether it is set (`printenv VAR`). Do not assume the user already has it. If any are unset, offer one of these, do not just warn:
+  - Scaffold a credentials file in the project root so there is one place to fill them in. Ask which the user prefers: `.envrc` (direnv style, `export VAR=` lines, matching this repo's own pattern; direnv loads it into the environment automatically so the agent picks it up at launch) or `.env` (plain `VAR=` lines; remind the user it only takes effect if their shell or tooling loads it before the agent starts). Append only the missing vars without duplicating an existing line, write empty placeholders and never real values, and tell the user to add the file to `.gitignore` if it is not already ignored.
+  - Point at the server's official auth flow when it has one (e.g. tessl's `tessl auth login`, per `notes`/`docs`), in which case no variable is needed.
+
+  Never ask for or write the secret value itself.
 - **`notes`**: surface these to the user (optional auth headers, post-install steps like jcodemunch's `index_folder`).
 - **bundled rules**: if a chosen server has a companion rule file in [`references/rules/`](references/rules/) (currently `jcodemunch.md`), offer to copy it into the target project's `.claude/rules/` so its tool-selection guidance loads there. Only jcodemunch ships one today.
 
