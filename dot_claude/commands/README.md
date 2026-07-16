@@ -23,11 +23,12 @@ The three history-rewriting commands (`amend-author`, `amend-date`, `shift-dates
 
 ## organize/ — section a config or code file
 
-Six variants of the same operation: reorganize a file into comment-delimited sections, differing only in header style.
+Eight variants of the same operation: reorganize a file into comment-delimited sections, differing only in header style.
 
 | Command                            | Header style                                         |
 |------------------------------------|------------------------------------------------------|
 | `/organize:banner-comments`        | Three-line banner headers.                           |
+| `/organize:rule-banner-comments`   | Three-line banner headers with box-drawing rules.    |
 | `/organize:boxed-comments`         | Full-box headers.                                    |
 | `/organize:numbered-comments`      | Numbered sections with a matching table of contents. |
 | `/organize:underlined-comments`    | Name with a rule beneath it.                         |

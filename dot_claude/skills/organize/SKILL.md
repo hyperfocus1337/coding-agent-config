@@ -65,6 +65,14 @@ Some file types conventionally use multiple comment characters for headers (`##`
 # ============================================================
 ```
 
+**Rule banner** — a three-line header like Banner, but the top and bottom rules are light box-drawing characters (`─`) spanning a fixed width; softer than the `=` Banner while keeping the same three-line presence:
+
+```
+# ──────────────────────────────────────────────────────────────────────────────
+# Section name
+# ──────────────────────────────────────────────────────────────────────────────
+```
+
 **Numbered** — banner or minimal header prefixed with a section number, pairs with a numbered table of contents:
 
 ```

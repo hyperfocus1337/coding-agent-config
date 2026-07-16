@@ -22,6 +22,7 @@ Replace `~/.claude/` with `<project>/.claude/` to scope to a project.
 | `/organize:minimal-comments`       | Single-line divider                               |
 | `/organize:trailing-rule-comments` | Name flush-left with a rule trailing to width     |
 | `/organize:banner-comments`        | Three-line rule around the name                   |
+| `/organize:rule-banner-comments`   | Three-line header with box-drawing rules          |
 | `/organize:numbered-comments`      | Numbered banner plus a numbered table of contents |
 | `/organize:underlined-comments`    | Name with a rule on the line beneath it           |
 | `/organize:boxed-comments`         | Full box around the name                          |
