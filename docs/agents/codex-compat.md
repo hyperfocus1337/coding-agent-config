@@ -31,6 +31,17 @@ Codex supports this direction too and follows the symlink target when scanning. 
 
 **Slash commands: skip.** Codex prompts are user-scoped only and use a different invocation model (`$skill` vs `/command`). Not worth unifying.
 
+## Sidestep the problem: run Codex inside Claude Code
+
+The sharing question only matters if you switch harnesses. The [openai-codex plugin](https://github.com/openai/codex-plugin-cc) lets you drive Codex from within a Claude Code session, so you stay in one harness and delegate to Codex when you want its model or a second opinion. It is already installed by this repo, see [`scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh):
+
+```sh
+claude plugin marketplace add openai/codex-plugin-cc
+claude plugin install codex@openai-codex
+```
+
+With this, Codex runs against the same working tree and reads the same `AGENTS.md`, so if you already point `CLAUDE.md` at `AGENTS.md` (the instructions fix above) both harnesses share one source of truth. Skills stay Claude-side; Codex is invoked as a delegate rather than a peer with its own skill discovery.
+
 ## Recommendation for this repo
 
-Given how much already lives in chezmoi, the symlink approach fits best: `.agents/` as the real content, `.claude/` as a thin shim of links, both committed.
+For now, lean on the codex plugin: staying in one harness avoids the sharing problem entirely and needs no repo changes. If a genuine two-harness split shows up later, the symlink approach fits best given how much already lives in chezmoi (`.agents/` as the real content, `.claude/` as a thin shim of links, both committed). Native configurable skill paths would beat both, but that is not on the roadmap (#18621 was closed `not planned`), so do not wait on it.
