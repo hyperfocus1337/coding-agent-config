@@ -12,13 +12,12 @@ The file itself is kept minimal — just `@rules/<name>.md` imports. Each rule l
 
 ### `rules/` — Composable standing instructions
 
-| Rule                         | What it governs                                                                                        |
-|------------------------------|--------------------------------------------------------------------------------------------------------|
-| `rules/general.md`           | Output style (no wrapped sentences, no em dashes, sentence-case headings) and always-on context7 use.  |
-| `rules/code-intelligence.md` | Prefer LSP (go-to-definition, find-references) over file searches; run diagnostics after every edit.   |
-| `rules/cli-tools.md`         | Prefer the preinstalled fast CLI tools (rg, fd, bat, jq/yq, httpie, etc.) over slower equivalents.     |
-| `rules/ast-grep.md`          | Use ast-grep for structural pattern search when LSP doesn't apply.                                     |
-| `rules/jcodemunch.md`        | Use jcodemunch for codebase orientation and bulk symbol lookup; defines tool-selection priority order. |
+| Rule                         | What it governs                                                                                       |
+|------------------------------|-------------------------------------------------------------------------------------------------------|
+| `rules/general.md`           | Output style (no wrapped sentences, no em dashes, sentence-case headings) and always-on context7 use. |
+| `rules/code-intelligence.md` | Prefer LSP (go-to-definition, find-references) over file searches; run diagnostics after every edit.  |
+| `rules/cli-tools.md`         | Prefer the preinstalled fast CLI tools (rg, fd, bat, jq/yq, httpie, etc.) over slower equivalents.    |
+| `rules/ast-grep.md`          | Use ast-grep for structural pattern search when LSP doesn't apply.                                    |
 
 ## Commands
 

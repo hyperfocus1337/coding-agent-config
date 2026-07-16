@@ -13,3 +13,7 @@ cp templates/mcp/jcodemunch/.mcp.json <project>/.mcp.json
 ```
 
 `uvx` fetches and runs `jcodemunch-mcp` on demand, so it must be on `PATH` at launch. The tool stores its index under `~/.code-index/`; run `index_folder` once per project before using the other tools.
+
+## Rule
+
+[`rule.md`](rule.md) is the tool-selection guidance for this server. Since jcodemunch is project-scoped rather than deployed user-wide, drop this rule into a project that installs the server (for example `.claude/rules/jcodemunch.md`) instead of loading it globally.

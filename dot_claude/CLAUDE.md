@@ -14,10 +14,6 @@
 
 @rules/ast-grep.md
 
-<!-- codebase orientation + symbol lookup -->
-
-@rules/jcodemunch.md
-
 <!-- slash command catalog (reference only, not auto-loaded) -->
 
 Slash command catalog: [commands/README.md](commands/README.md)
