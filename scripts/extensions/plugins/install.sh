@@ -139,3 +139,7 @@ echo "==> Installing chrome-devtools plugin"
 # Chrome DevTools plugin
 claude plugin marketplace add ChromeDevTools/chrome-devtools-mcp
 claude plugin install chrome-devtools-mcp@chrome-devtools-plugins
+
+# neon skills moved to apm.yml (skills-only, no MCP server). The neon-postgres
+# plugin bundles a hosted Neon MCP that can't be disabled per-server, so we take
+# just the skills via APM. See docs/apm/plugin-migration.md.

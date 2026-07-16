@@ -40,6 +40,14 @@ dependencies:
   # terraform-skill, moved off the `claude plugin` CLI. Which other plugins
   # were considered and why they stayed: docs/apm/plugin-migration.md.
   - git: antonbabenko/terraform-skill
+  # Neon skills only. The neon-postgres plugin bundles a hosted Neon MCP that
+  # can't be disabled per-server, so we take just the skills via APM (which
+  # never wires mcp.json). Resolved from the repo's top-level skills/ dir.
+  - git: neondatabase/agent-skills
+    skills:
+    - neon
+    - neon-postgres
+    - neon-postgres-branches
   # User-scoped MCP servers. Secrets come from the environment at install time
   # (${VAR}) so this manifest stays committable.
   mcp:
