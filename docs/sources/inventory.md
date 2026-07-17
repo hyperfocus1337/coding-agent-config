@@ -35,45 +35,51 @@ Plain files committed under `dot_claude/` and laid into `~/.claude` by `just che
 
 ## By APM skill bundles (`apm.yml`)
 
-Third-party skills pulled by `apm install`, which re-resolves to latest upstream on every run (no lockfile). The full per-skill mapping with upstream URLs is in [`channels.md`](channels.md). All are of kind `skill`.
+Third-party skills pulled by `apm install`, which re-resolves to latest upstream on every run (no lockfile). Declared under `dependencies.apm` in [`apm.yml`](../../apm.yml), which is the source of truth for which skills are pulled. All are of kind `skill`.
 
 ### Matt Pocock bundle (`mattpocock/skills`)
 
-| Skill                           | Description                                                                                                    |
-|---------------------------------|----------------------------------------------------------------------------------------------------------------|
-| `grilling`                      | Stress-test a plan, decision, or idea.                                                                         |
-| `grill-me`                      | Be interrogated on your own reasoning.                                                                         |
-| `grill-with-docs`               | Interrogate an idea against real documentation.                                                                |
-| `codebase-design`               | Vocabulary for designing deep modules and placing seams.                                                       |
-| `domain-modeling`               | Build a ubiquitous language and record ADRs.                                                                   |
-| `wayfinder`                     | Orient quickly in an unfamiliar codebase.                                                                      |
-| `handoff`                       | Capture session state so work can be picked up later.                                                          |
-| `improve-codebase-architecture` | Assess and improve an existing codebase's architecture.                                                        |
-| `setup-matt-pocock-skills`      | Bootstrap the Matt Pocock skill set.                                                                           |
-| `tdd`                           | Test-driven development, red-green-refactor.                                                                   |
-| `triage`                        | Triage and prioritize incoming work.                                                                           |
-| `to-tickets`                    | Break a spec into discrete, buildable tickets.                                                                 |
-| `to-spec`                       | Turn settled intent into a written behavioral spec.                                                            |
-| `implement`                     | Build a single ticket to completion.                                                                           |
-| `code-review`                   | Review a branch on repo standards and originating-spec adherence.                                              |
-| `research`                      | Investigate a question against high-trust primary sources.                                                     |
-| `prototype`                     | Build a throwaway prototype to sanity-check a direction.                                                       |
-| `ask-matt`                      | Ask the Matt Pocock advisory skill.                                                                            |
-| `diagnosing-bugs`               | Structured diagnosis loop for hard bugs and regressions.                                                       |
-| `resolving-merge-conflicts`     | Work through an in-progress merge or rebase conflict.                                                          |
-| `teach`                         | Explain a concept or codebase area for onboarding.                                                             |
-| `writing-great-skills`          | Author well-structured skills.                                                                                 |
-| `to-prd`                        | Turn a rough intent into a PRD. Resolves from the bundle on disk though not in the explicit `apm.yml` list.    |
-| `to-issues`                     | Break the work into GitHub issues. Resolves from the bundle on disk though not in the explicit `apm.yml` list. |
+The [`mattpocock/skills`](https://github.com/mattpocock/skills) bundle is deployed selectively: only the skills listed below are installed, by basename (they resolve across the bundle's category subdirs). To add or drop one, edit the `skills:` list under `mattpocock/skills` in [`apm.yml`](../../apm.yml) and keep this table in sync.
+
+| Skill                           | Description                                                                                                    | Reference                                                                                                                                                                                    |
+|---------------------------------|----------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `grilling`                      | Stress-test a plan, decision, or idea.                                                                         | [aihero](https://www.aihero.dev/skills-grilling) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md)                                          |
+| `grill-me`                      | Be interrogated on your own reasoning.                                                                         | [aihero](https://www.aihero.dev/skills-grill-me) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/productivity/grill-me/SKILL.md)                                          |
+| `grill-with-docs`               | Interrogate an idea against real documentation.                                                                | [aihero](https://www.aihero.dev/skills-grill-with-docs) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md)                             |
+| `codebase-design`               | Vocabulary for designing deep modules and placing seams.                                                       | [aihero](https://www.aihero.dev/skills-codebase-design) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/codebase-design/SKILL.md)                             |
+| `domain-modeling`               | Build a ubiquitous language and record ADRs.                                                                   | [aihero](https://www.aihero.dev/skills-domain-modeling) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/SKILL.md)                             |
+| `wayfinder`                     | Orient quickly in an unfamiliar codebase.                                                                      | [aihero](https://www.aihero.dev/skills-wayfinder) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/wayfinder/SKILL.md)                                         |
+| `handoff`                       | Capture session state so work can be picked up later.                                                          | [aihero](https://www.aihero.dev/skills-handoff) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/productivity/handoff/SKILL.md)                                            |
+| `improve-codebase-architecture` | Assess and improve an existing codebase's architecture.                                                        | [aihero](https://www.aihero.dev/skills-improve-codebase-architecture) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md) |
+| `setup-matt-pocock-skills`      | Bootstrap the Matt Pocock skill set.                                                                           | [aihero](https://www.aihero.dev/skills-setup-matt-pocock-skills) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/setup-matt-pocock-skills/SKILL.md)           |
+| `tdd`                           | Test-driven development, red-green-refactor.                                                                   | [aihero](https://www.aihero.dev/skills-tdd) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md)                                                     |
+| `triage`                        | Triage and prioritize incoming work.                                                                           | [aihero](https://www.aihero.dev/skills-triage) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/triage/SKILL.md)                                               |
+| `to-tickets`                    | Break a spec into discrete, buildable tickets.                                                                 | [aihero](https://www.aihero.dev/skills-to-tickets) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-tickets/SKILL.md)                                       |
+| `to-spec`                       | Turn settled intent into a written behavioral spec.                                                            | [aihero](https://www.aihero.dev/skills-to-spec) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-spec/SKILL.md)                                             |
+| `implement`                     | Build a single ticket to completion.                                                                           | [aihero](https://www.aihero.dev/skills-implement) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/implement/SKILL.md)                                         |
+| `code-review`                   | Review a branch on repo standards and originating-spec adherence.                                              | [aihero](https://www.aihero.dev/skills-code-review) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)                                     |
+| `research`                      | Investigate a question against high-trust primary sources.                                                     | [aihero](https://www.aihero.dev/skills-research) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/research/SKILL.md)                                           |
+| `prototype`                     | Build a throwaway prototype to sanity-check a direction.                                                       | [aihero](https://www.aihero.dev/skills-prototype) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/prototype/SKILL.md)                                         |
+| `ask-matt`                      | Ask the Matt Pocock advisory skill.                                                                            | [aihero](https://www.aihero.dev/skills-ask-matt) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/ask-matt/SKILL.md)                                           |
+| `diagnosing-bugs`               | Structured diagnosis loop for hard bugs and regressions.                                                       | [aihero](https://www.aihero.dev/skills-diagnosing-bugs) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnosing-bugs/SKILL.md)                             |
+| `resolving-merge-conflicts`     | Work through an in-progress merge or rebase conflict.                                                          | [aihero](https://www.aihero.dev/skills-resolving-merge-conflicts) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/resolving-merge-conflicts/SKILL.md)         |
+| `teach`                         | Explain a concept or codebase area for onboarding.                                                             | [aihero](https://www.aihero.dev/skills-teach) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/productivity/teach/SKILL.md)                                                |
+| `writing-great-skills`          | Author well-structured skills.                                                                                 | [aihero](https://www.aihero.dev/skills-writing-great-skills) · [SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/productivity/writing-great-skills/SKILL.md)                  |
+| `to-prd`                        | Turn a rough intent into a PRD. Resolves from the bundle on disk though not in the explicit `apm.yml` list.    | n/a                                                                                                                                                                                            |
+| `to-issues`                     | Break the work into GitHub issues. Resolves from the bundle on disk though not in the explicit `apm.yml` list. | n/a                                                                                                                                                                                            |
+
+**Main build chain.** The intended end-to-end flow for building a feature is `grill-with-docs` → `to-spec` → `to-tickets` → `implement` → `code-review`: interrogate the idea against docs, turn the settled intent into a written spec, break the spec into discrete tickets, build each ticket, then review the result. All five are in the table above.
 
 ### Other bundles
 
-| Skill                    | Bundle                         | Description                                            |
-|--------------------------|--------------------------------|--------------------------------------------------------|
-| `terraform-skill`        | `antonbabenko/terraform-skill` | Write, review, and debug Terraform or OpenTofu.        |
-| `neon`                   | `neondatabase/agent-skills`    | Overview of the Neon platform.                         |
-| `neon-postgres`          | `neondatabase/agent-skills`    | Setup and best practices for Neon serverless Postgres. |
-| `neon-postgres-branches` | `neondatabase/agent-skills`    | Create the right Neon branch type for dev and test.    |
+Flat bundles (the whole repo is one skill), so there is no per-skill selection like the Matt Pocock table above. Add a row here whenever a new non-Matt-Pocock bundle is added to `apm.yml`.
+
+| Skill                                                                                                            | Bundle                                                                            | Description                                            |
+|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|--------------------------------------------------------|
+| [`terraform-skill`](https://github.com/antonbabenko/terraform-skill/blob/master/skills/terraform-skill/SKILL.md) | [`antonbabenko/terraform-skill`](https://github.com/antonbabenko/terraform-skill) | Write, review, and debug Terraform or OpenTofu.        |
+| `neon`                                                                                                           | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)       | Overview of the Neon platform.                         |
+| `neon-postgres`                                                                                                  | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)       | Setup and best practices for Neon serverless Postgres. |
+| `neon-postgres-branches`                                                                                         | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)       | Create the right Neon branch type for dev and test.    |
 
 ## By standalone CLI
 

@@ -21,58 +21,13 @@ Portable skills committed as plain files under [`dot_claude/skills/`](../../dot_
 
 Installed by vendor CLIs because they ship with a companion binary, see [`scripts/extensions/skills/install.sh`](../../scripts/extensions/skills/install.sh):
 
-- `playwright` — installed via `playwright-cli install --skills`.
-- `orbit` — installed via `glab skills install --global orbit` (GitLab AI coding agents).
+- `playwright` installed via `playwright-cli install --skills`.
+- `orbit` installed via `glab skills install --global orbit` (GitLab AI coding agents).
 
 ## Plugin skills
 
 Most skills arrive bundled inside Claude plugins. The full list, with the marketplace and upstream URL for each, lives in [`scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh) (each `claude plugin install` line is commented with its source repo). That script is the source of truth; it is not mirrored here because the set changes often. Which plugins were considered for an APM move and why they stayed on the plugin CLI is covered in [`docs/apm/plugin-migration.md`](../apm/plugin-migration.md).
 
-## APM bundle skills (Matt Pocock)
+## APM bundle skills
 
-### Overview
-
-The [`mattpocock/skills`](https://github.com/mattpocock/skills) bundle in [`apm.yml`](../../apm.yml) is deployed selectively: only the skills listed below are installed, by basename (they resolve across the bundle's category subdirs). APM re-resolves the bundle to latest upstream on every install (no lockfile), so this list is the source of truth for which skills are pulled, not a pinned snapshot.
-
-| Skill                                                                                        | SKILL.md                                                                                                                                                       |
-|----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [grilling](https://www.aihero.dev/skills-grilling)                                           | [productivity/grilling/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md)                                         |
-| [grill-me](https://www.aihero.dev/skills-grill-me)                                           | [productivity/grill-me/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/productivity/grill-me/SKILL.md)                                         |
-| [grill-with-docs](https://www.aihero.dev/skills-grill-with-docs)                             | [engineering/grill-with-docs/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md)                             |
-| [codebase-design](https://www.aihero.dev/skills-codebase-design)                             | [engineering/codebase-design/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/codebase-design/SKILL.md)                             |
-| [domain-modeling](https://www.aihero.dev/skills-domain-modeling)                             | [engineering/domain-modeling/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/SKILL.md)                             |
-| [wayfinder](https://www.aihero.dev/skills-wayfinder)                                         | [engineering/wayfinder/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/wayfinder/SKILL.md)                                         |
-| [handoff](https://www.aihero.dev/skills-handoff)                                             | [productivity/handoff/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/productivity/handoff/SKILL.md)                                           |
-| [improve-codebase-architecture](https://www.aihero.dev/skills-improve-codebase-architecture) | [engineering/improve-codebase-architecture/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md) |
-| [setup-matt-pocock-skills](https://www.aihero.dev/skills-setup-matt-pocock-skills)           | [engineering/setup-matt-pocock-skills/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/setup-matt-pocock-skills/SKILL.md)           |
-| [tdd](https://www.aihero.dev/skills-tdd)                                                     | [engineering/tdd/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md)                                                     |
-| [triage](https://www.aihero.dev/skills-triage)                                               | [engineering/triage/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/triage/SKILL.md)                                               |
-| [to-tickets](https://www.aihero.dev/skills-to-tickets)                                       | [engineering/to-tickets/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-tickets/SKILL.md)                                       |
-| [to-spec](https://www.aihero.dev/skills-to-spec)                                             | [engineering/to-spec/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-spec/SKILL.md)                                             |
-| [implement](https://www.aihero.dev/skills-implement)                                         | [engineering/implement/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/implement/SKILL.md)                                         |
-| [code-review](https://www.aihero.dev/skills-code-review)                                     | [engineering/code-review/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)                                     |
-| [research](https://www.aihero.dev/skills-research)                                           | [engineering/research/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/research/SKILL.md)                                           |
-| [prototype](https://www.aihero.dev/skills-prototype)                                         | [engineering/prototype/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/prototype/SKILL.md)                                         |
-| [ask-matt](https://www.aihero.dev/skills-ask-matt)                                           | [engineering/ask-matt/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/ask-matt/SKILL.md)                                           |
-| [diagnosing-bugs](https://www.aihero.dev/skills-diagnosing-bugs)                             | [engineering/diagnosing-bugs/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnosing-bugs/SKILL.md)                             |
-| [resolving-merge-conflicts](https://www.aihero.dev/skills-resolving-merge-conflicts)         | [engineering/resolving-merge-conflicts/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/resolving-merge-conflicts/SKILL.md)         |
-| [teach](https://www.aihero.dev/skills-teach)                                                 | [productivity/teach/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/productivity/teach/SKILL.md)                                               |
-| [writing-great-skills](https://www.aihero.dev/skills-writing-great-skills)                   | [productivity/writing-great-skills/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/productivity/writing-great-skills/SKILL.md)                 |
-
-To add or drop a Matt Pocock skill, edit the `skills:` list under `mattpocock/skills` in [`apm.yml`](../../apm.yml) and keep this table in sync.
-
-### Main build chain
-
-The intended end-to-end flow for building a feature is:
-
-[grill-with-docs](https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md) → [to-spec](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-spec/SKILL.md) → [to-tickets](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-tickets/SKILL.md) → [implement](https://github.com/mattpocock/skills/blob/main/skills/engineering/implement/SKILL.md) → [code-review](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)
-
-You interrogate the idea against docs (grill-with-docs), turn the settled intent into a written spec (to-spec), break the spec into discrete tickets (to-tickets), build each ticket (implement), then review the result (code-review). All five are in the installed set above.
-
-## APM bundle skills (other)
-
-Other skill bundles pulled via APM, one row per bundle. These are flat bundles (the whole repo is one skill), so there is no per-skill selection like the Matt Pocock table above. Add a row here whenever a new non-Matt-Pocock bundle is added to `apm.yml`.
-
-| Skill                                                              | SKILL.md                                                                                                                       |
-|--------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| [terraform-skill](https://github.com/antonbabenko/terraform-skill) | [skills/terraform-skill/SKILL.md](https://github.com/antonbabenko/terraform-skill/blob/master/skills/terraform-skill/SKILL.md) |
+Third-party skills pulled from git bundles via `apm install`, declared under `dependencies.apm` in [`apm.yml`](../../apm.yml), which is the source of truth for which skills are pulled. The Matt Pocock bundle (`mattpocock/skills`) is deployed selectively by basename; the others (`antonbabenko/terraform-skill`, `neondatabase/agent-skills`) are flat one-skill bundles. The per-skill list, with descriptions, upstream links, and the intended feature-build chain, lives in [`inventory.md`](inventory.md#by-apm-skill-bundles-apmyml).
