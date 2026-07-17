@@ -4,6 +4,8 @@
 
 <!-- LSP-first code navigation -->
 
+@rules/context7.md
+
 @rules/code-intelligence.md
 
 <!-- CLI tools -->
