@@ -2,9 +2,11 @@
 
 @rules/general.md
 
-<!-- LSP-first code navigation -->
+<!-- context7 for library/API docs -->
 
 @rules/context7.md
+
+<!-- LSP-first code navigation -->
 
 @rules/code-intelligence.md
 
