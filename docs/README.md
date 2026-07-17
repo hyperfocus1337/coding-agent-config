@@ -6,24 +6,24 @@ General integration documentation and setup instructions for this repository.
 
 ```
 docs/
-├── sdlc/         # SDLC command map (which installed tool for which lifecycle phase)
-│   └── phases.md   — Commands, skills, and subagents grouped by SDLC phase and category
-├── sources/      # Where every command and skill comes from (install provenance)
-│   ├── channels.md   — The channels a skill installs through (local, plugins, CLI, APM)
-│   ├── inventory.md  — Every installed tool regrouped by install source, as tables
-│   └── tracing.md    — Trace a live /command back to its source (name, picker, grep, debug)
-├── apm/          # APM (agent package manager) notes
+├── sdlc/                    # SDLC command map (which installed tool for which lifecycle phase)
+│   └── phases.md            — Commands, skills, and subagents grouped by SDLC phase and category
+├── sources/                 # Where every command and skill comes from (install provenance)
+│   ├── channels.md          — The channels a skill installs through (local, plugins, CLI, APM)
+│   ├── inventory.md         — Every installed tool regrouped by install source, as tables
+│   └── tracing.md           — Trace a live /command back to its source (name, picker, grep, debug)
+├── apm/                     # APM (agent package manager) notes
 │   └── plugin-migration.md  — Which Claude plugins could move to APM (audit)
-├── research/     # Investigations into the agent environment and session
-│   ├── codex-compat.md   — Sharing skills and instructions between Claude Code and Codex
-│   └── skills-context.md — Context budget consumed by installed skill breadcrumbs
-└── mcp/          # MCP server configuration guides
-    ├── project-servers.md    — Catalog of project-scoped servers (install via the install-mcp skill)
-    ├── disabling-servers.md  — Disable MCP servers not wanted by default
-    └── enabling/             — Enable MCP servers per platform
-        ├── android.md  — Android
-        ├── desktop.md  — Desktop
-        └── web.md      — Web (claude.ai/code)
+├── research/.               # Investigations into the agent environment and session
+│   ├── codex-compat.md      — Sharing skills and instructions between Claude Code and Codex
+│   └── skills-context.md    — Context budget consumed by installed skill breadcrumbs
+└── mcp/                     # MCP server configuration guides
+    ├── project-servers.md   — Catalog of project-scoped servers (install via the install-mcp skill)
+    ├── disabling-servers.md — Disable MCP servers not wanted by default
+    └── enabling/            — Enable MCP servers per platform
+        ├── android.md — Android
+        ├── desktop.md — Desktop
+        └── web.md     — Web (claude.ai/code)
 ```
 
 ## Lifecycle command map
