@@ -4,7 +4,7 @@ This page maps the slash commands, skills, and subagents installed in this envir
 
 Two conventions keep the tables lean. Slash commands are recognizable by their leading `/` prefix (for example `/git:commit`), so there is no separate column marking commands apart from skills. Subagents are called out in their own description: any entry whose description begins with "Subagent that" is dispatched through the Agent tool and spawns a separate agent rather than running inline.
 
-Where each tool comes from (manually committed, pulled by APM, a standalone CLI, a Claude plugin, or built into Claude Code) is documented separately in [`inventory.md`](../sources/inventory.md). Each name below links to the same source as its `inventory.md` row (repo file, upstream repo, or docs page); a few entries with no public source are left unlinked.
+Where each tool comes from (manually committed, pulled by APM, a standalone CLI, a Claude plugin, or built into Claude Code) is documented separately in [`inventory.md`](../sources/inventory.md). Each name below links to the same source as its `inventory.md` row (repo file, upstream repo, or docs page).
 
 ## The phases
 
@@ -48,7 +48,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 | Command                                                                                             | Description                                                                     |
 |-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
 | [`research`](https://github.com/mattpocock/skills/blob/main/skills/engineering/research/SKILL.md)   | Investigate a question against high-trust primary sources and capture findings. |
-| `deep-research`                                                                                     | Fan-out web research with adversarial verification into a cited report.         |
+| [`deep-research`](https://code.claude.com/docs/en/commands)                                         | Fan-out web research with adversarial verification into a cited report.         |
 | [`wayfinder`](https://github.com/mattpocock/skills/blob/main/skills/engineering/wayfinder/SKILL.md) | Orient quickly in an unfamiliar codebase.                                       |
 | [`init`](https://code.claude.com/docs/en/slash-commands)                                            | Initialize a `CLAUDE.md` documenting the codebase for future sessions.          |
 
@@ -111,7 +111,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 | Command                                                     | Description                                                                          |
 |-------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| `run`                                                       | Launch and drive the app to see a change working in the real thing.                  |
+| [`run`](https://code.claude.com/docs/en/slash-commands)     | Launch and drive the app to see a change working in the real thing.                  |
 | [`codex:rescue`](https://github.com/openai/codex-plugin-cc) | Subagent that hands a stuck or heavy task to Codex for a second implementation pass. |
 
 ### Config file hygiene
@@ -145,7 +145,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 | Command                                                             | Description                                                                       |
 |---------------------------------------------------------------------|-----------------------------------------------------------------------------------|
 | [`security-review`](https://code.claude.com/docs/en/slash-commands) | Security review of the pending changes on the current branch.                     |
-| `simplify`                                                          | Review changed code for reuse and simplification, then apply the fixes.           |
+| [`simplify`](https://code.claude.com/docs/en/commands)              | Review changed code for reuse and simplification, then apply the fixes.           |
 | [`ponytail-review`](https://github.com/DietrichGebert/ponytail)     | Review a diff purely for over-engineering: what to delete or replace with stdlib. |
 | [`ponytail-audit`](https://github.com/DietrichGebert/ponytail)      | Whole-repo over-engineering audit with a ranked list of what to cut.              |
 | [`caveman-review`](https://github.com/JuliusBrussee/caveman)        | Compressed one-line-per-finding PR review comments.                               |
@@ -163,7 +163,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 | Command                                                                                 | Description                                                                        |
 |-----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
 | [`tdd`](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md) | Drive features and fixes test-first.                                               |
-| `verify`                                                                                | Exercise the affected flow end to end and observe real behavior before committing. |
+| [`verify`](https://code.claude.com/docs/en/slash-commands)                              | Exercise the affected flow end to end and observe real behavior before committing. |
 
 ### Browser testing
 
@@ -256,7 +256,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 | [`code-simplifier`](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier)                                | Subagent that simplifies code for clarity and maintainability while preserving behavior.                   |
 | [`improve-codebase-architecture`](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md) | Reshape an existing codebase toward a cleaner architecture.                                                |
 | [`diagnosing-bugs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnosing-bugs/SKILL.md)                             | Diagnose regressions and hard bugs in maintained code.                                                     |
-| `simplify`                                                                                                                                  | Trim reuse, complexity, and dead flexibility from existing code.                                           |
+| [`simplify`](https://code.claude.com/docs/en/commands)                                                                                      | Trim reuse, complexity, and dead flexibility from existing code.                                           |
 
 ### Documentation
 
@@ -284,7 +284,7 @@ These apply regardless of which phase you are in.
 | [`update-config`](https://code.claude.com/docs/en/settings)                          | Change harness settings, permissions, and hooks.                                       |
 | [`keybindings-help`](https://code.claude.com/docs/en/interactive-mode)               | Customize keyboard shortcuts and chord bindings.                                       |
 | [`fewer-permission-prompts`](https://code.claude.com/docs/en/permissions)            | Build an allowlist from transcripts to cut repeat permission prompts.                  |
-| `claude-api`                                                                         | Reference for the Claude API and Anthropic SDK (models, pricing, tool use).            |
-| `dataviz`                                                                            | Design guidance for any chart, dashboard, or data visualization.                       |
+| [`claude-api`](https://platform.claude.com/docs/en/api/overview)                     | Reference for the Claude API and Anthropic SDK (models, pricing, tool use).            |
+| [`dataviz`](https://code.claude.com/docs/en/commands)                                | Design guidance for any chart, dashboard, or data visualization.                       |
 | [`watch:watch`](https://github.com/bradautomates/claude-video)                       | Watch a video (tutorial, demo) and answer questions about its content.                 |
 | [`notion-workspace-plugin`](https://github.com/makenotion/claude-code-notion-plugin) | Read and write a Notion workspace as a knowledge base.                                 |
