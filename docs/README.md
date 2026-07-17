@@ -6,7 +6,9 @@ General integration documentation and setup instructions for this repository.
 
 ```
 docs/
-├── sdlc.md       # Slash commands, skills, and agents mapped onto SDLC phases and roles
+├── sdlc/         # SDLC command map (which installed tool for which lifecycle phase)
+│   ├── phases.md   — Commands, skills, and subagents grouped by SDLC phase and category
+│   └── sources.md  — The same tools regrouped by install source, as tables
 ├── apm/          # APM (agent package manager) notes
 │   └── plugin-migration.md  — Which Claude plugins could move to APM (audit)
 ├── agents/       # Agent environment and session guides
@@ -25,7 +27,7 @@ docs/
 
 ## Lifecycle command map
 
-[`sdlc.md`](sdlc.md) maps every installed slash command, skill, and subagent onto the eight phases of the software development lifecycle, grouped within each phase by the role that drives that work. It answers "which installed tool do I reach for right now", and closes with an inventory that regroups everything by install source (manually committed, APM bundle, standalone CLI, Claude plugin, or built into Claude Code).
+The `sdlc/` folder maps every installed slash command, skill, and subagent onto the eight phases of the software development lifecycle. [`phases.md`](sdlc/phases.md) answers "which installed tool do I reach for right now", grouping tools by phase and then by category of related work. [`sources.md`](sdlc/sources.md) regroups the same tools by install source (manually committed, APM bundle, standalone CLI, Claude plugin, or built into Claude Code), one table per source.
 
 ## Agent environments
 

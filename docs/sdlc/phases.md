@@ -1,10 +1,10 @@
-# Software development lifecycle command map
+# SDLC command map: phases
 
 This page maps the slash commands, skills, and subagents installed in this environment onto the phases of the software development lifecycle (SDLC). The goal is a practical answer to one question: at any point in building software, which installed tools can I reach for. Entries are grouped by SDLC phase, and within each phase into categories of related tools. A tool that genuinely serves more than one phase is listed under each phase it fits, so every phase table stands on its own.
 
 Two conventions keep the tables lean. Slash commands are recognizable by their leading `/` prefix (for example `/git:commit`), so there is no separate column marking commands apart from skills. Subagents are called out in their own description: any entry whose description begins with "Subagent that" is dispatched through the Agent tool and spawns a separate agent rather than running inline.
 
-Install source (manually committed, pulled by APM, a standalone CLI, a Claude plugin, or built into Claude Code) is kept out of the phase tables and collected in the [inventory by install source](#inventory-by-install-source) appendix at the end.
+Where each tool comes from (manually committed, pulled by APM, a standalone CLI, a Claude plugin, or built into Claude Code) is documented separately in [`sources.md`](sources.md).
 
 ## The phases
 
@@ -290,54 +290,3 @@ These apply regardless of which phase you are in.
 | `dataviz`                  | Design guidance for any chart, dashboard, or data visualization.                       |
 | `watch:watch`              | Watch a video (tutorial, demo) and answer questions about its content.                 |
 | `notion-workspace-plugin`  | Read and write a Notion workspace as a knowledge base.                                 |
-
-## Inventory by install source
-
-The same tools, regrouped by how they got here. This is the answer to "installed manually, by skills, or by plugins." The source of truth for each channel is the file named in its heading, not this list, since the sets drift.
-
-### Manually committed (chezmoi, this repo)
-
-Plain files committed under `dot_claude/` and laid into `~/.claude` by `just chezmoi`. Slash commands live in [`dot_claude/commands/`](../dot_claude/commands/README.md); local skills in [`dot_claude/skills/`](../dot_claude/skills/).
-
-Slash commands: `/git:commit`, `/git:multiple`, `/git:push`, `/git:pr`, `/git:changelog`, `/git:branches`, `/git:worktrees`, `/git:amend-author`, `/git:amend-date`, `/git:shift-dates`, `/organize:*` (eight header-style variants), `/issues:improve-issue`, `/issues:improve-issue-in-place`, `/issues:github-coding-process`, `/summarize:transscripts`, `/simple:explain`, `/simple:proofread`, `/simple:markitdown`.
-
-Local skills: `gh-cli`, `install-mcp`, `meeting-summarizer`, `organize`.
-
-### By APM skill bundles (`apm.yml`)
-
-Third-party skills pulled by `apm install`, which re-resolves to latest upstream on every run. The full per-skill mapping with upstream URLs is in [`docs/agents/skills.md`](agents/skills.md).
-
-Matt Pocock bundle (`mattpocock/skills`): `grilling`, `grill-me`, `grill-with-docs`, `codebase-design`, `domain-modeling`, `wayfinder`, `handoff`, `improve-codebase-architecture`, `setup-matt-pocock-skills`, `tdd`, `triage`, `to-tickets`, `to-spec`, `implement`, `code-review`, `research`, `prototype`, `ask-matt`, `diagnosing-bugs`, `resolving-merge-conflicts`, `teach`, `writing-great-skills`. The sibling skills `to-prd` and `to-issues` also resolve from this bundle on disk though they are not in the explicit `apm.yml` list.
-
-Other bundles: `terraform-skill` (`antonbabenko/terraform-skill`), and `neon`, `neon-postgres`, `neon-postgres-branches` (`neondatabase/agent-skills`).
-
-### By standalone CLI
-
-Installed by a vendor CLI that ships with a companion binary, see [`scripts/extensions/skills/install.sh`](../scripts/extensions/skills/install.sh): `playwright-cli` (via `playwright-cli install --skills`) and `orbit` (via `glab skills install`).
-
-### By Claude plugins (`claude plugin install`)
-
-Bundled inside plugins from various marketplaces. The install script with each source repo is [`scripts/extensions/plugins/install.sh`](../scripts/extensions/plugins/install.sh); the reasoning on which plugins could move to APM is in [`docs/apm/plugin-migration.md`](apm/plugin-migration.md).
-
-- `code-review` (official): `/code-review:code-review`.
-- `feature-dev` (official): `/feature-dev:feature-dev`, plus subagents `code-architect`, `code-explorer`, `code-reviewer`.
-- `code-simplifier` (official): `code-simplifier` subagent.
-- `iterative-development` (prime-radiant): the `iterative-development:*` skills.
-- `greenfield` (prime-radiant): `greenfield:analyze`, `greenfield:sanitize`.
-- `context7` (upstash): `context7:docs` plus the context7 MCP server.
-- `code-refactoring` (wshobson/agents): subagents `code-reviewer`, `legacy-modernizer`.
-- `ast-grep`: `ast-grep:ast-grep`.
-- `astral`: `astral:ruff`, `astral:ty`, `astral:uv`.
-- `codex` (openai): `codex:rescue`, `codex:setup`, and the codex-rescue subagent.
-- `caveman`: `caveman`, `caveman-review`, `caveman-help`, `compress`.
-- `ponytail`: `ponytail`, `ponytail-review`, `ponytail-audit`, `ponytail-debt`, and helpers.
-- `pyright` (piebald-ai LSP marketplace): the pyright LSP server.
-- `watch` (claude-video): `watch:watch`.
-- `glab` (gitlab): GitLab CLI skills.
-- `cloudflare`: Cloudflare skills.
-- `chrome-devtools-mcp`: browser automation MCP.
-- `notion-workspace-plugin`: Notion workspace access.
-
-### Built into Claude Code
-
-Shipped with the harness, no install step: `init`, `run`, `verify`, `simplify`, `review`, `security-review`, `loop`, `schedule`, `update-config`, `keybindings-help`, `claude-api`, `fewer-permission-prompts`, `dataviz`, `deep-research`, `artifact-design`, `artifact-capabilities`.
