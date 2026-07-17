@@ -6,7 +6,7 @@ The numbers below come from measuring the `name` and `description` frontmatter o
 
 ## What actually loads
 
-Skills reach this machine through the four channels in [`skills.md`](skills.md), but only two of them produce breadcrumbs: the APM bundle and local files land in `~/.claude/skills/`, and plugins carry their own `SKILL.md` files. A plugin is only counted if it is enabled in `settings.json` (`enabledPlugins`). Several plugins the repo installs ship subagents or commands rather than skills (`code-review`, `feature-dev`, `code-simplifier`, `code-refactoring`, `greenfield`, `pyright`), so they add nothing to the skills listing even though they cost against the separate agents and commands listings, which this doc does not measure.
+Skills reach this machine through the four channels in [`channels.md`](../sources/channels.md), but only two of them produce breadcrumbs: the APM bundle and local files land in `~/.claude/skills/`, and plugins carry their own `SKILL.md` files. A plugin is only counted if it is enabled in `settings.json` (`enabledPlugins`). Several plugins the repo installs ship subagents or commands rather than skills (`code-review`, `feature-dev`, `code-simplifier`, `code-refactoring`, `greenfield`, `pyright`), so they add nothing to the skills listing even though they cost against the separate agents and commands listings, which this doc does not measure.
 
 ### Enabled skills (loaded every session)
 

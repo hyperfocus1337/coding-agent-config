@@ -4,7 +4,7 @@ This page maps the slash commands, skills, and subagents installed in this envir
 
 Two conventions keep the tables lean. Slash commands are recognizable by their leading `/` prefix (for example `/git:commit`), so there is no separate column marking commands apart from skills. Subagents are called out in their own description: any entry whose description begins with "Subagent that" is dispatched through the Agent tool and spawns a separate agent rather than running inline.
 
-Where each tool comes from (manually committed, pulled by APM, a standalone CLI, a Claude plugin, or built into Claude Code) is documented separately in [`sources.md`](sources.md).
+Where each tool comes from (manually committed, pulled by APM, a standalone CLI, a Claude plugin, or built into Claude Code) is documented separately in [`inventory.md`](../sources/inventory.md).
 
 ## The phases
 

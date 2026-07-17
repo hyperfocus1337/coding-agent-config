@@ -1,4 +1,4 @@
-# Agent skills
+# Skill install channels
 
 Skills reach an agent through four channels in this repo. Each is declared in a different place and installed by a different mechanism; this doc is the map of which is which. For any single channel, the file named under "Declared in" is the source of truth, not this page, so per-skill lists that drift (plugin bundles especially) are pointed at rather than duplicated.
 

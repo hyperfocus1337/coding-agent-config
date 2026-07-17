@@ -1,6 +1,6 @@
 # Where did a slash command come from
 
-When two things share a name, or a command behaves differently than the file you edited, you need to know which source actually got loaded. [`skills.md`](skills.md) maps the four channels a skill is installed through; this page is the runtime counterpart, how to trace a live `/command` back to its origin, from quickest glance to most definitive.
+When two things share a name, or a command behaves differently than the file you edited, you need to know which source actually got loaded. [`channels.md`](channels.md) maps the four channels a skill is installed through; this page is the runtime counterpart, how to trace a live `/command` back to its origin, from quickest glance to most definitive.
 
 ## Read the name first
 

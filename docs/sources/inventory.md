@@ -1,6 +1,6 @@
-# SDLC command map: install sources
+# Install source inventory
 
-The companion to [`phases.md`](phases.md). Where `phases.md` answers "which tool for which phase", this page answers "where did each tool come from": installed manually, by an APM skill bundle, by a standalone CLI, by a Claude plugin, or built into Claude Code. The source of truth for each channel is the file named in that section's intro, not this page, since the sets drift over time.
+The companion to [`phases.md`](../sdlc/phases.md). Where `phases.md` answers "which tool for which phase", this page answers "where did each tool come from": installed manually, by an APM skill bundle, by a standalone CLI, by a Claude plugin, or built into Claude Code. The source of truth for each channel is the file named in that section's intro, not this page, since the sets drift over time.
 
 Every tool is shown in a table. The `Kind` column distinguishes a slash `command`, a `skill`, a `subagent`, an `MCP` server, or an `LSP` server, since one plugin often ships several.
 
@@ -35,7 +35,7 @@ Plain files committed under `dot_claude/` and laid into `~/.claude` by `just che
 
 ## By APM skill bundles (`apm.yml`)
 
-Third-party skills pulled by `apm install`, which re-resolves to latest upstream on every run (no lockfile). The full per-skill mapping with upstream URLs is in [`../agents/skills.md`](../agents/skills.md). All are of kind `skill`.
+Third-party skills pulled by `apm install`, which re-resolves to latest upstream on every run (no lockfile). The full per-skill mapping with upstream URLs is in [`channels.md`](channels.md). All are of kind `skill`.
 
 ### Matt Pocock bundle (`mattpocock/skills`)
 
