@@ -31,10 +31,8 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 |-------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
 | [`/issues:improve-issue`](../../dot_claude/commands/issues/improve-issue.md)                          | Rewrite a GitHub issue to be clearer and more actionable (outputs text). |
 | [`/issues:improve-issue-in-place`](../../dot_claude/commands/issues/improve-issue-in-place.md)        | Same rewrite, applied directly to the issue via `gh`.                    |
-| `to-prd`                                                                                              | Turn a rough intent into a product requirements document.                |
 | [`to-spec`](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-spec/SKILL.md)       | Turn settled intent into a written behavioral spec.                      |
 | [`to-tickets`](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-tickets/SKILL.md) | Break a spec into discrete, buildable tickets.                           |
-| `to-issues`                                                                                           | Break the work into GitHub issues.                                       |
 | [`triage`](https://github.com/mattpocock/skills/blob/main/skills/engineering/triage/SKILL.md)         | Triage and prioritize incoming work.                                     |
 
 ### Idea stress-testing
