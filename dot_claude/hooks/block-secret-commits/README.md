@@ -18,27 +18,30 @@ The list is deliberately **filename-based**, not content-based. The key-file nam
 
 ## Overrides
 
-The hook checks three escape hatches, in this order, and allows the command as soon as one matches.
+The hook offers three escape hatches. The first drops a file from the scan entirely; the other two exempt named files while keeping the guard active for the rest.
 
 **1. gitignore (preferred).** If the file is gitignored, the hook never sees it, because the scan uses `--exclude-standard`. This is the right answer almost every time: a secret that should never be committed belongs in `.gitignore`, and then the hook stays silent with no override needed. Reach for the two explicit overrides below only when you genuinely intend to commit a secret-shaped file (an encrypted env, a fixture, a template that happens to match a pattern).
 
-**2. Per-repo marker file.** Create an empty `.claude-allow-secrets` file in the repo root:
+**2. Per-repo allowlist file.** Create a `.claude-allow-secrets` file in the repo root listing the secret file(s) you intend to commit, one per line. An entry matches either a repo-relative path or a bare basename, and `#` comments and blank lines are ignored:
 
 ```sh
-touch .claude-allow-secrets
+# .claude-allow-secrets
+config/prod.env      # only this exact path
+test/fixtures/id_rsa # a key fixture
+.pgpass              # bare basename: any file named .pgpass, anywhere
 ```
 
-This disables the hook for that repo only. It is persistent and survives across sessions, and because it lives in the repo you can commit it so the whole team inherits the exemption. Use it when a repo legitimately and repeatedly tracks a secret-shaped file.
+Only the listed files are exempted; every other secret still blocks. It is persistent and survives across sessions, and because it lives in the repo you can commit it so the whole team inherits the exemption. Use it when a repo legitimately and repeatedly tracks specific secret-shaped files.
 
-**3. Environment variable.** Set `CLAUDE_ALLOW_SECRETS` to any non-empty value:
+**3. Environment variable.** Set `CLAUDE_ALLOW_SECRETS` to the file(s) to exempt, whitespace- or colon-separated, using the same path-or-basename matching:
 
 ```sh
-CLAUDE_ALLOW_SECRETS=1
+CLAUDE_ALLOW_SECRETS=config/prod.env:.pgpass
 ```
 
-This disables the hook wherever that variable is exported, so it is best for a one-off or session-scoped skip that leaves no trace in the repo. Export it in your shell for the rest of a session, or prefix a single command.
+This exempts just those files wherever the variable is exported, so it is best for a one-off or session-scoped skip that leaves no trace in the repo. Export it in your shell for the rest of a session, or prefix a single command. Any secret not named still blocks.
 
-Note that overrides 2 and 3 are all-or-nothing: they disable the whole check, not a single file. To exempt just one path while keeping the guard active for everything else, gitignore that path (override 1) instead.
+Both overrides are additive and file-scoped, not all-or-nothing: they exempt only the paths you name and leave the guard active for everything else. Gitignore (override 1) remains the right answer for a secret that should never be committed at all.
 
 ## Files
 

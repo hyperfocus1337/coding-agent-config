@@ -22,9 +22,31 @@ esac
 root="${CLAUDE_PROJECT_DIR:-$PWD}"
 
 # --- Overrides (see README) ---
-# per-repo marker file, or an env var for one-off / session-scoped skips
-[ -f "$root/.claude-allow-secrets" ] && allow
-[ -n "${CLAUDE_ALLOW_SECRETS:-}" ] && allow
+# The override names the specific secret file(s) that may be committed, by
+# repo-relative path or by bare basename, so it no longer waves through every
+# secret at once. Two sources, both additive:
+#   * .claude-allow-secrets file: one entry per line (# comments / blanks ok)
+#   * CLAUDE_ALLOW_SECRETS env var: whitespace- or colon-separated, one-off skips
+allowlist=()
+if [ -f "$root/.claude-allow-secrets" ]; then
+  while IFS= read -r line; do
+    case $line in ''|'#'*) continue ;; esac # skip blank and comment lines
+    allowlist+=("$line")
+  done < "$root/.claude-allow-secrets"
+fi
+if [ -n "${CLAUDE_ALLOW_SECRETS:-}" ]; then
+  IFS=$' \t\n:' read -ra env_entries <<< "$CLAUDE_ALLOW_SECRETS"
+  allowlist+=("${env_entries[@]}")
+fi
+
+is_allowed() { # $1 = repo-relative path; allowed if path or basename is listed
+  [ ${#allowlist[@]} -eq 0 ] && return 1 # set -u safe: don't expand empty array
+  local e
+  for e in "${allowlist[@]}"; do
+    { [ "$e" = "$1" ] || [ "$e" = "${1##*/}" ]; } && return 0
+  done
+  return 1
+}
 
 # --- Danger classifier (allowlist checked first so templates pass) ---
 is_dangerous() {
@@ -52,7 +74,7 @@ cd "$root" 2>/dev/null || allow # run from repo root so git sees this repo's fil
 # --exclude-standard=drop gitignored, -z=NUL-separate names (spaces/newlines safe)
 offenders=()
 while IFS= read -r -d '' path; do # read one NUL-terminated filename per iteration
-  is_dangerous "${path##*/}" && offenders+=("$path") # ${path##*/} = basename (builtin, no fork)
+  is_dangerous "${path##*/}" && ! is_allowed "$path" && offenders+=("$path") # basename builtin, no fork; skip allowlisted
 done < <(git ls-files -z --cached --others --exclude-standard 2>/dev/null) # < <() not a pipe, so offenders survives the loop
 
 # nothing dangerous found → allow the command
@@ -66,11 +88,11 @@ done < <(git ls-files -z --cached --others --exclude-standard 2>/dev/null) # < <
   echo
   echo "Fix one of:"
   echo "  * add the file(s) to .gitignore (recommended), or"
-  echo "  * touch $root/.claude-allow-secrets (persistent, per-repo override), or"
-  echo "  * set CLAUDE_ALLOW_SECRETS=1 (one-off override)"
+  echo "  * list the path(s) in $root/.claude-allow-secrets (persistent, per-repo), or"
+  echo "  * set CLAUDE_ALLOW_SECRETS to the path(s), colon-separated (one-off)"
 } 1>&2
 
 # stdout: Cursor's beforeShellExecution deny + message (it also honors exit 2).
 list=$(printf '%s, ' "${offenders[@]}"); list=${list%, }
-printf '{"permission":"deny","agent_message":"Blocked: git command would stage/commit untracked secret file(s): %s. Gitignore them, touch .claude-allow-secrets, or set CLAUDE_ALLOW_SECRETS=1."}\n' "$list"
+printf '{"permission":"deny","agent_message":"Blocked: git command would stage/commit untracked secret file(s): %s. Gitignore them, or list the path(s) in .claude-allow-secrets, or set CLAUDE_ALLOW_SECRETS to the path(s)."}\n' "$list"
 exit 2
