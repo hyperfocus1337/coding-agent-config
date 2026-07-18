@@ -138,7 +138,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 |---------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
 | [`/code-review:code-review`](https://github.com/anthropics/claude-code/tree/main/plugins/code-review)   | Code review a pull request (official plugin).                               |
 | [`code-review`](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md) | Review a branch on two axes: repo standards and originating-spec adherence. |
-| [`/review`](https://code.claude.com/docs/en/slash-commands)                                             | Review a GitHub pull request.                                               |
+| [`/review`](https://code.claude.com/docs/en/commands)                                             | Review a GitHub pull request.                                               |
 
 ### Focused review
 
