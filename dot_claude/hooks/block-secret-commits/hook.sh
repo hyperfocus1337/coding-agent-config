@@ -92,7 +92,9 @@ done < <(git ls-files -z --cached --others --exclude-standard 2>/dev/null) # < <
   echo "  * set CLAUDE_ALLOW_SECRETS to the path(s), colon-separated (one-off)"
 } 1>&2
 
-# stdout: Cursor's beforeShellExecution deny + message (it also honors exit 2).
-list=$(printf '%s, ' "${offenders[@]}"); list=${list%, }
-printf '{"permission":"deny","agent_message":"Blocked: git command would stage/commit untracked secret file(s): %s. Gitignore them, or list the path(s) in .claude-allow-secrets, or set CLAUDE_ALLOW_SECRETS to the path(s)."}\n' "$list"
+# stdout: Cursor's beforeShellExecution deny + message. The message is a static
+# string (no filename interpolation) so it is always valid JSON: a filename with
+# a " or newline would otherwise malform it, and Cursor fails open on bad JSON.
+# Exact paths are in the stderr block above; Claude Code also honors exit 2.
+printf '{"permission":"deny","agent_message":"Blocked: git command would stage/commit an untracked secret file. See the blocked-command output for the path(s); gitignore them or add them to .claude-allow-secrets / CLAUDE_ALLOW_SECRETS."}\n'
 exit 2
