@@ -24,6 +24,8 @@ default:
 update-all:
     @echo "==> Pulling latest from origin/main"
     git pull origin main
+    @echo "==> chezmoi diff (what apply will change)"
+    @just chezmoi-diff
     @echo "==> Applying chezmoi (local + devcontainer)"
     @just chezmoi-all
     @echo "==> Installing extensions (local + devcontainer)"
