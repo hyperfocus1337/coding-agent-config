@@ -4,9 +4,18 @@ A `PostToolUse` hook that aligns markdown table columns in any `.md` or `.markdo
 
 ## How it works
 
-Wired to `Write`, `Edit`, and `MultiEdit` in `settings.json`. It reads the edited file path from the tool payload and reformats only the markdown tables in it. It is surgical by design: prose and code blocks pass through unchanged, only table formatting is touched.
+Wired to `Write`, `Edit`, `MultiEdit`, and `Bash` in `settings.json`, so it also catches markdown edited by shell commands (`sed -i`, `perl -i`, redirects) that never go through the file-editing tools. It reformats only the markdown tables it touches: prose and code blocks pass through unchanged.
 
-The hook silently no-ops on non-markdown files, malformed JSON input, or read/write errors, so a formatting hiccup never blocks a Claude tool call. Failures are swallowed and it exits 0, and the 10s timeout in `settings.json` caps worst-case runtime.
+Which files it formats depends on the tool that fired it:
+
+- `Write`, `Edit`, `MultiEdit` carry the edited file path in the payload, so the hook reformats exactly that one file.
+- `Bash` has no file path, so the hook asks git instead: it reformats every markdown file that changed versus `HEAD` plus any untracked new markdown in the repo. Gitignored files and anything outside a git repo are left alone.
+
+The hook silently no-ops on non-markdown files, malformed JSON input, read/write errors, or a `Bash` call outside a git repo, so a formatting hiccup never blocks a Claude tool call. Failures are swallowed and it exits 0, and the 10s timeout in `settings.json` caps worst-case runtime.
+
+## Tests
+
+`test/test.sh` is a smoke test covering both dispatch paths and the edge cases. Run `bash test/test.sh`; see `test/README.md`.
 
 ## Dependencies
 
