@@ -12,7 +12,7 @@ The scan covers the whole repo rooted at `CLAUDE_PROJECT_DIR`, not just the path
 
 ## The ruleset
 
-The patterns live in the `is_dangerous` function in `hook.sh`. It takes a basename and returns 0 to block or 1 to allow. The allowlist arm is checked first so template files like `.env.example` pass even though they match the `.env.*` blocklist. Edit the case arms to tune what counts as a secret.
+The patterns live in the `is_dangerous` function in `../_shared/secret-filenames.sh`, shared with the stage-edited-file hook so both use one list. It takes a basename and returns 0 to block or 1 to allow. The allowlist arm is checked first so template files like `.env.example` pass even though they match the `.env.*` blocklist. Edit the case arms there to tune what counts as a secret.
 
 The list is deliberately **filename-based**, not content-based. The key-file names and extensions (ssh/rsa keys, `*.p8`, `*.pkcs8`, `*.pfx`, `*.p12`, keystores, and so on) are drawn from the key-file categories in GitLab's [secret-detection-rules](https://gitlab.com/gitlab-org/security-products/secret-detection/secret-detection-rules/-/tree/main/rules/mit), plus common credential files (`.netrc`, `.pgpass`, `.htpasswd`, `.git-credentials`, `.dockercfg`). That upstream ruleset is otherwise a set of content regexes (matching secret *values* like `sk-...` or `AKIA...` inside files); those cannot be expressed as a cheap basename check and are intentionally out of scope here. For content scanning use a dedicated tool such as [gitleaks](https://github.com/gitleaks/gitleaks) in CI, which consumes that ruleset directly. Encrypted blobs (`*.gpg`, `*.pgp`) and public keys (`id_rsa.pub`, `*.crt`) are intentionally not blocked, since committing those is a legitimate workflow.
 

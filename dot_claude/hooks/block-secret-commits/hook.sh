@@ -48,24 +48,9 @@ is_allowed() { # $1 = repo-relative path; allowed if path or basename is listed
   return 1
 }
 
-# --- Danger classifier (allowlist checked first so templates pass) ---
-is_dangerous() {
-  case "$1" in
-    # allowlist: templates are safe to commit
-    .env.example|.env.sample|.env.template|.env.dist) return 1 ;;
-    # env files
-    .env|.env.*|.envrc) return 0 ;;
-    # private keys (ssh + generic)
-    id_rsa|id_dsa|id_ecdsa|id_ed25519) return 0 ;;
-    *.pem|*.key|*.p8|*.pkcs8|*.ppk) return 0 ;;
-    # keystores / pkcs bundles
-    *.pfx|*.p12|*.pkcs12|*.keystore|*.jks) return 0 ;;
-    # credential / auth files
-    .netrc|.pgpass|.htpasswd|.git-credentials|.dockercfg) return 0 ;;
-    credentials.json|*.ovpn|*.kubeconfig) return 0 ;;
-  esac
-  return 1
-}
+# --- Danger classifier (shared with the stage-edited-file hook) ---
+# Defines is_dangerous(); one list, both hooks. See _shared/secret-filenames.sh.
+source "$(dirname "${BASH_SOURCE[0]}")/../_shared/secret-filenames.sh"
 
 # --- Scan committable files (non-repo → ls-files errors → empty → allow) ---
 cd "$root" 2>/dev/null || allow # run from repo root so git sees this repo's files
