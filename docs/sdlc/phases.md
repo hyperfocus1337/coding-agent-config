@@ -6,6 +6,8 @@ Two conventions keep the tables lean. Slash commands are recognizable by their l
 
 Where each tool comes from (manually committed, pulled by APM, a standalone CLI, a Claude plugin, or built into Claude Code) is documented separately in [`inventory.md`](../sources/inventory.md). Each name below links to the same source as its `inventory.md` row (repo file, upstream repo, or docs page).
 
+A handful of built-in Claude Code skills (`run`, `verify`, `simplify`, `review`, `security-review`, `loop`, `dataviz`, `deep-research`) have had their prompt text extracted verbatim from the closed-source CLI into a separate [`claude-code-skills`](https://github.com/hyperfocus1337/claude-code-skills) repository; those names link to the SKILL.md text there. The official [Claude Code commands docs](https://code.claude.com/docs/en/commands) still describe what each does.
+
 ## The phases
 
 The lifecycle used here has eight phases. Each phase groups its tools into a few categories of related work.
@@ -45,12 +47,12 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 ### Research and orientation
 
-| Command                                                                                             | Description                                                                     |
-|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| [`research`](https://github.com/mattpocock/skills/blob/main/skills/engineering/research/SKILL.md)   | Investigate a question against high-trust primary sources and capture findings. |
-| [`deep-research`](https://code.claude.com/docs/en/commands)                                         | Fan-out web research with adversarial verification into a cited report.         |
-| [`wayfinder`](https://github.com/mattpocock/skills/blob/main/skills/engineering/wayfinder/SKILL.md) | Orient quickly in an unfamiliar codebase.                                       |
-| [`init`](https://code.claude.com/docs/en/slash-commands)                                            | Initialize a `CLAUDE.md` documenting the codebase for future sessions.          |
+| Command                                                                                                   | Description                                                                     |
+|-----------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| [`research`](https://github.com/mattpocock/skills/blob/main/skills/engineering/research/SKILL.md)         | Investigate a question against high-trust primary sources and capture findings. |
+| [`deep-research`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/deep-research.md) | Fan-out web research with adversarial verification into a cited report.         |
+| [`wayfinder`](https://github.com/mattpocock/skills/blob/main/skills/engineering/wayfinder/SKILL.md)       | Orient quickly in an unfamiliar codebase.                                       |
+| [`init`](https://code.claude.com/docs/en/slash-commands)                                                  | Initialize a `CLAUDE.md` documenting the codebase for future sessions.          |
 
 ## Phase 2: design and architecture
 
@@ -109,10 +111,10 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 ### Running and rescue
 
-| Command                                                     | Description                                                                          |
-|-------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| [`run`](https://code.claude.com/docs/en/slash-commands)     | Launch and drive the app to see a change working in the real thing.                  |
-| [`codex:rescue`](https://github.com/openai/codex-plugin-cc) | Subagent that hands a stuck or heavy task to Codex for a second implementation pass. |
+| Command                                                                               | Description                                                                          |
+|---------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`run`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/run.md) | Launch and drive the app to see a change working in the real thing.                  |
+| [`codex:rescue`](https://github.com/openai/codex-plugin-cc)                           | Subagent that hands a stuck or heavy task to Codex for a second implementation pass. |
 
 ### Config file hygiene
 
@@ -138,17 +140,17 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 |---------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
 | [`/code-review:code-review`](https://github.com/anthropics/claude-code/tree/main/plugins/code-review)   | Code review a pull request (official plugin).                               |
 | [`code-review`](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md) | Review a branch on two axes: repo standards and originating-spec adherence. |
-| [`/review`](https://code.claude.com/docs/en/commands)                                             | Review a GitHub pull request.                                               |
+| [`/review`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/review.md)            | Review a GitHub pull request.                                               |
 
 ### Focused review
 
-| Command                                                             | Description                                                                       |
-|---------------------------------------------------------------------|-----------------------------------------------------------------------------------|
-| [`security-review`](https://code.claude.com/docs/en/slash-commands) | Security review of the pending changes on the current branch.                     |
-| [`simplify`](https://code.claude.com/docs/en/commands)              | Review changed code for reuse and simplification, then apply the fixes.           |
-| [`ponytail-review`](https://github.com/DietrichGebert/ponytail)     | Review a diff purely for over-engineering: what to delete or replace with stdlib. |
-| [`ponytail-audit`](https://github.com/DietrichGebert/ponytail)      | Whole-repo over-engineering audit with a ranked list of what to cut.              |
-| [`caveman-review`](https://github.com/JuliusBrussee/caveman)        | Compressed one-line-per-finding PR review comments.                               |
+| Command                                                                                                       | Description                                                                       |
+|---------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| [`security-review`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/security-review.md) | Security review of the pending changes on the current branch.                     |
+| [`simplify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/simplify.md)               | Review changed code for reuse and simplification, then apply the fixes.           |
+| [`ponytail-review`](https://github.com/DietrichGebert/ponytail)                                               | Review a diff purely for over-engineering: what to delete or replace with stdlib. |
+| [`ponytail-audit`](https://github.com/DietrichGebert/ponytail)                                                | Whole-repo over-engineering audit with a ranked list of what to cut.              |
+| [`caveman-review`](https://github.com/JuliusBrussee/caveman)                                                  | Compressed one-line-per-finding PR review comments.                               |
 
 ### Review agents
 
@@ -160,10 +162,10 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 ### Test-driven and verification
 
-| Command                                                                                 | Description                                                                        |
-|-----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
-| [`tdd`](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md) | Drive features and fixes test-first.                                               |
-| [`verify`](https://code.claude.com/docs/en/slash-commands)                              | Exercise the affected flow end to end and observe real behavior before committing. |
+| Command                                                                                     | Description                                                                        |
+|---------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
+| [`tdd`](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md)     | Drive features and fixes test-first.                                               |
+| [`verify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/verify.md) | Exercise the affected flow end to end and observe real behavior before committing. |
 
 ### Browser testing
 
@@ -227,10 +229,10 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 ### Scheduling and recurring jobs
 
-| Command                                                   | Description                                                                |
-|-----------------------------------------------------------|----------------------------------------------------------------------------|
-| [`schedule`](https://code.claude.com/docs/en/routines)    | Create and manage scheduled cloud agents (routines) on a cron schedule.    |
-| [`loop`](https://code.claude.com/docs/en/scheduled-tasks) | Run a prompt or slash command on a recurring interval, or poll for status. |
+| Command                                                                                 | Description                                                                |
+|-----------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| [`schedule`](https://code.claude.com/docs/en/routines)                                  | Create and manage scheduled cloud agents (routines) on a cron schedule.    |
+| [`loop`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/loop.md) | Run a prompt or slash command on a recurring interval, or poll for status. |
 
 ### Infrastructure and data ops
 
@@ -256,7 +258,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 | [`code-simplifier`](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier)                                | Subagent that simplifies code for clarity and maintainability while preserving behavior.                   |
 | [`improve-codebase-architecture`](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md) | Reshape an existing codebase toward a cleaner architecture.                                                |
 | [`diagnosing-bugs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnosing-bugs/SKILL.md)                             | Diagnose regressions and hard bugs in maintained code.                                                     |
-| [`simplify`](https://code.claude.com/docs/en/commands)                                                                                      | Trim reuse, complexity, and dead flexibility from existing code.                                           |
+| [`simplify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/simplify.md)                                             | Trim reuse, complexity, and dead flexibility from existing code.                                           |
 
 ### Documentation
 
@@ -275,16 +277,12 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 These apply regardless of which phase you are in.
 
-| Command                                                                              | Description                                                                            |
-|--------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
-| [`caveman`](https://github.com/JuliusBrussee/caveman)                                | Ultra-compressed communication mode to cut token usage while keeping substance.        |
-| [`ponytail`](https://github.com/DietrichGebert/ponytail)                             | Force the simplest solution that works: stdlib and native features before custom code. |
-| [`context7:docs`](https://github.com/upstash/context7)                               | Fetch current documentation for any library, framework, or SDK.                        |
-| [`install-mcp`](../../dot_claude/skills/install-mcp/SKILL.md)                        | Add a project-scoped MCP server to the repo.                                           |
-| [`update-config`](https://code.claude.com/docs/en/settings)                          | Change harness settings, permissions, and hooks.                                       |
-| [`keybindings-help`](https://code.claude.com/docs/en/interactive-mode)               | Customize keyboard shortcuts and chord bindings.                                       |
-| [`fewer-permission-prompts`](https://code.claude.com/docs/en/permissions)            | Build an allowlist from transcripts to cut repeat permission prompts.                  |
-| [`claude-api`](https://platform.claude.com/docs/en/api/overview)                     | Reference for the Claude API and Anthropic SDK (models, pricing, tool use).            |
-| [`dataviz`](https://code.claude.com/docs/en/commands)                                | Design guidance for any chart, dashboard, or data visualization.                       |
-| [`watch:watch`](https://github.com/bradautomates/claude-video)                       | Watch a video (tutorial, demo) and answer questions about its content.                 |
-| [`notion-workspace-plugin`](https://github.com/makenotion/claude-code-notion-plugin) | Read and write a Notion workspace as a knowledge base.                                 |
+| Command                                                                                       | Description                                                                            |
+|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| [`caveman`](https://github.com/JuliusBrussee/caveman)                                         | Ultra-compressed communication mode to cut token usage while keeping substance.        |
+| [`ponytail`](https://github.com/DietrichGebert/ponytail)                                      | Force the simplest solution that works: stdlib and native features before custom code. |
+| [`context7:docs`](https://github.com/upstash/context7)                                        | Fetch current documentation for any library, framework, or SDK.                        |
+| [`install-mcp`](../../dot_claude/skills/install-mcp/SKILL.md)                                 | Add a project-scoped MCP server to the repo.                                           |
+| [`dataviz`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/dataviz.md) | Design guidance for any chart, dashboard, or data visualization.                       |
+| [`watch:watch`](https://github.com/bradautomates/claude-video)                                | Watch a video (tutorial, demo) and answer questions about its content.                 |
+| [`notion-workspace-plugin`](https://github.com/makenotion/claude-code-notion-plugin)          | Read and write a Notion workspace as a knowledge base.                                 |

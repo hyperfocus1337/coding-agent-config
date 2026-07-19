@@ -129,23 +129,15 @@ Bundled inside plugins from various marketplaces. Source of truth for the set: [
 
 ## Built into Claude Code
 
-Shipped with the harness, no install step. All are of kind `skill`. The Claude Code CLI is closed source, so there is no per-skill source repo; where a skill maps to a documented feature, its name links to the relevant [Claude Code docs](https://code.claude.com/docs) page, except `claude-api`, which links to the [Claude API reference](https://platform.claude.com/docs/en/api/overview).
+Shipped with the harness, no install step. All are of kind `skill`. The Claude Code CLI is closed source, so there is no per-skill source repo. The prompt text for the skills below has been extracted verbatim from CLI v2.1.215 into a separate [`claude-code-skills`](https://github.com/hyperfocus1337/claude-code-skills) repository, so each skill name links to the actual SKILL.md text there. The official [Claude Code commands docs](https://code.claude.com/docs/en/commands) still describe what these built-in commands do, so their descriptions can be referenced there even though the source itself is closed.
 
-| Skill                                                                     | Description                                                             |
-|---------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| [`init`](https://code.claude.com/docs/en/slash-commands)                  | Initialize a `CLAUDE.md` documenting the codebase.                      |
-| [`run`](https://code.claude.com/docs/en/slash-commands)                   | Launch and drive the app to see a change working.                       |
-| [`verify`](https://code.claude.com/docs/en/slash-commands)                | Exercise the affected flow end to end and observe behavior.             |
-| [`simplify`](https://code.claude.com/docs/en/commands)                    | Review changed code for reuse and simplification, then apply fixes.     |
-| [`review`](https://code.claude.com/docs/en/slash-commands)                | Review a GitHub pull request.                                           |
-| [`security-review`](https://code.claude.com/docs/en/slash-commands)       | Security review of the pending changes on the current branch.           |
-| [`loop`](https://code.claude.com/docs/en/scheduled-tasks)                 | Run a prompt or slash command on a recurring interval.                  |
-| [`schedule`](https://code.claude.com/docs/en/routines)                    | Create and manage scheduled cloud agents on a cron schedule.            |
-| [`update-config`](https://code.claude.com/docs/en/settings)               | Configure the harness: permissions, env vars, hooks.                    |
-| [`keybindings-help`](https://code.claude.com/docs/en/interactive-mode)    | Customize keyboard shortcuts and chord bindings.                        |
-| [`claude-api`](https://platform.claude.com/docs/en/api/overview)          | Reference for the Claude API and Anthropic SDK.                         |
-| [`fewer-permission-prompts`](https://code.claude.com/docs/en/permissions) | Build an allowlist from transcripts to cut permission prompts.          |
-| [`dataviz`](https://code.claude.com/docs/en/commands)                     | Design guidance for charts, dashboards, and visualizations.             |
-| [`deep-research`](https://code.claude.com/docs/en/commands)               | Fan-out web research with adversarial verification into a cited report. |
-| [`artifact-design`](https://code.claude.com/docs/en/artifacts)            | Design guidance and fundamentals for Artifacts.                         |
-| [`artifact-capabilities`](https://code.claude.com/docs/en/artifacts)      | Runtime capabilities a published Artifact can declare.                  |
+| Skill                                                                                                         | Description                                                             |
+|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| [`run`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/run.md)                         | Launch and drive the app to see a change working.                       |
+| [`verify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/verify.md)                   | Exercise the affected flow end to end and observe behavior.             |
+| [`simplify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/simplify.md)               | Review changed code for reuse and simplification, then apply fixes.     |
+| [`review`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/review.md)                   | Review a GitHub pull request.                                           |
+| [`security-review`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/security-review.md) | Security review of the pending changes on the current branch.           |
+| [`loop`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/loop.md)                       | Run a prompt or slash command on a recurring interval.                  |
+| [`dataviz`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/dataviz.md)                 | Design guidance for charts, dashboards, and visualizations.             |
+| [`deep-research`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/deep-research.md)     | Fan-out web research with adversarial verification into a cited report. |
