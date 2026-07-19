@@ -35,3 +35,9 @@ npm install -g oxlint
 ```
 
 `ruff` via `uv tool install` on Debian/Ubuntu keeps it isolated from system Python and tracks the current release, whereas `apt install ruff` works on recent distros but ships an older build. `oxlint` is zero-config: it ships a full recommended ruleset built in and lints JS/TS/JSX standalone with no project-level config, so configless projects lint cleanly instead of erroring the way flat-config eslint does. A project `.oxlintrc.json` is still picked up from the file's directory if present.
+
+## Why it blocks
+
+The exit-2 block is deliberate, not an oversight. A `PostToolUse` hook only feeds its output back to Claude when it blocks (exit 2); on exit 0 the output goes to the user transcript, not to the model. A non-blocking lint hook would therefore be invisible to Claude, so lint findings would never get fixed, which defeats the point of running a linter on every edit. Blocking is the only way to surface a finding to the model.
+
+Blocking on every stylistic nit would be too aggressive, but in practice it isn't, because the block is gated on the linter's own exit code. `oxlint` exits non-zero only on real correctness errors (redeclared bindings, syntax errors) and stays at exit 0 for style warnings, so the JS/TS path blocks on what's broken and merely prints the rest. If a linter feels too interrupty, tune its severity (for example `shellcheck -S error`) rather than dropping the exit-2, which would silence it entirely.
