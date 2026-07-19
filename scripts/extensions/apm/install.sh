@@ -4,6 +4,7 @@ set -e
 
 # Deploy apm.yml deps (MCP servers + skills) to user scope. Idempotent.
 
+# --- Config directory ---
 # APM resolves the Claude target relative to CLAUDE_CONFIG_DIR. Point it at the
 # container user's home when that home exists and no caller value is set. On the
 # host (no /home/$USER) we leave it unset so APM uses claude's built-in default.
@@ -13,6 +14,7 @@ if [ -z "${CLAUDE_CONFIG_DIR:-}" ] && [ -d "$CONTAINER_HOME" ]; then
   export CLAUDE_CONFIG_DIR="$CONTAINER_HOME/.claude"
 fi
 
+# --- Environment ---
 # Resolve repo root from this script's location.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
@@ -25,6 +27,7 @@ if [ -z "${CONTEXT7_API_KEY:-}" ] && [ -f "$REPO_ROOT/.envrc" ]; then
   . "$REPO_ROOT/.envrc"
 fi
 
+# --- Install ---
 # Stage manifest: `apm install -g` reads ~/.apm/, not $PWD.
 echo "==> Staging apm.yml manifest"
 mkdir -p "$HOME/.apm"

@@ -2,6 +2,7 @@
 
 set -e
 
+# --- Preflight ---
 # Honor caller-provided CLAUDE_CONFIG_DIR if set; otherwise leave unset so claude
 # uses its built-in defaults ($HOME/.claude.json sibling of $HOME/.claude/).
 # Forcing a default here breaks installs where .claude.json lives at $HOME.
@@ -14,8 +15,9 @@ if ! command -v claude &>/dev/null; then
   exit 1
 fi
 
-# Sync $HOME with repo before installing plugins. settings.json wires hooks
-# and statusline by absolute path, so it must be in place before plugin install.
+# --- Sync $HOME with chezmoi ---
+# settings.json wires hooks and statusline by absolute path, so it must be in
+# place before plugin install.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 echo "==> Syncing \$HOME with chezmoi"
@@ -26,6 +28,7 @@ else
   exit 1
 fi
 
+# --- Node hook deps ---
 # Node-based hooks ship a package.json but node_modules is gitignored, so chezmoi
 # lays down the source without installing deps. Install them in place, or the
 # hook dies with ERR_MODULE_NOT_FOUND on every trigger. Prefer `npm ci` (honors
@@ -45,6 +48,7 @@ else
   echo "WARN: 'npm' not found; skipping node hook deps. Markdown/format hooks may fail." >&2
 fi
 
+# --- Claude plugins and skills ---
 # Install Claude plugins via marketplace (Claude-specific skills and plugins)
 echo "==> Installing Claude plugins"
 "$SCRIPT_DIR/plugins/install.sh"
@@ -53,6 +57,7 @@ echo "==> Installing Claude plugins"
 echo "==> Installing skills"
 "$SCRIPT_DIR/skills/install.sh"
 
+# --- MCP servers and cross-agent skills (APM) ---
 # MCP servers and third-party skills are deployed via APM (apm.yml) so the
 # same declarations can target other agents (not just Claude).
 
@@ -64,6 +69,7 @@ echo "==> Installing skills"
 echo "==> Installing MCP servers and skills via APM"
 "$SCRIPT_DIR/apm/install.sh"
 
+# --- Disable unwanted defaults ---
 # Disable plugins and skills we don't want enabled by default.
 echo "==> Disabling unwanted plugins and skills"
 "$SCRIPT_DIR/plugins/disable.sh"

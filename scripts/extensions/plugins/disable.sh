@@ -6,18 +6,21 @@ set -e
 # can't be disabled on its own, so this drops the whole plugin (including any
 # wanted siblings, e.g. cloudflare-docs). See docs/mcp/disabling-servers.md.
 
+# --- Preflight ---
 if ! command -v claude &>/dev/null; then
   echo "ERROR: 'claude' not found in PATH." >&2
   exit 1
 fi
 
-# Plugins to disable. Adjust this list as needed.
+# --- Plugins to disable ---
+# Adjust this list as needed.
 PLUGINS=(
   cloudflare@cloudflare
   notion-workspace-plugin@notion-plugin-marketplace
   chrome-devtools-mcp@chrome-devtools-plugins
 )
 
+# --- Disable loop ---
 for plugin in "${PLUGINS[@]}"; do
   echo "==> Disabling plugin: $plugin"
   claude plugin disable "$plugin" || true # best-effort: already-disabled is fine

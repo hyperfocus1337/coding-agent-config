@@ -7,6 +7,7 @@ set -e
 # can still restore them, so for a durable disable prefer `claude plugin
 # disable`, or add a `Skill(...)` deny rule in settings.json.
 
+# --- Config directory ---
 # Honors CLAUDE_CONFIG_DIR, same container workaround as apm/install.sh: target
 # the container user's home when it exists and no caller value is set; leave
 # unset on the host so the built-in default (~/.claude) applies.
@@ -16,11 +17,13 @@ if [ -z "${CLAUDE_CONFIG_DIR:-}" ] && [ -d "$CONTAINER_HOME" ]; then
 fi
 CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 
-# Skill directories to remove, relative to the marketplace root. Adjust as needed.
+# --- Skills to remove ---
+# Directories to remove, relative to the marketplace root. Adjust as needed.
 SKILLS=(
   caveman/skills/caveman-commit
 )
 
+# --- Removal loop ---
 for skill in "${SKILLS[@]}"; do
   plugin="${skill%%/*}" # first path segment, e.g. caveman
   name="${skill##*/}" # basename, e.g. caveman-commit

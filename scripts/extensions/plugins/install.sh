@@ -2,6 +2,7 @@
 
 set -e
 
+# --- Container git config ---
 # Only mutate global git config inside ephemeral build environments
 # (Docker, GitHub Actions, devcontainer/Codespaces) — never on a user's host.
 if [ -f /.dockerenv ] ||
@@ -21,7 +22,7 @@ if [ -f /.dockerenv ] ||
   done
 fi
 
-# Official plugins
+# --- Official plugins ---
 echo "==> Installing official plugins"
 # Official marketplace should be already installed (added for debugging)
 # https://github.com/anthropics/claude-code/tree/main/plugins/
@@ -39,6 +40,7 @@ claude plugin install code-simplifier@claude-plugins-official
 # https://github.com/obra/superpowers
 # claude plugin install superpowers@claude-plugins-official
 
+# --- Prime-radiant plugins ---
 echo "==> Installing prime-radiant plugins"
 # https://github.com/prime-radiant-inc/prime-radiant-marketplace
 claude plugin marketplace add prime-radiant-inc/prime-radiant-marketplace
@@ -47,6 +49,7 @@ claude plugin install iterative-development@prime-radiant-marketplace
 # https://github.com/prime-radiant-inc/greenfield
 claude plugin install greenfield@prime-radiant-marketplace
 
+# --- LSP plugins ---
 echo "==> Installing pyright LSP"
 # Install pyright for lsp server
 npm install -g pyright
@@ -62,6 +65,7 @@ claude plugin marketplace add piebald-ai/claude-code-lsps
 # https://github.com/Piebald-AI/claude-code-lsps/tree/main/pyright
 claude plugin install pyright@claude-code-lsps
 
+# --- Code tooling plugins ---
 echo "==> Installing context7 plugin"
 # Upstash plugin
 # https://github.com/upstash/context7/
@@ -92,6 +96,7 @@ claude plugin marketplace add astral-sh/claude-code-plugins
 # https://github.com/astral-sh/claude-code-plugins/tree/main/plugins/astral
 claude plugin install astral@astral-sh
 
+# --- Agent and prose plugins ---
 echo "==> Installing codex plugin"
 # Codex for Claude Code
 # https://github.com/openai/codex-plugin-cc
@@ -111,6 +116,7 @@ echo "==> Installing ponytail plugin"
 claude plugin marketplace add DietrichGebert/ponytail
 claude plugin install ponytail@ponytail
 
+# --- Integrations ---
 echo "==> Installing notion plugin"
 # Notion plugin
 # https://github.com/makenotion/claude-code-notion-plugin
