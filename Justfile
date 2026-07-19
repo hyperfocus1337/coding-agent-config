@@ -9,6 +9,7 @@ SCRIPTS := REPO / "scripts"
 TEMPLATES := REPO / "templates"
 CLAUDE_HOME := env("CLAUDE_HOME", env("HOME") / ".claude")
 CONTAINER := "coding-agent-sandbox-devcontainer"
+CONTAINER_USER := "user" # devcontainer runs as non-root `user`; exec as root hits wrong $HOME + missing PATH
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Setup & integration
@@ -46,7 +47,7 @@ chezmoi:
 # Run `just chezmoi` inside the devcontainer.
 [group('chezmoi')]
 chezmoi-devcontainer:
-    docker exec -w /workspaces/coding-agent-config -it {{ CONTAINER }} just chezmoi
+    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -it {{ CONTAINER }} just chezmoi
 
 # Run `just chezmoi` both locally and inside the devcontainer.
 [group('chezmoi')]
@@ -76,7 +77,7 @@ apm:
 # Run `just apm` inside the devcontainer.
 [group('apm')]
 apm-devcontainer:
-    docker exec -w /workspaces/coding-agent-config -it {{ CONTAINER }} just apm
+    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -it {{ CONTAINER }} just apm
 
 # Run `just apm` both locally and inside the devcontainer.
 [group('apm')]
@@ -101,7 +102,7 @@ extensions:
 # Run `just extensions` inside the devcontainer.
 [group('extensions')]
 extensions-devcontainer:
-    docker exec -w /workspaces/coding-agent-config -it {{ CONTAINER }} just extensions
+    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -it {{ CONTAINER }} just extensions
 
 # Run `just extensions` both locally and inside the devcontainer.
 [group('extensions')]
