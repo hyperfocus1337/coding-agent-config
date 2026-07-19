@@ -23,7 +23,7 @@ lint() { command -v "$1" >/dev/null || exit 0; "$@" 1>&2 || exit 2; }
 # Dispatch on file extension (${F##*.} = suffix after last dot).
 case "${F##*.}" in
   py)                    lint ruff check --quiet "$F" ;;
-  js|jsx|ts|tsx|mjs|cjs) lint eslint --quiet "$F" ;;
+  js|jsx|ts|tsx|mjs|cjs) lint oxlint "$F" ;;
   sh|bash)               lint shellcheck -S warning "$F" ;;
   yml|yaml)              lint yamllint -d relaxed "$F" ;;
   tf|tfvars)             lint terraform fmt -check -diff "$F" ;;
