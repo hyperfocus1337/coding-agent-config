@@ -43,6 +43,11 @@ This exempts just those files wherever the variable is exported, so it is best f
 
 Both overrides are additive and file-scoped, not all-or-nothing: they exempt only the paths you name and leave the guard active for everything else. Gitignore (override 1) remains the right answer for a secret that should never be committed at all.
 
+## Tests
+
+`test/test.sh` is a smoke test for the `is_dangerous` classifier: it sources `hook.sh` (stopping at the sourcing guard so only the function loads) and asserts that real secrets block and templates/ordinary files pass. Run `bash test/test.sh`. See [test/README.md](test/README.md).
+
 ## Files
 
 - `hook.sh` is the whole hook, invoked from `settings.json`. It deploys via chezmoi to `~/.claude/hooks/block-secret-commits/`.
+- `test/test.sh` is the classifier smoke test, run by hand or in CI (see [Tests](#tests)).
