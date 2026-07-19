@@ -33,6 +33,11 @@
           },
           {
             "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/format-all-languages/hook.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "bash \"$HOME/.claude/hooks/stage-edited-file/hook.sh\"",
             "timeout": 5
           },
