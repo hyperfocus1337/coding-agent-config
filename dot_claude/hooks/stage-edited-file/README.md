@@ -6,7 +6,7 @@ A `PostToolUse` hook that runs `git add` on each file Claude writes, so every ed
 
 Wired to `Write`, `Edit`, and `MultiEdit` in `settings.json`. It reads the edited file path from the tool payload and stages it. It follows the swallow-and-exit-0 contract: it gates on `tool_response.success` (skips failed tool calls), prefers `$CLAUDE_PROJECT_DIR` for the repo root, self-disables if `jq` is missing, and skips paths outside a git repo. The 5s timeout in `settings.json` caps worst-case runtime. Note: it re-stages the whole file even if you had a partial `git add -p` selection.
 
-It skips secret-shaped filenames (env files, private keys, keystores, credential blobs) so credentials are never auto-staged. The classifier lives in `../_shared/secret-filenames.sh` and is shared with the block-secret-commits hook, so both agree on what counts as a secret; edit the list there. This check runs after the gitignore guard, so a gitignored secret is still unstaged rather than silently left alone.
+Secret-shaped filenames are not special-cased here: the block-secret-commits hook is the gate that stops secrets reaching a commit. This hook only unstages gitignored paths (its gitignore guard), so a gitignored secret is still unstaged rather than silently left alone.
 
 ## Gitignore guard
 

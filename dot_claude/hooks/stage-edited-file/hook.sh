@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Stage the file Claude just wrote/edited so it lands in `git status`
 # pre-staged. Silent no-op outside a git repo, on gitignored paths,
-# on failed tool calls, or on common secret filenames.
+# or on failed tool calls.
 #
 # Known limitation: if a user has a partial `git add -p` selection
 # staged for a file and Claude then edits it, this will re-stage the
@@ -55,15 +55,6 @@ if git -C "$repo" check-ignore -q --no-index -- "$file" 2>/dev/null; then
   fi
   exit 0
 fi
-
-# --- Secret-filename guard ---
-# Refuse to auto-stage files that look like secrets but aren't
-# gitignored (a misplaced Write dropping a credential into a tracked
-# directory). Gitignore is the real defence and ran just above. The
-# classifier is shared with the block-secret-commits hook so both use
-# the same list. See _shared/secret-filenames.sh.
-source "$(dirname "${BASH_SOURCE[0]}")/../_shared/secret-filenames.sh"
-is_dangerous "${file##*/}" && exit 0
 
 # --- Stage ---
 # Swallow git's stderr: outside-repo, gitignored, or already-staged

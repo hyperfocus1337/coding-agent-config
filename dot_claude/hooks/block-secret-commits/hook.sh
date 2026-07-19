@@ -1,6 +1,32 @@
 #!/usr/bin/env bash
 set -u
 
+# --- Danger classifier ---
+# is_dangerous <basename> -> exit 0 if the name looks like a real secret that
+# must never be committed, 1 otherwise (templates and everything else). Match
+# on basename, not full path.
+is_dangerous() {
+  case "$1" in
+    # allowlist: templates carry placeholders, not real secrets
+    .env.example|.env.sample|.env.template|.env.dist) return 1 ;;
+    # env files
+    .env|.env.*|.envrc) return 0 ;;
+    # private keys (ssh + generic)
+    id_rsa|id_dsa|id_ecdsa|id_ed25519) return 0 ;;
+    *.pem|*.key|*.p8|*.pkcs8|*.ppk) return 0 ;;
+    # keystores / pkcs bundles
+    *.pfx|*.p12|*.pkcs12|*.keystore|*.jks) return 0 ;;
+    # credential / auth files
+    .netrc|.pgpass|.htpasswd|.git-credentials|.dockercfg) return 0 ;;
+    credentials.json|*.ovpn|*.kubeconfig) return 0 ;;
+  esac
+  return 1
+}
+
+# Sourced (e.g. by test.sh)? Only the classifier above is wanted; stop before
+# the hook body reads stdin. Defined first so sourcing never blocks on `read`.
+[[ "${BASH_SOURCE[0]}" == "${0}" ]] || return 0
+
 # --- Allow helper ---
 # Cursor's beforeShellExecution hook requires valid JSON on stdout (empty stdout
 # is rejected as "not valid JSON" and blocks the command). Claude Code ignores
@@ -47,10 +73,6 @@ is_allowed() { # $1 = repo-relative path; allowed if path or basename is listed
   done
   return 1
 }
-
-# --- Danger classifier (shared with the stage-edited-file hook) ---
-# Defines is_dangerous(); one list, both hooks. See _shared/secret-filenames.sh.
-source "$(dirname "${BASH_SOURCE[0]}")/../_shared/secret-filenames.sh"
 
 # --- Scan committable files (non-repo → ls-files errors → empty → allow) ---
 cd "$root" 2>/dev/null || allow # run from repo root so git sees this repo's files
