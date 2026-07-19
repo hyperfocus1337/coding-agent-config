@@ -26,6 +26,7 @@ update-all:
     git pull origin main
     @echo "==> chezmoi diff (what apply will change)"
     @just chezmoi-diff
+    @just chezmoi-diff-devcontainer
     @echo "==> Applying chezmoi (local + devcontainer)"
     @just chezmoi-all
     @echo "==> Installing extensions (local + devcontainer)"
@@ -63,6 +64,11 @@ chezmoi-all:
 [group('chezmoi')]
 chezmoi-diff:
     chezmoi diff --source "{{ REPO }}" --destination "{{ env('HOME') }}"
+
+# Run `just chezmoi-diff` inside the devcontainer.
+[group('chezmoi')]
+chezmoi-diff-devcontainer:
+    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -it {{ CONTAINER }} just chezmoi-diff
 
 # Track a $HOME file in this repo: `just chezmoi-add ~/.config/foo`.
 [group('chezmoi')]
