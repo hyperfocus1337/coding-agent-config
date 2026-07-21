@@ -28,19 +28,14 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOME/.claude/hooks/prettify-md-tables/hook.mjs\"",
-            "timeout": 10
+            "command": "bash \"$HOME/.claude/hooks/format-all-languages/hook.sh\"",
+            "timeout": 20
           }
         ]
       },
       {
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$HOME/.claude/hooks/prettify-md-tables/hook.mjs\"",
-            "timeout": 10
-          },
           {
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/format-all-languages/hook.sh\"",
