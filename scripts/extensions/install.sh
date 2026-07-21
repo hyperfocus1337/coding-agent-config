@@ -28,26 +28,6 @@ else
   exit 1
 fi
 
-# --- Node hook deps ---
-# Node-based hooks ship a package.json but node_modules is gitignored, so chezmoi
-# lays down the source without installing deps. Install them in place, or the
-# hook dies with ERR_MODULE_NOT_FOUND on every trigger. Prefer `npm ci` (honors
-# the committed lockfile); fall back to `npm install` if no lockfile is present.
-echo "==> Installing node hook deps"
-if command -v npm &>/dev/null; then
-  for pkg in "$HOME"/.claude/hooks/*/package.json; do
-    [ -e "$pkg" ] || continue # nullglob-free guard: skip the literal glob if no matches
-    dir="$(dirname "$pkg")"
-    if [ -f "$dir/package-lock.json" ]; then
-      npm ci --prefix "$dir" --silent
-    else
-      npm install --prefix "$dir" --silent
-    fi
-  done
-else
-  echo "WARN: 'npm' not found; skipping node hook deps. Markdown/format hooks may fail." >&2
-fi
-
 # --- Claude plugins and skills ---
 # Install Claude plugins via marketplace (Claude-specific skills and plugins)
 echo "==> Installing Claude plugins"
