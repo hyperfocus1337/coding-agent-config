@@ -11,9 +11,11 @@ Wired to `Write`, `Edit`, and `MultiEdit` in `settings.json`. It lints the edite
 | `.py`                                   | [ruff](https://docs.astral.sh/ruff/)             |
 | `.js` `.jsx` `.ts` `.tsx` `.mjs` `.cjs` | [oxlint](https://oxc.rs/docs/guide/usage/linter) |
 | `.sh` `.bash`                           | [shellcheck](https://www.shellcheck.net/)        |
-| `.yml` `.yaml`                          | [yamllint](https://yamllint.readthedocs.io/)     |
+| `.yml` `.yaml`                          | [ansible-lint](https://ansible.readthedocs.io/projects/lint/) if the file looks like Ansible, else [yamllint](https://yamllint.readthedocs.io/) |
 
 A missing linter is a silent skip (the `command -v` check bails cleanly), so anything you do not install is a no-op. A lint failure exits 2, so Claude sees the errors and can fix them. The 5s timeout in `settings.json` caps runtime.
+
+YAML is split: a file is treated as Ansible (and sent to `ansible-lint`, which runs yamllint internally) when it sits under a standard Ansible directory (`roles/`, `tasks/`, `handlers/`, `playbooks/`, `group_vars/`, `host_vars/`, `molecule/`), has an entrypoint name (`site.yml`, `playbook.yml`, `main.yml`, `requirements.yml`), or contains a top-level Ansible marker (`hosts:`, `tasks:`, `roles:`, `ansible.builtin.`). Everything else goes to `yamllint`.
 
 ## Installing the linters
 
@@ -22,7 +24,7 @@ The hook calls each binary directly (no `npx`-fetched fallback). Install whichev
 macOS (Homebrew):
 
 ```sh
-brew install ruff shellcheck yamllint
+brew install ruff shellcheck yamllint ansible-lint
 npm install -g oxlint
 ```
 
@@ -31,6 +33,7 @@ Debian / Ubuntu:
 ```sh
 apt install -y shellcheck yamllint
 uv tool install ruff # apt's ruff lags; uv tracks upstream
+uv tool install ansible-lint
 npm install -g oxlint
 ```
 

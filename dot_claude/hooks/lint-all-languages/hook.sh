@@ -19,12 +19,21 @@ F=$(jq -r '.tool_input.file_path // empty')
 # Claude that the edit produced lint errors.
 lint() { command -v "$1" >/dev/null || exit 0; "$@" 1>&2 || exit 2; }
 
+# --- Ansible detection ---
+# ansible-lint should only touch Ansible YAML, not every .yml. Match by path
+# (standard Ansible dirs / entrypoint names) or by content markers.
+is_ansible() {
+  [[ "$F" =~ /(roles|tasks|handlers|playbooks|group_vars|host_vars|molecule)/ ]] && return 0
+  [[ "$(basename "$F")" =~ ^(site|playbook|main|requirements)\.ya?ml$ ]] && return 0
+  grep -qE '^\s*(- )?(hosts|tasks|roles|ansible\.builtin\.):' "$F"
+}
+
 # --- Dispatch by extension ---
 # Dispatch on file extension (${F##*.} = suffix after last dot).
 case "${F##*.}" in
   py)                    lint ruff check --quiet "$F" ;;
   js|jsx|ts|tsx|mjs|cjs) lint oxlint "$F" ;;
   sh|bash)               lint shellcheck -S warning "$F" ;;
-  yml|yaml)              lint yamllint -d relaxed "$F" ;;
+  yml|yaml)              if is_ansible; then lint ansible-lint -q "$F"; else lint yamllint -d relaxed "$F"; fi ;;
   tf|tfvars)             lint terraform fmt -check -diff "$F" ;;
 esac
