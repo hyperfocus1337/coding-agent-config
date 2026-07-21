@@ -53,11 +53,27 @@ done
 
 [[ ${#targets[@]} -gt 0 ]] || exit 0
 
-# --- Format in place (single prettier invocation) ---
-# --no-install so we use a global or project-local prettier but never
-# trigger a network install. --prose-wrap never keeps prose on one line.
+# --- Format in place ---
+# Split markdown from the rest: markdown gets a wide --print-width so
+# prettier keeps aligning table columns instead of collapsing wide tables
+# to the compact `| --- |` form (its default under --prose-wrap never past
+# printWidth). print-width is global, so code keeps the default 80.
+# --no-install: use global/project prettier, never hit the network.
+# --prose-wrap never keeps prose (and here also table padding) on one line.
 # Errors (no prettier, parse failure) are swallowed; a formatter never
 # fails an edit.
-npx --no-install prettier --write --prose-wrap never "${targets[@]}" >/dev/null 2>&1
+# ponytail: tables wider than 400 cols still compact; bump if that bites.
+md_targets=()
+other_targets=()
+for f in "${targets[@]}"; do
+  case "${f##*.}" in
+    md|markdown) md_targets+=("$f") ;;
+    *) other_targets+=("$f") ;;
+  esac
+done
+
+pretty=(npx --no-install prettier --write --prose-wrap never)
+[[ ${#md_targets[@]} -gt 0 ]] && "${pretty[@]}" --print-width 400 "${md_targets[@]}" >/dev/null 2>&1
+[[ ${#other_targets[@]} -gt 0 ]] && "${pretty[@]}" "${other_targets[@]}" >/dev/null 2>&1
 
 exit 0
