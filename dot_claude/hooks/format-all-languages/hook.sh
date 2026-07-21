@@ -6,13 +6,16 @@
 # below just name which section explains each step. Never blocks Claude:
 # always exits 0. See README "Never blocks Claude".
 
+# --- Preflight ---
+# Self-disable if jq is missing rather than erroring on every tool call.
 set -u
-
 command -v jq >/dev/null 2>&1 || exit 0
 
+# --- Read payload ---
 payload=$(cat)
 
-# Collect target files + the extension filter. See README "Triggers".
+# --- Collect targets ---
+# Target files + the extension filter. See README "Triggers".
 file=$(jq -r '.tool_input.file_path // empty' <<<"$payload")
 
 files=()
@@ -34,6 +37,7 @@ else
   exts='md|markdown'
 fi
 
+# --- Filter to supported files ---
 # Keep existing, Prettier-supported files. See README "Supported extensions".
 targets=()
 for f in "${files[@]}"; do
@@ -43,6 +47,7 @@ done
 
 [[ ${#targets[@]} -gt 0 ]] || exit 0
 
+# --- Format ---
 # Markdown formats in its own pass at a wide --print-width so wide tables
 # stay column-aligned; code keeps the default 80. Full rationale in README
 # "Markdown gets its own pass (wide-table alignment)".
