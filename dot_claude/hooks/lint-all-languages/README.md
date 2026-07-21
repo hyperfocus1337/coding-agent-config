@@ -6,11 +6,11 @@ A `PostToolUse` hook that lints each file Claude writes, dispatching by extensio
 
 Wired to `Write`, `Edit`, and `MultiEdit` in `settings.json`. It lints the edited file based on its extension:
 
-| Extension                               | Linter                                           |
-|-----------------------------------------|--------------------------------------------------|
-| `.py`                                   | [ruff](https://docs.astral.sh/ruff/)             |
-| `.js` `.jsx` `.ts` `.tsx` `.mjs` `.cjs` | [oxlint](https://oxc.rs/docs/guide/usage/linter) |
-| `.sh` `.bash`                           | [shellcheck](https://www.shellcheck.net/)        |
+| Extension                               | Linter                                                                                                                                          |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.py`                                   | [ruff](https://docs.astral.sh/ruff/)                                                                                                            |
+| `.js` `.jsx` `.ts` `.tsx` `.mjs` `.cjs` | [oxlint](https://oxc.rs/docs/guide/usage/linter)                                                                                                |
+| `.sh` `.bash`                           | [shellcheck](https://www.shellcheck.net/)                                                                                                       |
 | `.yml` `.yaml`                          | [ansible-lint](https://ansible.readthedocs.io/projects/lint/) if the file looks like Ansible, else [yamllint](https://yamllint.readthedocs.io/) |
 
 A missing linter is a silent skip (the `command -v` check bails cleanly), so anything you do not install is a no-op. A lint failure exits 2, so Claude sees the errors and can fix them. The 5s timeout in `settings.json` caps runtime.

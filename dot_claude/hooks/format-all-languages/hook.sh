@@ -61,7 +61,8 @@ for f in "${targets[@]}"; do
   esac
 done
 
-pretty=(npx --no-install prettier --write --prose-wrap never)
+command -v prettier >/dev/null 2>&1 || exit 0
+pretty=(prettier --write --prose-wrap never)
 [[ ${#md_targets[@]} -gt 0 ]] && "${pretty[@]}" --print-width 400 "${md_targets[@]}" >/dev/null 2>&1
 [[ ${#other_targets[@]} -gt 0 ]] && "${pretty[@]}" "${other_targets[@]}" >/dev/null 2>&1
 

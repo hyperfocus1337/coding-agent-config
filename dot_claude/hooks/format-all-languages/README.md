@@ -30,7 +30,7 @@ Git failures (not a repo, no commits so no `HEAD`) are swallowed with `stderr` s
 | `.html`                    | html       |
 | `.yml` `.yaml`             | yaml       |
 
-Any other extension is a clean skip, so the hook never spawns `npx` for files Prettier does not cover. On the Bash sweep the filter is narrowed further to `.md`/`.markdown` only, per the reasoning above.
+Any other extension is a clean skip, so the hook never invokes Prettier for files it does not cover. On the Bash sweep the filter is narrowed further to `.md`/`.markdown` only, per the reasoning above.
 
 ## Prose wrapping
 
@@ -50,11 +50,11 @@ Ceiling: tables wider than 400 columns still collapse. Bump the number if that e
 
 ## Never blocks Claude
 
-Unlike `lint-all-languages`, this hook always exits `0`. A missing Prettier, a parse error, or any other failure is swallowed, leaving the file untouched. A formatter should reshape working code, not reject an edit. If `jq` is missing the hook self-disables the same way. The `timeout` values in `settings.json` (10s on the edit matcher, 20s on the Bash matcher, which may format several files) cap runtime.
+Unlike `lint-all-languages`, this hook always exits `0`. A missing Prettier (the `command -v prettier` check bails cleanly), a parse error, or any other failure is swallowed, leaving the file untouched. A formatter should reshape working code, not reject an edit. If `jq` is missing the hook self-disables the same way. The `timeout` values in `settings.json` (10s on the edit matcher, 20s on the Bash matcher, which may format several files) cap runtime.
 
 ## Installing Prettier
 
-The hook runs `npx --no-install prettier`, so it uses a global or project-local Prettier but never triggers a network install. Install whichever suits you:
+The hook calls the `prettier` binary directly (like `lint-all-languages` calls its linters), so any Prettier on `PATH` works, global, yarn-global, or a project `node_modules/.bin` on `PATH`. It never triggers a network install. Install it whichever way suits you:
 
 ```sh
 npm install -g prettier
