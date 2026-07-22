@@ -1,0 +1,16 @@
+# Relaxed yamllint config for plain (non-Ansible) YAML.
+# The hook passes this to yamllint via `-c` on every invocation. Edit here to
+# change the defaults. Based on the built-in `relaxed` preset, with the two
+# rules that fire most often loosened further.
+
+extends: relaxed
+
+rules:
+  # Accept any consistent indentation and don't force list items to indent.
+  indentation:
+    spaces: consistent
+    indent-sequences: false
+  # 160 matches ansible-lint's embedded yamllint; raise or drop as needed.
+  line-length:
+    max: 160
+    level: warning

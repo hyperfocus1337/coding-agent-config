@@ -6,12 +6,27 @@
 # run the matching linter. Exit 2 = block tool result and surface stderr
 # back to Claude so it can fix the issue.
 
+# --- Bundled linter configs ---
+# Directory of this script; holds the config/ the linters run against on every
+# invocation. Tune the defaults by editing config/.yamllint and
+# config/.ansible-lint.
+HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+CFG="$HERE/config"
+
 # --- Resolve target file ---
 # Read tool_input.file_path from stdin JSON. Empty if not a file-editing tool.
 F=$(jq -r '.tool_input.file_path // empty')
 
 # No path or file doesn't exist → nothing to lint, exit clean.
 [[ -f "$F" ]] || exit 0
+
+# --- Per-language off switch ---
+# CLAUDE_LINT_DISABLE = space/comma list of keys to skip (py js sh yaml tf),
+# or "all" to disable the hook entirely. To *tune* rather than disable YAML,
+# drop a .yamllint (plain YAML) or .ansible-lint (Ansible) config in the repo;
+# both linters read it natively, no config here.
+DISABLE=" ${CLAUDE_LINT_DISABLE//,/ } "
+disabled() { [[ "$DISABLE" == *" all "* || "$DISABLE" == *" $1 "* ]]; }
 
 # --- Linter helper ---
 # Run linter with args. If binary missing, skip silently (exit 0).
@@ -31,9 +46,10 @@ is_ansible() {
 # --- Dispatch by extension ---
 # Dispatch on file extension (${F##*.} = suffix after last dot).
 case "${F##*.}" in
-  py)                    lint ruff check --quiet "$F" ;;
-  js|jsx|ts|tsx|mjs|cjs) lint oxlint "$F" ;;
-  sh|bash)               lint shellcheck -S warning "$F" ;;
-  yml|yaml)              if is_ansible; then lint ansible-lint -q "$F"; else lint yamllint -d relaxed "$F"; fi ;;
-  tf|tfvars)             lint terraform fmt -check -diff "$F" ;;
+  py)                    disabled py   || lint ruff check --quiet "$F" ;;
+  js|jsx|ts|tsx|mjs|cjs) disabled js   || lint oxlint "$F" ;;
+  sh|bash)               disabled sh   || lint shellcheck -S warning "$F" ;;
+  yml|yaml)              disabled yaml && exit 0
+                         if is_ansible; then lint ansible-lint -c "$CFG/.ansible-lint" -q "$F"; else lint yamllint -c "$CFG/.yamllint" "$F"; fi ;;
+  tf|tfvars)             disabled tf   || lint terraform fmt -check -diff "$F" ;;
 esac

@@ -1,0 +1,17 @@
+# Relaxed ansible-lint config for Ansible YAML.
+# The hook passes this to ansible-lint via `-c` on every invocation. Edit here
+# to change the defaults.
+#
+# Note: ansible-lint discovers its embedded yamllint config by directory
+# search and will NOT read the sibling .yamllint in this folder, so the noisy
+# indentation / line-length findings are tuned here instead: we downgrade them
+# from fatal (blocks the edit) to warnings (printed, non-blocking).
+
+warn_list:
+  - yaml[indentation]
+  - yaml[line-length]
+
+# To silence them entirely instead, use skip_list:
+# skip_list:
+#   - yaml[indentation]
+#   - yaml[line-length]
