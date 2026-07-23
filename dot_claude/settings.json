@@ -85,7 +85,7 @@
     "terraform-skill@antonbabenko": true,
     "watch@claude-video": true,
     "iterative-development@prime-radiant-marketplace": true,
-    "greenfield@prime-radiant-marketplace": true,
+    "greenfield@prime-radiant-marketplace": false,
     "ponytail@ponytail": true,
     "context7@context7-marketplace": true,
     "chrome-devtools-mcp@chrome-devtools-plugins": false,
