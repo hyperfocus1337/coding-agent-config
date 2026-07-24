@@ -10,7 +10,4 @@ rules:
   indentation:
     spaces: consistent
     indent-sequences: false
-  # 160 matches ansible-lint's embedded yamllint; raise or drop as needed.
-  line-length:
-    max: 160
-    level: warning
+  line-length: disable
