@@ -16,6 +16,16 @@ A Bash tool call carries no `file_path`, but a shell command (`sed`, `perl`, `ec
 
 The sweep is deliberately **markdown-only**. The edit path formats every supported extension because the edit is the point; the Bash path does not, because reformatting every changed `.ts`/`.css`/`.json` on _every_ shell command would fight edits still in progress. Markdown table drift is the specific problem worth a repo-wide pass; the rest is not.
 
+#### Cross-repo Bash edits
+
+The hook's cwd is the session cwd; a `cd` inside the shell command does not move it. So a command that writes markdown in a _different_ repo (`cd /other/repo && cat > UPGRADING.md <<'EOF'`) used to be invisible: the sweep was scoped to the session repo's toplevel only, and the file stayed unformatted until something else touched it.
+
+So the sweep collects roots instead of assuming one: the session cwd, plus every absolute path named in `tool_input.command` (a directory as-is, a file by its parent). Each is resolved to its git toplevel, deduped, and swept. Non-repo paths and paths that do not exist drop out silently, and a command that names no absolute path behaves exactly as before.
+
+Only **absolute** paths are followed. A relative path in the command is ambiguous after an arbitrary `cd`, and guessing wrong would sweep the wrong repo. So a cross-repo edit reached by a relative `cd ../other-repo` is still missed; use an absolute path, or make the edit through Write/Edit. The trade-off is marked with a `ponytail:` comment in `hook.sh`.
+
+Note the side effect: any repo whose absolute path appears in a shell command gets its changed and untracked markdown formatted, even if the command only read from it. That is the same pass the session repo already gets, and it only ever touches files git already reports as modified or untracked.
+
 Git failures (not a repo, no commits so no `HEAD`) are swallowed with `stderr` silenced, so "not a git repository" never leaks as hook noise; the sweep just finds nothing and exits clean.
 
 ## Supported extensions
