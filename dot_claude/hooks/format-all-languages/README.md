@@ -30,7 +30,7 @@ Git failures (not a repo, no commits so no `HEAD`) are swallowed with `stderr` s
 | `.html`                    | html       |
 | `.yml` `.yaml`             | yaml       |
 
-Any other extension is a clean skip, so the hook never invokes Prettier for files it does not cover. On the Bash sweep the filter is narrowed further to `.md`/`.markdown` only, per the reasoning above.
+Any other extension is a clean skip, so the hook never invokes Prettier for files it does not cover. `.org` is covered by a separate hook, [`format-org-tables`](../format-org-tables/README.md), because Prettier has no Org parser. On the Bash sweep the filter is narrowed further to `.md`/`.markdown` only, per the reasoning above.
 
 ## Prose wrapping
 
