@@ -77,7 +77,7 @@ The [`mattpocock/skills`](https://github.com/mattpocock/skills) bundle is deploy
 | [`teach`](https://github.com/mattpocock/skills/blob/main/skills/productivity/teach/SKILL.md)                                                | Explain a concept or codebase area for onboarding.                | [aihero](https://www.aihero.dev/skills-teach)                         |
 | [`writing-great-skills`](https://github.com/mattpocock/skills/blob/main/skills/productivity/writing-great-skills/SKILL.md)                  | Author well-structured skills.                                    | [aihero](https://www.aihero.dev/skills-writing-great-skills)          |
 
-**Main build chain.** The intended end-to-end flow for building a feature is `grill-with-docs` → `to-spec` → `to-tickets` → `implement` → `code-review`: interrogate the idea against docs, turn the settled intent into a written spec, break the spec into discrete tickets, build each ticket, then review the result. All five are in the table above.
+**Main build chain.** The intended end-to-end flow for building a feature is `grill-with-docs` OR `wayfinder` → `to-spec` → `to-tickets` → `implement` → `code-review`: interrogate the idea against docs, turn the settled intent into a written spec, break the spec into discrete tickets, build each ticket, then review the result. All five are in the table above.
 
 ### Other bundles
 
