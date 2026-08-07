@@ -80,6 +80,13 @@ claude plugin marketplace add wshobson/agents
 # https://github.com/wshobson/agents/tree/main/plugins/code-refactoring
 claude plugin install code-refactoring@claude-code-workflows
 
+echo "==> Installing mattpocock skills"
+# Matt Pocock's engineering and productivity skill set. Per-skill table:
+# docs/sources/inventory.md.
+# https://github.com/mattpocock/skills
+claude plugin marketplace add mattpocock/skills
+claude plugin install mattpocock-skills@mattpocock
+
 # terraform-skill moved to apm.yml (cross-agent skill). ast-grep and glab
 # stay here: apm 0.23.1 can't deploy them. See docs/apm/plugin-migration.md.
 

@@ -1,16 +1,16 @@
 # Which Claude plugins could move to APM
 
-The MCP servers and Matt Pocock skills already live in [`apm.yml`](../../apm.yml). This doc classifies the enabled Claude plugins for an APM move. One (terraform-skill) has since moved; the rest stay on the `claude plugin` CLI, either by design (hooks/LSP/binaries) or because of apm 0.23.1 tooling limits. See "What actually moved" at the bottom for the tested outcome; the classification below is the portability assessment that predates the attempt.
+The MCP servers, the terraform skill, and the Neon skills live in [`apm.yml`](../../apm.yml). This doc classifies the enabled Claude plugins for an APM move. One (terraform-skill) has since moved; the rest stay on the `claude plugin` CLI, either by design (hooks/LSP/binaries) or because of apm 0.23.1 tooling limits. See "What actually moved" at the bottom for the tested outcome; the classification below is the portability assessment that predates the attempt.
 
 ## "APM supports plugins" vs "APM can carry this plugin"
 
 APM's docs and `apm install --help` both say it supports Claude plugins ("APM packages, Claude skills (SKILL.md), and plugin collections (plugin.json)"). That is true, and it does not contradict the classification below. The two statements live on different layers.
 
-**Format / consumption layer.** APM reads a `plugin.json`, synthesizes an `apm.yml` from its metadata, and treats the bundle as an ordinary APM package. It can install one (`apm install owner/repo/plugin-name`) and produce one (`apm pack --target claude` writes `plugin.json` at the bundle root). So APM can consume or emit *any* plugin's manifest.
+**Format / consumption layer.** APM reads a `plugin.json`, synthesizes an `apm.yml` from its metadata, and treats the bundle as an ordinary APM package. It can install one (`apm install owner/repo/plugin-name`) and produce one (`apm pack --target claude` writes `plugin.json` at the bundle root). So APM can consume or emit _any_ plugin's manifest.
 
-**Functional deployment layer.** APM deploys by compiling *portable primitives* (skills, subagents, commands, MCP server config) into the harness directory (`.claude/` for Claude, plus `.cursor/`, `.codex/`, `.gemini/`, etc. per the resolved `targets:`). It does **not** register with Claude's plugin marketplace, wire hooks into `settings.json`, set up LSP bridges, or install bundled binaries.
+**Functional deployment layer.** APM deploys by compiling _portable primitives_ (skills, subagents, commands, MCP server config) into the harness directory (`.claude/` for Claude, plus `.cursor/`, `.codex/`, `.gemini/`, etc. per the resolved `targets:`). It does **not** register with Claude's plugin marketplace, wire hooks into `settings.json`, set up LSP bridges, or install bundled binaries.
 
-So APM can consume the manifest of every plugin here, but for a plugin whose value *is* a hook, an LSP bridge, or a binary, consumption gets you the metadata and drops the function. Example: `apm install`-ing `watch` reads its `plugin.json` but never wires the SessionStart hook or the yt-dlp/ffmpeg binaries that are the whole point, so the install is inert.
+So APM can consume the manifest of every plugin here, but for a plugin whose value _is_ a hook, an LSP bridge, or a binary, consumption gets you the metadata and drops the function. Example: `apm install`-ing `watch` reads its `plugin.json` but never wires the SessionStart hook or the yt-dlp/ffmpeg binaries that are the whole point, so the install is inert.
 
 The classes below are about which primitives survive the move and keep working, not about whether APM can read the file. A plugin moves cleanly only if all its value is portable primitives (mostly skills/subagents). Hooks, LSP bridges, and bundled binaries stay on the `claude plugin` CLI.
 
@@ -21,7 +21,7 @@ One MCP nuance worth recording: when a plugin declares no `mcpServers`, APM auto
 `SKILL-ONLY` = portable, clean move on paper. `MIXED` = skills migrate, some pieces don't. `TRUE-PLUGIN` = keep on Claude CLI. The "Blocker / note" now folds in the tested apm 0.23.1 outcome where one exists.
 
 | Plugin                  | Class       | Blocker / note                                            |
-|-------------------------|-------------|-----------------------------------------------------------|
+| ----------------------- | ----------- | --------------------------------------------------------- |
 | code-simplifier         | SKILL-ONLY  | subagent markdown, but buried in a ~40-plugin monorepo    |
 | code-refactoring        | SKILL-ONLY  | subagents + commands, but buried in a ~80-plugin monorepo |
 | ast-grep                | SKILL-ONLY  | portable, but apm 0.23.1 finds 0 skills (nested layout)   |
@@ -47,7 +47,7 @@ Counts: 5 SKILL-ONLY, 7 MIXED, 6 TRUE-PLUGIN.
 
 Cleanest candidates on paper: **ast-grep, glab, terraform-skill**, already agent-agnostic Agent Skills. In practice only terraform-skill survived the move on apm 0.23.1; ast-grep and glab hit tooling limits. See "What actually moved" below.
 
-The three MCP-centric TRUE-PLUGINs (context7-plugin, notion-workspace-plugin, cloudflare) could have just their *MCP server config* lifted into `apm.yml` if cross-agent MCP is wanted, at the cost of one-click marketplace install.
+The three MCP-centric TRUE-PLUGINs (context7-plugin, notion-workspace-plugin, cloudflare) could have just their _MCP server config_ lifted into `apm.yml` if cross-agent MCP is wanted, at the cost of one-click marketplace install.
 
 Everything else: leave on the `claude plugin` CLI. The hooks, LSP bridges, and bundled binaries are the point of those plugins and APM can't carry them.
 
@@ -56,7 +56,7 @@ Everything else: leave on the `claude plugin` CLI. The hooks, LSP bridges, and b
 Of the five, only **terraform-skill** moved cleanly. The other four hit real APM limits, so they stay on the `claude plugin` CLI. Findings below are from an actual attempt, not theory.
 
 | Plugin           | APM source ref                                                   | Outcome                                                                                                                                                                                                                                                          |
-|------------------|------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ---------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | terraform-skill  | `antonbabenko/terraform-skill#v1.17.1`                           | **Moved.** Flat `skill_bundle` repo (the `antonbabenko/agent-plugins` marketplace just points here). Deploys 1 skill, `--frozen` clean.                                                                                                                          |
 | ast-grep         | `ast-grep/agent-skill`                                           | **Blocked.** Nested plugin layout (`ast-grep/skills/ast-grep/`); apm discovers 0 skills and deploys nothing, with or without a `skills:` subset.                                                                                                                 |
 | glab             | `https://gitlab.com/gitlab-org/ai/skills.git`                    | **Blocked.** GitLab-hosted; `apm lock` records it but real `apm install --frozen` rejects it ("declared in apm.yml but missing from apm.lock.yaml"). Sync-check normalizes GitLab `repo_url` inconsistently. Note: `--frozen --dry-run` passes, masking the bug. |

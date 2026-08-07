@@ -145,15 +145,9 @@ Lets Claude watch a video from a URL or local path. Downloads with `yt-dlp`, ext
 
 Source: [github.com/mattpocock/skills](https://github.com/mattpocock/skills)
 
-Installed via APM (declared in `apm.yml` as a `mattpocock/skills` bundle with a `skills:` allowlist) rather than the Claude plugin marketplace. Bundles Matt Pocock's opinionated skill set, deployable to any agent listed in `targets:`:
+#### `mattpocock-skills`
 
-- `grill-me`, `grill-with-docs` — interrogate code and concepts against fresh docs.
-- `handoff` — structured session/context handoff between agents.
-- `improve-codebase-architecture` — review and refactor codebase structure.
-- `setup-matt-pocock-skills` — bootstrap the rest of the skill set.
-- `tdd` — guided test-driven development loop.
-- `triage` — incoming-issue triage workflow.
-- `to-issues`, `to-prd` — convert raw notes/specs into GitHub issues or a PRD.
+Matt Pocock's opinionated engineering and productivity skill set: grilling an idea, spec and ticket flows, TDD, code review, domain modeling, diagnosis, and handoff. Installed whole from the `mattpocock` marketplace, with no per-skill selection. Per-skill quick reference and the intended feature-build chain: [`docs/sources/inventory.md`](../../docs/sources/inventory.md#matt-pocock-skills-mattpocock-skills).
 
 ---
 

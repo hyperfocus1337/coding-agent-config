@@ -5,7 +5,7 @@ Skills reach an agent through four channels in this repo. Each is declared in a 
 ## Channels
 
 | Channel        | Declared in                             | Installed by                          | Scope       |
-|----------------|-----------------------------------------|---------------------------------------|-------------|
+| -------------- | --------------------------------------- | ------------------------------------- | ----------- |
 | Local          | `dot_claude/skills/`                    | chezmoi apply (plain files)           | Claude only |
 | Standalone CLI | `scripts/extensions/skills/install.sh`  | vendor CLIs (playwright-cli, glab)    | Claude only |
 | Plugins        | `scripts/extensions/plugins/install.sh` | `claude plugin install`               | Claude only |
@@ -26,8 +26,8 @@ Installed by vendor CLIs because they ship with a companion binary, see [`script
 
 ## Plugin skills
 
-Most skills arrive bundled inside Claude plugins. The full list, with the marketplace and upstream URL for each, lives in [`scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh) (each `claude plugin install` line is commented with its source repo). That script is the source of truth; it is not mirrored here because the set changes often. Which plugins were considered for an APM move and why they stayed on the plugin CLI is covered in [`docs/apm/plugin-migration.md`](../apm/plugin-migration.md).
+Most skills arrive bundled inside Claude plugins. The full list, with the marketplace and upstream URL for each, lives in [`scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh) (each `claude plugin install` line is commented with its source repo). That script is the source of truth; it is not mirrored here because the set changes often. Which plugins were considered for an APM move and why they stayed on the plugin CLI is covered in [`docs/apm/plugin-migration.md`](../apm/plugin-migration.md). The largest bundle is `mattpocock-skills` (25 engineering and productivity skills); its per-skill quick reference and the intended feature-build chain live in [`inventory.md`](inventory.md#matt-pocock-skills-mattpocock-skills).
 
 ## APM bundle skills
 
-Third-party skills pulled from git bundles via `apm install`, declared under `dependencies.apm` in [`apm.yml`](../../apm.yml), which is the source of truth for which skills are pulled. The Matt Pocock bundle (`mattpocock/skills`) is deployed selectively by basename; the others (`antonbabenko/terraform-skill`, `neondatabase/agent-skills`) are flat one-skill bundles. The per-skill list, with descriptions, upstream links, and the intended feature-build chain, lives in [`inventory.md`](inventory.md#by-apm-skill-bundles-apmyml).
+Third-party skills pulled from git bundles via `apm install`, declared under `dependencies.apm` in [`apm.yml`](../../apm.yml), which is the source of truth for which skills are pulled. Both bundles (`antonbabenko/terraform-skill`, `neondatabase/agent-skills`) are flat, so the whole repo is taken as-is. The per-skill list with descriptions and upstream links lives in [`inventory.md`](inventory.md#by-apm-skill-bundles-apmyml).

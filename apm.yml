@@ -6,72 +6,46 @@ author: hyperfocus1337
 # gemini, etc. here (or via --target) to fan these deps out to more agents.
 # Resolution order: --target flag > this field > auto-detect from filesystem.
 targets:
-- claude
+  - claude
 dependencies:
-  # Portable skills. mattpocock/skills is a bundle; only the named skills are
-  # deployed (basenames resolve across the repo's category subdirs). No lockfile:
-  # install re-resolves to latest upstream every run (--update in install.sh).
-  # Per-skill reference URLs: docs/sources/channels.md.
+  # Portable skills. No lockfile: install re-resolves to latest upstream every
+  # run (--update in install.sh).
   apm:
-  - git: mattpocock/skills
-    skills:
-    - grilling
-    - grill-me
-    - grill-with-docs
-    - codebase-design
-    - domain-modeling
-    - wayfinder
-    - handoff
-    - improve-codebase-architecture
-    - setup-matt-pocock-skills
-    - tdd
-    - triage
-    - to-tickets
-    - to-spec
-    - implement
-    - code-review
-    - research
-    - prototype
-    - ask-matt
-    - diagnosing-bugs
-    - resolving-merge-conflicts
-    - teach
-    - writing-great-skills
-  # terraform-skill, moved off the `claude plugin` CLI. Which other plugins
-  # were considered and why they stayed: docs/apm/plugin-migration.md.
-  - git: antonbabenko/terraform-skill
-  # Neon skills only. The neon-postgres plugin bundles a hosted Neon MCP that
-  # can't be disabled per-server, so we take just the skills via APM (which
-  # never wires mcp.json). Resolved from the repo's top-level skills/ dir.
-  - git: neondatabase/agent-skills
-    skills:
-    - neon
-    - neon-postgres
-    - neon-postgres-branches
+    # terraform-skill, moved off the `claude plugin` CLI. Which other plugins
+    # were considered and why they stayed: docs/apm/plugin-migration.md.
+    - git: antonbabenko/terraform-skill
+    # Neon skills only. The neon-postgres plugin bundles a hosted Neon MCP that
+    # can't be disabled per-server, so we take just the skills via APM (which
+    # never wires mcp.json). Resolved from the repo's top-level skills/ dir.
+    - git: neondatabase/agent-skills
+      skills:
+        - neon
+        - neon-postgres
+        - neon-postgres-branches
   # User-scoped MCP servers. Secrets come from the environment at install time
   # (${VAR}) so this manifest stays committable.
   mcp:
-  - name: context7
-    registry: false
-    transport: stdio
-    command: npx
-    args:
-    - -y
-    - '@upstash/context7-mcp'
-    env:
-      CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}
+    - name: context7
+      registry: false
+      transport: stdio
+      command: npx
+      args:
+        - -y
+        - "@upstash/context7-mcp"
+      env:
+        CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}
   # tessl, jcodemunch, jdocmunch, claude-design and orbit are project-scoped
   # opt-in servers, not user-scoped installs: install them per-project with the
   # install-mcp skill. Catalog: docs/mcp/project-servers.md.
   # LSP servers. Binary must be on $PATH at install time.
   lsp:
-  - name: pyright
-    command: pyright-langserver
-    args:
-    - --stdio
-    transport: stdio
-    extensionToLanguage:
-      .py: python
-      .pyi: python
+    - name: pyright
+      command: pyright-langserver
+      args:
+        - --stdio
+      transport: stdio
+      extensionToLanguage:
+        .py: python
+        .pyi: python
 includes: auto
 scripts: {}

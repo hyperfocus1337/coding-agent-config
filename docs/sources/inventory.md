@@ -13,7 +13,7 @@ Plain files committed under `dot_claude/` and laid into `~/.claude` by `just che
 Prompt templates under [`dot_claude/commands/`](../../dot_claude/commands/README.md).
 
 | Command                                                                                        | Description                                                                        |
-|------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | [`/git:commit`](../../dot_claude/commands/git/commit.md)                                       | Create a git commit (stage all, single commit).                                    |
 | [`/git:multiple`](../../dot_claude/commands/git/multiple.md)                                   | Split changes into a logical sequence of commits.                                  |
 | [`/git:push`](../../dot_claude/commands/git/push.md)                                           | Commit and push.                                                                   |
@@ -38,7 +38,7 @@ Prompt templates under [`dot_claude/commands/`](../../dot_claude/commands/README
 Local skills under [`dot_claude/skills/`](../../dot_claude/skills/).
 
 | Skill                                                                       | Description                                                     |
-|-----------------------------------------------------------------------------|-----------------------------------------------------------------|
+| --------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | [`gh-cli`](../../dot_claude/skills/gh-cli/SKILL.md)                         | Comprehensive `gh` reference for repos, PRs, Actions, releases. |
 | [`install-mcp`](../../dot_claude/skills/install-mcp/SKILL.md)               | Add a project-scoped MCP server to the repo.                    |
 | [`meeting-summarizer`](../../dot_claude/skills/meeting-summarizer/SKILL.md) | Turn a transcript into structured English notes.                |
@@ -48,12 +48,59 @@ Local skills under [`dot_claude/skills/`](../../dot_claude/skills/).
 
 Third-party skills pulled by `apm install`, which re-resolves to latest upstream on every run (no lockfile). Declared under `dependencies.apm` in [`apm.yml`](../../apm.yml), which is the source of truth for which skills are pulled. All are of kind `skill`.
 
-### Matt Pocock bundle (`mattpocock/skills`)
+These are flat bundles (the whole repo is one skill), so there is no per-skill selection. Add a row here whenever a new bundle is added to `apm.yml`.
 
-The [`mattpocock/skills`](https://github.com/mattpocock/skills) bundle is deployed selectively: only the skills listed below are installed, by basename (they resolve across the bundle's category subdirs). Each skill name links to its upstream `SKILL.md`; the `Reference` column links to its aihero documentation page. To add or drop one, edit the `skills:` list under `mattpocock/skills` in [`apm.yml`](../../apm.yml) and keep this table in sync.
+| Skill                                                                                                            | Bundle                                                                            | Description                                            |
+| ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| [`terraform-skill`](https://github.com/antonbabenko/terraform-skill/blob/master/skills/terraform-skill/SKILL.md) | [`antonbabenko/terraform-skill`](https://github.com/antonbabenko/terraform-skill) | Write, review, and debug Terraform or OpenTofu.        |
+| `neon`                                                                                                           | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)       | Overview of the Neon platform.                         |
+| `neon-postgres`                                                                                                  | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)       | Setup and best practices for Neon serverless Postgres. |
+| `neon-postgres-branches`                                                                                         | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)       | Create the right Neon branch type for dev and test.    |
+
+## By standalone CLI
+
+Installed by a vendor CLI that ships with a companion binary. Source of truth: [`../../scripts/extensions/skills/install.sh`](../../scripts/extensions/skills/install.sh).
+
+| Skill                                                           | Kind  | Installed via                        | Description                                             |
+| --------------------------------------------------------------- | ----- | ------------------------------------ | ------------------------------------------------------- |
+| [`playwright-cli`](https://github.com/microsoft/playwright-cli) | skill | `playwright-cli install --skills`    | Automate browser interactions and run Playwright tests. |
+| [`orbit`](https://gitlab.com/gitlab-org/ai/skills)              | skill | `glab skills install --global orbit` | GitLab AI coding agents skill.                          |
+
+## By Claude plugins (`claude plugin install`)
+
+Bundled inside plugins from various marketplaces. Source of truth for the set: [`../../scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh). The reasoning on which plugins could move to APM is in [`../apm/plugin-migration.md`](../apm/plugin-migration.md).
+
+| Plugin                                                                                                       | Marketplace          | Provides                                                         | Kind     |
+| ------------------------------------------------------------------------------------------------------------ | -------------------- | ---------------------------------------------------------------- | -------- |
+| [`code-review`](https://github.com/anthropics/claude-code/tree/main/plugins/code-review)                     | official             | `/code-review:code-review`                                       | command  |
+| [`feature-dev`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)                     | official             | `/feature-dev:feature-dev`                                       | command  |
+| [`feature-dev`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)                     | official             | `code-architect`, `code-explorer`, `code-reviewer`               | subagent |
+| [`code-simplifier`](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier) | official             | `code-simplifier`                                                | subagent |
+| [`iterative-development`](https://github.com/prime-radiant-inc/iterative-development)                        | prime-radiant        | `iterative-development:*`                                        | skill    |
+| [`greenfield`](https://github.com/prime-radiant-inc/greenfield)                                              | prime-radiant        | `greenfield:analyze`, `greenfield:sanitize`                      | skill    |
+| [`context7`](https://github.com/upstash/context7)                                                            | upstash              | `context7:docs`                                                  | skill    |
+| [`context7`](https://github.com/upstash/context7)                                                            | upstash              | context7 server                                                  | MCP      |
+| [`code-refactoring`](https://github.com/wshobson/agents/tree/main/plugins/code-refactoring)                  | wshobson/agents      | `code-reviewer`, `legacy-modernizer`                             | subagent |
+| [`mattpocock-skills`](https://github.com/mattpocock/skills)                                                  | mattpocock           | 25 engineering and productivity skills (table below)             | skill    |
+| [`ast-grep`](https://github.com/ast-grep/agent-skill)                                                        | ast-grep/agent-skill | `ast-grep:ast-grep`                                              | skill    |
+| [`astral`](https://github.com/astral-sh/claude-code-plugins/tree/main/plugins/astral)                        | astral-sh            | `astral:ruff`, `astral:ty`, `astral:uv`                          | skill    |
+| [`codex`](https://github.com/openai/codex-plugin-cc)                                                         | openai               | `codex:rescue`, `codex:setup`                                    | skill    |
+| [`codex`](https://github.com/openai/codex-plugin-cc)                                                         | openai               | codex-rescue                                                     | subagent |
+| [`caveman`](https://github.com/JuliusBrussee/caveman)                                                        | caveman              | `caveman`, `caveman-review`, `caveman-help`, `compress`          | skill    |
+| [`ponytail`](https://github.com/DietrichGebert/ponytail)                                                     | ponytail             | `ponytail`, `ponytail-review`, `ponytail-audit`, `ponytail-debt` | skill    |
+| [`pyright`](https://github.com/Piebald-AI/claude-code-lsps/tree/main/pyright)                                | piebald-ai           | pyright                                                          | LSP      |
+| [`watch`](https://github.com/bradautomates/claude-video)                                                     | claude-video         | `watch:watch`                                                    | skill    |
+| [`glab`](https://gitlab.com/gitlab-org/ai/skills)                                                            | gitlab               | GitLab CLI skills                                                | skill    |
+| [`cloudflare`](https://github.com/cloudflare/skills)                                                         | cloudflare           | Cloudflare skills                                                | skill    |
+| [`chrome-devtools-mcp`](https://github.com/ChromeDevTools/chrome-devtools-mcp)                               | chrome-devtools      | browser automation                                               | MCP      |
+| [`notion-workspace-plugin`](https://github.com/makenotion/claude-code-notion-plugin)                         | notion               | Notion workspace access                                          | skill    |
+
+### Matt Pocock skills (`mattpocock-skills`)
+
+Installed whole from the [`mattpocock`](https://github.com/mattpocock/skills) marketplace: `claude plugin install mattpocock-skills@mattpocock`. There is no per-skill selection, so the plugin's own [`plugin.json`](https://github.com/mattpocock/skills/blob/main/.claude-plugin/plugin.json) is the source of truth. The table below is a quick reference and will go stale as upstream adds, renames, or drops skills. Each skill name links to its upstream `SKILL.md`; the `Reference` column links to its aihero documentation page.
 
 | Skill                                                                                                                                       | Description                                                       | Reference                                                             |
-|---------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|-----------------------------------------------------------------------|
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------- |
 | [`grilling`](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md)                                          | Stress-test a plan, decision, or idea.                            | [aihero](https://www.aihero.dev/skills-grilling)                      |
 | [`grill-me`](https://github.com/mattpocock/skills/blob/main/skills/productivity/grill-me/SKILL.md)                                          | Be interrogated on your own reasoning.                            | [aihero](https://www.aihero.dev/skills-grill-me)                      |
 | [`grill-with-docs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md)                             | Interrogate an idea against real documentation.                   | [aihero](https://www.aihero.dev/skills-grill-with-docs)               |
@@ -74,65 +121,20 @@ The [`mattpocock/skills`](https://github.com/mattpocock/skills) bundle is deploy
 | [`ask-matt`](https://github.com/mattpocock/skills/blob/main/skills/engineering/ask-matt/SKILL.md)                                           | Ask the Matt Pocock advisory skill.                               | [aihero](https://www.aihero.dev/skills-ask-matt)                      |
 | [`diagnosing-bugs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnosing-bugs/SKILL.md)                             | Structured diagnosis loop for hard bugs and regressions.          | [aihero](https://www.aihero.dev/skills-diagnosing-bugs)               |
 | [`resolving-merge-conflicts`](https://github.com/mattpocock/skills/blob/main/skills/engineering/resolving-merge-conflicts/SKILL.md)         | Work through an in-progress merge or rebase conflict.             | [aihero](https://www.aihero.dev/skills-resolving-merge-conflicts)     |
+| [`wizard`](https://github.com/mattpocock/skills/blob/main/skills/engineering/wizard/SKILL.md)                                               | Generate a bash wizard for steps only a human can perform.        | [aihero](https://www.aihero.dev/skills-wizard)                        |
 | [`teach`](https://github.com/mattpocock/skills/blob/main/skills/productivity/teach/SKILL.md)                                                | Explain a concept or codebase area for onboarding.                | [aihero](https://www.aihero.dev/skills-teach)                         |
-| [`writing-great-skills`](https://github.com/mattpocock/skills/blob/main/skills/productivity/writing-great-skills/SKILL.md)                  | Author well-structured skills.                                    | [aihero](https://www.aihero.dev/skills-writing-great-skills)          |
+| [`writing-for-agents`](https://github.com/mattpocock/skills/blob/main/skills/productivity/writing-for-agents/SKILL.md)                      | Write skills, `AGENTS.md`, and `CLAUDE.md` for agents.            | [aihero](https://www.aihero.dev/skills-writing-for-agents)            |
+| [`to-questionnaire`](https://github.com/mattpocock/skills/blob/main/skills/productivity/to-questionnaire/SKILL.md)                          | Turn a decision you can't answer into a questionnaire.            | [aihero](https://www.aihero.dev/skills-to-questionnaire)              |
+| [`wait-what`](https://github.com/mattpocock/skills/blob/main/skills/productivity/wait-what/SKILL.md)                                        | Make the agent re-pitch a message that did not land.              | [aihero](https://www.aihero.dev/skills-wait-what)                     |
 
 **Main build chain.** The intended end-to-end flow for building a feature is `grill-with-docs` OR `wayfinder` → `to-spec` → `to-tickets` → `implement` → `code-review`: interrogate the idea against docs, turn the settled intent into a written spec, break the spec into discrete tickets, build each ticket, then review the result. All five are in the table above.
-
-### Other bundles
-
-Flat bundles (the whole repo is one skill), so there is no per-skill selection like the Matt Pocock table above. Add a row here whenever a new non-Matt-Pocock bundle is added to `apm.yml`.
-
-| Skill                                                                                                            | Bundle                                                                            | Description                                            |
-|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|--------------------------------------------------------|
-| [`terraform-skill`](https://github.com/antonbabenko/terraform-skill/blob/master/skills/terraform-skill/SKILL.md) | [`antonbabenko/terraform-skill`](https://github.com/antonbabenko/terraform-skill) | Write, review, and debug Terraform or OpenTofu.        |
-| `neon`                                                                                                           | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)       | Overview of the Neon platform.                         |
-| `neon-postgres`                                                                                                  | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)       | Setup and best practices for Neon serverless Postgres. |
-| `neon-postgres-branches`                                                                                         | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)       | Create the right Neon branch type for dev and test.    |
-
-## By standalone CLI
-
-Installed by a vendor CLI that ships with a companion binary. Source of truth: [`../../scripts/extensions/skills/install.sh`](../../scripts/extensions/skills/install.sh).
-
-| Skill                                                           | Kind  | Installed via                        | Description                                             |
-|-----------------------------------------------------------------|-------|--------------------------------------|---------------------------------------------------------|
-| [`playwright-cli`](https://github.com/microsoft/playwright-cli) | skill | `playwright-cli install --skills`    | Automate browser interactions and run Playwright tests. |
-| [`orbit`](https://gitlab.com/gitlab-org/ai/skills)              | skill | `glab skills install --global orbit` | GitLab AI coding agents skill.                          |
-
-## By Claude plugins (`claude plugin install`)
-
-Bundled inside plugins from various marketplaces. Source of truth for the set: [`../../scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh). The reasoning on which plugins could move to APM is in [`../apm/plugin-migration.md`](../apm/plugin-migration.md).
-
-| Plugin                                                                                                       | Marketplace          | Provides                                                         | Kind     |
-|--------------------------------------------------------------------------------------------------------------|----------------------|------------------------------------------------------------------|----------|
-| [`code-review`](https://github.com/anthropics/claude-code/tree/main/plugins/code-review)                     | official             | `/code-review:code-review`                                       | command  |
-| [`feature-dev`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)                     | official             | `/feature-dev:feature-dev`                                       | command  |
-| [`feature-dev`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)                     | official             | `code-architect`, `code-explorer`, `code-reviewer`               | subagent |
-| [`code-simplifier`](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier) | official             | `code-simplifier`                                                | subagent |
-| [`iterative-development`](https://github.com/prime-radiant-inc/iterative-development)                        | prime-radiant        | `iterative-development:*`                                        | skill    |
-| [`greenfield`](https://github.com/prime-radiant-inc/greenfield)                                              | prime-radiant        | `greenfield:analyze`, `greenfield:sanitize`                      | skill    |
-| [`context7`](https://github.com/upstash/context7)                                                            | upstash              | `context7:docs`                                                  | skill    |
-| [`context7`](https://github.com/upstash/context7)                                                            | upstash              | context7 server                                                  | MCP      |
-| [`code-refactoring`](https://github.com/wshobson/agents/tree/main/plugins/code-refactoring)                  | wshobson/agents      | `code-reviewer`, `legacy-modernizer`                             | subagent |
-| [`ast-grep`](https://github.com/ast-grep/agent-skill)                                                        | ast-grep/agent-skill | `ast-grep:ast-grep`                                              | skill    |
-| [`astral`](https://github.com/astral-sh/claude-code-plugins/tree/main/plugins/astral)                        | astral-sh            | `astral:ruff`, `astral:ty`, `astral:uv`                          | skill    |
-| [`codex`](https://github.com/openai/codex-plugin-cc)                                                         | openai               | `codex:rescue`, `codex:setup`                                    | skill    |
-| [`codex`](https://github.com/openai/codex-plugin-cc)                                                         | openai               | codex-rescue                                                     | subagent |
-| [`caveman`](https://github.com/JuliusBrussee/caveman)                                                        | caveman              | `caveman`, `caveman-review`, `caveman-help`, `compress`          | skill    |
-| [`ponytail`](https://github.com/DietrichGebert/ponytail)                                                     | ponytail             | `ponytail`, `ponytail-review`, `ponytail-audit`, `ponytail-debt` | skill    |
-| [`pyright`](https://github.com/Piebald-AI/claude-code-lsps/tree/main/pyright)                                | piebald-ai           | pyright                                                          | LSP      |
-| [`watch`](https://github.com/bradautomates/claude-video)                                                     | claude-video         | `watch:watch`                                                    | skill    |
-| [`glab`](https://gitlab.com/gitlab-org/ai/skills)                                                            | gitlab               | GitLab CLI skills                                                | skill    |
-| [`cloudflare`](https://github.com/cloudflare/skills)                                                         | cloudflare           | Cloudflare skills                                                | skill    |
-| [`chrome-devtools-mcp`](https://github.com/ChromeDevTools/chrome-devtools-mcp)                               | chrome-devtools      | browser automation                                               | MCP      |
-| [`notion-workspace-plugin`](https://github.com/makenotion/claude-code-notion-plugin)                         | notion               | Notion workspace access                                          | skill    |
 
 ## Built into Claude Code
 
 Shipped with the harness, no install step. All are of kind `skill`. The Claude Code CLI is closed source, so there is no per-skill source repo. The prompt text for the skills below has been extracted verbatim from CLI v2.1.215 into a separate [`claude-code-skills`](https://github.com/hyperfocus1337/claude-code-skills) repository, so each skill name links to the actual SKILL.md text there. The official [Claude Code commands docs](https://code.claude.com/docs/en/commands) still describe what these built-in commands do, so their descriptions can be referenced there even though the source itself is closed.
 
 | Skill                                                                                                         | Description                                                             |
-|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | [`run`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/run.md)                         | Launch and drive the app to see a change working.                       |
 | [`verify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/verify.md)                   | Exercise the affected flow end to end and observe behavior.             |
 | [`simplify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/simplify.md)               | Review changed code for reuse and simplification, then apply fixes.     |
