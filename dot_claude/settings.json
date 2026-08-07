@@ -82,7 +82,7 @@
     "notion-workspace-plugin@notion-plugin-marketplace": false,
     "pyright@claude-code-lsps": true,
     "superpowers@claude-plugins-official": false,
-    "terraform-skill@antonbabenko": true,
+    "mattpocock-skills@mattpocock": true,
     "watch@claude-video": true,
     "iterative-development@prime-radiant-marketplace": true,
     "greenfield@prime-radiant-marketplace": false,
@@ -186,6 +186,12 @@
       "source": {
         "source": "github",
         "repo": "ChromeDevTools/chrome-devtools-mcp"
+      }
+    },
+    "mattpocock": {
+      "source": {
+        "source": "github",
+        "repo": "mattpocock/skills"
       }
     }
   },
