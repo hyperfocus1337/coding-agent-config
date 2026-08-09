@@ -18,3 +18,5 @@ These are always available. Prefer them over slower equivalents:
 - `socat` / `nc` for sockets, `strace` for syscall tracing
 - `rsync` for file sync
 - `moreutils` (`sponge` / `ts`) for pipeline helpers
+
+Use `pnpm` for Node package work, never `npm` or `yarn`. The `enforce-cli-tools` hook blocks those, so reaching for them costs a turn.

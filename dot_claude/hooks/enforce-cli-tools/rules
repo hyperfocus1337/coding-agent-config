@@ -1,0 +1,5 @@
+# One "<banned> <replacement>" pair per line. Blank and # lines ignored. The
+# replacement takes the rest of the line, so "pnpm dlx" works. See README.md.
+
+npm	pnpm
+yarn pnpm
