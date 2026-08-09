@@ -14,6 +14,12 @@ dependencies:
     # terraform-skill, moved off the `claude plugin` CLI. Which other plugins
     # were considered and why they stayed: docs/apm/plugin-migration.md.
     - git: antonbabenko/terraform-skill
+    # Cursor's team kit, nested plugin layout. Subpath ref (owner/repo/plugin)
+    # resolves .cursor-plugin/plugin.json, so apm finds the nested skills/ dir.
+    # No `agents:` subset key exists, so this also deploys the kit's 2 agents.
+    - git: cursor/plugins/cursor-team-kit
+      skills:
+        - thermo-nuclear-code-quality-review
     # Neon skills only. The neon-postgres plugin bundles a hosted Neon MCP that
     # can't be disabled per-server, so we take just the skills via APM (which
     # never wires mcp.json). Resolved from the repo's top-level skills/ dir.
