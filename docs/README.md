@@ -14,6 +14,8 @@ docs/
 │   └── tracing.md           — Trace a live /command back to its source (name, picker, grep, debug)
 ├── apm/                     # APM (agent package manager) notes
 │   └── plugin-migration.md  — Which Claude plugins could move to APM (audit)
+├── cmux/                    # cmux terminal integration
+│   └── notifications.md     — Why the Claude Code notification hook is automatic (do not hand-install it)
 ├── research/.               # Investigations into the agent environment and session
 │   ├── codex-compat.md      — Sharing skills and instructions between Claude Code and Codex
 │   └── skills-context.md    — Context budget consumed by installed skill breadcrumbs
@@ -39,6 +41,10 @@ The `sources/` folder answers "where did this command or skill come from", from 
 The `research/` folder holds investigations into the agent environment and session. [`codex-compat.md`](research/codex-compat.md) covers where Claude Code and Codex each look for skills and instructions, and what works today to share content across both. [`skills-context.md`](research/skills-context.md) estimates the session-start context cost of every installed skill's listing breadcrumb, and explains why the real constraint is description truncation rather than token count.
 
 To bootstrap a fresh repository so a Claude Code cloud session (web, Android, CI) gets the same environment as a local machine, use the [`templates/web`](../templates/web/) pack. It ships a drop-in `SessionStart` hook and the bootstrap script it runs.
+
+## cmux
+
+The `cmux/` folder covers the cmux terminal's integration with the agents in this repo. [`notifications.md`](cmux/notifications.md) explains why Claude Code needs no `cmux notify` hook of its own: the cmux Claude wrapper injects the whole hook set when `claude` starts inside a cmux terminal, so following the published hook guide only produces duplicate notifications, and no hook fires at all in sessions started outside cmux.
 
 ## MCP servers
 
