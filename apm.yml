@@ -28,6 +28,20 @@ dependencies:
         - neon
         - neon-postgres
         - neon-postgres-branches
+    # cmux skills (https://cmux.com/docs/skills). Upstream installs via
+    # `npx skills add manaflow-ai/cmux`; APM pulls the same skills/ dir instead
+    # so it stays in this manifest. Subset = the user-facing set the docs list;
+    # the other dirs (cmux-backend, -billing, -release, -testing, -architecture,
+    # ...) are for contributors to cmux itself.
+    - git: manaflow-ai/cmux
+      skills:
+        - cmux
+        - cmux-workspace
+        - cmux-settings
+        - cmux-customization
+        - cmux-diagnostics
+        - cmux-browser
+        - cmux-markdown
   # User-scoped MCP servers. Secrets come from the environment at install time
   # (${VAR}) so this manifest stays committable.
   mcp:
