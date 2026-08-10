@@ -2,12 +2,20 @@
 
 Slash commands are prompt templates Claude Code runs when you type `/<namespace>:<name>` (e.g. `/git:commit`). Each lives as its own file at `commands/<namespace>/<name>.md`, and the file's frontmatter `description` is what shows in the command picker. They deploy via chezmoi to `~/.claude/commands/`.
 
+## style/ — response style
+
+| Command          | Description                                                                     |
+| ---------------- | ------------------------------------------------------------------------------- |
+| `/style:concise` | Report back extremely concisely, sacrificing grammar for the sake of concision. |
+
+Source: [Claude Code tip (YouTube Shorts)](https://youtube.com/shorts/I12Mf8KBT1I).
+
 ## git/ — version control helpers
 
 Ten commands covering the everyday flow, branch hygiene, and history rewriting.
 
 | Command             | Description                                                                      |
-|---------------------|----------------------------------------------------------------------------------|
+| ------------------- | -------------------------------------------------------------------------------- |
 | `/git:commit`       | Create a git commit (stage all, single commit).                                  |
 | `/git:multiple`     | Split changes into a logical sequence of commits.                                |
 | `/git:push`         | Commit and push.                                                                 |
@@ -26,7 +34,7 @@ The three history-rewriting commands (`amend-author`, `amend-date`, `shift-dates
 Eight variants of the same operation: reorganize a file into comment-delimited sections, differing only in header style.
 
 | Command                            | Header style                                         |
-|------------------------------------|------------------------------------------------------|
+| ---------------------------------- | ---------------------------------------------------- |
 | `/organize:banner-comments`        | Three-line banner headers.                           |
 | `/organize:rule-banner-comments`   | Three-line banner headers with box-drawing rules.    |
 | `/organize:boxed-comments`         | Full-box headers.                                    |
@@ -39,7 +47,7 @@ Eight variants of the same operation: reorganize a file into comment-delimited s
 ## issues/ — GitHub issue workflow
 
 | Command                          | Description                                                              |
-|----------------------------------|--------------------------------------------------------------------------|
+| -------------------------------- | ------------------------------------------------------------------------ |
 | `/issues:improve-issue`          | Rewrite a GitHub issue to be clearer and more actionable (outputs text). |
 | `/issues:improve-issue-in-place` | Same, but updates the issue directly via `gh`.                           |
 | `/issues:github-coding-process`  | Plan, implement, test, and ship a GitHub issue end-to-end using `gh`.    |
@@ -47,13 +55,13 @@ Eight variants of the same operation: reorganize a file into comment-delimited s
 ## summarize/ — transcript summaries
 
 | Command                   | Description                                                                   |
-|---------------------------|-------------------------------------------------------------------------------|
+| ------------------------- | ----------------------------------------------------------------------------- |
 | `/summarize:transscripts` | Summarize a meeting or transcript into structured sections with action items. |
 
 ## simple/ — everyday utilities
 
 | Command              | Description                                                                         |
-|----------------------|-------------------------------------------------------------------------------------|
+| -------------------- | ----------------------------------------------------------------------------------- |
 | `/simple:explain`    | Explain a code snippet step-by-step.                                                |
 | `/simple:proofread`  | Proofread text (spelling, grammar, readability).                                    |
 | `/simple:markitdown` | Convert files (PDF, Office, images, audio, HTML, etc.) to Markdown with markitdown. |
