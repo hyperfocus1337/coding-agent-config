@@ -20,6 +20,11 @@ F=$(jq -r '.tool_input.file_path // empty')
 # No path or file doesn't exist → nothing to lint, exit clean.
 [[ -f "$F" ]] || exit 0
 
+# --- Skip throwaway files ---
+# Scratchpad/temp files aren't project code, so lint errors there shouldn't
+# block a tool result.
+[[ "$F" == /tmp/* || "$F" == /var/tmp/* || "$F" == "${TMPDIR:-/nonexistent}"* ]] && exit 0
+
 # --- Per-language off switch ---
 # CLAUDE_LINT_DISABLE = space/comma list of keys to skip (py js sh yaml tf),
 # or "all" to disable the hook entirely. To *tune* rather than disable YAML,
