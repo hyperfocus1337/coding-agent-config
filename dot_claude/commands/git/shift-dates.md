@@ -2,6 +2,7 @@
 allowed-tools: Bash(git rebase:*), Bash(git log:*), Bash(git branch:*), Bash(git status:*)
 description: Shift the commit dates of the last N commits by a number of hours (macOS/BSD date).
 argument-hint: signed hours (e.g. +2 or -3), then commit count
+disable-model-invocation: true
 ---
 
 ## Context

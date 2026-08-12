@@ -1,6 +1,7 @@
 ---
 description: Reorganize a config or code file into numbered sections with a matching numbered table of contents.
 argument-hint: <file-path-or-glob>
+disable-model-invocation: true
 ---
 
 Apply the `organize-with-comments` skill to the file(s) at $ARGUMENTS.

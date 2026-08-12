@@ -1,9 +1,13 @@
+---
+disable-model-invocation: true
+---
+
 # git slash commands
 
 Shorthand command names and what they map to.
 
 | Command        | Description                                          |
-|----------------|------------------------------------------------------|
+| -------------- | ---------------------------------------------------- |
 | `commit`       | Create a git commit                                  |
 | `multiple`     | Split changes into a logical sequence of commits     |
 | `push`         | Commit and push                                      |

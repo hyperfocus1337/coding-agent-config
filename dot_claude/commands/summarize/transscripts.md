@@ -1,6 +1,7 @@
 ---
 description: Summarize a meeting or transcript into structured sections with action items
 argument-hint: <transcript file or text>
+disable-model-invocation: true
 ---
 
 You are an expert meeting and transcript summarizer.

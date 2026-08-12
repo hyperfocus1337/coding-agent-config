@@ -2,6 +2,7 @@
 allowed-tools: Bash(git commit:*), Bash(git log:*), Bash(git branch:*), Bash(git status:*)
 description: Set an absolute commit and author date on the most recent commit.
 argument-hint: timestamp with timezone offset (optional; asked if omitted)
+disable-model-invocation: true
 ---
 
 ## Context

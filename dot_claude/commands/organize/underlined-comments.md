@@ -1,6 +1,7 @@
 ---
 description: Reorganize a config or code file into sections using underlined headers (name with a rule beneath it).
 argument-hint: <file-path-or-glob>
+disable-model-invocation: true
 ---
 
 Apply the `organize-with-comments` skill to the file(s) at $ARGUMENTS.

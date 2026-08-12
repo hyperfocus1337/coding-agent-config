@@ -2,6 +2,7 @@
 allowed-tools: Bash(git rebase:*), Bash(git log:*), Bash(git branch:*), Bash(git status:*)
 description: Rewrite the author of the whole branch (or the last N commits) via rebase.
 argument-hint: author-string (quoted), then optional commit count
+disable-model-invocation: true
 ---
 
 ## Context
