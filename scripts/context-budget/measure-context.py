@@ -48,6 +48,17 @@ def frontmatter(path: Path) -> dict:
     return out
 
 
+def first_heading(path: Path) -> str:
+    """Fallback description for a file with no frontmatter, e.g. a commands/ README."""
+    try:
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            if line.startswith("# "):
+                return line[2:].strip()
+    except OSError:
+        pass
+    return ""
+
+
 def hidden(fm: dict) -> bool:
     return str(fm.get("disable-model-invocation", "")).lower() == "true" or not fm.get(
         "description"
@@ -66,17 +77,22 @@ def collect(root: Path, prefix: str, allow: set[Path] | None) -> dict[str, list]
                 (prefix + (fm.get("name") or path.parent.name), fm["description"])
             )
 
-    for kind, pattern in (("commands", "*.md"), ("agents", "*.md")):
+    for kind in ("commands", "agents"):
         base = root / kind
-        for path in sorted(base.rglob(pattern)) if base.is_dir() else []:
+        for path in sorted(base.rglob("*.md")) if base.is_dir() else []:
             fm = frontmatter(path)
-            # agents are listed even when not model-invocable as a skill
-            if not fm.get("description") or (kind == "commands" and hidden(fm)):
+            if str(fm.get("disable-model-invocation", "")).lower() == "true":
                 continue
-            name = fm.get("name") or str(
-                path.relative_to(base).with_suffix("")
-            ).replace("/", ":")
-            found[kind].append((prefix + name, fm["description"]))
+            # A user-level command with no frontmatter at all still gets listed, with
+            # its H1 as the description (observed: git:README). Plugin commands in the
+            # same shape were not observed in the listing, so the fallback stays local.
+            desc = fm.get("description") or (first_heading(path) if not prefix else "")
+            if not desc:
+                continue
+            # commands are addressed by path, not by their `name` frontmatter
+            path_name = str(path.relative_to(base).with_suffix("")).replace("/", ":")
+            name = path_name if kind == "commands" else (fm.get("name") or path.stem)
+            found[kind].append((prefix + name, desc))
 
     return found
 
