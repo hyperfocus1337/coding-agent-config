@@ -14,7 +14,7 @@ A plugin manifest's `skills` array, when present, gates which on-disk skills reg
 
 `disable-model-invocation: true` keeps an entry out of the model-facing listing. It stays reachable as an explicit `/slash-command`, but Claude cannot auto-select it and never sees its description. Of `mattpocock-skills`' 25 declared skills, 14 carry this flag, so only 11 appear. Same mechanism trims `codex` from 7 commands to 2, and hides the local `thermo-nuclear-code-quality-review` skill (its twin in the agents listing is what shows up instead).
 
-An entry with no `description` never reaches the listing. `code-refactoring`'s three commands have none, so the plugin contributes agents only.
+An entry with no `description` never reaches the listing, with one exception. A user-level command file with no frontmatter at all is still listed, using its H1 as the description: `commands/git/README.md` is not a command but shows up as `git:README: git slash commands`. Plugin command files in exactly the same shape (`code-refactoring`'s three, which are prompt bodies with an H1 and no frontmatter) were not observed in the listing, so the fallback appears to be user-level only. The measurement script encodes it that way and says so in a comment; if a future session shows plugin equivalents listed, that assumption is what to revisit.
 
 Skills and commands share one listing block, so a command in `~/.claude/commands/` costs exactly what a skill of the same verbosity costs. Agents are a separate listing. This repo's 26 user-level commands are therefore a real slice of the skills budget, not free.
 
@@ -24,7 +24,7 @@ Skills and commands share one listing block, so a command in `~/.claude/commands
 
 | Source                                            | Skills |   Cmds | Agents |      Chars |    ~Tokens |
 | ------------------------------------------------- | -----: | -----: | -----: | ---------: | ---------: |
-| `~/.claude` (16 skills, 25 commands, 2 agents)    |     16 |     25 |      2 |      8,967 |      2,242 |
+| `~/.claude` (see breakdown below)                 |     16 |     26 |      2 |      9,014 |      2,254 |
 | `ponytail@ponytail`                               |      6 |      0 |      0 |      2,736 |        684 |
 | `mattpocock-skills@mattpocock`                    |     11 |      0 |      0 |      2,645 |        661 |
 | `iterative-development@prime-radiant-marketplace` |      6 |      0 |      0 |      1,776 |        444 |
@@ -38,9 +38,65 @@ Skills and commands share one listing block, so a command in `~/.claude/commands
 | `code-simplifier@claude-plugins-official`         |      0 |      0 |      1 |        208 |         52 |
 | `watch@claude-video`                              |      0 |      1 |      0 |        189 |         47 |
 | `code-review@claude-plugins-official`             |      0 |      1 |      0 |         54 |         14 |
-| **Total from disk**                               | **51** | **31** | **10** | **21,606** | **~5,401** |
+| **Total from disk**                               | **51** | **32** | **10** | **21,653** | **~5,413** |
 
-The skill and command listing alone is 82 entries and 19,186 characters; the agents listing adds 2,420.
+The skill and command listing alone is 83 entries and 19,233 characters; the agents listing adds 2,420.
+
+### What is in the `~/.claude` row
+
+That row is the largest single source and the only one this repo controls directly, so it is worth expanding. Per-entry figures below are the rendered breadcrumb (`- name: description`) without its trailing newline, which is why the group sums come out one character per entry below the table totals.
+
+**Skills, 16 entries, 5,996 characters.** Five sources feed `~/.claude/skills/`:
+
+| Channel                                     | Entries | Chars | Detail                                                                                                                                           |
+| ------------------------------------------- | ------: | ----: | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Local, authored here (`dot_claude/skills/`) |       4 | 1,980 | `meeting-summarizer` 721, `organize-with-comments` 610, `install-mcp` 435, `gh-cli` 214                                                          |
+| APM, `manaflow-ai/cmux`                     |       7 | 1,917 | `cmux-settings` 437, `cmux-customization` 348, `cmux-diagnostics` 295, `cmux` 234, `cmux-markdown` 225, `cmux-workspace` 201, `cmux-browser` 177 |
+| APM, `neondatabase/agent-skills`            |       3 | 1,765 | `neon-postgres` 671, `neon` 547, `neon-postgres-branches` 547                                                                                    |
+| APM, `antonbabenko/terraform-skill`         |       1 |   239 | `terraform-skill`                                                                                                                                |
+| Unmanaged                                   |       1 |    95 | `playwright-cli`                                                                                                                                 |
+
+The fifth APM entry, `cursor/plugins/cursor-team-kit`, installs `thermo-nuclear-code-quality-review` with `disable-model-invocation: true`, so it costs nothing in the skills listing. It does deploy the kit's two agents, which is the whole of the agents column for this row.
+
+Two observations. The 11 externally-sourced skills (cmux, neon, terraform) cost 3,921 characters, roughly double the four written here, and none of them are editable without forking upstream. And `playwright-cli` is an orphan: installed 2026-07-21, absent from `apm.yml` and from `dot_claude/`, so no channel in [`channels.md`](../sources/channels.md) owns it. It is cheap at 95 characters, but it will not survive a clean rebuild, and nothing in this repo would notice.
+
+**Commands, 26 entries, 2,487 characters.** All are authored here, under `dot_claude/commands/`:
+
+| Namespace    | Entries | Chars | Heaviest                         |
+| ------------ | ------: | ----: | -------------------------------- |
+| `organize:`  |       8 |   984 | `rule-banner-comments` 141       |
+| `git:`       |      11 |   841 | `worktrees` 142, `changelog` 116 |
+| `issues:`    |       3 |   368 | `improve-issue-in-place` 144     |
+| `simple:`    |       3 |   192 | `markitdown` 104                 |
+| `summarize:` |       1 |   102 | `transscripts` 102               |
+
+The eight `organize:` variants are one skill's worth of budget spent on comment-header styles, and `git:README` (32 characters) is documentation, not a command, listed only because of the no-frontmatter fallback above. `dot_claude/commands/style/concise.md` is committed but not yet applied to `~/.claude`, so the 49 characters of `style:concise` are pending rather than current.
+
+### What a command breadcrumb actually buys
+
+Worth being precise, because it decides how aggressively to trim. A command in the listing is callable by the model through the Skill tool, not just by a human typing `/name`. That is verifiable from a live session: `- git:commit: Create a git commit` appears in the skill listing, and the Skill tool's contract accepts only names from that listing. The negative case confirms the mechanism, `codex`'s flagged commands and `mattpocock-skills`' flagged skills are absent from the same listing.
+
+But callable is not the same as chosen. Asked to commit, Claude generally commits directly rather than routing through `/git:commit`, because the task is within its default competence. The breadcrumb only earns its cost when the command encodes a procedure Claude would otherwise improvise differently, and when the request arrives in prose rather than as an explicit slash command. By that test most commands here are hand-invoked tools whose descriptions are dead weight in the auto-invocation listing, and only a few (`git:commit`, `git:multiple`, `git:pr`, which pin this repo's commit and PR conventions) have a real claim to auto-selection.
+
+### Applied: command breadcrumb trim
+
+Thirteen entries were flagged `disable-model-invocation: true` in `dot_claude/commands/`, which removes their breadcrumbs while leaving `/name` working:
+
+| Flagged                                                 |     Chars | Reason                                                                                                                                |
+| ------------------------------------------------------- | --------: | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 8 × `organize:*`                                        |       984 | thin wrappers over the `organize-with-comments` skill, which already prompts for a style; the skill is the correct auto-invoke target |
+| `git:amend-author`, `git:amend-date`, `git:shift-dates` |       279 | history surgery, never something to auto-select                                                                                       |
+| `summarize:transscripts`                                |       102 | duplicates the `meeting-summarizer` skill (721 chars) on the same trigger                                                             |
+| `git:README`                                            |        32 | documentation, listed only via the no-frontmatter fallback                                                                            |
+| **Total**                                               | **1,397** |                                                                                                                                       |
+
+`dot_claude/commands/README.md` got the same flag pre-emptively; it is not yet deployed, and without the flag chezmoi would add it as another H1-fallback entry.
+
+That takes the user-level command listing from 26 entries and 2,487 characters to 13 entries and 1,090 characters, a 56% cut with no loss of hand-invoked function. The tables above still show the pre-flag measurement, because the change lives in `dot_claude/` and does not reach `~/.claude` until `chezmoi apply` runs. Re-run the script after applying to see 70 entries and 17,823 characters in the skill and command listing.
+
+Still open: the ten remaining commands outside `git:commit`/`git:multiple`/`git:pr` have weak auto-invocation claims by the test above, so flagging them too would recover a further 956 characters, leaving 134. Left in place for now as a judgement call rather than a measurement one.
+
+**Agents, 2 entries, 487 characters.** `thermo-nuclear-code-quality-review` 301 and `ci-watcher` 186, both deployed by the `cursor-team-kit` APM entry. `apm.yml` notes there is no `agents:` subset key, so taking that kit's one skill means taking both agents.
 
 ### Not on disk, still charged
 
@@ -80,7 +136,7 @@ Token cost is small and linear. Roughly 5,400 tokens of listings from disk, plus
 
 The constraint is the character budget on the listing itself. Claude Code scales that at roughly 1% of the model's context window: about 2,000 characters at 200k, about 10,000 at 1M. The listing always contains every name, but when the descriptions overflow, Claude Code shortens them to fit, dropping description text starting with the entries invoked least so the ones used most keep their keywords.
 
-This machine's skill and command listing is **19,186 characters from disk plus ~6,000 from built-ins**, so about 25,000 against a 10,000-character budget on the 1M-context Opus this machine runs. Truncation is not a future risk, it is already happening at roughly 2.5x over budget. Rarely-used entries have effectively lost their descriptions in the auto-invocation listing. They remain callable as `/name`, but Claude can no longer match them to a request, because there is no description left to match against.
+This machine's skill and command listing is **19,233 characters from disk plus ~6,000 from built-ins**, so about 25,000 against a 10,000-character budget on the 1M-context Opus this machine runs. Truncation is not a future risk, it is already happening at roughly 2.5x over budget. Rarely-used entries have effectively lost their descriptions in the auto-invocation listing. They remain callable as `/name`, but Claude can no longer match them to a request, because there is no description left to match against.
 
 Note the interaction with the built-ins: they are heavy, they cannot be removed, and they compete in the same budget. Every character trimmed locally buys headroom for entries this repo actually cares about.
 
@@ -106,7 +162,7 @@ Note the interaction with the built-ins: they are heavy, they cannot be removed,
 
 The three `neon` skills together cost 1,765 characters for one vendor's database, and the six `ponytail` entries cost 2,736. Only the locally-authored ones (`meeting-summarizer`, `organize-with-comments`, `install-mcp`) are directly editable here; trimming their trigger lists to distinctive keywords is the cheapest win available.
 
-**Use `disable-model-invocation: true` deliberately.** It is the precise tool for this problem: an entry you always invoke by hand (`/organize`, `/git:commit`, setup-style skills) does not need a description in the auto-invocation listing at all. Setting the flag removes its breadcrumb entirely while keeping the slash command working. This repo's 26 user-level commands cost 2,466 characters and are almost all hand-invoked, so this is a large, low-risk cut that no other lever offers.
+**Use `disable-model-invocation: true` deliberately.** It is the precise tool for this problem: an entry you always invoke by hand does not need a description in the auto-invocation listing at all, and the flag removes the breadcrumb while keeping the slash command working. Applied to 13 command entries here for a 1,397-character cut, detailed above. It is the only lever that reduces the listing without removing function.
 
 **Leave heavy bundles disabled.** `cloudflare` (3,574 chars) and `superpowers` (2,390) are the biggest available swings; the disabled table is a menu of what each toggle costs.
 
