@@ -2,62 +2,70 @@
   "plugins": [
     {
       "id": "ast-grep@ast-grep-marketplace",
-      "marketplace": { "source": "ast-grep/agent-skill" },
+      "marketplace": {
+        "source": "ast-grep/agent-skill"
+      },
       "url": "https://github.com/ast-grep/agent-skill",
       "scope": "user",
       "status": "user-keep",
-      "enabled": true,
       "why": "rules/ast-grep.md points every session at this skill, so it must load everywhere. APM cannot carry it: apm 0.23.1 finds 0 skills in the nested plugin layout.",
       "use_when": "structural code search in any repo"
     },
     {
       "id": "astral@astral-sh",
-      "marketplace": { "source": "astral-sh/claude-code-plugins" },
+      "marketplace": {
+        "source": "astral-sh/claude-code-plugins"
+      },
       "url": "https://github.com/astral-sh/claude-code-plugins",
       "scope": "user",
       "status": "user-keep",
-      "enabled": true,
       "why": "uv, ruff, and ty are the default Python toolchain here. 118 resident tokens for three skills.",
       "use_when": "any Python work"
     },
     {
       "id": "caveman@caveman",
-      "marketplace": { "source": "JuliusBrussee/caveman" },
+      "marketplace": {
+        "source": "JuliusBrussee/caveman"
+      },
       "url": "https://github.com/JuliusBrussee/caveman",
       "scope": "user",
       "status": "user-keep",
-      "enabled": true,
       "why": "session-wide output mode, set by a SessionStart hook. A project-scoped install would change response style per repo.",
       "use_when": "always on"
     },
     {
       "id": "ponytail@ponytail",
-      "marketplace": { "source": "DietrichGebert/ponytail" },
+      "marketplace": {
+        "source": "DietrichGebert/ponytail"
+      },
       "url": "https://github.com/DietrichGebert/ponytail",
       "scope": "user",
       "status": "user-keep",
-      "enabled": true,
       "why": "session-wide coding mode, set by a SessionStart hook, same reason as caveman.",
       "use_when": "always on"
     },
     {
       "id": "codex@openai-codex",
-      "marketplace": { "source": "openai/codex-plugin-cc" },
+      "marketplace": {
+        "source": "openai/codex-plugin-cc"
+      },
       "url": "https://github.com/openai/codex-plugin-cc",
       "scope": "user",
       "status": "user-keep",
-      "enabled": true,
-      "requires": ["codex"],
+      "requires": [
+        "codex"
+      ],
       "why": "SessionStart and Stop hooks plus the external Codex CLI. Highest use count of any plugin here.",
       "use_when": "second opinion or rescue on a stuck task"
     },
     {
       "id": "mattpocock-skills@mattpocock",
-      "marketplace": { "source": "mattpocock/skills" },
+      "marketplace": {
+        "source": "mattpocock/skills"
+      },
       "url": "https://github.com/mattpocock/skills",
       "scope": "project",
       "status": "project-candidate",
-      "enabled": true,
       "why": "11 visible skills at 661 resident tokens, the largest single plugin cost. The set is a TypeScript and product engineering workflow, not a general one.",
       "use_when": "TS or JS repo where the team wants the TDD, grilling, and domain-modeling loop"
     },
@@ -69,27 +77,28 @@
       "url": "https://github.com/prime-radiant-inc/prime-radiant-marketplace",
       "scope": "project",
       "status": "project-candidate",
-      "enabled": true,
       "why": "6 skills at 444 resident tokens for one delivery method. Its skills call bundled Python helpers, so it stays on the plugin CLI.",
       "use_when": "greenfield build from a large or ambiguous spec"
     },
     {
       "id": "feature-dev@claude-plugins-official",
-      "marketplace": { "source": "anthropics/claude-plugins-official" },
+      "marketplace": {
+        "source": "anthropics/claude-plugins-official"
+      },
       "url": "https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev",
       "scope": "project",
       "status": "project-candidate",
-      "enabled": true,
       "why": "3 agents and 1 command at 207 resident tokens. Value comes from tracing an unfamiliar codebase, which is a per-repo need.",
       "use_when": "onboarding onto a large codebase you did not write"
     },
     {
       "id": "code-refactoring@claude-code-workflows",
-      "marketplace": { "source": "wshobson/agents" },
+      "marketplace": {
+        "source": "wshobson/agents"
+      },
       "url": "https://github.com/wshobson/agents/tree/main/plugins/code-refactoring",
       "scope": "project",
       "status": "project-candidate",
-      "enabled": true,
       "why": "2 agents at 159 resident tokens. Needed during a migration, not in every session.",
       "use_when": "framework migration or a tech-debt push"
     },
@@ -101,104 +110,119 @@
       "url": "https://gitlab.com/gitlab-org/ai/skills",
       "scope": "project",
       "status": "project-candidate",
-      "enabled": true,
-      "requires": ["glab"],
+      "requires": [
+        "glab"
+      ],
       "why": "only useful where the remote is GitLab. Stays on the plugin CLI: apm 0.23.1 --frozen rejects GitLab-hosted packages.",
       "use_when": "repo hosted on GitLab"
     },
     {
       "id": "pyright-lsp@claude-plugins-official",
-      "marketplace": { "source": "anthropics/claude-plugins-official" },
+      "marketplace": {
+        "source": "anthropics/claude-plugins-official"
+      },
       "url": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/pyright-lsp",
       "scope": "project",
       "status": "project-candidate",
-      "enabled": true,
-      "requires": ["pyright-langserver"],
+      "requires": [
+        "pyright-langserver"
+      ],
       "why": "LSP wiring costs 0 resident tokens but starts a language server. Run it where there is Python to serve. Installed on this machine although the install.sh line was commented out.",
       "use_when": "repo has meaningful Python"
     },
     {
       "id": "watch@claude-video",
-      "marketplace": { "source": "bradautomates/claude-video" },
+      "marketplace": {
+        "source": "bradautomates/claude-video"
+      },
       "url": "https://github.com/bradautomates/claude-video",
       "scope": "local",
       "status": "local-candidate",
-      "enabled": true,
-      "requires": ["ffmpeg", "yt-dlp"],
+      "requires": [
+        "ffmpeg",
+        "yt-dlp"
+      ],
       "why": "personal tool, not a team convention. Its SessionStart hook prints a setup reminder every session until ffmpeg and yt-dlp are installed.",
       "use_when": "one-off questions about a video, after running its setup script"
     },
     {
       "id": "code-review@claude-plugins-official",
-      "marketplace": { "source": "anthropics/claude-plugins-official" },
+      "marketplace": {
+        "source": "anthropics/claude-plugins-official"
+      },
       "url": "https://github.com/anthropics/claude-code/tree/main/plugins/code-review",
       "scope": "user",
       "status": "superseded",
-      "enabled": true,
       "superseded_by": "built-in /code-review",
       "why": "one command at 14 resident tokens that duplicates the built-in command.",
       "use_when": "never, use /code-review"
     },
     {
       "id": "code-simplifier@claude-plugins-official",
-      "marketplace": { "source": "anthropics/claude-plugins-official" },
+      "marketplace": {
+        "source": "anthropics/claude-plugins-official"
+      },
       "url": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier",
       "scope": "user",
       "status": "superseded",
-      "enabled": true,
       "superseded_by": "built-in /simplify",
       "why": "one agent at 52 resident tokens. The built-in /simplify covers the same task.",
       "use_when": "never, use /simplify"
     },
     {
       "id": "context7@context7-marketplace",
-      "marketplace": { "source": "upstash/context7" },
+      "marketplace": {
+        "source": "upstash/context7"
+      },
       "url": "https://github.com/upstash/context7",
       "scope": "user",
       "status": "superseded",
-      "enabled": true,
       "superseded_by": "context7 MCP server in apm.yml",
       "why": "bundles the same MCP server that apm.yml already installs, plus a duplicate instruction block, for 120 resident tokens.",
       "use_when": "never, the APM-managed server covers it"
     },
     {
       "id": "pyright@claude-code-lsps",
-      "marketplace": { "source": "piebald-ai/claude-code-lsps" },
+      "marketplace": {
+        "source": "piebald-ai/claude-code-lsps"
+      },
       "url": "https://github.com/Piebald-AI/claude-code-lsps/tree/main/pyright",
       "scope": "user",
       "status": "superseded",
-      "enabled": true,
       "superseded_by": "pyright-lsp@claude-plugins-official",
       "why": "second Python LSP wiring for the same language server. Keep one.",
       "use_when": "never, use pyright-lsp"
     },
     {
       "id": "cloudflare@cloudflare",
-      "marketplace": { "source": "cloudflare/skills" },
+      "marketplace": {
+        "source": "cloudflare/skills"
+      },
       "url": "https://developers.cloudflare.com/agent-setup/claude-code/",
       "scope": "user",
       "status": "disabled",
-      "enabled": false,
       "why": "5 hosted MCP servers load on every session. A single plugin MCP server cannot be disabled on its own, so the whole plugin is disabled. See docs/mcp/disabling-servers.md.",
       "use_when": "enable per session for Cloudflare work"
     },
     {
       "id": "notion-workspace-plugin@notion-plugin-marketplace",
-      "marketplace": { "source": "makenotion/claude-code-notion-plugin" },
+      "marketplace": {
+        "source": "makenotion/claude-code-notion-plugin"
+      },
       "url": "https://github.com/makenotion/claude-code-notion-plugin",
       "scope": "user",
       "status": "disabled",
-      "enabled": false,
       "why": "hosted MCP bridge, same disable reason as cloudflare.",
       "use_when": "enable per session for Notion work"
     },
     {
       "id": "chrome-devtools-mcp@chrome-devtools-plugins",
-      "marketplace": { "source": "ChromeDevTools/chrome-devtools-mcp" },
+      "marketplace": {
+        "source": "ChromeDevTools/chrome-devtools-mcp"
+      },
       "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp",
       "scope": "user",
       "status": "disabled",
-      "enabled": false,
       "why": "launches an npx MCP server, same disable reason as cloudflare.",
       "use_when": "enable per session for browser debugging"
     },
@@ -210,27 +234,28 @@
       "url": "https://github.com/prime-radiant-inc/prime-radiant-marketplace",
       "scope": "user",
       "status": "disabled",
-      "enabled": false,
       "why": "skills, agents, and commands for new-project scaffolding. Disabled on this machine although install.sh installs it and disable.sh does not list it.",
       "use_when": "promote to project scope on a new project instead of enabling globally"
     },
     {
       "id": "superpowers@claude-plugins-official",
-      "marketplace": { "source": "anthropics/claude-plugins-official" },
+      "marketplace": {
+        "source": "anthropics/claude-plugins-official"
+      },
       "url": "https://github.com/obra/superpowers",
       "scope": "user",
       "status": "disabled",
-      "enabled": false,
       "why": "large resident cost. Installed but disabled, although the install.sh line is commented out.",
       "use_when": "never at user scope"
     },
     {
       "id": "commit-commands@claude-plugins-official",
-      "marketplace": { "source": "anthropics/claude-plugins-official" },
+      "marketplace": {
+        "source": "anthropics/claude-plugins-official"
+      },
       "url": "https://github.com/anthropics/claude-code/tree/main/plugins/commit-commands",
       "scope": "user",
       "status": "disabled",
-      "enabled": false,
       "why": "its commands were imported into dot_claude/commands/git/ instead. Installed but disabled, although the install.sh line is commented out.",
       "use_when": "never, use /git:commit and siblings"
     }
