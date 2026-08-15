@@ -1,0 +1,113 @@
+{
+  "skills": [
+    {
+      "id": "organize-with-comments",
+      "channel": "local",
+      "dir": "dot_claude/skills/organize",
+      "scope": "user",
+      "status": "user-keep",
+      "why": "153 resident tokens, and the 8 /organize:* commands route into it. Used in every repo.",
+      "use_when": "sectioning any config or code file"
+    },
+    {
+      "id": "install-mcp",
+      "channel": "local",
+      "dir": "dot_claude/skills/install-mcp",
+      "scope": "user",
+      "status": "user-keep",
+      "why": "one of the mechanism skills. Reached through install-agent-resources, so it costs no resident tokens of its own.",
+      "use_when": "adding an MCP server to a project"
+    },
+    {
+      "id": "install-plugins",
+      "channel": "local",
+      "dir": "dot_claude/skills/install-plugins",
+      "scope": "user",
+      "status": "user-keep",
+      "why": "mechanism skill, same as install-mcp.",
+      "use_when": "installing a Claude plugin at a chosen scope"
+    },
+    {
+      "id": "install-skills",
+      "channel": "local",
+      "dir": "dot_claude/skills/install-skills",
+      "scope": "user",
+      "status": "user-keep",
+      "why": "mechanism skill, same as install-mcp.",
+      "use_when": "installing a skill at a chosen scope"
+    },
+    {
+      "id": "gh-cli",
+      "channel": "local",
+      "dir": "dot_claude/skills/gh-cli",
+      "scope": "project",
+      "status": "project-candidate",
+      "requires": ["gh"],
+      "why": "54 resident tokens for a full gh reference. Claude already runs gh without it for common tasks.",
+      "use_when": "repo where gh drives releases, projects, or Actions, not just pull requests"
+    },
+    {
+      "id": "meeting-summarizer",
+      "channel": "local",
+      "dir": "dot_claude/skills/meeting-summarizer",
+      "scope": "local",
+      "status": "local-candidate",
+      "why": "180 resident tokens, the largest local skill, for a personal task that is not code work.",
+      "use_when": "turning a transcript into notes, in a repo where that happens often"
+    },
+    {
+      "id": "playwright",
+      "channel": "vendor-cli",
+      "command": "playwright-cli install --skills",
+      "global_flag": "--global",
+      "requires": ["playwright-cli"],
+      "scope": "project",
+      "status": "project-candidate",
+      "why": "the CLI installs into the workspace by default, so project scope is its native mode. Was an orphan at user scope: installed 2026-07-21, declared nowhere.",
+      "use_when": "repo with Playwright tests"
+    },
+    {
+      "id": "orbit",
+      "channel": "vendor-cli",
+      "command": "glab skills install orbit --path .claude/skills",
+      "global_flag": "--global",
+      "requires": ["glab"],
+      "scope": "project",
+      "status": "project-candidate",
+      "why": "glab writes .agents/skills, which is the Codex layout. Claude reads .claude/skills only, so --path is required. The --global form in skills/install.sh produced nothing on this machine.",
+      "use_when": "GitLab repo using the Duo agent platform"
+    },
+    {
+      "id": "antonbabenko/terraform-skill",
+      "channel": "apm",
+      "scope": "user",
+      "status": "user-keep",
+      "why": "60 resident tokens for one skill. Cheap enough to keep everywhere, and Terraform work appears in many repos here.",
+      "use_when": "writing or reviewing Terraform"
+    },
+    {
+      "id": "cursor/plugins/cursor-team-kit",
+      "channel": "apm",
+      "scope": "user",
+      "status": "user-keep",
+      "why": "its skill carries disable-model-invocation, so it costs 0 in the skills listing. The 75 tokens are the 2 agents it also deploys.",
+      "use_when": "deep code quality audit"
+    },
+    {
+      "id": "neondatabase/agent-skills",
+      "channel": "apm",
+      "scope": "project",
+      "status": "project-candidate",
+      "why": "441 resident tokens across 3 skills, useful only where the database is Neon.",
+      "use_when": "repo that connects to Neon or Lakebase Postgres"
+    },
+    {
+      "id": "manaflow-ai/cmux",
+      "channel": "apm",
+      "scope": "local",
+      "status": "local-candidate",
+      "why": "479 resident tokens across 7 skills for personal terminal tooling. Never commit it into a shared repo.",
+      "use_when": "driving cmux panes or its browser from an agent"
+    }
+  ]
+}
