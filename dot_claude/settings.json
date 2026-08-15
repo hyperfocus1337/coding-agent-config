@@ -81,7 +81,6 @@
     "code-simplifier@claude-plugins-official": true,
     "codex@openai-codex": true,
     "commit-commands@claude-plugins-official": false,
-    "context7-plugin@context7-marketplace": true,
     "feature-dev@claude-plugins-official": true,
     "glab@gitlab-skills": true,
     "notion-workspace-plugin@notion-plugin-marketplace": false,
