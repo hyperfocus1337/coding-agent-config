@@ -10,7 +10,7 @@ Ask Claude to "install the <skill> skill in this project", or invoke the `instal
 
 - **APM**: `apm install <ref> --target claude` in the project, which writes `.claude/skills/`, `apm.yml`, and `apm.lock.yaml`, and gitignores `apm_modules/`. A skill subset (neon takes 3 of the package's skills, cmux 7) has no CLI form, so `scripts/merge_apm_skills.py` writes the `skills:` key into the project `apm.yml` first.
 - **Local**: copy the directory out of this repo into `<project>/.claude/skills/`. The copy forks. Later edits here do not reach it.
-- **Vendor CLI**: run the vendor's command in the project. Both vendor CLIs install into the project by default and take `--global` for user scope, which is the reverse of the plugin CLI.
+- **Vendor CLI**: run the vendor's command in the project. Both vendor CLIs install into the project by default and need an explicit argument for user scope, which is the reverse of the plugin CLI. Each row splits `command` from `project_args` and `global_args`, because the two scopes need different paths, not just a flag.
 
 ## Reading the catalog
 

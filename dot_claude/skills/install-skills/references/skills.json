@@ -42,7 +42,9 @@
       "dir": "dot_claude/skills/gh-cli",
       "scope": "project",
       "status": "project-candidate",
-      "requires": ["gh"],
+      "requires": [
+        "gh"
+      ],
       "why": "54 resident tokens for a full gh reference. Claude already runs gh without it for common tasks.",
       "use_when": "repo where gh drives releases, projects, or Actions, not just pull requests"
     },
@@ -59,23 +61,29 @@
       "id": "playwright",
       "channel": "vendor-cli",
       "command": "playwright-cli install --skills",
-      "global_flag": "--global",
-      "requires": ["playwright-cli"],
+      "requires": [
+        "playwright-cli"
+      ],
       "scope": "project",
       "status": "project-candidate",
       "why": "the CLI installs into the workspace by default, so project scope is its native mode. Was an orphan at user scope: installed 2026-07-21, declared nowhere.",
-      "use_when": "repo with Playwright tests"
+      "use_when": "repo with Playwright tests",
+      "project_args": "",
+      "global_args": "--global"
     },
     {
       "id": "orbit",
       "channel": "vendor-cli",
-      "command": "glab skills install orbit --path .claude/skills",
-      "global_flag": "--global",
-      "requires": ["glab"],
+      "command": "glab skills install orbit",
+      "requires": [
+        "glab"
+      ],
       "scope": "project",
       "status": "project-candidate",
       "why": "glab writes .agents/skills, which is the Codex layout. Claude reads .claude/skills only, so --path is required. The --global form in skills/install.sh produced nothing on this machine.",
-      "use_when": "GitLab repo using the Duo agent platform"
+      "use_when": "GitLab repo using the Duo agent platform",
+      "project_args": "--path .claude/skills",
+      "global_args": "--path $HOME/.claude/skills"
     },
     {
       "id": "antonbabenko/terraform-skill",

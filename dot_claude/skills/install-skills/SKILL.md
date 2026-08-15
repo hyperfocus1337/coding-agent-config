@@ -29,18 +29,19 @@ The user wants a skill available in one repo instead of every session, or wants 
 
 ## The catalog
 
-| Field         | Meaning                                                              |
-| :------------ | :------------------------------------------------------------------- |
-| `id`          | skill name for `local` and `vendor-cli` rows, git ref for `apm` rows |
-| `channel`     | `apm`, `local`, or `vendor-cli`, which decides the procedure below   |
-| `dir`         | source directory in the config repo, `local` rows only               |
-| `command`     | the vendor command to run inside the project, `vendor-cli` rows only |
-| `global_flag` | the flag that switches that command to user scope                    |
-| `scope`       | where this skill belongs: `user`, `project`, or `local`              |
-| `status`      | `user-keep`, `project-candidate`, `local-candidate`                  |
-| `requires`    | binaries that must be on `PATH`                                      |
-| `why`         | the reason for `scope`, including its measured resident token cost   |
-| `use_when`    | the condition under which a project should take it                   |
+| Field          | Meaning                                                                      |
+| :------------- | :--------------------------------------------------------------------------- |
+| `id`           | skill name for `local` and `vendor-cli` rows, git ref for `apm` rows         |
+| `channel`      | `apm`, `local`, or `vendor-cli`, which decides the procedure below           |
+| `dir`          | source directory in the config repo, `local` rows only                       |
+| `command`      | the vendor command, without scope arguments, `vendor-cli` rows only          |
+| `project_args` | arguments that land the skill in the project, appended to `command`          |
+| `global_args`  | arguments that land it at user scope instead, `$HOME` expanded by the caller |
+| `scope`        | where this skill belongs: `user`, `project`, or `local`                      |
+| `status`       | `user-keep`, `project-candidate`, `local-candidate`                          |
+| `requires`     | binaries that must be on `PATH`                                              |
+| `why`          | the reason for `scope`, including its measured resident token cost           |
+| `use_when`     | the condition under which a project should take it                           |
 
 An `apm` row names the package, never its skills. Which skills that package deploys is read live from the root [`apm.yml`](../../../apm.yml), so the subset is declared once.
 
@@ -90,9 +91,9 @@ cp -r <config-repo>/<dir> <project-dir>/.claude/skills/<id>
 
 Then ask whether to commit it or add it to `.gitignore`. Say plainly that the copy forks: later edits in the config repo do not reach it.
 
-**Vendor CLI.** Run the row's `command` from the project root. Read the row before running it: `glab skills install` writes `.agents/skills/`, which is the Codex layout, so its command carries `--path .claude/skills` to land where Claude reads. Confirm the files arrived under `.claude/skills/` and ask commit or gitignore.
+**Vendor CLI.** Run `command` plus `project_args` from the project root. The args are split from the command because the two scopes need different ones: `glab skills install` writes `.agents/skills/`, which is the Codex layout, so `project_args` carries `--path .claude/skills` to land where Claude reads, and `global_args` carries the `$HOME` form of the same path. Confirm the files arrived under `.claude/skills/` and ask commit or gitignore.
 
-**User scope, any channel.** For `apm`, add the dep to the root `apm.yml` of the config repo with the same merge helper (`--project <config-repo>`), then run `scripts/extensions/apm/install.sh`. For `local`, the skill is already deployed by chezmoi; a new one means creating it under `dot_claude/skills/` and running `just chezmoi`. For `vendor-cli`, run the command with its `global_flag`.
+**User scope, any channel.** For `apm`, add the dep to the root `apm.yml` of the config repo with the same merge helper (`--project <config-repo>`), then run `scripts/extensions/apm/install.sh`. For `local`, the skill is already deployed by chezmoi; a new one means creating it under `dot_claude/skills/` and running `just chezmoi`. For `vendor-cli`, run the command with its `global_args`, and add the row to the catalog so `scripts/extensions/skills/install.sh` reproduces it.
 
 ### 4. Record a user-scope install in the config repo
 
