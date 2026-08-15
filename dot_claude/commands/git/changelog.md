@@ -7,9 +7,11 @@ disable-model-invocation: true
 
 Generate a changelog for the last $ARGUMENTS and save it to a dated file.
 
-First, ensure the changelog directory exists: !mkdir -p changelog
+Context:
 
-Get today's date for the filename: !date '+%Y-%m-%d'
+- Changelog directory: !`mkdir -p changelog && echo "changelog/ ready"`
+- Today's date: !`date '+%Y-%m-%d'`
+- Current branch: !`git branch --show-current`
 
 Parse the time period argument to determine the git log time filter:
 
@@ -20,9 +22,11 @@ Parse the time period argument to determine the git log time filter:
 - If "$ARGUMENTS" is a number, use "--since='$ARGUMENTS days ago'"
 - It no argument provided, default to "week"
 
-Get the current branch: !git branch --show-current
+Run `git log` with that filter to fetch all commits from the period:
 
-Fetch all commits from the specified period: !git log --since='[appropriate time filter based on $ARGUMENTS]' --pretty=format:'%h|%as|%s|%an' --reverse
+```
+git log --since='<time filter>' --pretty=format:'%h|%as|%s|%an' --reverse
+```
 
 Process the commits and organize them by type:
 
