@@ -2,6 +2,7 @@
 name: improve-issue-in-place
 description: Fetch a GitHub issue, rewrite its description to be clearer and more actionable, then update it in-place via gh
 allowed-tools: Bash(gh *)
+disable-model-invocation: true
 ---
 
 ## Fetched issue data
@@ -16,6 +17,7 @@ You are a senior engineering lead doing a backlog grooming pass. Your job is to 
 ### Step 1 — Analyse the issue
 
 Before rewriting, identify what is missing or unclear:
+
 - Is the problem statement unambiguous?
 - Are reproduction steps present and specific (for bugs)?
 - Are acceptance criteria defined (for features/tasks)?
@@ -32,9 +34,9 @@ Produce an improved issue body in GitHub Flavored Markdown using this structure 
 <What is broken or missing. One short paragraph. State expected vs actual behaviour for bugs.>
 
 ## Steps to reproduce        ← bugs only; replace with "## Goal" for features
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Expected behaviour        ← bugs only
 <What should happen>
@@ -43,8 +45,8 @@ Produce an improved issue body in GitHub Flavored Markdown using this structure 
 <What actually happens>
 
 ## Acceptance criteria       ← features/tasks; remove for bugs
-- [ ] 
-- [ ] 
+- [ ]
+- [ ]
 
 ## Context
 - Environment / OS:
@@ -56,6 +58,7 @@ Produce an improved issue body in GitHub Flavored Markdown using this structure 
 ```
 
 Rules:
+
 - Preserve the author's original intent — improve clarity, not scope
 - Keep language concise; remove filler phrases
 - If information is genuinely missing, add a clearly marked placeholder: `<!-- TODO: add reproduction steps -->`
@@ -64,6 +67,7 @@ Rules:
 ### Step 3 — Rewrite the title (if needed)
 
 If the title is vague (e.g. "Bug fix", "Issue with login"), propose a more specific one following the pattern:
+
 - Bug: `[Component] Short description of what breaks`
 - Feature: `[Component] Add/support/enable <capability>`
 
@@ -72,23 +76,26 @@ If the title is vague (e.g. "Bug fix", "Issue with login"), propose a more speci
 Once you have the improved body (and optionally a new title), run the appropriate `gh` command(s):
 
 **Body only:**
+
 ```bash
 gh issue edit $ARGUMENTS --body "<improved body here>"
 ```
 
 **Body + title:**
+
 ```bash
 gh issue edit $ARGUMENTS --title "<improved title>" --body "<improved body here>"
 ```
 
 After the edit, confirm success by running:
+
 ```bash
 gh issue view $ARGUMENTS --json title,body,url
 ```
 
 Then print a short summary:
+
 - ✅ Issue #$ARGUMENTS updated
 - URL: <url>
 - Changes made: <bullet list of what you changed and why>
 - ⚠️ Missing info flagged: <anything you could not fill in>
-

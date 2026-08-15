@@ -1,6 +1,7 @@
 ---
 allowed-tools: Bash(git fetch:*), Bash(git branch:*), Bash(git for-each-ref:*), Bash(git remote:*)
 description: Delete local branches whose remote tracking branch no longer exists (stale local branches).
+disable-model-invocation: true
 ---
 
 ## Your Task
@@ -10,11 +11,13 @@ Prune stale local branches: branches that used to track a remote branch which ha
 ## Commands to Execute
 
 1. **Prune stale remote-tracking refs so [gone] status is accurate**
+
    ```bash
    git fetch --prune
    ```
 
 2. **List local branches whose upstream is gone**
+
    ```bash
    git for-each-ref --format '%(refname:short) %(upstream:track)' refs/heads | grep '\[gone\]' | awk '{print $1}'
    ```

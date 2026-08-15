@@ -80,21 +80,23 @@ But callable is not the same as chosen. Asked to commit, Claude generally commit
 
 ### Applied: command breadcrumb trim
 
-Thirteen entries were flagged `disable-model-invocation: true` in `dot_claude/commands/`, which removes their breadcrumbs while leaving `/name` working:
+Every command in `dot_claude/commands/` except `git:commit`, `git:multiple`, `git:pr` and `git:push` carries `disable-model-invocation: true`, which removes its breadcrumb while leaving `/name` working. The four exceptions pin this repo's commit and PR conventions, which is exactly the case where auto-selection beats improvising:
 
-| Flagged                                                 |     Chars | Reason                                                                                                                                |
-| ------------------------------------------------------- | --------: | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 8 × `organize:*`                                        |       984 | thin wrappers over the `organize-with-comments` skill, which already prompts for a style; the skill is the correct auto-invoke target |
-| `git:amend-author`, `git:amend-date`, `git:shift-dates` |       279 | history surgery, never something to auto-select                                                                                       |
-| `summarize:transscripts`                                |       102 | duplicates the `meeting-summarizer` skill (721 chars) on the same trigger                                                             |
-| `git:README`                                            |        32 | documentation, listed only via the no-frontmatter fallback                                                                            |
-| **Total**                                               | **1,397** |                                                                                                                                       |
+| Flagged                                                   |     Chars | Reason                                                                                                                                |
+| --------------------------------------------------------- | --------: | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 8 × `organize:*`                                          |       984 | thin wrappers over the `organize-with-comments` skill, which already prompts for a style; the skill is the correct auto-invoke target |
+| `issues:*` (3)                                            |       368 | each needs an issue number as an argument, so the request always arrives as a slash command                                           |
+| `git:amend-author`, `git:amend-date`, `git:shift-dates`   |       279 | history surgery, never something to auto-select                                                                                       |
+| `git:branches`, `git:worktrees`, `git:changelog`          |       365 | deliberate maintenance runs, invoked by hand at a moment of the user's choosing                                                       |
+| `simple:explain`, `simple:proofread`, `simple:markitdown` |       192 | within default competence; the breadcrumb buys nothing the model cannot already do                                                    |
+| `style:concise`, `style:current-state`                    |       136 | mode switches the user types explicitly                                                                                               |
+| `summarize:transscripts`                                  |       102 | duplicates the `meeting-summarizer` skill (721 chars) on the same trigger                                                             |
+| `git:README`                                              |        32 | documentation, listed only via the no-frontmatter fallback                                                                            |
+| **Total**                                                 | **2,458** |                                                                                                                                       |
 
 `dot_claude/commands/README.md` got the same flag pre-emptively; it is not yet deployed, and without the flag chezmoi would add it as another H1-fallback entry.
 
-That takes the user-level command listing from 26 entries and 2,487 characters to 13 entries and 1,090 characters, a 56% cut with no loss of hand-invoked function. The tables above still show the pre-flag measurement, because the change lives in `dot_claude/` and does not reach `~/.claude` until `chezmoi apply` runs. Re-run the script after applying to see 70 entries and 17,823 characters in the skill and command listing.
-
-Still open: the ten remaining commands outside `git:commit`/`git:multiple`/`git:pr` have weak auto-invocation claims by the test above, so flagging them too would recover a further 956 characters, leaving 134. Left in place for now as a judgement call rather than a measurement one.
+That takes the user-level command listing to 4 entries and 165 characters, against 26 entries and 2,487 characters before any flagging (a figure that excludes the two `style:*` commands, which were written after that measurement and were never listed). The tables above still show the pre-flag measurement, because the change lives in `dot_claude/` and does not reach `~/.claude` until `chezmoi apply` runs. Re-run the script after applying to see 59 entries and roughly 16,900 characters in the skill and command listing.
 
 **Agents, 2 entries, 487 characters.** `thermo-nuclear-code-quality-review` 301 and `ci-watcher` 186, both deployed by the `cursor-team-kit` APM entry. `apm.yml` notes there is no `agents:` subset key, so taking that kit's one skill means taking both agents.
 
