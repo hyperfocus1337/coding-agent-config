@@ -8,9 +8,10 @@ Slash commands are prompt templates Claude Code runs when you type `/<namespace>
 
 ## style/ — response style
 
-| Command          | Description                                                                     |
-| ---------------- | ------------------------------------------------------------------------------- |
-| `/style:concise` | Report back extremely concisely, sacrificing grammar for the sake of concision. |
+| Command                | Description                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| `/style:concise`       | Report back extremely concisely, sacrificing grammar for the sake of concision. |
+| `/style:current-state` | Write docs describing only the current state, with no change-history framing.   |
 
 Source: [Claude Code tip (YouTube Shorts)](https://youtube.com/shorts/I12Mf8KBT1I).
 
