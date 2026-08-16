@@ -84,7 +84,34 @@ The earlier rejection of `dir` (measured at 1.4 s and ignoring `.gitignore`) was
 
 Two calls at most: one over the whole set, and a per-file loop only when that set is dirty, to name which file.
 
-Beware when writing fixtures: the upstream config globally allowlists `.bin`, `.png`, `.pdf`, `.exe` and similar by extension, so a test binary under one of those names scans clean regardless of content.
+### The extension allowlist
+
+Delegating the verdict to `betterleaks dir` is necessary but not sufficient. The default config carries a global path allowlist that exempts three extension groups from **every** rule, content rules included:
+
+```
+(?i)\.(?:bmp|gif|jpe?g|png|svg|tiff?)$
+(?i)\.(?:eot|[ot]tf|woff2?)$
+(?i)\.(?:docx?|xlsx?|pdf|bin|socket|vsidx|v2|suo|wsuo|dll|pdb|exe|gltf)$
+```
+
+Upstream sets these to suppress false positives on compressed bytes. The cost is that a real private key inside `logo.png` scans clean, and so does a password list inside `notes.xlsx`, which is a realistic accident in an office setting.
+
+Three ways to defeat the allowlist were measured. Only the file name decides, so the scanned path has to differ from the real one:
+
+| Approach                           | Finds a key in `logo.png` | Cost                                                    |
+| ---------------------------------- | ------------------------- | ------------------------------------------------------- |
+| `--enable-rule private-key`        | no                        | the allowlist outranks rule selection                   |
+| symlink under a neutral name       | no                        | `dir` does not follow a symlink                         |
+| `betterleaks stdin` per file       | yes                       | 74 ms per file, and one timeout per file instead of one |
+| copy to a neutral name, then `dir` | yes                       | one batched scan, one timeout, plus the bytes copied    |
+
+The copy wins on bulk. Twenty added binaries cost 1.48 s through `stdin` against 0.05 s through one `dir` call. The per-file timeout is the deciding point: `stdin` makes the 4 s cap apply N times, so twenty files could stall for 80 s, while the batched form keeps one 4 s bound.
+
+`bl_copy_max` (100 MB) stops the copy from dominating on large media. A file above it keeps its own path and stays exempt if its extension is listed. Closing that remainder would mean copying a file large enough to fill `/tmp`.
+
+False positives were measured before the change, because suppressing them is the reason upstream ships the allowlist. 300 real images, fonts, and PDFs taken from the machine, scanned under neutral `.dat` names: **no finding**. A planted private key in the same set was found, which proves the scan ran.
+
+This also removes a fixture trap that cost time earlier. A test binary named `secret.bin` scanned clean while holding a real RSA key, which looked like a limit of `dir` and was not. Under the current code the name no longer decides, so a fixture may use any extension.
 
 ### Flags
 
@@ -132,6 +159,14 @@ A rule-scoped allowlist (`[rules.allowlist]` or `[[rules.allowlists]]`) does not
 The `secret-filename` rule is deliberately name-based rather than content-based. Its names and extensions come from the key-file categories in GitLab's [secret-detection-rules](https://gitlab.com/gitlab-org/security-products/secret-detection/secret-detection-rules/-/tree/main/rules/mit) and from the filename detector in [talisman](https://github.com/thoughtworks/talisman), plus the common credential files.
 
 Encrypted blobs (`*.gpg`, `*.pgp`) and public keys (`id_rsa.pub`, `*.crt`) are not matched, because committing those is a legitimate workflow. The `id_(rsa|dsa|ecdsa|ed25519)` arm is anchored so it does not match the `.pub` sibling.
+
+### Why the env arm accepts a prefix
+
+The arm was `\.env(\.[^/]*)?`, anchored to a name that starts with `.env`. That blocked `.env` and `.env.local` and let `prod.env`, `production.env`, and `config/prod.env` through. The content rules do not cover the difference: an env file holds `DB_PASSWORD=hunter2`, which has no entropy and no vendor prefix, so nothing fires on it. The name rule is the only check, and it missed the most common production spelling.
+
+Two tests hid this. Every `prod.env` fixture carried a high-entropy token, so it blocked on content and never exercised the name rule. The README used `config/prod.env` as its example of a file needing an allowlist entry, which only makes sense if it was expected to block.
+
+The arm is now `[^/]*\.env(\.[^/]*)?`. Enumerating prefixes was rejected: `prod`, `dev`, `staging`, `local`, `app`, `api` and the rest are unbounded, so a prefix list would be a second name list to maintain. The template allowlist gained the mirrored spelling, because `.env.example` and `example.env` are the same file to a reader.
 
 ### Why neither upstream is consumed directly
 

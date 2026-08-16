@@ -82,20 +82,44 @@ bl_dir() { # <path>... -> 0 only when every path scans clean; nonzero also on er
     --no-banner --redact --log-level error --exit-code 9 -f json -r /dev/null >/dev/null 2>&1
 }
 
+# Largest file this hook copies to a neutral name. Above it the copy costs more
+# than the gap it closes, so the file keeps its own path and its extension may
+# exempt it. docs/implementation.md#the-extension-allowlist
+bl_copy_max=$((100 * 1024 * 1024))
+
 scan_binary() {
-  local rec f cand=() offenders=()
+  local rec f i stage='' scan=() real=() offenders=()
   while IFS= read -r -d '' rec; do
     case $rec in $'-\t-\t'*) ;; *) continue ;; esac
     f=${rec#$'-\t-\t'}
     is_allowed "$f" && continue
     # `dir` reads the worktree, so a file staged and then removed from it cannot
     # be scanned. Unreadable or unscannable means unverifiable, which blocks.
-    if [ "$has_bl" -eq 1 ] && [ -f "$f" ]; then cand+=("$f"); else offenders+=("$f"); fi
+    if [ "$has_bl" -eq 1 ] && [ -r "$f" ]; then real+=("$f"); else offenders+=("$f"); fi
   done < <(git diff --cached --numstat -z --diff-filter=A 2>/dev/null)
 
-  # One scan for the whole set; only a dirty set pays to find out which file.
-  if [ ${#cand[@]} -gt 0 ] && ! bl_dir "${cand[@]}"; then
-    for f in "${cand[@]}"; do bl_dir "$f" || offenders+=("$f"); done
+  if [ ${#real[@]} -gt 0 ]; then
+    # The default config exempts image, font and office extensions from every
+    # rule, so a key inside logo.png or a password list inside notes.xlsx scans
+    # clean. Copying each file to a neutral name defeats that path allowlist.
+    # Measured on 300 real images, fonts and PDFs: no false positive.
+    # docs/implementation.md#the-extension-allowlist
+    stage=$(mktemp -d 2>/dev/null) || stage=''
+    for i in "${!real[@]}"; do
+      f=${real[i]}
+      if [ -n "$stage" ] && [ "$(stat -c %s "$f" 2>/dev/null || echo 0)" -le "$bl_copy_max" ] &&
+        cp -- "$f" "$stage/$i.dat" 2>/dev/null; then
+        scan+=("$stage/$i.dat")
+      else
+        scan+=("$f")
+      fi
+    done
+
+    # One scan for the whole set; only a dirty set pays to find out which file.
+    if ! bl_dir "${scan[@]}"; then
+      for i in "${!scan[@]}"; do bl_dir "${scan[i]}" || offenders+=("${real[i]}"); done
+    fi
+    [ -n "$stage" ] && rm -rf "$stage"
   fi
   [ ${#offenders[@]} -eq 0 ] && return 0
 

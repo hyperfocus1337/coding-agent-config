@@ -38,6 +38,8 @@ betterleaks cannot read a binary blob in git mode, so a keystore, a key bundle, 
 
 An ordinary image, font, or archive commits freely. Only a binary that actually holds a secret blocks, including one under an innocuous name such as `payload.dat`, which no file-name rule would match.
 
+The scan copies each candidate to a neutral name first. The default betterleaks config exempts image, font, and office extensions from every rule, so a key inside `logo.png` or a password list inside `notes.xlsx` would otherwise scan clean. A file above 100 MB keeps its own path, because the copy costs more than the gap it closes. See [The extension allowlist](docs/implementation.md#the-extension-allowlist).
+
 A modified tracked binary is not checked, because it was checked when it was first added and updating a committed image is routine. The trade-off is that swapping a secret into an already-tracked binary is not caught.
 
 This is the one check that never fails open: if betterleaks is missing, the scan errors, or the file was staged and then removed from the worktree, the file cannot be cleared and so it blocks.
@@ -82,6 +84,8 @@ About 1 ms on a non-git command, which is the case that runs before every shell 
 ## The name ruleset
 
 The names live in the `secret-filename` rule in [`conf/betterleaks.toml`](conf/betterleaks.toml). Edit the `path` pattern there to tune what counts as a secret.
+
+Any file ending in `.env` counts, not only `.env` itself, so `prod.env` and `config/production.env` block. The template names are exempt in both spellings: `.env.example` and `example.env` both commit freely, as do `.sample`, `.template`, and `.dist`.
 
 Encrypted blobs (`*.gpg`, `*.pgp`) and public keys (`id_rsa.pub`, `*.crt`) are deliberately not matched, since committing those is a legitimate workflow.
 

@@ -32,6 +32,7 @@ plain_bin() { printf 'PK\003\004\000\000plain\000payload\n'; } # binary, no secr
 
 names=(
   .env .env.local .envrc .netrc .pgpass .htpasswd .git-credentials .dockercfg
+  prod.env production.env local.env config/prod.env
   .s3cfg .gitrobrc .bash_history .zsh_history credentials.json
   id_rsa id_dsa id_ecdsa id_ed25519 server.pem private.key deploy.keypair
   key.p8 key.pkcs8 putty.ppk cert.pfx bundle.p12 bundle.pkcs12
@@ -57,6 +58,18 @@ if [ "$have_bl" -eq 1 ]; then
   runmsg "$r" 'git commit -m x'
   assert 2 "$rc" "binary holding a private key blocked"
   contains "payload.dat" "$out" "binary block message names the file"
+
+  # The default config exempts image, font and office extensions from every
+  # rule, so these block only because the hook rescans under a neutral name.
+  r=$(mkrepo binext)
+  secret_bin > "$r/logo.png"
+  git -C "$r" add -A
+  assert 2 "$(run "$r" 'git commit -m x')" "secret inside a .png blocked"
+
+  r=$(mkrepo binext2)
+  secret_bin > "$r/notes.pdf"
+  git -C "$r" add -A
+  assert 2 "$(run "$r" 'git commit -m x')" "secret inside a .pdf blocked"
 
   # A name with a space and a quote must survive the -z parsing intact.
   r=$(mkrepo binodd)
@@ -119,6 +132,7 @@ else echo "FAIL names missing from block message:$missed"; fail=1; fi
 # Templates and ordinary files must not trip the rule.
 r=$(mkrepo allowed)
 for n in .env.example .env.sample .env.template .env.dist \
+         example.env sample.env template.env dist.env prod.env.example \
          main.go README.md config.yaml id_rsa.pub server.crt notes.gpg; do
   echo 'placeholder' > "$r/$n"
 done

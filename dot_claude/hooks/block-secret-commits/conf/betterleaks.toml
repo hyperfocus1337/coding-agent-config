@@ -29,11 +29,18 @@ useDefault = true # keep the upstream rules, then add the one below
 [[rules]]
 id = "secret-filename"
 description = "File name indicates a secret. A name alone is proof enough; the file content is not read."
-path = '''(^|/)(\.env(\.[^/]*)?|\.envrc|\.netrc|\.pgpass|\.htpasswd|\.git-credentials|\.dockercfg|\.s3cfg|\.gitrobrc|credentials\.json|id_(rsa|dsa|ecdsa|ed25519)|\.[A-Za-z0-9]+_history)$|\.(pem|key|keypair|p8|pkcs8|ppk|pfx|p12|pkcs12|keystore|keyring|jks|kdb|keychain|ovpn|kubeconfig)$|\.(tblk|agilekeychain)(/|$)'''
+path = '''(^|/)([^/]*\.env(\.[^/]*)?|\.envrc|\.netrc|\.pgpass|\.htpasswd|\.git-credentials|\.dockercfg|\.s3cfg|\.gitrobrc|credentials\.json|id_(rsa|dsa|ecdsa|ed25519)|\.[A-Za-z0-9]+_history)$|\.(pem|key|keypair|p8|pkcs8|ppk|pfx|p12|pkcs12|keystore|keyring|jks|kdb|keychain|ovpn|kubeconfig)$|\.(tblk|agilekeychain)(/|$)'''
 
 # A rule-scoped allowlist does not suppress a `path` rule; only this global one
 # does. Scoping it here costs nothing, because the upstream config already skips
 # these template names for the content rules.
+#
+# Both spellings of a template name are exempt, because the rule above accepts a
+# prefix before `.env`: `.env.example` and `example.env` are the same file to a
+# reader, so they must be the same file to this rule.
 [allowlist]
 description = "Template files carry placeholders, not real secrets."
-paths = ['''(^|/)\.env\.(example|sample|template|dist)$''']
+paths = [
+  '''(^|/)[^/]*\.env\.(example|sample|template|dist)$''',
+  '''(^|/)(example|sample|template|dist)\.env$''',
+]
