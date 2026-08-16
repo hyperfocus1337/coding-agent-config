@@ -75,26 +75,12 @@
     "ast-grep@ast-grep-marketplace": true,
     "astral@astral-sh": true,
     "caveman@caveman": true,
-    "code-refactoring@claude-code-workflows": true,
     "codex@openai-codex": true,
-    "feature-dev@claude-plugins-official": true,
-    "glab@gitlab-skills": true,
-    "pyright@claude-code-lsps": true,
     "mattpocock-skills@mattpocock": true,
-    "watch@claude-video": true,
-    "iterative-development@prime-radiant-marketplace": true,
     "ponytail@ponytail": true,
-    "context7@context7-marketplace": true,
-    "chrome-devtools-mcp@chrome-devtools-plugins": false,
-    "pyright-lsp@claude-plugins-official": true
+    "chrome-devtools-mcp@chrome-devtools-plugins": false
   },
   "extraKnownMarketplaces": {
-    "antonbabenko": {
-      "source": {
-        "source": "github",
-        "repo": "antonbabenko/agent-plugins"
-      }
-    },
     "ast-grep-marketplace": {
       "source": {
         "source": "github",
@@ -111,12 +97,6 @@
       "source": {
         "source": "github",
         "repo": "JuliusBrussee/caveman"
-      }
-    },
-    "claude-code-lsps": {
-      "source": {
-        "source": "github",
-        "repo": "piebald-ai/claude-code-lsps"
       }
     },
     "claude-code-workflows": {
@@ -141,12 +121,6 @@
       "source": {
         "source": "github",
         "repo": "cloudflare/skills"
-      }
-    },
-    "context7-marketplace": {
-      "source": {
-        "source": "github",
-        "repo": "upstash/context7"
       }
     },
     "gitlab-skills": {

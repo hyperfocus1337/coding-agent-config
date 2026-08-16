@@ -159,30 +159,6 @@
       "use_when": "one-off questions about a video, after running its setup script"
     },
     {
-      "id": "context7@context7-marketplace",
-      "marketplace": {
-        "source": "upstash/context7"
-      },
-      "url": "https://github.com/upstash/context7",
-      "scope": "user",
-      "status": "superseded",
-      "superseded_by": "context7 MCP server in apm.yml",
-      "why": "bundles the same MCP server that apm.yml already installs, plus a duplicate instruction block, for 120 resident tokens.",
-      "use_when": "never, the APM-managed server covers it"
-    },
-    {
-      "id": "pyright@claude-code-lsps",
-      "marketplace": {
-        "source": "piebald-ai/claude-code-lsps"
-      },
-      "url": "https://github.com/Piebald-AI/claude-code-lsps/tree/main/pyright",
-      "scope": "user",
-      "status": "superseded",
-      "superseded_by": "pyright-lsp@claude-plugins-official",
-      "why": "second Python LSP wiring for the same language server. Keep one.",
-      "use_when": "never, use pyright-lsp"
-    },
-    {
       "id": "chrome-devtools-mcp@chrome-devtools-plugins",
       "marketplace": {
         "source": "ChromeDevTools/chrome-devtools-mcp"

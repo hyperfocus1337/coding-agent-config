@@ -1,6 +1,6 @@
 ---
 name: install-agent-resources
-description: Install an agent resource (MCP server, skill, or plugin) at project, local, or user scope, so the resource costs context only where it is used. Routes to the skill that owns the channel: install-mcp for MCP servers, install-skills for skills through APM, a repo-local copy, or a vendor CLI, and install-plugins for Claude Code plugins. Resolves the request by id across all three catalogs first, and asks when one id exists in two of them (context7 is both a plugin and an MCP server). Use for "install <name> in this project", "add an MCP server", "install a skill", "install a plugin", "project-scoped resource", "move this off global scope", "which resources can I demote to project scope".
+description: Install an agent resource (MCP server, skill, or plugin) at project, local, or user scope, so the resource costs context only where it is used. Routes to the skill that owns the channel: install-mcp for MCP servers, install-skills for skills through APM, a repo-local copy, or a vendor CLI, and install-plugins for Claude Code plugins. Resolves the request by id across all three catalogs first, and asks when one id exists in two of them (orbit is both an MCP server and a vendor-CLI skill). Use for "install <name> in this project", "add an MCP server", "install a skill", "install a plugin", "project-scoped resource", "move this off global scope", "which resources can I demote to project scope".
 ---
 
 # install-agent-resources
@@ -19,10 +19,10 @@ The three skills carry `disable-model-invocation: true`, so this skill is the on
 
 ### 1. Resolve the request to a catalog row
 
-Read all three catalogs and match the user's words against `id` first, then against `use_when`. The id decides the channel, so the user does not have to know that `neon` is an APM skill and `context7` is a plugin.
+Read all three catalogs and match the user's words against `id` first, then against `use_when`. The id decides the channel, so the user does not have to know that `neon` is an APM skill and `watch` is a plugin.
 
 - **One match**: name the resource, the channel, and the row's `scope`, then go to step 2.
-- **Two matches**: show both rows with their `why` and ask which one. `context7` is a plugin and an MCP server. Never guess.
+- **Two matches**: show both rows with their `why` and ask which one. `orbit` is an MCP server and a vendor-CLI skill today. Never guess.
 - **No match**: ask the user which of the three kinds it is. A plugin id has the `plugin@marketplace` form, an MCP server needs a transport and a connection, a skill arrives through APM, a repo copy, or a vendor CLI. Each skill takes an uncataloged resource and offers to add the row.
 
 ### 2. Hand off
