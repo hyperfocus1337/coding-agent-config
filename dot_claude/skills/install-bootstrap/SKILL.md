@@ -36,7 +36,7 @@ A cloud session sees only what the repository commits. The hook must be committe
 
 ### 0. Preflight the toolchain
 
-Check `jq` and `sponge` are on `PATH`. Step 3 needs both.
+Check `jq` is on `PATH`. Step 3 needs it.
 
 ### 1. Locate the target repository
 
@@ -45,10 +45,12 @@ Default to the current working directory. Confirm it is a git repository with `g
 ### 2. Check whether the hook is already installed
 
 ```bash
-rg -q 'templates/web/bootstrap.sh' <target>/.claude/settings.json
+rg -q --no-messages 'templates/web/bootstrap.sh' <target>/.claude/settings.json
 ```
 
-A match means the repository is already bootstrapped. Report that and stop. Never write a second copy: two hooks run the installer twice per session.
+Exit 0 means the repository is already bootstrapped. Report that and stop. Never write a second copy: two hooks run the installer twice per session.
+
+Any other exit means not installed, so continue. `--no-messages` is needed because a repository with no `.claude/settings.json` is the normal case, and rg exits 2 with an error on a missing file.
 
 ### 3. Write the hook
 
@@ -60,16 +62,27 @@ mkdir -p .claude
 [ -f .claude/settings.json ] || echo '{}' > .claude/settings.json
 jq --argjson block '{"matcher":"startup","hooks":[{"type":"command","command":"curl -fsSL https://raw.githubusercontent.com/hyperfocus1337/coding-agent-config/main/templates/web/bootstrap.sh | bash"}]}' \
   '.hooks.SessionStart = ((.hooks.SessionStart // []) + [$block])' \
-  .claude/settings.json | sponge .claude/settings.json
+  .claude/settings.json > .claude/settings.json.tmp \
+  && mv .claude/settings.json.tmp .claude/settings.json
 ```
 
 The assignment creates `.hooks` and `.hooks.SessionStart` when either is absent, and appends when the repository already declares other `SessionStart` hooks. Never overwrite `.claude/settings.json`.
+
+Write through the temporary file, never back into the same file. A hand-edited `settings.json` that is not valid JSON makes `jq` write nothing, and both `> settings.json` and `| sponge settings.json` then truncate the file to zero bytes and still report success. The `&&` stops before `mv`, so the original survives. On failure, delete the leftover `.claude/settings.json.tmp` and tell the user their `settings.json` is not valid JSON.
 
 Show the user the resulting file.
 
 ### 4. Ask to commit
 
 The hook only fires for a cloud session that clones the repository, so an uncommitted hook does nothing. Ask before committing, because the target is usually not the config repository.
+
+Check first that the file can be committed at all:
+
+```bash
+git -C <target> check-ignore -q .claude/settings.json
+```
+
+Exit 0 means the repository ignores the file. `git add` then does nothing and the hook never reaches a cloud session. Report this and ask the user to un-ignore `.claude/settings.json` before continuing. Some repositories ignore the whole `.claude/` directory.
 
 ### 5. Report
 
