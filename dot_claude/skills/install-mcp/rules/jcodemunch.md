@@ -1,6 +1,6 @@
 ---
 paths:
-  - "**"
+  - "**/*.{ts,tsx,js,jsx,mjs,cjs,py,sh,bash}"
 ---
 
 ### jcodemunch MCP

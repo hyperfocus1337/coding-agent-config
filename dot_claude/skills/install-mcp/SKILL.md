@@ -33,6 +33,7 @@ The user wants to add one or more MCP servers. Every server in the registry is a
 | `secrets` | env var names the dep references as `${VAR}`, checked but never written         |
 | `prompts` | values the user must supply: `key`, `target`, `ask`, optional `default`         |
 | `notes`   | auth options and post-install steps to surface to the user                      |
+| `rule`    | optional path to a rule file that improves how agents use this server, step 7   |
 
 A `dep` is transport-shaped: `stdio` carries `command`, `args`, and optional `env`; `http` carries `url` and optional `headers`.
 
@@ -56,7 +57,7 @@ Present `project`, `local`, `user` with `project` preselected. State the consequ
 
 `local` runs the project procedure, then adds each file apm wrote (`.mcp.json`, `.cursor/mcp.json`, `.codex/config.toml`, `.gemini/settings.json`) to the project's `.gitignore`.
 
-`user` replaces steps 4 to 6 with the user-scope procedure in step 7.
+`user` replaces steps 4 to 7 with the user-scope procedure in step 8.
 
 ### 3. Resolve config per chosen server
 
@@ -76,10 +77,6 @@ Never ask for or write the secret value itself. Do not just warn either. Offer o
 
 - Scaffold a credentials file in the project root so there is one place to fill them in. Ask which the user prefers: `.envrc` (direnv style, `export VAR=` lines, matching this repo's own pattern; direnv loads it into the environment automatically so the agent picks it up at launch) or `.env` (plain `VAR=` lines; remind the user it only takes effect if their shell or tooling loads it before the agent starts). Append only the missing vars without duplicating an existing line, write empty placeholders and never real values, and tell the user to add the file to `.gitignore` if it is not already ignored.
 - Point at the server's official auth flow when it has one (e.g. tessl's `tessl auth login`, per `notes`/`docs`), in which case no variable is needed.
-
-#### Bundled rules
-
-If a chosen server has a companion rule file in [`references/rules/`](references/rules/) (currently `jcodemunch.md`), offer to copy it into the target project's `.claude/rules/` so its tool-selection guidance loads there. Only jcodemunch ships one today.
 
 ### 4. Check the server's requirements
 
@@ -127,7 +124,22 @@ yq -i '.targets = ((.targets // []) + ["gemini"] | unique)' apm.yml
 
 Report apm's per-agent output ("Configured for Cursor, Claude...") verbatim, plus any secret still unset and any `notes` follow-ups.
 
-### 7. User scope
+### 7. Offer the server's rule file
+
+Only for a server whose row carries a `rule`, and only for `project` or `local` scope. The rule belongs next to the server it describes: it tells agents in that repo which tools of the server to use and when, so it is worth nothing in a project that does not run the server.
+
+Ask the user before copying. Show what the rule does, then:
+
+```bash
+mkdir -p <project-dir>/.claude/rules
+cp ~/.claude/skills/install-mcp/<rule> <project-dir>/.claude/rules/<name>.md
+```
+
+Claude Code loads every file in `.claude/rules/` automatically, gated by the `paths:` glob in its frontmatter, so no import line is needed. Then ask whether to commit the file or gitignore it, matching the scope the user chose for the server itself.
+
+Only jcodemunch ships a rule today. The rule files live in [`rules/`](rules/).
+
+### 8. User scope
 
 Only for `user` scope, and only after the user confirms the write. A user-scope server that is not declared in the config repo disappears on the next clean rebuild.
 
@@ -146,4 +158,5 @@ That script stages the manifest into `~/.apm/` and runs `apm install -g --update
 ## Notes
 
 - [`references/servers.json`](references/servers.json) is the source of truth for the server set; its human companion is [`docs/scope/mcp-servers.md`](../../../docs/scope/mcp-servers.md). Update both when adding a server or changing connection details.
+- A new rule file goes in [`rules/`](rules/) and reaches a project only through the `rule` key of a server row. Nothing else reads that directory.
 - Verified output paths (apm 0.25): Claude -> project `.mcp.json`, Cursor -> `.cursor/mcp.json`, Codex -> `.codex/config.toml`, Gemini -> `.gemini/settings.json`. Claude, Cursor, and Gemini need their dir pre-created (step 5); Codex does not. Always report apm's actual per-agent output rather than assuming.

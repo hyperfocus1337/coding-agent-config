@@ -1,5 +1,5 @@
 {
-  "_comment": "Registry of project-scoped MCP servers: the source of truth for the install-mcp skill (human catalog at docs/scope/mcp-servers.md; keep both in sync). Each `dep` is an apm.yml `dependencies.mcp` self-defined entry. `secrets` stay as ${VAR} and are env-checked only; `prompts` are values substituted for the {{KEY}} placeholder before writing (never env-interpolated).",
+  "_comment": "Registry of project-scoped MCP servers: the source of truth for the install-mcp skill (human catalog at docs/scope/mcp-servers.md; keep both in sync). Each `dep` is an apm.yml `dependencies.mcp` self-defined entry. `secrets` stay as ${VAR} and are env-checked only; `prompts` are values substituted for the {{KEY}} placeholder before writing (never env-interpolated). `rule` is an optional path, relative to the skill directory, to a rule file that improves how agents use this server; the skill offers to copy it into the target project's .claude/rules/.",
   "servers": {
     "tessl": {
       "summary": "Tessl platform for AI-assisted software engineering workflows.",
@@ -35,7 +35,11 @@
       "docs": "https://directus.io/docs/guides/ai/mcp",
       "secrets": ["DIRECTUS_TOKEN"],
       "prompts": [
-        { "key": "DIRECTUS_URL", "target": "url", "ask": "Your Directus instance /mcp endpoint URL (e.g. https://cms.example.com/mcp)" }
+        {
+          "key": "DIRECTUS_URL",
+          "target": "url",
+          "ask": "Your Directus instance /mcp endpoint URL (e.g. https://cms.example.com/mcp)"
+        }
       ],
       "notes": "DIRECTUS_TOKEN is a generated bearer token.",
       "dep": {
@@ -64,7 +68,12 @@
       "docs": "https://gitlab.com/api/v4/orbit/mcp",
       "secrets": [],
       "prompts": [
-        { "key": "ORBIT_URL", "target": "url", "ask": "Orbit MCP endpoint URL", "default": "https://gitlab.com/api/v4/orbit/mcp" }
+        {
+          "key": "ORBIT_URL",
+          "target": "url",
+          "ask": "Orbit MCP endpoint URL",
+          "default": "https://gitlab.com/api/v4/orbit/mcp"
+        }
       ],
       "notes": "If your GitLab instance rejects unauthenticated requests, add an `Authorization: Bearer ${GITLAB_TOKEN}` header to the dep and export GITLAB_TOKEN. Point the URL at your own instance if not gitlab.com.",
       "dep": {
@@ -79,7 +88,8 @@
       "docs": "https://github.com/jgravelle/jcodemunch-mcp",
       "secrets": [],
       "prompts": [],
-      "notes": "uvx must be on PATH. Indexes under ~/.code-index/; run index_folder once per project. Ships a tool-selection rule (references/rules/jcodemunch.md) the skill can drop into .claude/rules/ of the target project.",
+      "notes": "uvx must be on PATH. Indexes under ~/.code-index/; run index_folder once per project.",
+      "rule": "rules/jcodemunch.md",
       "dep": {
         "name": "jcodemunch",
         "registry": false,

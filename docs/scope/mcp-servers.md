@@ -34,7 +34,7 @@ GitLab Orbit tooling over the GitLab API. The endpoint URL is prompted for and d
 
 ### jcodemunch (stdio)
 
-Deep code analysis and indexing across a codebase, useful for onboarding to unfamiliar repositories or cross-file analysis. Runs via `uvx` (must be on `PATH`), no secrets. It stores its index under `~/.code-index/`; run `index_folder` once per project before using the other tools. It ships a tool-selection rule ([`jcodemunch.md`](../../dot_claude/skills/install-mcp/references/rules/jcodemunch.md)) that the skill can drop into the project's `.claude/rules/`. Docs: [github.com/jgravelle/jcodemunch-mcp](https://github.com/jgravelle/jcodemunch-mcp).
+Deep code analysis and indexing across a codebase, useful for onboarding to unfamiliar repositories or cross-file analysis. Runs via `uvx` (must be on `PATH`), no secrets. It stores its index under `~/.code-index/`; run `index_folder` once per project before using the other tools. It ships a tool-selection rule ([`jcodemunch.md`](../../dot_claude/skills/install-mcp/rules/jcodemunch.md)), declared by the `rule` key of its registry row, that the skill offers to copy into the project's `.claude/rules/`. Docs: [github.com/jgravelle/jcodemunch-mcp](https://github.com/jgravelle/jcodemunch-mcp).
 
 ### jdocmunch (stdio)
 
