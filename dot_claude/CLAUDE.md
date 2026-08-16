@@ -1,23 +1,7 @@
-<!-- general text + tool prefs -->
+### General
 
-@rules/general.md
+- Do not hard-wrap prose. Write each paragraph as a single continuous line and rely on the editor's soft wrap.
+- Don't use em dashes (—) in generated text. Use a comma, colon, or separate sentence instead.
+- In markdown headings, capitalize only the first word (sentence case), not Title Case.
 
-<!-- ASD-STE100 controlled writing style -->
-
-@rules/technical-english.md
-
-<!-- context7 for library/API docs -->
-
-@rules/context7.md
-
-<!-- LSP-first code navigation -->
-
-@rules/code-intelligence.md
-
-<!-- CLI tools -->
-
-@rules/cli-tools.md
-
-<!-- structural pattern search -->
-
-@rules/ast-grep.md
+<!-- Topic rules live in rules/ and load on a paths match, no imports needed. See rules/README.md. -->
