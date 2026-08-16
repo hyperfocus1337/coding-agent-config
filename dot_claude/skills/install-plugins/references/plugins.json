@@ -164,10 +164,10 @@
         "source": "ChromeDevTools/chrome-devtools-mcp"
       },
       "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp",
-      "scope": "user",
-      "status": "disabled",
-      "why": "launches an npx MCP server on every session. A single plugin MCP server cannot be disabled on its own, so the whole plugin stays disabled. See docs/mcp/disabling-servers.md.",
-      "use_when": "enable per session for browser debugging"
+      "scope": "project",
+      "status": "project-candidate",
+      "why": "launches an npx MCP server. At project scope it loads only in a repo that needs browser debugging. A single plugin MCP server cannot be disabled on its own, so scope is the only lever. See docs/mcp/disabling-servers.md.",
+      "use_when": "repo where debugging means driving a real browser"
     }
   ]
 }

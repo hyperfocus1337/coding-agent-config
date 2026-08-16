@@ -77,8 +77,7 @@
     "caveman@caveman": true,
     "codex@openai-codex": true,
     "mattpocock-skills@mattpocock": true,
-    "ponytail@ponytail": true,
-    "chrome-devtools-mcp@chrome-devtools-plugins": false
+    "ponytail@ponytail": true
   },
   "extraKnownMarketplaces": {
     "ast-grep-marketplace": {
