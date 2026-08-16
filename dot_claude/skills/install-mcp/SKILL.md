@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # install-mcp
 
-Installs MCP servers at a scope you choose: `project` (committed, every collaborator gets it on clone), `local` (gitignored, this machine only), or `user` (global, every session). It fans them out to whichever coding agents the user names (Claude Code, Cursor, Codex, Gemini, ...). All translation is delegated to `apm` via an `apm.yml`; this skill never hand-writes per-agent config formats. The available servers are cataloged for humans in [`docs/mcp/project-servers.md`](../../../docs/mcp/project-servers.md); the machine source this skill reads is [`references/servers.json`](references/servers.json).
+Installs MCP servers at a scope you choose: `project` (committed, every collaborator gets it on clone), `local` (gitignored, this machine only), or `user` (global, every session). It fans them out to whichever coding agents the user names (Claude Code, Cursor, Codex, Gemini, ...). All translation is delegated to `apm` via an `apm.yml`; this skill never hand-writes per-agent config formats. The available servers are cataloged for humans in [`docs/scope/mcp-servers.md`](../../../docs/scope/mcp-servers.md); the machine source this skill reads is [`references/servers.json`](references/servers.json).
 
 ## When to use
 
@@ -101,5 +101,5 @@ That script stages the manifest into `~/.apm/` and runs `apm install -g --update
 
 ## Notes
 
-- [`references/servers.json`](references/servers.json) is the source of truth for the server set; its human companion is [`docs/mcp/project-servers.md`](../../../docs/mcp/project-servers.md). Update both when adding a server or changing connection details.
+- [`references/servers.json`](references/servers.json) is the source of truth for the server set; its human companion is [`docs/scope/mcp-servers.md`](../../../docs/scope/mcp-servers.md). Update both when adding a server or changing connection details.
 - Verified output paths (apm 0.25): Claude -> project `.mcp.json`, Cursor -> `.cursor/mcp.json`, Codex -> `.codex/config.toml`, Gemini -> `.gemini/settings.json`. Claude, Cursor, and Gemini need their dir pre-created (step 4); Codex does not. Always report apm's actual per-agent output rather than assuming.

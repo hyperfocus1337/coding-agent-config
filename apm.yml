@@ -12,7 +12,7 @@ dependencies:
   # run (--update in install.sh).
   apm:
     # terraform-skill, moved off the `claude plugin` CLI. Which other plugins
-    # were considered and why they stayed: docs/apm/plugin-migration.md.
+    # were considered and why they stayed: docs/research/plugin-migration.md.
     - git: antonbabenko/terraform-skill
     # Cursor's team kit, nested plugin layout. Subpath ref (owner/repo/plugin)
     # resolves .cursor-plugin/plugin.json, so apm finds the nested skills/ dir.
@@ -42,7 +42,7 @@ dependencies:
         CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}
   # tessl, jcodemunch, jdocmunch, claude-design and orbit are project-scoped
   # opt-in servers, not user-scoped installs: install them per-project with the
-  # install-mcp skill. Catalog: docs/mcp/project-servers.md.
+  # install-mcp skill. Catalog: docs/scope/mcp-servers.md.
   # LSP servers. Binary must be on $PATH at install time.
   lsp:
     - name: pyright

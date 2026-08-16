@@ -1,6 +1,6 @@
-# MCP Server Locations (Desktop)
+# MCP server locations (desktop)
 
-*Of all different AI tools on the system*
+_Of all different AI tools on the system_
 
 ## Locations
 

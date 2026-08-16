@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # install-skills
 
-Installs agent skills into a scope you choose: `project` (committed, every collaborator gets it on clone), `local` (gitignored, this machine only), or `user` (global, every session). The catalog is [`references/skills.json`](references/skills.json); its human companion is [`docs/skills/project-skills.md`](../../../docs/skills/project-skills.md).
+Installs agent skills into a scope you choose: `project` (committed, every collaborator gets it on clone), `local` (gitignored, this machine only), or `user` (global, every session). The catalog is [`references/skills.json`](references/skills.json); its human companion is [`docs/scope/skills.md`](../../../docs/scope/skills.md).
 
 The target harness is a separate choice from the scope. APM deploys one package to any of its supported harnesses (`claude`, `codex`, `cursor`, `gemini`, `copilot`, `opencode`, `windsurf`, `kiro`, and more; `apm install --help` lists the current set). Each harness has its own skills directory. This document writes `<skills-dir>` for it: `.claude/skills/` for Claude Code, `.agents/skills/` for Codex. Verified with apm 0.28: the `codex` target deploys skills to `.agents/skills/`, although `apm targets` prints `.codex/` as its deploy dir, which is where its MCP config goes.
 

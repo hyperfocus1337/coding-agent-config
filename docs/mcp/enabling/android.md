@@ -1,4 +1,4 @@
-# Android MCP Integration
+# Android MCP integration
 
 This is how you enable MCP servers in the Claude Android app
 

@@ -6,9 +6,9 @@ disable-model-invocation: true
 
 # install-plugins
 
-Installs Claude Code plugins into a scope you choose: `project` (committed, every collaborator gets it on clone), `local` (gitignored, this machine only), or `user` (global, every session). The catalog of known plugins is [`references/plugins.json`](references/plugins.json); its human companion is [`docs/plugins/project-plugins.md`](../../../docs/plugins/project-plugins.md).
+Installs Claude Code plugins into a scope you choose: `project` (committed, every collaborator gets it on clone), `local` (gitignored, this machine only), or `user` (global, every session). The catalog of known plugins is [`references/plugins.json`](references/plugins.json); its human companion is [`docs/scope/plugins.md`](../../../docs/scope/plugins.md).
 
-Plugins whose value is a portable skill belong to the `install-skills` skill instead. Plugins whose value is a hook, an LSP bridge, an MCP server, or a bundled binary stay here, because APM cannot deploy those. The classification is in [`docs/apm/plugin-migration.md`](../../../docs/apm/plugin-migration.md).
+Plugins whose value is a portable skill belong to the `install-skills` skill instead. Plugins whose value is a hook, an LSP bridge, an MCP server, or a bundled binary stay here, because APM cannot deploy those. The classification is in [`docs/research/plugin-migration.md`](../../../docs/research/plugin-migration.md).
 
 ## When to use
 

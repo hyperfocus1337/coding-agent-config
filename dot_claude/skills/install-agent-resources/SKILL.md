@@ -41,6 +41,6 @@ A user-scope install that is not declared in the config repo disappears on the n
 
 ## Notes
 
-- Human companions to the three catalogs: [`docs/mcp/project-servers.md`](../../../docs/mcp/project-servers.md), [`docs/skills/project-skills.md`](../../../docs/skills/project-skills.md), [`docs/plugins/project-plugins.md`](../../../docs/plugins/project-plugins.md).
-- A plugin whose value is a portable skill belongs to `install-skills`, not `install-plugins`. The classification is in [`docs/apm/plugin-migration.md`](../../../docs/apm/plugin-migration.md).
+- Human companions to the three catalogs: [`docs/scope/mcp-servers.md`](../../../docs/scope/mcp-servers.md), [`docs/scope/skills.md`](../../../docs/scope/skills.md), [`docs/scope/plugins.md`](../../../docs/scope/plugins.md).
+- A plugin whose value is a portable skill belongs to `install-skills`, not `install-plugins`. The classification is in [`docs/research/plugin-migration.md`](../../../docs/research/plugin-migration.md).
 - Uninstalling is not part of these skills. Demoting a resource from user to project scope means installing it in the project first, verifying it, then removing the user-scope copy as a separate step.

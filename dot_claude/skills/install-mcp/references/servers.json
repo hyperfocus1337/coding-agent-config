@@ -1,5 +1,5 @@
 {
-  "_comment": "Registry of project-scoped MCP servers: the source of truth for the install-mcp skill (human catalog at docs/mcp/project-servers.md; keep both in sync). Each `dep` is an apm.yml `dependencies.mcp` self-defined entry. `secrets` stay as ${VAR} and are env-checked only; `prompts` are values substituted for the {{KEY}} placeholder before writing (never env-interpolated).",
+  "_comment": "Registry of project-scoped MCP servers: the source of truth for the install-mcp skill (human catalog at docs/scope/mcp-servers.md; keep both in sync). Each `dep` is an apm.yml `dependencies.mcp` self-defined entry. `secrets` stay as ${VAR} and are env-checked only; `prompts` are values substituted for the {{KEY}} placeholder before writing (never env-interpolated).",
   "servers": {
     "tessl": {
       "summary": "Tessl platform for AI-assisted software engineering workflows.",

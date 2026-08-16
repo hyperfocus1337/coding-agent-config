@@ -31,7 +31,7 @@ jq -r '["ID","SCOPE","STATUS","USE WHEN"], (.plugins[] | [.id, .scope, .status, 
   ../../dot_claude/skills/install-plugins/references/plugins.json | column -t -s $'\t'
 ```
 
-Enable and disable state is not in the catalog. `enabledPlugins` in [`dot_claude/settings.json`](../../dot_claude/settings.json) owns it, and `plugins/disable.sh` applies its `false` entries after the installs, because installing a disabled plugin re-enables it. Per-plugin reasoning: [`docs/plugins/project-plugins.md`](../../docs/plugins/project-plugins.md). Component and token inventory per plugin: [`docs/sources/inventory.md`](../../docs/sources/inventory.md).
+Enable and disable state is not in the catalog. `enabledPlugins` in [`dot_claude/settings.json`](../../dot_claude/settings.json) owns it, and `plugins/disable.sh` applies its `false` entries after the installs, because installing a disabled plugin re-enables it. Per-plugin reasoning: [`docs/scope/plugins.md`](../../docs/scope/plugins.md). Component and token inventory per plugin: [`docs/sources/inventory.md`](../../docs/sources/inventory.md).
 
 ---
 
@@ -43,7 +43,7 @@ Skills installed by a vendor CLI rather than a plugin or APM, because they ship 
 
 ## MCP Servers (User-Scoped)
 
-MCP servers are declared in `apm.yml` and deployed globally at user scope via `apm install -g`, available across all Claude sessions. The one user-scoped server, `context7`, reads a `CONTEXT7_API_KEY` from the environment at install time (`apm.yml` interpolates it via `${CONTEXT7_API_KEY}`). Project-scoped servers (tessl, stitch, directus, claude-design, orbit, jcodemunch, jdocmunch) are installed per-project with the `install-mcp` skill rather than deployed user-wide; see [`docs/mcp/project-servers.md`](../../docs/mcp/project-servers.md).
+MCP servers are declared in `apm.yml` and deployed globally at user scope via `apm install -g`, available across all Claude sessions. The one user-scoped server, `context7`, reads a `CONTEXT7_API_KEY` from the environment at install time (`apm.yml` interpolates it via `${CONTEXT7_API_KEY}`). Project-scoped servers (tessl, stitch, directus, claude-design, orbit, jcodemunch, jdocmunch) are installed per-project with the `install-mcp` skill rather than deployed user-wide; see [`docs/scope/mcp-servers.md`](../../docs/scope/mcp-servers.md).
 
 ### `context7`
 
