@@ -17,6 +17,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 CATALOG="$REPO_ROOT/dot_claude/skills/install-skills/references/skills.json"
+# Harness skills directory the catalog's $SKILLS_DIR placeholder expands to.
+# User scope here is Claude; a project install of the same row picks its own.
+SKILLS_DIR="${SKILLS_DIR:-.claude/skills}"
 
 if ! command -v jq &>/dev/null; then
   echo "ERROR: 'jq' not found in PATH." >&2
@@ -60,7 +63,8 @@ echo "==> Installing user-scope vendor skills"
 count=0
 while IFS=$'\t' read -r id command global_args; do
   echo "==> Skill: $id"
-  # global_args may contain $HOME, which the catalog cannot expand itself.
+  # global_args carries $HOME and $SKILLS_DIR as literal text; expand both here.
+  global_args="${global_args//\$SKILLS_DIR/$SKILLS_DIR}"
   global_args="${global_args//\$HOME/$HOME}"
   # shellcheck disable=SC2086 # both are catalog-declared argv, not one word each
   (cd "$HOME" && $command $global_args)
