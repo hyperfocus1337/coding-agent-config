@@ -1,8 +1,3 @@
----
-paths:
-  - "**/*.{md,markdown,mdx,org,rst,adoc,asciidoc,txt}"
----
-
 ### Simplified technical English
 
 Write prose in ASD-STE100 Simplified Technical English: precise, factual, unambiguous, for an international audience. It is a writing constraint, not a tone preset.

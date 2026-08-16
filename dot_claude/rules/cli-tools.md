@@ -1,8 +1,3 @@
----
-paths:
-  - "**/*.{ts,tsx,js,jsx,mjs,cjs,py,sh,bash,zsh,yaml,yml,json,toml,csv,tsv}"
----
-
 ### Preinstalled CLI tools
 
 These are always available. Prefer them over slower equivalents:

@@ -1,9 +1,4 @@
----
-paths:
-  - "**/*.{ts,tsx,js,jsx,mjs,cjs,py,sh,bash,yaml,yml,json}"
----
-
-### Code Intelligence
+### Code intelligence
 
 Prefer LSP over Grep/Glob/Read for code navigation:
 
