@@ -18,13 +18,15 @@ Usage:
   merge_apm_mcp.py --project DIR --targets claude,cursor --deps-json '<json>'
   merge_apm_mcp.py --self-check
 """
+
 import argparse
 import json
 import re
 import sys
 from pathlib import Path
 
-from ruamel.yaml import YAML  # pyrefly: ignore  # ty: ignore[unresolved-import]  # uv inline-script dep
+# uv inline-script dep, not in the project environment the type checkers see
+from ruamel.yaml import YAML  # pyrefly: ignore  # ty: ignore[unresolved-import]
 
 yaml = YAML()
 yaml.preserve_quotes = True
@@ -32,6 +34,7 @@ yaml.indent(mapping=2, sequence=2, offset=0)
 
 
 def load(path: Path):
+    """Read an existing apm.yml, or return a blank manifest for a new project."""
     if path.exists():
         with path.open() as f:
             return yaml.load(f) or {}
@@ -47,25 +50,24 @@ def load(path: Path):
 
 
 def merge(manifest, targets, deps):
-    existing_targets = list(manifest.get("targets") or [])
-    for t in targets:
-        if t not in existing_targets:
-            existing_targets.append(t)
-    manifest["targets"] = existing_targets
+    """Add the targets and the MCP servers to the manifest, without duplicates."""
+    keep = [*(manifest.get("targets") or []), *targets]
+    manifest["targets"] = list(dict.fromkeys(keep))  # union, order preserved
 
-    manifest.setdefault("dependencies", {})
-    mcp = manifest["dependencies"].get("mcp")
-    if mcp is None:
-        mcp = []
-        manifest["dependencies"]["mcp"] = mcp
+    section = manifest.setdefault("dependencies", {})
+    if section.get("mcp") is None:
+        section["mcp"] = []
+    mcp = section["mcp"]
 
-    by_name = {d.get("name"): i for i, d in enumerate(mcp) if isinstance(d, dict)}
     for dep in deps:
-        name = dep["name"]
-        if name in by_name:
-            mcp[by_name[name]] = dep  # replace in place, dedup
+        # ponytail: linear scan per dep, fine for the handful a manifest holds.
+        # Re-scanning also collapses a dup name inside one batch, no bookkeeping.
+        for i, d in enumerate(mcp):
+            # isinstance: a hand-edited manifest may hold a bare string entry.
+            if isinstance(d, dict) and d.get("name") == dep["name"]:
+                mcp[i] = dep  # a re-declared server is one config: replace it
+                break
         else:
-            by_name[name] = len(mcp)  # so a dup within this batch replaces too
             mcp.append(dep)
     return manifest
 
@@ -87,6 +89,7 @@ def check_resolved(deps):
 
 
 def run(project: Path, targets, deps):
+    """Check the deps, merge them into the project apm.yml, and write the file."""
     check_resolved(deps)
     path = project / "apm.yml"
     manifest = merge(load(path), targets, deps)
@@ -96,18 +99,30 @@ def run(project: Path, targets, deps):
 
 
 def self_check():
+    """Run the merge rules against a temporary manifest. Fails on any regression."""
     import tempfile
 
     with tempfile.TemporaryDirectory() as d:
         proj = Path(d)
-        dep_a = {"name": "a", "registry": False, "transport": "http", "url": "https://x/mcp"}
+        dep_a = {
+            "name": "a",
+            "registry": False,
+            "transport": "http",
+            "url": "https://x/mcp",
+        }
         # fresh create
         run(proj, ["claude"], [dep_a])
         m = load(proj / "apm.yml")
         assert m["targets"] == ["claude"], m["targets"]
         assert m["dependencies"]["mcp"][0]["name"] == "a"
         # add second target + second server; existing target kept
-        dep_b = {"name": "b", "registry": False, "transport": "stdio", "command": "uvx", "args": ["b"]}
+        dep_b = {
+            "name": "b",
+            "registry": False,
+            "transport": "stdio",
+            "command": "uvx",
+            "args": ["b"],
+        }
         run(proj, ["cursor"], [dep_b])
         m = load(proj / "apm.yml")
         assert m["targets"] == ["claude", "cursor"], m["targets"]
@@ -126,7 +141,11 @@ def self_check():
         else:
             raise AssertionError("expected unresolved-placeholder ValueError")
         # a dup name within a single batch collapses to one entry
-        run(proj, ["claude"], [{"name": "d", "url": "https://1"}, {"name": "d", "url": "https://2"}])
+        run(
+            proj,
+            ["claude"],
+            [{"name": "d", "url": "https://1"}, {"name": "d", "url": "https://2"}],
+        )
         m = load(proj / "apm.yml")
         dnames = [x["name"] for x in m["dependencies"]["mcp"]]
         assert dnames.count("d") == 1, dnames
@@ -134,6 +153,7 @@ def self_check():
 
 
 def main():
+    """Parse the command line, then run the merge or the self-check."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--project", type=Path)
     ap.add_argument("--targets", default="")

@@ -28,9 +28,8 @@ import json
 import sys
 from pathlib import Path
 
-from ruamel.yaml import (
-    YAML,  # pyrefly: ignore  # ty: ignore[unresolved-import]  # uv inline-script dep
-)
+# uv inline-script dep, not in the project environment the type checkers see
+from ruamel.yaml import YAML  # pyrefly: ignore  # ty: ignore[unresolved-import]
 
 yaml = YAML()
 yaml.preserve_quotes = True
@@ -38,6 +37,7 @@ yaml.indent(mapping=2, sequence=2, offset=0)
 
 
 def load(path: Path):
+    """Read an existing apm.yml, or return a blank manifest for a new project."""
     if path.exists():
         with path.open() as f:
             return yaml.load(f) or {}
@@ -53,39 +53,38 @@ def load(path: Path):
 
 
 def _merge_one(existing, dep):
-    """Union the skills subsets of two entries for the same git ref."""
-    if "skills" not in existing or existing.get("skills") is None:
-        return existing  # already the whole package
-    if "skills" not in dep or dep.get("skills") is None:
-        existing.pop("skills", None)  # widened to the whole package
-        return existing
+    """Union the skills subsets of two entries for the same git ref, in place."""
+    if existing.get("skills") is None:
+        return  # already the whole package
+    if dep.get("skills") is None:
+        existing.pop("skills")  # widened to the whole package
+        return
     for skill in dep["skills"]:
         if skill not in existing["skills"]:
             existing["skills"].append(skill)
-    return existing
 
 
 def merge(manifest, targets, deps):
-    existing_targets = list(manifest.get("targets") or [])
-    for t in targets:
-        if t not in existing_targets:
-            existing_targets.append(t)
-    manifest["targets"] = existing_targets
+    """Add the targets and the skill packages to the manifest, without duplicates."""
+    keep = [*(manifest.get("targets") or []), *targets]
+    manifest["targets"] = list(dict.fromkeys(keep))  # union, order preserved
 
-    manifest.setdefault("dependencies", {})
-    apm = manifest["dependencies"].get("apm")
-    if apm is None:
-        apm = []
-        manifest["dependencies"]["apm"] = apm
+    section = manifest.setdefault("dependencies", {})
+    if section.get("apm") is None:
+        section["apm"] = []
+    apm = section["apm"]
 
-    by_ref = {d.get("git"): i for i, d in enumerate(apm) if isinstance(d, dict)}
     for dep in deps:
-        ref = dep["git"]
-        if ref in by_ref:
-            apm[by_ref[ref]] = _merge_one(apm[by_ref[ref]], dep)
-        else:
-            by_ref[ref] = len(apm)  # so a dup within this batch merges too
+        # ponytail: linear scan per dep, fine for the handful a manifest holds.
+        # Re-scanning also merges a dup ref inside one batch, with no bookkeeping.
+        # isinstance: a hand-edited manifest may hold a bare string entry.
+        existing = next(
+            (d for d in apm if isinstance(d, dict) and d.get("git") == dep["git"]), None
+        )
+        if existing is None:
             apm.append(dep)
+        else:
+            _merge_one(existing, dep)
     return manifest
 
 
@@ -98,13 +97,14 @@ def check_refs(deps):
     for dep in deps:
         if not dep.get("git"):
             raise ValueError(f"dep without a git ref: {dep}")
-        if "skills" in dep and dep["skills"] is not None and not dep["skills"]:
+        if dep.get("skills") == []:
             raise ValueError(
                 f"empty skills list for {dep['git']}: omit the key to take the whole package"
             )
 
 
 def run(project: Path, targets, deps):
+    """Check the deps, merge them into the project apm.yml, and write the file."""
     check_refs(deps)
     path = project / "apm.yml"
     manifest = merge(load(path), targets, deps)
@@ -114,6 +114,7 @@ def run(project: Path, targets, deps):
 
 
 def self_check():
+    """Run the merge rules against a temporary manifest. Fails on any regression."""
     import tempfile
 
     with tempfile.TemporaryDirectory() as d:
@@ -174,6 +175,7 @@ def self_check():
 
 
 def main():
+    """Parse the command line, then run the merge or the self-check."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--project", type=Path)
     ap.add_argument("--targets", default="")
