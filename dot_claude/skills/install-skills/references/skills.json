@@ -61,7 +61,7 @@
       "dir": "dot_claude/skills/meeting-summarizer",
       "scope": "local",
       "status": "local-candidate",
-      "why": "180 resident tokens, the largest local skill, for a personal task that is not code work.",
+      "why": "a personal task, not code work. Carries disable-model-invocation, so its 721-character description costs 0 resident tokens and scope is a tidiness choice, not a token one.",
       "use_when": "turning a transcript into notes, in a repo where that happens often"
     },
     {

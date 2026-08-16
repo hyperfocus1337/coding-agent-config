@@ -2,6 +2,7 @@
 name: meeting-summarizer
 description: Generates a clear, structured English summary of a meeting, call, or interview transcript. Use whenever the user provides a transcript (pasted dialogue, or a .txt, .vtt, .srt, .md, or .docx file) and asks for a summary, meeting notes, minutes, recap, or action items. Automatically translates non-English transcripts into English before summarizing. Produces sectioned prose with descriptive headings and no bullet points, speaker attribution, timestamps for key moments, a decisions section, and an action-items table listing owner, task, and deadline. Triggers on requests like "summarize this meeting", "turn this transcript into notes", "minutes from this call", or "what were the action items".
 license: Proprietary
+disable-model-invocation: true
 ---
 
 # Meeting transcript summarizer
