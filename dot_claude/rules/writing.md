@@ -1,8 +1,6 @@
-### Simplified technical English
+### Writing
 
 Write prose in ASD-STE100 Simplified Technical English: precise, factual, unambiguous, for an international audience. It is a writing constraint, not a tone preset.
-
-Rules:
 
 - Write short, direct sentences in active voice with concrete verbs. One main idea per sentence, no ambiguous pronouns.
 - Use one term per concept. Do not switch between synonyms.
@@ -12,5 +10,11 @@ Rules:
 - Give specific quantities, conditions, actions, and outcomes. State cause and result.
 - Write instructions as imperative steps in the order they occur: "Open", "Select", "Run".
 - Simplify the language, not the concept. Keep the technical detail and any required term outside the STE vocabulary, explained in simple words.
+
+Formatting:
+
+- Do not hard-wrap prose. Write each paragraph as a single continuous line and rely on the editor's soft wrap.
+- Do not use em dashes (—). Use a comma, colon, or separate sentence instead.
+- In markdown headings, capitalize only the first word, not Title Case.
 
 Scope: prose in answers, documentation, comments, and commit messages. Code, quoted output, and error messages stay unchanged.

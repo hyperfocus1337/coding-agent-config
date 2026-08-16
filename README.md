@@ -28,7 +28,9 @@ just chezmoi-diff   # preview without writing
 
 Agent instructions live in [`dot_claude/rules/`](dot_claude/rules/). Claude Code discovers that directory on its own, so `CLAUDE.md` does not import the files with `@`. An import loads a rule unconditionally and bypasses its `paths:` frontmatter, which defeats the scoping.
 
-Almost every rule there stays unscoped on purpose. A path-gated rule loads only after a matching file enters context, so it arrives too late for the decisions these rules govern: which search tool to run, whether to fetch library documentation before generating code, how to word a commit message. Scoping them costs adherence and saves about 900 tokens, which is not a trade worth making. Only `ast-grep.md` keeps a `paths:` glob, because it is noise in a repository with no source files.
+The rules stay unscoped on purpose. A path-gated rule loads only after a matching file enters context, so it arrives too late for the decisions these rules govern: which search tool to run, whether to fetch library documentation before generating code, how to word a commit message. Scoping them costs adherence and saves a few hundred tokens, which is not a trade worth making.
+
+A rule names the decision the agent must take and stops there. Detail the agent can read off a tool schema or a skill stays out, which keeps the always-on set at roughly 450 words across two files.
 
 ### APM: cross-agent dependencies
 

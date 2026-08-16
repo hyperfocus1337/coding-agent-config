@@ -1,7 +1,3 @@
-### General
+# Global agent instructions
 
-- Do not hard-wrap prose. Write each paragraph as a single continuous line and rely on the editor's soft wrap.
-- Don't use em dashes (—) in generated text. Use a comma, colon, or separate sentence instead.
-- In markdown headings, capitalize only the first word (sentence case), not Title Case.
-
-<!-- Topic rules live in rules/ and load on a paths match, no imports needed. See rules/README.md. -->
+Standing rules load automatically from [`rules/`](rules/): [writing](rules/writing.md) for prose and formatting, [tools](rules/tools.md) for search, navigation, and package management.
