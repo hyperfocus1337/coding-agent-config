@@ -60,13 +60,14 @@ Create the file when it is missing, then append. `jq` merges into any existing c
 cd <target>
 mkdir -p .claude
 [ -f .claude/settings.json ] || echo '{}' > .claude/settings.json
-jq --argjson block '{"matcher":"startup","hooks":[{"type":"command","command":"curl -fsSL https://raw.githubusercontent.com/hyperfocus1337/coding-agent-config/main/templates/web/bootstrap.sh | bash"}]}' \
-  '.hooks.SessionStart = ((.hooks.SessionStart // []) + [$block])' \
+jq '.hooks.SessionStart += [{"matcher":"startup","hooks":[{"type":"command","command":"curl -fsSL https://raw.githubusercontent.com/hyperfocus1337/coding-agent-config/main/templates/web/bootstrap.sh | bash"}]}]' \
   .claude/settings.json > .claude/settings.json.tmp \
   && mv .claude/settings.json.tmp .claude/settings.json
 ```
 
-The assignment creates `.hooks` and `.hooks.SessionStart` when either is absent, and appends when the repository already declares other `SessionStart` hooks. Never overwrite `.claude/settings.json`.
+`+=` needs no guard for a missing key. In jq, `null + [x]` is `[x]`, so the one expression creates `.hooks` and `.hooks.SessionStart` when either is absent, and appends when the repository already declares other `SessionStart` hooks. Never overwrite `.claude/settings.json`.
+
+The other three lines cannot go. `jq` does not create the directory, refuses a file that does not exist, and has no in-place flag.
 
 Write through the temporary file, never back into the same file. A hand-edited `settings.json` that is not valid JSON makes `jq` write nothing, and both `> settings.json` and `| sponge settings.json` then truncate the file to zero bytes and still report success. The `&&` stops before `mv`, so the original survives. On failure, delete the leftover `.claude/settings.json.tmp` and tell the user their `settings.json` is not valid JSON.
 
