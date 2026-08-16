@@ -10,42 +10,71 @@ Plain files committed under `dot_claude/` and laid into `~/.claude` by `just che
 
 ### Slash commands
 
-Prompt templates under [`dot_claude/commands/`](../../dot_claude/commands/README.md).
+Prompt templates under [`dot_claude/commands/`](../../dot_claude/commands/README.md). Grouped by task, subheaders and rows sorted alphabetically.
 
-| Command                                                                                        | Description                                                                        |
-| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [`/git:commit`](../../dot_claude/commands/git/commit.md)                                       | Create a git commit (stage all, single commit).                                    |
-| [`/git:multiple`](../../dot_claude/commands/git/multiple.md)                                   | Split changes into a logical sequence of commits.                                  |
-| [`/git:push`](../../dot_claude/commands/git/push.md)                                           | Commit and push.                                                                   |
-| [`/git:pr`](../../dot_claude/commands/git/pr.md)                                               | Commit, push, and open a pull request.                                             |
-| [`/git:changelog`](../../dot_claude/commands/git/changelog.md)                                 | Generate a changelog for a time period.                                            |
-| [`/git:branches`](../../dot_claude/commands/git/branches.md)                                   | Delete stale local branches whose remote tracking branch is gone.                  |
-| [`/git:worktrees`](../../dot_claude/commands/git/worktrees.md)                                 | Remove worktrees whose branch is gone on the remote, then delete them.             |
-| [`/git:amend-author`](../../dot_claude/commands/git/amend-author.md)                           | Rewrite the author of the whole branch or the last N commits.                      |
-| [`/git:amend-date`](../../dot_claude/commands/git/amend-date.md)                               | Set an absolute commit and author date on the most recent commit.                  |
-| [`/git:shift-dates`](../../dot_claude/commands/git/shift-dates.md)                             | Shift the last N commit dates by a number of hours.                                |
-| [`/organize:*`](../../dot_claude/commands/organize/)                                           | Section a config or code file under comment headers (eight header-style variants). |
-| [`/issues:improve-issue`](../../dot_claude/commands/issues/improve-issue.md)                   | Rewrite a GitHub issue to be clearer (outputs text).                               |
-| [`/issues:improve-issue-in-place`](../../dot_claude/commands/issues/improve-issue-in-place.md) | Same rewrite, applied to the issue via `gh`.                                       |
-| [`/issues:github-coding-process`](../../dot_claude/commands/issues/github-coding-process.md)   | Plan, implement, test, and ship a GitHub issue end to end.                         |
-| [`/summarize:transscripts`](../../dot_claude/commands/summarize/transscripts.md)               | Summarize a meeting or transcript into sections with action items.                 |
-| [`/simple:explain`](../../dot_claude/commands/simple/explain.md)                               | Explain a code snippet step by step.                                               |
-| [`/simple:proofread`](../../dot_claude/commands/simple/proofread.md)                           | Proofread text for spelling, grammar, and readability.                             |
-| [`/simple:markitdown`](../../dot_claude/commands/simple/markitdown.md)                         | Convert files (PDF, Office, images, audio, HTML) to Markdown.                      |
+#### Files and configs
+
+| Command                                              | Description                                                                        |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| [`/organize:*`](../../dot_claude/commands/organize/) | Section a config or code file under comment headers (eight header-style variants). |
+
+#### Git
+
+| Command                                                              | Description                                                            |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [`/git:amend-author`](../../dot_claude/commands/git/amend-author.md) | Rewrite the author of the whole branch or the last N commits.          |
+| [`/git:amend-date`](../../dot_claude/commands/git/amend-date.md)     | Set an absolute commit and author date on the most recent commit.      |
+| [`/git:branches`](../../dot_claude/commands/git/branches.md)         | Delete stale local branches whose remote tracking branch is gone.      |
+| [`/git:changelog`](../../dot_claude/commands/git/changelog.md)       | Generate a changelog for a time period.                                |
+| [`/git:commit`](../../dot_claude/commands/git/commit.md)             | Create a git commit (stage all, single commit).                        |
+| [`/git:multiple`](../../dot_claude/commands/git/multiple.md)         | Split changes into a logical sequence of commits.                      |
+| [`/git:pr`](../../dot_claude/commands/git/pr.md)                     | Commit, push, and open a pull request.                                 |
+| [`/git:push`](../../dot_claude/commands/git/push.md)                 | Commit and push.                                                       |
+| [`/git:shift-dates`](../../dot_claude/commands/git/shift-dates.md)   | Shift the last N commit dates by a number of hours.                    |
+| [`/git:worktrees`](../../dot_claude/commands/git/worktrees.md)       | Remove worktrees whose branch is gone on the remote, then delete them. |
+
+#### GitHub issues
+
+| Command                                                                                        | Description                                                |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| [`/issues:github-coding-process`](../../dot_claude/commands/issues/github-coding-process.md)   | Plan, implement, test, and ship a GitHub issue end to end. |
+| [`/issues:improve-issue`](../../dot_claude/commands/issues/improve-issue.md)                   | Rewrite a GitHub issue to be clearer (outputs text).       |
+| [`/issues:improve-issue-in-place`](../../dot_claude/commands/issues/improve-issue-in-place.md) | Same rewrite, applied to the issue via `gh`.               |
+
+#### Text
+
+| Command                                                                          | Description                                                        |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| [`/simple:explain`](../../dot_claude/commands/simple/explain.md)                 | Explain a code snippet step by step.                               |
+| [`/simple:markitdown`](../../dot_claude/commands/simple/markitdown.md)           | Convert files (PDF, Office, images, audio, HTML) to Markdown.      |
+| [`/simple:proofread`](../../dot_claude/commands/simple/proofread.md)             | Proofread text for spelling, grammar, and readability.             |
+| [`/summarize:transscripts`](../../dot_claude/commands/summarize/transscripts.md) | Summarize a meeting or transcript into sections with action items. |
 
 ### Skills
 
-Local skills under [`dot_claude/skills/`](../../dot_claude/skills/).
+Local skills under [`dot_claude/skills/`](../../dot_claude/skills/). Grouped by task, subheaders and rows sorted alphabetically.
 
-| Skill                                                                                 | Description                                                     |
-| ------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| [`gh-cli`](../../dot_claude/skills/gh-cli/SKILL.md)                                   | Comprehensive `gh` reference for repos, PRs, Actions, releases. |
-| [`install-agent-resources`](../../dot_claude/skills/install-agent-resources/SKILL.md) | Route an install request to the skill that owns the channel.    |
-| [`install-mcp`](../../dot_claude/skills/install-mcp/SKILL.md)                         | Install an MCP server at project, local, or user scope.         |
-| [`install-plugins`](../../dot_claude/skills/install-plugins/SKILL.md)                 | Install a Claude plugin at project, local, or user scope.       |
-| [`install-skills`](../../dot_claude/skills/install-skills/SKILL.md)                   | Install a skill at project, local, or user scope.               |
-| [`meeting-summarizer`](../../dot_claude/skills/meeting-summarizer/SKILL.md)           | Turn a transcript into structured English notes.                |
-| [`organize`](../../dot_claude/skills/organize/SKILL.md)                               | Reorganize a config or code file into labeled sections.         |
+#### Git and GitHub
+
+| Skill                                               | Description                                                     |
+| --------------------------------------------------- | --------------------------------------------------------------- |
+| [`gh-cli`](../../dot_claude/skills/gh-cli/SKILL.md) | Comprehensive `gh` reference for repos, PRs, Actions, releases. |
+
+#### Install
+
+| Skill                                                                                 | Description                                                  |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [`install-agent-resources`](../../dot_claude/skills/install-agent-resources/SKILL.md) | Route an install request to the skill that owns the channel. |
+| [`install-mcp`](../../dot_claude/skills/install-mcp/SKILL.md)                         | Install an MCP server at project, local, or user scope.      |
+| [`install-plugins`](../../dot_claude/skills/install-plugins/SKILL.md)                 | Install a Claude plugin at project, local, or user scope.    |
+| [`install-skills`](../../dot_claude/skills/install-skills/SKILL.md)                   | Install a skill at project, local, or user scope.            |
+
+#### Text and files
+
+| Skill                                                                       | Description                                             |
+| --------------------------------------------------------------------------- | ------------------------------------------------------- |
+| [`meeting-summarizer`](../../dot_claude/skills/meeting-summarizer/SKILL.md) | Turn a transcript into structured English notes.        |
+| [`organize`](../../dot_claude/skills/organize/SKILL.md)                     | Reorganize a config or code file into labeled sections. |
 
 ## By APM skill bundles (`apm.yml`)
 
@@ -117,49 +146,75 @@ Bundled inside plugins from various marketplaces. Source of truth for the set: [
 
 ### Matt Pocock skills (`mattpocock-skills`)
 
-Installed whole from the [`mattpocock`](https://github.com/mattpocock/skills) marketplace: `claude plugin install mattpocock-skills@mattpocock`. There is no per-skill selection, so the plugin's own [`plugin.json`](https://github.com/mattpocock/skills/blob/main/.claude-plugin/plugin.json) is the source of truth. The table below is a quick reference and will go stale as upstream adds, renames, or drops skills. Each skill name links to its upstream `SKILL.md`; the `Reference` column links to its aihero documentation page.
+Installed whole from the [`mattpocock`](https://github.com/mattpocock/skills) marketplace: `claude plugin install mattpocock-skills@mattpocock`. There is no per-skill selection, so the plugin's own [`plugin.json`](https://github.com/mattpocock/skills/blob/main/.claude-plugin/plugin.json) is the source of truth. The tables below are a quick reference and will go stale as upstream adds, renames, or drops skills. Each skill name links to its upstream `SKILL.md`; the `Reference` column links to its aihero documentation page. The two subheaders match the upstream `skills/engineering/` and `skills/productivity/` directories. Rows sorted alphabetically.
 
-| Skill                                                                                                                                       | Description                                                       | Reference                                                                                                   |
-| ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| [`grilling`](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md)                                          | Stress-test a plan, decision, or idea.                            | [aihero](https://www.aihero.dev/skills-grilling)                                                            |
-| [`grill-me`](https://github.com/mattpocock/skills/blob/main/skills/productivity/grill-me/SKILL.md)                                          | Be interrogated on your own reasoning.                            | [aihero](https://www.aihero.dev/skills-grill-me)                                                            |
-| [`grill-with-docs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md)                             | Interrogate an idea against real documentation.                   | [aihero](https://www.aihero.dev/skills-grill-with-docs)                                                     |
-| [`codebase-design`](https://github.com/mattpocock/skills/blob/main/skills/engineering/codebase-design/SKILL.md)                             | Vocabulary for designing deep modules and placing seams.          | [aihero](https://www.aihero.dev/skills-codebase-design)                                                     |
-| [`domain-modeling`](https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/SKILL.md)                             | Build a ubiquitous language and record ADRs.                      | [aihero](https://www.aihero.dev/skills-domain-modeling)                                                     |
-| [`wayfinder`](https://github.com/mattpocock/skills/blob/main/skills/engineering/wayfinder/SKILL.md)                                         | Orient quickly in an unfamiliar codebase.                         | [aihero](https://www.aihero.dev/skills-wayfinder), [youtube](https://www.youtube.com/watch?v=F3lL98Pj90o)   |
-| [`handoff`](https://github.com/mattpocock/skills/blob/main/skills/productivity/handoff/SKILL.md)                                            | Capture session state so work can be picked up later.             | [aihero](https://www.aihero.dev/skills-handoff)                                                             |
-| [`improve-codebase-architecture`](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md) | Assess and improve an existing codebase's architecture.           | [aihero](https://www.aihero.dev/skills-improve-codebase-architecture)                                       |
-| [`setup-matt-pocock-skills`](https://github.com/mattpocock/skills/blob/main/skills/engineering/setup-matt-pocock-skills/SKILL.md)           | Bootstrap the Matt Pocock skill set.                              | [aihero](https://www.aihero.dev/skills-setup-matt-pocock-skills)                                            |
-| [`tdd`](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md)                                                     | Test-driven development, red-green-refactor.                      | [aihero](https://www.aihero.dev/skills-tdd)                                                                 |
-| [`triage`](https://github.com/mattpocock/skills/blob/main/skills/engineering/triage/SKILL.md)                                               | Triage and prioritize incoming work.                              | [aihero](https://www.aihero.dev/skills-triage)                                                              |
-| [`to-tickets`](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-tickets/SKILL.md)                                       | Break a spec into discrete, buildable tickets.                    | [aihero](https://www.aihero.dev/skills-to-tickets)                                                          |
-| [`to-spec`](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-spec/SKILL.md)                                             | Turn settled intent into a written behavioral spec.               | [aihero](https://www.aihero.dev/skills-to-spec)                                                             |
-| [`implement`](https://github.com/mattpocock/skills/blob/main/skills/engineering/implement/SKILL.md)                                         | Build a single ticket to completion.                              | [aihero](https://www.aihero.dev/skills-implement)                                                           |
-| [`code-review`](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)                                     | Review a branch on repo standards and originating-spec adherence. | [aihero](https://www.aihero.dev/skills-code-review)                                                         |
-| [`research`](https://github.com/mattpocock/skills/blob/main/skills/engineering/research/SKILL.md)                                           | Investigate a question against high-trust primary sources.        | [aihero](https://www.aihero.dev/skills-research)                                                            |
-| [`prototype`](https://github.com/mattpocock/skills/blob/main/skills/engineering/prototype/SKILL.md)                                         | Build a throwaway prototype to sanity-check a direction.          | [aihero](https://www.aihero.dev/skills-prototype)                                                           |
-| [`ask-matt`](https://github.com/mattpocock/skills/blob/main/skills/engineering/ask-matt/SKILL.md)                                           | Ask the Matt Pocock advisory skill.                               | [aihero](https://www.aihero.dev/skills-ask-matt)                                                            |
-| [`diagnosing-bugs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnosing-bugs/SKILL.md)                             | Structured diagnosis loop for hard bugs and regressions.          | [aihero](https://www.aihero.dev/skills-diagnosing-bugs)                                                     |
-| [`resolving-merge-conflicts`](https://github.com/mattpocock/skills/blob/main/skills/engineering/resolving-merge-conflicts/SKILL.md)         | Work through an in-progress merge or rebase conflict.             | [aihero](https://www.aihero.dev/skills-resolving-merge-conflicts)                                           |
-| [`wizard`](https://github.com/mattpocock/skills/blob/main/skills/engineering/wizard/SKILL.md)                                               | Generate a bash wizard for steps only a human can perform.        | [aihero](https://www.aihero.dev/skills-wizard)                                                              |
-| [`teach`](https://github.com/mattpocock/skills/blob/main/skills/productivity/teach/SKILL.md)                                                | Explain a concept or codebase area for onboarding.                | [aihero](https://www.aihero.dev/skills-teach)                                                               |
-| [`writing-for-agents`](https://github.com/mattpocock/skills/blob/main/skills/productivity/writing-for-agents/SKILL.md)                      | Write skills, `AGENTS.md`, and `CLAUDE.md` for agents.            | [aihero](https://www.aihero.dev/skills-writing-for-agents)                                                  |
-| [`to-questionnaire`](https://github.com/mattpocock/skills/blob/main/skills/productivity/to-questionnaire/SKILL.md)                          | Turn a decision you can't answer into a questionnaire.            | [aihero](https://www.aihero.dev/skills-to-questionnaire)                                                    |
-| [`wait-what`](https://github.com/mattpocock/skills/blob/main/skills/productivity/wait-what/SKILL.md)                                        | Make the agent re-pitch a message that did not land.              | [aihero](https://www.aihero.dev/skills-wait-what), [youtube](https://youtube.com/watch?v=gaDdrDdczO4&t=152) |
+#### Engineering
 
-**Main build chain.** The intended end-to-end flow for building a feature is `grill-with-docs` OR `wayfinder` → `to-spec` → `to-tickets` → `implement` → `code-review`: interrogate the idea against docs, turn the settled intent into a written spec, break the spec into discrete tickets, build each ticket, then review the result. All five are in the table above.
+| Skill                                                                                                                                       | Description                                                       | Reference                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [`ask-matt`](https://github.com/mattpocock/skills/blob/main/skills/engineering/ask-matt/SKILL.md)                                           | Ask the Matt Pocock advisory skill.                               | [aihero](https://www.aihero.dev/skills-ask-matt)                                                          |
+| [`code-review`](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md)                                     | Review a branch on repo standards and originating-spec adherence. | [aihero](https://www.aihero.dev/skills-code-review)                                                       |
+| [`codebase-design`](https://github.com/mattpocock/skills/blob/main/skills/engineering/codebase-design/SKILL.md)                             | Vocabulary for designing deep modules and placing seams.          | [aihero](https://www.aihero.dev/skills-codebase-design)                                                   |
+| [`diagnosing-bugs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnosing-bugs/SKILL.md)                             | Structured diagnosis loop for hard bugs and regressions.          | [aihero](https://www.aihero.dev/skills-diagnosing-bugs)                                                   |
+| [`domain-modeling`](https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/SKILL.md)                             | Build a ubiquitous language and record ADRs.                      | [aihero](https://www.aihero.dev/skills-domain-modeling)                                                   |
+| [`grill-with-docs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md)                             | Interrogate an idea against real documentation.                   | [aihero](https://www.aihero.dev/skills-grill-with-docs)                                                   |
+| [`implement`](https://github.com/mattpocock/skills/blob/main/skills/engineering/implement/SKILL.md)                                         | Build a single ticket to completion.                              | [aihero](https://www.aihero.dev/skills-implement)                                                         |
+| [`improve-codebase-architecture`](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md) | Assess and improve an existing codebase's architecture.           | [aihero](https://www.aihero.dev/skills-improve-codebase-architecture)                                     |
+| [`prototype`](https://github.com/mattpocock/skills/blob/main/skills/engineering/prototype/SKILL.md)                                         | Build a throwaway prototype to sanity-check a direction.          | [aihero](https://www.aihero.dev/skills-prototype)                                                         |
+| [`research`](https://github.com/mattpocock/skills/blob/main/skills/engineering/research/SKILL.md)                                           | Investigate a question against high-trust primary sources.        | [aihero](https://www.aihero.dev/skills-research)                                                          |
+| [`resolving-merge-conflicts`](https://github.com/mattpocock/skills/blob/main/skills/engineering/resolving-merge-conflicts/SKILL.md)         | Work through an in-progress merge or rebase conflict.             | [aihero](https://www.aihero.dev/skills-resolving-merge-conflicts)                                         |
+| [`setup-matt-pocock-skills`](https://github.com/mattpocock/skills/blob/main/skills/engineering/setup-matt-pocock-skills/SKILL.md)           | Bootstrap the Matt Pocock skill set.                              | [aihero](https://www.aihero.dev/skills-setup-matt-pocock-skills)                                          |
+| [`tdd`](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md)                                                     | Test-driven development, red-green-refactor.                      | [aihero](https://www.aihero.dev/skills-tdd)                                                               |
+| [`to-spec`](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-spec/SKILL.md)                                             | Turn settled intent into a written behavioral spec.               | [aihero](https://www.aihero.dev/skills-to-spec)                                                           |
+| [`to-tickets`](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-tickets/SKILL.md)                                       | Break a spec into discrete, buildable tickets.                    | [aihero](https://www.aihero.dev/skills-to-tickets)                                                        |
+| [`triage`](https://github.com/mattpocock/skills/blob/main/skills/engineering/triage/SKILL.md)                                               | Triage and prioritize incoming work.                              | [aihero](https://www.aihero.dev/skills-triage)                                                            |
+| [`wayfinder`](https://github.com/mattpocock/skills/blob/main/skills/engineering/wayfinder/SKILL.md)                                         | Orient quickly in an unfamiliar codebase.                         | [aihero](https://www.aihero.dev/skills-wayfinder), [youtube](https://www.youtube.com/watch?v=F3lL98Pj90o) |
+| [`wizard`](https://github.com/mattpocock/skills/blob/main/skills/engineering/wizard/SKILL.md)                                               | Generate a bash wizard for steps only a human can perform.        | [aihero](https://www.aihero.dev/skills-wizard)                                                            |
+
+#### Productivity
+
+| Skill                                                                                                                  | Description                                            | Reference                                                                                                   |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| [`grill-me`](https://github.com/mattpocock/skills/blob/main/skills/productivity/grill-me/SKILL.md)                     | Be interrogated on your own reasoning.                 | [aihero](https://www.aihero.dev/skills-grill-me)                                                            |
+| [`grilling`](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md)                     | Stress-test a plan, decision, or idea.                 | [aihero](https://www.aihero.dev/skills-grilling)                                                            |
+| [`handoff`](https://github.com/mattpocock/skills/blob/main/skills/productivity/handoff/SKILL.md)                       | Capture session state so work can be picked up later.  | [aihero](https://www.aihero.dev/skills-handoff)                                                             |
+| [`teach`](https://github.com/mattpocock/skills/blob/main/skills/productivity/teach/SKILL.md)                           | Explain a concept or codebase area for onboarding.     | [aihero](https://www.aihero.dev/skills-teach)                                                               |
+| [`to-questionnaire`](https://github.com/mattpocock/skills/blob/main/skills/productivity/to-questionnaire/SKILL.md)     | Turn a decision you can't answer into a questionnaire. | [aihero](https://www.aihero.dev/skills-to-questionnaire)                                                    |
+| [`wait-what`](https://github.com/mattpocock/skills/blob/main/skills/productivity/wait-what/SKILL.md)                   | Make the agent re-pitch a message that did not land.   | [aihero](https://www.aihero.dev/skills-wait-what), [youtube](https://youtube.com/watch?v=gaDdrDdczO4&t=152) |
+| [`writing-for-agents`](https://github.com/mattpocock/skills/blob/main/skills/productivity/writing-for-agents/SKILL.md) | Write skills, `AGENTS.md`, and `CLAUDE.md` for agents. | [aihero](https://www.aihero.dev/skills-writing-for-agents)                                                  |
+
+**Main build chain.** The intended end-to-end flow for building a feature is `grill-with-docs` OR `wayfinder` → `to-spec` → `to-tickets` → `implement` → `code-review`: interrogate the idea against docs, turn the settled intent into a written spec, break the spec into discrete tickets, build each ticket, then review the result. All five are in the Engineering table above.
 
 ## Built into Claude Code
 
 Shipped with the harness, no install step. All are of kind `skill`. The Claude Code CLI is closed source, so there is no per-skill source repo. The prompt text for the skills below has been extracted verbatim from CLI v2.1.215 into a separate [`claude-code-skills`](https://github.com/hyperfocus1337/claude-code-skills) repository, so each skill name links to the actual SKILL.md text there. The official [Claude Code commands docs](https://code.claude.com/docs/en/commands) still describe what these built-in commands do, so their descriptions can be referenced there even though the source itself is closed.
 
-| Skill                                                                                                         | Description                                                             |
-| ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| [`run`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/run.md)                         | Launch and drive the app to see a change working.                       |
-| [`verify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/verify.md)                   | Exercise the affected flow end to end and observe behavior.             |
-| [`simplify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/simplify.md)               | Review changed code for reuse and simplification, then apply fixes.     |
-| [`review`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/review.md)                   | Review a GitHub pull request.                                           |
-| [`security-review`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/security-review.md) | Security review of the pending changes on the current branch.           |
-| [`loop`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/loop.md)                       | Run a prompt or slash command on a recurring interval.                  |
-| [`dataviz`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/dataviz.md)                 | Design guidance for charts, dashboards, and visualizations.             |
-| [`deep-research`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/deep-research.md)     | Fan-out web research with adversarial verification into a cited report. |
+Grouped by task, subheaders and rows sorted alphabetically.
+
+### Automation
+
+| Skill                                                                                   | Description                                            |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| [`loop`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/loop.md) | Run a prompt or slash command on a recurring interval. |
+
+### Research and output
+
+| Skill                                                                                                     | Description                                                             |
+| --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| [`dataviz`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/dataviz.md)             | Design guidance for charts, dashboards, and visualizations.             |
+| [`deep-research`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/deep-research.md) | Fan-out web research with adversarial verification into a cited report. |
+
+### Review
+
+| Skill                                                                                                         | Description                                                         |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| [`review`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/review.md)                   | Review a GitHub pull request.                                       |
+| [`security-review`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/security-review.md) | Security review of the pending changes on the current branch.       |
+| [`simplify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/simplify.md)               | Review changed code for reuse and simplification, then apply fixes. |
+
+### Run and verify
+
+| Skill                                                                                       | Description                                                 |
+| ------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| [`run`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/run.md)       | Launch and drive the app to see a change working.           |
+| [`verify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/verify.md) | Exercise the affected flow end to end and observe behavior. |
