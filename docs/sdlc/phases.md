@@ -13,7 +13,7 @@ A handful of built-in Claude Code skills (`run`, `verify`, `simplify`, `review`,
 The lifecycle used here has eight phases. Each phase groups its tools into a few categories of related work.
 
 | Phase                       | What happens                                                                              |
-|-----------------------------|-------------------------------------------------------------------------------------------|
+| --------------------------- | ----------------------------------------------------------------------------------------- |
 | 1. Plan and requirements    | Gather requirements, shape issues and specs, stress-test the idea, orient in the codebase |
 | 2. Design and architecture  | Domain modeling, module design, prototypes, analysis of existing code                     |
 | 3. Implementation           | Write code, build features test-first, wire databases and infrastructure                  |
@@ -30,7 +30,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Requirements and specs
 
 | Command                                                                                               | Description                                                              |
-|-------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | [`/issues:improve-issue`](../../dot_claude/commands/issues/improve-issue.md)                          | Rewrite a GitHub issue to be clearer and more actionable (outputs text). |
 | [`/issues:improve-issue-in-place`](../../dot_claude/commands/issues/improve-issue-in-place.md)        | Same rewrite, applied directly to the issue via `gh`.                    |
 | [`to-spec`](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-spec/SKILL.md)       | Turn settled intent into a written behavioral spec.                      |
@@ -40,7 +40,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Idea stress-testing
 
 | Command                                                                                                         | Description                                                                 |
-|-----------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | [`grilling`](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md)              | Relentlessly stress-test a plan, decision, or idea before committing to it. |
 | [`grill-me`](https://github.com/mattpocock/skills/blob/main/skills/productivity/grill-me/SKILL.md)              | Be interrogated on your own reasoning to surface gaps.                      |
 | [`grill-with-docs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md) | Interrogate an idea against real documentation.                             |
@@ -48,7 +48,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Research and orientation
 
 | Command                                                                                                   | Description                                                                     |
-|-----------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | [`research`](https://github.com/mattpocock/skills/blob/main/skills/engineering/research/SKILL.md)         | Investigate a question against high-trust primary sources and capture findings. |
 | [`deep-research`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/deep-research.md) | Fan-out web research with adversarial verification into a cited report.         |
 | [`wayfinder`](https://github.com/mattpocock/skills/blob/main/skills/engineering/wayfinder/SKILL.md)       | Orient quickly in an unfamiliar codebase.                                       |
@@ -59,7 +59,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Module and domain design
 
 | Command                                                                                                                                     | Description                                                                |
-|---------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | [`codebase-design`](https://github.com/mattpocock/skills/blob/main/skills/engineering/codebase-design/SKILL.md)                             | Shared vocabulary for designing deep modules and placing seams.            |
 | [`domain-modeling`](https://github.com/mattpocock/skills/blob/main/skills/engineering/domain-modeling/SKILL.md)                             | Build a ubiquitous language and record architectural decisions (ADRs).     |
 | [`improve-codebase-architecture`](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md) | Assess and improve the architecture of an existing codebase.               |
@@ -68,7 +68,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Codebase analysis
 
 | Command                                                                                             | Description                                                                                          |
-|-----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | [`code-architect`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)         | Subagent that produces an implementation blueprint from existing codebase patterns (feature-dev).    |
 | [`code-explorer`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)          | Subagent that traces execution paths and maps the architecture of an existing feature (feature-dev). |
 | [`wayfinder`](https://github.com/mattpocock/skills/blob/main/skills/engineering/wayfinder/SKILL.md) | Map the terrain before proposing where a change fits.                                                |
@@ -76,7 +76,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Design inputs
 
 | Command                                                                                            | Description                                                               |
-|----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | [`research`](https://github.com/mattpocock/skills/blob/main/skills/engineering/research/SKILL.md)  | Gather primary-source facts to back a design decision.                    |
 | [`grilling`](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md) | Stress-test the chosen design against its weakest assumptions.            |
 | [`context7:docs`](https://github.com/upstash/context7)                                             | Pull current library and framework docs to inform design choices.         |
@@ -87,7 +87,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Building features
 
 | Command                                                                                               | Description                                                                    |
-|-------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | [`/feature-dev:feature-dev`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev) | Guided feature development with codebase understanding and architecture focus. |
 | [`implement`](https://github.com/mattpocock/skills/blob/main/skills/engineering/implement/SKILL.md)   | Build a single ticket to completion.                                           |
 | [`tdd`](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md)               | Test-driven development with a red-green-refactor loop.                        |
@@ -96,7 +96,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Code intelligence and search
 
 | Command                                                          | Description                                                            |
-|------------------------------------------------------------------|------------------------------------------------------------------------|
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | [`ast-grep:ast-grep`](https://github.com/ast-grep/agent-skill)   | Structural code search and rewrite across the codebase by AST pattern. |
 | [`context7:docs`](https://github.com/upstash/context7)           | Look up exact API syntax and config while writing code.                |
 | [`/simple:explain`](../../dot_claude/commands/simple/explain.md) | Explain a code snippet step by step.                                   |
@@ -104,7 +104,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Python tooling
 
 | Command                                                                                    | Description                                     |
-|--------------------------------------------------------------------------------------------|-------------------------------------------------|
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
 | [`astral:ruff`](https://github.com/astral-sh/claude-code-plugins/tree/main/plugins/astral) | Fast Python linting and formatting.             |
 | [`astral:ty`](https://github.com/astral-sh/claude-code-plugins/tree/main/plugins/astral)   | Fast Python type checking.                      |
 | [`astral:uv`](https://github.com/astral-sh/claude-code-plugins/tree/main/plugins/astral)   | Python package, project, and script management. |
@@ -112,20 +112,20 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Running and rescue
 
 | Command                                                                               | Description                                                                          |
-|---------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | [`run`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/run.md) | Launch and drive the app to see a change working in the real thing.                  |
 | [`codex:rescue`](https://github.com/openai/codex-plugin-cc)                           | Subagent that hands a stuck or heavy task to Codex for a second implementation pass. |
 
 ### Config file hygiene
 
 | Command                                              | Description                                                                          |
-|------------------------------------------------------|--------------------------------------------------------------------------------------|
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
 | [`/organize:*`](../../dot_claude/commands/organize/) | Section a config or code file under comment-delimited headers (eight header styles). |
 
 ### Data and infrastructure
 
 | Command                                                                                                          | Description                                                                   |
-|------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | [`neon`](https://github.com/neondatabase/agent-skills)                                                           | Overview of the Neon platform (Postgres, Auth, Data API, storage, functions). |
 | [`neon-postgres`](https://github.com/neondatabase/agent-skills)                                                  | Setup and best practices for Neon serverless Postgres.                        |
 | [`neon-postgres-branches`](https://github.com/neondatabase/agent-skills)                                         | Create the right Neon branch type for dev and test workflows.                 |
@@ -137,15 +137,15 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Full review
 
 | Command                                                                                                 | Description                                                                 |
-|---------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| [`/code-review:code-review`](https://github.com/anthropics/claude-code/tree/main/plugins/code-review)   | Code review a pull request (official plugin).                               |
+| ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `/code-review`                                                                                          | Built-in review of the current diff, a PR number, branch, or path.          |
 | [`code-review`](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md) | Review a branch on two axes: repo standards and originating-spec adherence. |
 | [`/review`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/review.md)            | Review a GitHub pull request.                                               |
 
 ### Focused review
 
 | Command                                                                                                       | Description                                                                       |
-|---------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | [`security-review`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/security-review.md) | Security review of the pending changes on the current branch.                     |
 | [`simplify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/simplify.md)               | Review changed code for reuse and simplification, then apply the fixes.           |
 | [`ponytail-review`](https://github.com/DietrichGebert/ponytail)                                               | Review a diff purely for over-engineering: what to delete or replace with stdlib. |
@@ -155,7 +155,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Review agents
 
 | Command                                                                                    | Description                                                                                                      |
-|--------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
 | [`code-reviewer`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev) | Subagent that reviews for bugs, security, performance, and convention adherence (feature-dev, code-refactoring). |
 
 ## Phase 5: testing and QA
@@ -163,28 +163,28 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Test-driven and verification
 
 | Command                                                                                     | Description                                                                        |
-|---------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
+| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | [`tdd`](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md)     | Drive features and fixes test-first.                                               |
 | [`verify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/verify.md) | Exercise the affected flow end to end and observe real behavior before committing. |
 
 ### Browser testing
 
 | Command                                                                        | Description                                               |
-|--------------------------------------------------------------------------------|-----------------------------------------------------------|
+| ------------------------------------------------------------------------------ | --------------------------------------------------------- |
 | [`playwright-cli`](https://github.com/microsoft/playwright-cli)                | Automate browser interactions and run Playwright tests.   |
 | [`chrome-devtools-mcp`](https://github.com/ChromeDevTools/chrome-devtools-mcp) | Drive and inspect a real browser through Chrome DevTools. |
 
 ### Bug diagnosis
 
 | Command                                                                                                         | Description                                                          |
-|-----------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
+| --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | [`diagnosing-bugs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnosing-bugs/SKILL.md) | Structured diagnosis loop for hard bugs and performance regressions. |
 | [`astral:ty`](https://github.com/astral-sh/claude-code-plugins/tree/main/plugins/astral)                        | Catch type errors before they reach runtime.                         |
 
 ### Evidence and iteration
 
 | Command                                                                                                    | Description                                                                        |
-|------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
+| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | [`iterative-development:auditing-progress`](https://github.com/prime-radiant-inc/iterative-development)    | Verify behavior-evidence quality across current, impacted, and sentinel scenarios. |
 | [`iterative-development:running-an-iteration`](https://github.com/prime-radiant-inc/iterative-development) | Run an iteration: baseline, implement, then impacted and sentinel scenario checks. |
 
@@ -193,7 +193,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Commits and pull requests
 
 | Command                                                                                      | Description                                                           |
-|----------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | [`/git:commit`](../../dot_claude/commands/git/commit.md)                                     | Create a git commit (stage all, single commit).                       |
 | [`/git:multiple`](../../dot_claude/commands/git/multiple.md)                                 | Split changes into a logical sequence of commits.                     |
 | [`/git:push`](../../dot_claude/commands/git/push.md)                                         | Commit and push.                                                      |
@@ -203,7 +203,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Branch and history hygiene
 
 | Command                                                              | Description                                                            |
-|----------------------------------------------------------------------|------------------------------------------------------------------------|
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | [`/git:branches`](../../dot_claude/commands/git/branches.md)         | Delete stale local branches whose remote tracking branch is gone.      |
 | [`/git:worktrees`](../../dot_claude/commands/git/worktrees.md)       | Remove worktrees whose branch is gone on the remote, then delete them. |
 | [`/git:amend-author`](../../dot_claude/commands/git/amend-author.md) | Rewrite the author of the whole branch or the last N commits.          |
@@ -213,7 +213,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Merge and platform
 
 | Command                                                                                                                             | Description                                                               |
-|-------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
+| ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | [`resolving-merge-conflicts`](https://github.com/mattpocock/skills/blob/main/skills/engineering/resolving-merge-conflicts/SKILL.md) | Work through an in-progress git merge or rebase conflict.                 |
 | [`gh-cli`](../../dot_claude/skills/gh-cli/SKILL.md)                                                                                 | Comprehensive `gh` reference for repos, PRs, Actions, releases, and more. |
 | [`glab`](https://gitlab.com/gitlab-org/ai/skills)                                                                                   | GitLab CLI operations.                                                    |
@@ -221,7 +221,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Release plumbing
 
 | Command                                                                                                          | Description                                                                 |
-|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | [`/git:changelog`](../../dot_claude/commands/git/changelog.md)                                                   | Generate a changelog for a time period (day, week, month, year, or N days). |
 | [`terraform-skill`](https://github.com/antonbabenko/terraform-skill/blob/master/skills/terraform-skill/SKILL.md) | Terraform CI, scans, and state operations in the pipeline.                  |
 
@@ -230,14 +230,14 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Scheduling and recurring jobs
 
 | Command                                                                                 | Description                                                                |
-|-----------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | [`schedule`](https://code.claude.com/docs/en/routines)                                  | Create and manage scheduled cloud agents (routines) on a cron schedule.    |
 | [`loop`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/loop.md) | Run a prompt or slash command on a recurring interval, or poll for status. |
 
 ### Infrastructure and data ops
 
 | Command                                                                                                          | Description                                                           |
-|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
+| ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | [`terraform-skill`](https://github.com/antonbabenko/terraform-skill/blob/master/skills/terraform-skill/SKILL.md) | Apply and manage infrastructure state.                                |
 | [`neon-postgres-branches`](https://github.com/neondatabase/agent-skills)                                         | Spin up isolated database branches for staging and test environments. |
 | [`cloudflare`](https://github.com/cloudflare/skills)                                                             | Deploy and operate Cloudflare edge resources.                         |
@@ -245,7 +245,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Harness config
 
 | Command                                                     | Description                                                                    |
-|-------------------------------------------------------------|--------------------------------------------------------------------------------|
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | [`update-config`](https://code.claude.com/docs/en/settings) | Configure the Claude Code harness: permissions, env vars, and automated hooks. |
 
 ## Phase 8: maintain and document
@@ -253,9 +253,8 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Refactor and modernize
 
 | Command                                                                                                                                     | Description                                                                                                |
-|---------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | [`legacy-modernizer`](https://github.com/wshobson/agents/tree/main/plugins/code-refactoring)                                                | Subagent that refactors legacy code, migrates frameworks, and pays down technical debt (code-refactoring). |
-| [`code-simplifier`](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier)                                | Subagent that simplifies code for clarity and maintainability while preserving behavior.                   |
 | [`improve-codebase-architecture`](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md) | Reshape an existing codebase toward a cleaner architecture.                                                |
 | [`diagnosing-bugs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnosing-bugs/SKILL.md)                             | Diagnose regressions and hard bugs in maintained code.                                                     |
 | [`simplify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/simplify.md)                                             | Trim reuse, complexity, and dead flexibility from existing code.                                           |
@@ -263,7 +262,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 ### Documentation
 
 | Command                                                                                                                    | Description                                                           |
-|----------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
+| -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | [`/simple:markitdown`](../../dot_claude/commands/simple/markitdown.md)                                                     | Convert files (PDF, Office, images, audio, HTML) to Markdown.         |
 | [`/simple:proofread`](../../dot_claude/commands/simple/proofread.md)                                                       | Proofread text for spelling, grammar, and readability.                |
 | [`meeting-summarizer`](../../dot_claude/skills/meeting-summarizer/SKILL.md)                                                | Turn a meeting or interview transcript into structured English notes. |
@@ -278,7 +277,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 These apply regardless of which phase you are in.
 
 | Command                                                                                       | Description                                                                            |
-|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | [`caveman`](https://github.com/JuliusBrussee/caveman)                                         | Ultra-compressed communication mode to cut token usage while keeping substance.        |
 | [`ponytail`](https://github.com/DietrichGebert/ponytail)                                      | Force the simplest solution that works: stdlib and native features before custom code. |
 | [`context7:docs`](https://github.com/upstash/context7)                                        | Fetch current documentation for any library, framework, or SDK.                        |

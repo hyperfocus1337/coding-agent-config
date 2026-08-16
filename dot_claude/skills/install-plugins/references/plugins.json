@@ -52,9 +52,7 @@
       "url": "https://github.com/openai/codex-plugin-cc",
       "scope": "user",
       "status": "user-keep",
-      "requires": [
-        "codex"
-      ],
+      "requires": ["codex"],
       "why": "SessionStart and Stop hooks plus the external Codex CLI. Highest use count of any plugin here.",
       "use_when": "second opinion or rescue on a stuck task"
     },
@@ -64,10 +62,10 @@
         "source": "mattpocock/skills"
       },
       "url": "https://github.com/mattpocock/skills",
-      "scope": "project",
-      "status": "project-candidate",
-      "why": "11 visible skills at 661 resident tokens, the largest single plugin cost. The set is a TypeScript and product engineering workflow, not a general one.",
-      "use_when": "TS or JS repo where the team wants the TDD, grilling, and domain-modeling loop"
+      "scope": "user",
+      "status": "user-keep",
+      "why": "11 visible skills at 661 resident tokens, the largest single plugin cost. Kept at user scope because the TDD, grilling, and domain-modeling loop runs often enough to pay for the tokens.",
+      "use_when": "always available"
     },
     {
       "id": "iterative-development@prime-radiant-marketplace",
@@ -110,9 +108,7 @@
       "url": "https://gitlab.com/gitlab-org/ai/skills",
       "scope": "project",
       "status": "project-candidate",
-      "requires": [
-        "glab"
-      ],
+      "requires": ["glab"],
       "why": "only useful where the remote is GitLab. Stays on the plugin CLI: apm 0.23.1 --frozen rejects GitLab-hosted packages.",
       "use_when": "repo hosted on GitLab"
     },
@@ -124,11 +120,31 @@
       "url": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/pyright-lsp",
       "scope": "project",
       "status": "project-candidate",
-      "requires": [
-        "pyright-langserver"
-      ],
+      "requires": ["pyright-langserver"],
       "why": "LSP wiring costs 0 resident tokens but starts a language server. Run it where there is Python to serve. Installed on this machine although the install.sh line was commented out.",
       "use_when": "repo has meaningful Python"
+    },
+    {
+      "id": "cloudflare@cloudflare",
+      "marketplace": {
+        "source": "cloudflare/skills"
+      },
+      "url": "https://developers.cloudflare.com/agent-setup/claude-code/",
+      "scope": "project",
+      "status": "project-candidate",
+      "why": "5 hosted MCP servers load in every session at user scope. At project scope they load only in a repo that deploys to Cloudflare. A single plugin MCP server cannot be disabled on its own, so scope is the only lever. See docs/mcp/disabling-servers.md.",
+      "use_when": "repo deploys to Cloudflare (Workers, Pages, R2, D1)"
+    },
+    {
+      "id": "notion-workspace-plugin@notion-plugin-marketplace",
+      "marketplace": {
+        "source": "makenotion/claude-code-notion-plugin"
+      },
+      "url": "https://github.com/makenotion/claude-code-notion-plugin",
+      "scope": "project",
+      "status": "project-candidate",
+      "why": "hosted MCP bridge, same scope reason as cloudflare.",
+      "use_when": "repo whose work tracking or docs live in Notion"
     },
     {
       "id": "watch@claude-video",
@@ -138,36 +154,9 @@
       "url": "https://github.com/bradautomates/claude-video",
       "scope": "local",
       "status": "local-candidate",
-      "requires": [
-        "ffmpeg",
-        "yt-dlp"
-      ],
+      "requires": ["ffmpeg", "yt-dlp"],
       "why": "personal tool, not a team convention. Its SessionStart hook prints a setup reminder every session until ffmpeg and yt-dlp are installed.",
       "use_when": "one-off questions about a video, after running its setup script"
-    },
-    {
-      "id": "code-review@claude-plugins-official",
-      "marketplace": {
-        "source": "anthropics/claude-plugins-official"
-      },
-      "url": "https://github.com/anthropics/claude-code/tree/main/plugins/code-review",
-      "scope": "user",
-      "status": "superseded",
-      "superseded_by": "built-in /code-review",
-      "why": "one command at 14 resident tokens that duplicates the built-in command.",
-      "use_when": "never, use /code-review"
-    },
-    {
-      "id": "code-simplifier@claude-plugins-official",
-      "marketplace": {
-        "source": "anthropics/claude-plugins-official"
-      },
-      "url": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier",
-      "scope": "user",
-      "status": "superseded",
-      "superseded_by": "built-in /simplify",
-      "why": "one agent at 52 resident tokens. The built-in /simplify covers the same task.",
-      "use_when": "never, use /simplify"
     },
     {
       "id": "context7@context7-marketplace",
@@ -194,28 +183,6 @@
       "use_when": "never, use pyright-lsp"
     },
     {
-      "id": "cloudflare@cloudflare",
-      "marketplace": {
-        "source": "cloudflare/skills"
-      },
-      "url": "https://developers.cloudflare.com/agent-setup/claude-code/",
-      "scope": "user",
-      "status": "disabled",
-      "why": "5 hosted MCP servers load on every session. A single plugin MCP server cannot be disabled on its own, so the whole plugin is disabled. See docs/mcp/disabling-servers.md.",
-      "use_when": "enable per session for Cloudflare work"
-    },
-    {
-      "id": "notion-workspace-plugin@notion-plugin-marketplace",
-      "marketplace": {
-        "source": "makenotion/claude-code-notion-plugin"
-      },
-      "url": "https://github.com/makenotion/claude-code-notion-plugin",
-      "scope": "user",
-      "status": "disabled",
-      "why": "hosted MCP bridge, same disable reason as cloudflare.",
-      "use_when": "enable per session for Notion work"
-    },
-    {
       "id": "chrome-devtools-mcp@chrome-devtools-plugins",
       "marketplace": {
         "source": "ChromeDevTools/chrome-devtools-mcp"
@@ -223,41 +190,8 @@
       "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp",
       "scope": "user",
       "status": "disabled",
-      "why": "launches an npx MCP server, same disable reason as cloudflare.",
+      "why": "launches an npx MCP server on every session. A single plugin MCP server cannot be disabled on its own, so the whole plugin stays disabled. See docs/mcp/disabling-servers.md.",
       "use_when": "enable per session for browser debugging"
-    },
-    {
-      "id": "greenfield@prime-radiant-marketplace",
-      "marketplace": {
-        "source": "prime-radiant-inc/prime-radiant-marketplace"
-      },
-      "url": "https://github.com/prime-radiant-inc/prime-radiant-marketplace",
-      "scope": "user",
-      "status": "disabled",
-      "why": "skills, agents, and commands for new-project scaffolding. Disabled on this machine although install.sh installs it and disable.sh does not list it.",
-      "use_when": "promote to project scope on a new project instead of enabling globally"
-    },
-    {
-      "id": "superpowers@claude-plugins-official",
-      "marketplace": {
-        "source": "anthropics/claude-plugins-official"
-      },
-      "url": "https://github.com/obra/superpowers",
-      "scope": "user",
-      "status": "disabled",
-      "why": "large resident cost. Installed but disabled, although the install.sh line is commented out.",
-      "use_when": "never at user scope"
-    },
-    {
-      "id": "commit-commands@claude-plugins-official",
-      "marketplace": {
-        "source": "anthropics/claude-plugins-official"
-      },
-      "url": "https://github.com/anthropics/claude-code/tree/main/plugins/commit-commands",
-      "scope": "user",
-      "status": "disabled",
-      "why": "its commands were imported into dot_claude/commands/git/ instead. Installed but disabled, although the install.sh line is commented out.",
-      "use_when": "never, use /git:commit and siblings"
     }
   ]
 }

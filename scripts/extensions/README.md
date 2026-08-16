@@ -25,27 +25,9 @@ Run `./install.sh` to install everything. The child scripts can be run individua
 
 Source: [github.com/anthropics/claude-code](https://github.com/anthropics/claude-code/tree/main/plugins/)
 
-#### `code-review`
-
-Adds structured code review capabilities. Use when you want Claude to perform thorough, opinionated reviews of diffs or entire files — checking for bugs, security issues, style violations, and adherence to best practices. Ideal for pre-merge review workflows or reviewing a PR before submitting.
-
-#### `commit-commands`
-
-Provides slash commands for generating and managing git commits. Use when you want Claude to automatically draft commit messages from staged changes, follow conventional commit formats, and streamline the commit workflow without leaving the terminal.
-
 #### `feature-dev`
 
 Adds a guided feature development workflow. Use when starting work on a new feature — it helps Claude break down requirements, plan implementation steps, scaffold code, and track progress through a structured development loop.
-
-#### `code-simplifier`
-
-Adds workflows for simplifying and refining existing code without changing behavior. Use when you want Claude to focus on clarity, consistency, and maintainability — removing dead code, flattening control flow, and tightening naming — typically against recently modified code.
-
-#### `superpowers`
-
-Source: [github.com/obra/superpowers](https://github.com/obra/superpowers)
-
-Bundles a collection of opinionated skills and workflows that extend Claude's default capabilities. Use as a general-purpose productivity layer on top of the base Claude Code experience.
 
 ---
 
