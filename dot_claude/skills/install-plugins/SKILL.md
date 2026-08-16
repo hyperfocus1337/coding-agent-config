@@ -22,7 +22,9 @@ The user wants a plugin available in one repo instead of every session, or wants
 
 ## The catalog
 
-Each row records intent, never live state:
+Each row records intent, never live state.
+
+### Fields
 
 | Field                | Meaning                                                                          |
 | :------------------- | :------------------------------------------------------------------------------- |
@@ -36,15 +38,23 @@ Each row records intent, never live state:
 | `use_when`           | the condition under which a project should take it                               |
 | `superseded_by`      | what covers it instead, on `superseded` rows only                                |
 
-Component inventory and token cost are not stored. Read them live with `claude plugin details <name>`.
+### What the catalog does not hold
 
-`scripts/extensions/plugins/install.sh` reads the same file and installs every `scope: "user"` row that is not `superseded`, so a row is the single declaration of a user-scope plugin.
+| Fact                            | Where it lives instead                         |
+| :------------------------------ | :--------------------------------------------- |
+| component inventory, token cost | `claude plugin details <name>`, read live      |
+| which plugins are installed     | `claude plugin list --json`, read live         |
+| enabled or disabled             | `enabledPlugins` in `dot_claude/settings.json` |
 
-Enable and disable state is not in the catalog. `dot_claude/settings.json` owns it under `enabledPlugins`, chezmoi deploys that file to `~/.claude/settings.json`, and `scripts/extensions/plugins/disable.sh` applies the `false` entries after an install. Installing a disabled plugin re-enables it, which is why that step runs last.
+### How a row is used
+
+`scripts/extensions/plugins/install.sh` reads the catalog and installs every `scope: "user"` row that is not `superseded`. A row is therefore the single declaration of a user-scope plugin: no row, no plugin after a clean rebuild.
+
+`enabledPlugins` is the separate disable switch. chezmoi deploys `dot_claude/settings.json` to `~/.claude/settings.json`, and `scripts/extensions/plugins/disable.sh` applies the `false` entries after an install. Installing a disabled plugin re-enables it, which is why that step runs last.
 
 ## Procedure
 
-### 0. Preflight
+### 0. Preflight the toolchain
 
 Check `claude` is on `PATH`. Read the catalog. Read the live state with `claude plugin list --json`. That list is machine-wide: rows carry a `scope` field, and project rows carry `projectPath`, so filter before comparing.
 
@@ -56,7 +66,7 @@ Never offer a `superseded` row as an install. Report what covers it instead (`su
 
 For a plugin not in the catalog, ask for its `plugin@marketplace` id and marketplace source, then continue. Offer to add a row in step 5.
 
-### 2. Preflight the plugin
+### 2. Check the binaries the plugin needs
 
 Check every binary in `requires` with `command -v`. A missing binary does not block the install, but report it: the plugin will not work until the binary is present.
 
@@ -66,7 +76,15 @@ Present `project`, `local`, `user` with the row's `scope` preselected. Explain t
 
 ### 4. Install
 
-**Project scope.** Two commands, both needed. The install records only `enabledPlugins`, so a fresh clone cannot resolve the marketplace without the second command:
+Always pass `--scope`. `claude plugin install` defaults to `user`, so an omitted flag installs globally whatever the user chose in step 3.
+
+| Scope     | Commands | Writes                        | Reproduced by             |
+| :-------- | :------- | :---------------------------- | :------------------------ |
+| `project` | 2        | `.claude/settings.json`       | committing that file      |
+| `local`   | 1        | `.claude/settings.local.json` | nothing, it is gitignored |
+| `user`    | 1        | `~/.claude/`                  | a catalog row, step 5     |
+
+**Project scope.** Two commands, both needed. The install records only `enabledPlugins`, so a fresh clone cannot resolve the marketplace without the first command:
 
 ```bash
 claude plugin marketplace add <marketplace.source> --scope project
@@ -81,7 +99,7 @@ Confirm `.claude/settings.json` now holds both `enabledPlugins` and `extraKnownM
 claude plugin install <id> --scope local
 ```
 
-**User scope.** Install, then record the row, or the plugin disappears on the next clean rebuild:
+**User scope.** One command, then step 5 records the row. Without the row the plugin disappears on the next clean rebuild:
 
 ```bash
 claude plugin install <id> --scope user
