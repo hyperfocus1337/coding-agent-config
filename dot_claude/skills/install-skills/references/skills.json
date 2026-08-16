@@ -65,13 +65,13 @@
       "use_when": "turning a transcript into notes, in a repo where that happens often"
     },
     {
-      "id": "playwright",
+      "id": "playwright-cli",
       "channel": "vendor-cli",
       "command": "playwright-cli install --skills",
       "requires": ["playwright-cli"],
       "scope": "project",
       "status": "project-candidate",
-      "why": "the CLI installs into the workspace by default, so project scope is its native mode.",
+      "why": "the CLI installs into the workspace by default, so project scope is its native mode. It also downloads a ~195 MB browser into the shared /ms-playwright cache on first run.",
       "use_when": "repo with Playwright tests",
       "project_args": "",
       "global_args": "--global"
