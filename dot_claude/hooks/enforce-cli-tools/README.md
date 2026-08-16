@@ -116,7 +116,7 @@ The hook targets both Claude Code and Cursor. Claude Code reads the block from e
 
 `test/test.sh` is a smoke test for the `violation` matcher: it sources `hook.sh` (stopping at the sourcing guard so only the functions load) and asserts that command-position hits block, argument and text mentions pass, and an allowlisted tool is exempt while the others stay enforced. Run `bash test/test.sh`. See [test/README.md](test/README.md).
 
-Nothing runs it automatically: the repo's only workflow publishes skills, and the `Justfile` lint and format recipes cover `scripts/` and `templates/` but not `dot_claude/`. It exits non-zero on failure, so wiring it up is a one-line recipe whenever that gap is worth closing.
+Nothing runs it automatically: the repo's only workflow publishes skills, and the `justfile` lint and format recipes cover `scripts/` and `templates/` but not `dot_claude/`. It exits non-zero on failure, so wiring it up is a one-line recipe whenever that gap is worth closing.
 
 ## Files
 

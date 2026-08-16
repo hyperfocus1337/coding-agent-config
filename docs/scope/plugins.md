@@ -18,19 +18,19 @@ Scope decides where the declaration lands:
 
 ## Reading the catalog
 
-The current table, printed from the catalog rather than copied into this page:
+Print the current table from the catalog rather than copy it into this page:
 
-```bash
-jq -r '["ID","SCOPE","STATUS","USE WHEN"], (.plugins[] | [.id, .scope, .status, .use_when]) | join("|")' \
-  ~/.claude/skills/install-plugins/references/plugins.json | column -t -s '|'
+```
+just plugin-catalog
 ```
 
-Candidates to move off user scope:
+Print the candidates to move off user scope:
 
-```bash
-jq -r '.plugins[] | select(.status | test("candidate")) | "\(.id)|\(.use_when)"' \
-  ~/.claude/skills/install-plugins/references/plugins.json | column -t -s '|'
 ```
+just plugin-candidates
+```
+
+Both recipes are in the [`justfile`](../../justfile). They read the catalog in this repo, not the copy in `~/.claude/`.
 
 ## Status values
 

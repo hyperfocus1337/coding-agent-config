@@ -26,9 +26,8 @@ Which plugins exist, where each belongs, and why is one file: [`dot_claude/skill
 
 Read the current set:
 
-```bash
-jq -r '["ID","SCOPE","STATUS","USE WHEN"], (.plugins[] | [.id, .scope, .status, .use_when]) | @tsv' \
-  ../../dot_claude/skills/install-plugins/references/plugins.json | column -t -s $'\t'
+```
+just plugin-catalog
 ```
 
 Enable and disable state is not in the catalog. `enabledPlugins` in [`dot_claude/settings.json`](../../dot_claude/settings.json) owns it, and `plugins/disable.sh` applies its `false` entries after the installs, because installing a disabled plugin re-enables it. Per-plugin reasoning: [`docs/scope/plugins.md`](../../docs/scope/plugins.md). Component and token inventory per plugin: [`docs/sources/inventory.md`](../../docs/sources/inventory.md).

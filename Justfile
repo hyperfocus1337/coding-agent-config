@@ -8,6 +8,8 @@ REPO := justfile_directory()
 SCRIPTS := REPO / "scripts"
 TEMPLATES := REPO / "templates"
 CLAUDE_HOME := env("CLAUDE_HOME", env("HOME") / ".claude")
+SKILL_CATALOG := REPO / "dot_claude/skills/install-skills/references/skills.json"
+PLUGIN_CATALOG := REPO / "dot_claude/skills/install-plugins/references/plugins.json"
 CONTAINER := "coding-agent-sandbox-devcontainer"
 CONTAINER_USER := "user" # devcontainer runs as non-root `user`; exec as root hits wrong $HOME + missing PATH
 
@@ -177,6 +179,26 @@ apm-list:
 [group('inspect')]
 plugin-list:
     claude plugin list
+
+# Print the skill catalog as a table.
+[group('inspect')]
+skill-catalog:
+    @jq -r '["ID","CHANNEL","SCOPE","STATUS","USE WHEN"], (.skills[] | [.id, .channel, .scope, .status, .use_when]) | join("|")' "{{ SKILL_CATALOG }}" | column -t -s '|'
+
+# Print the skills that should move off user scope, with the reason.
+[group('inspect')]
+skill-candidates:
+    @jq -r '.skills[] | select(.status | test("candidate")) | "\(.id)|\(.why)"' "{{ SKILL_CATALOG }}" | column -t -s '|'
+
+# Print the plugin catalog as a table.
+[group('inspect')]
+plugin-catalog:
+    @jq -r '["ID","SCOPE","STATUS","USE WHEN"], (.plugins[] | [.id, .scope, .status, .use_when]) | join("|")' "{{ PLUGIN_CATALOG }}" | column -t -s '|'
+
+# Print the plugins that should move off user scope, with the reason.
+[group('inspect')]
+plugin-candidates:
+    @jq -r '.plugins[] | select(.status | test("candidate")) | "\(.id)|\(.use_when)"' "{{ PLUGIN_CATALOG }}" | column -t -s '|'
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Cleanup

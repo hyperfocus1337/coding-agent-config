@@ -14,19 +14,19 @@ Ask Claude to "install the <skill> skill in this project", or invoke the `instal
 
 ## Reading the catalog
 
-The current table, printed from the catalog rather than copied into this page:
+Print the current table from the catalog rather than copy it into this page:
 
-```bash
-jq -r '["ID","CHANNEL","SCOPE","STATUS","USE WHEN"], (.skills[] | [.id, .channel, .scope, .status, .use_when]) | @tsv' \
-  ~/.claude/skills/install-skills/references/skills.json | column -t -s $'\t'
+```
+just skill-catalog
 ```
 
-Candidates to move off user scope, with the resident tokens each one currently costs:
+Print the candidates to move off user scope, with the reason for each:
 
-```bash
-jq -r '.skills[] | select(.status | test("candidate")) | "\(.id)\t\(.why)"' \
-  ~/.claude/skills/install-skills/references/skills.json | column -t -s $'\t'
 ```
+just skill-candidates
+```
+
+Both recipes are in the [`justfile`](../../justfile). They read the catalog in this repo, not the copy in `~/.claude/`.
 
 ## Where Claude reads skills from
 

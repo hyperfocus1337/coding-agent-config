@@ -50,7 +50,7 @@ Run `just` with no arguments to list every recipe.
 ```
 .
 ├── apm.yml           # Cross-agent dependency manifest (skills + MCP servers)
-├── Justfile          # Install, sync, lint, and package recipes
+├── justfile          # Install, sync, lint, and package recipes
 ├── dot_claude/       # Portable Claude Code config (commands, skills, hooks, rules, CLAUDE.md)
 ├── dot_config/       # ~/.config entries (e.g. ccstatusline)
 ├── dot_gemini/       # Gemini CLI config
