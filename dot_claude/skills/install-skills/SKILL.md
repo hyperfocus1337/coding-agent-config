@@ -8,15 +8,15 @@ disable-model-invocation: true
 
 Installs agent skills into a scope you choose: `project` (committed, every collaborator gets it on clone), `local` (gitignored, this machine only), or `user` (global, every session). The catalog is [`references/skills.json`](references/skills.json); its human companion is [`docs/skills/project-skills.md`](../../../docs/skills/project-skills.md).
 
-The target harness is a separate choice from the scope. APM deploys one package to any of its supported harnesses (`claude`, `codex`, `cursor`, `gemini`, `copilot`, `opencode`, `windsurf`, `kiro`, and more; `apm install --help` lists the current set). Each harness has its own deploy directory: `apm targets` prints the resolved harnesses of a project with that directory. This document writes `<harness-dir>` for it, which is `.claude/` for Claude Code and `.codex/` for Codex.
+The target harness is a separate choice from the scope. APM deploys one package to any of its supported harnesses (`claude`, `codex`, `cursor`, `gemini`, `copilot`, `opencode`, `windsurf`, `kiro`, and more; `apm install --help` lists the current set). Each harness has its own skills directory. This document writes `<skills-dir>` for it: `.claude/skills/` for Claude Code, `.agents/skills/` for Codex. Verified with apm 0.28: the `codex` target deploys skills to `.agents/skills/`, although `apm targets` prints `.codex/` as its deploy dir, which is where its MCP config goes.
 
 Skills reach an agent through three channels here. A plugin that bundles skills is the fourth, and belongs to `install-plugins`.
 
-| Channel      | Installed by             | Lands in                                                                      |
-| :----------- | :----------------------- | :---------------------------------------------------------------------------- |
-| `apm`        | `apm install <ref>`      | `<harness-dir>/skills/<name>/` per target, plus `apm.yml` and `apm.lock.yaml` |
-| `local`      | copy the directory       | `<harness-dir>/skills/<name>/`                                                |
-| `vendor-cli` | the vendor's own command | wherever that command writes, see the row                                     |
+| Channel      | Installed by             | Lands in                                                              |
+| :----------- | :----------------------- | :-------------------------------------------------------------------- |
+| `apm`        | `apm install <ref>`      | `<skills-dir>/<name>/` per target, plus `apm.yml` and `apm.lock.yaml` |
+| `local`      | copy the directory       | `<skills-dir>/<name>/`                                                |
+| `vendor-cli` | the vendor's own command | wherever that command writes, see the row                             |
 
 ## When to use
 
@@ -73,7 +73,7 @@ Then confirm the target harnesses, with `claude` preselected. Run `apm targets` 
 apm install <git-ref> --target <harnesses>
 ```
 
-This writes `<harness-dir>/skills/` for each target, creates `apm.yml` and `apm.lock.yaml`, and adds `apm_modules/` to `.gitignore`. Commit `apm.yml` and `apm.lock.yaml`, never `apm_modules/`. A later `apm install` in that project reuses the `targets:` list the first run wrote, so a second harness needs `--target` again.
+This writes `<skills-dir>` for each target, creates `apm.yml` and `apm.lock.yaml`, and adds `apm_modules/` to `.gitignore`. Commit `apm.yml` and `apm.lock.yaml`, never `apm_modules/`. A later `apm install` in that project reuses the `targets:` list the first run wrote, so a second harness needs `--target` again.
 
 **APM, skill subset.** `apm install` has no flag for taking some skills of a package, so write the subset into `apm.yml` first, then install:
 
@@ -90,12 +90,12 @@ The helper unions a subset into an existing entry for the same package, so addin
 **Local.** Copy the directory from the config repo into the project:
 
 ```bash
-cp -r <config-repo>/<dir> <project-dir>/<harness-dir>/skills/<id>
+cp -r <config-repo>/<dir> <project-dir>/<skills-dir>/<id>
 ```
 
 Copy once per target harness. Then ask whether to commit it or add it to `.gitignore`. Say plainly that the copy forks: later edits in the config repo do not reach it.
 
-**Vendor CLI.** Run `command` plus `project_args` from the project root. Replace the literal `$SKILLS_DIR` in the args with the skills directory of the target harness, `.claude/skills` for Claude, `.codex/skills` for Codex. `scripts/extensions/skills/install.sh` expands the same placeholder, so the catalog holds no harness name. The args are split from the command because the two scopes need different ones: `glab skills install` writes `.agents/skills/`, so both arg sets carry `--path`, and `global_args` prefixes it with `$HOME`. Confirm the files arrived under `<harness-dir>/skills/` and ask commit or gitignore.
+**Vendor CLI.** Run `command` plus `project_args` from the project root. Replace the literal `$SKILLS_DIR` in the args with the skills directory of the target harness, `.claude/skills` for Claude, `.agents/skills` for Codex. `scripts/extensions/skills/install.sh` expands the same placeholder, so the catalog holds no harness name. The args are split from the command because the two scopes need different ones: `glab skills install` writes `.agents/skills/`, so both arg sets carry `--path`, and `global_args` prefixes it with `$HOME`. Confirm the files arrived under `<skills-dir>` and ask commit or gitignore.
 
 **User scope, any channel.** For `apm`, add the dep to the root `apm.yml` of the config repo with the same merge helper (`--project <config-repo>`), then run `scripts/extensions/apm/install.sh`. That manifest carries its own `targets:` list, today `claude` only; a skill for another harness needs that harness added there, which fans every dep of the manifest out to it. For `local`, the skill is already deployed by chezmoi; a new one means creating it under `dot_claude/skills/` and running `just chezmoi`. For `vendor-cli`, run the command with its `global_args`, and add the row to the catalog so `scripts/extensions/skills/install.sh` reproduces it.
 
@@ -115,5 +115,5 @@ State the scope, the harnesses, the channel, the files written, and whether the 
 
 - Resident cost is per skill description, paid in every session where the skill is installed. Numbers in `why` come from `scripts/context-budget/measure-context.py`.
 - A skill with `disable-model-invocation: true` costs nothing in the listing and cannot be auto-selected. It stays invocable by exact name.
-- Each harness reads its own directory only: Claude reads `.claude/skills/`, Codex `.codex/`, Cursor `.cursor/`. `.agents/skills/` is the cross-agent location that some CLIs write by default. `docs/research/codex-compat.md` covers the symlink and plugin-wrapper options for serving both.
+- Claude reads `.claude/skills/` only. `.agents/skills/` is the cross-agent location that Codex and several vendor CLIs use, and the directory APM deploys to for the `codex` target. `docs/research/codex-compat.md` covers the symlink and plugin-wrapper options for serving both.
 - Uninstalling is not part of this skill. Removing a user-scope skill means deleting its row, and the directory it deployed to.
