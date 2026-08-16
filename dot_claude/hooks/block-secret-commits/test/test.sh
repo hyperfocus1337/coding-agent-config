@@ -1,164 +1,118 @@
 #!/usr/bin/env bash
-# Test for the two name-based checks in hook.sh: the secret-filename rule in
-# betterleaks.toml, and the binary scan.
+# Test for the two name-based checks in hook.sh: the binary scan, and the
+# `secret-filename` rule in ../conf/betterleaks.toml.
 #
 # Run: bash test.sh
 # Builds throwaway repos, pipes a hook payload into hook.sh, asserts the exit
-# code: 0 = allowed, 2 = blocked. The binary scan is git and bash only, so it
-# runs unconditionally. The name rule needs betterleaks and jq, so those cases
-# skip when either is missing (the hook fails open, matching the skip).
+# code: 0 = allowed, 2 = blocked. The binary scan delegates its verdict to
+# betterleaks, so these cases need it; without it the scan blocks every added
+# binary, which is asserted separately.
+# shellcheck source=helpers.sh
+# shellcheck disable=SC1091  # the source path is built at runtime
+# shellcheck disable=SC2154  # rc and out are set by runmsg in helpers.sh
+# shellcheck disable=SC2034  # fail is read by summary in helpers.sh
 set -u
-HOOK="$(cd "$(dirname "$0")/.." && pwd)/hook.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/helpers.sh"
 
-tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
-fail=0
-
-# The hook resolves conf/betterleaks.toml relative to its own path, so running
-# ../hook.sh from this working tree tests this tree's rules. No shim, and no
-# dependency on whichever version chezmoi last deployed.
 CFG="$(dirname "$HOOK")/conf/betterleaks.toml"
 [ -f "$CFG" ] || { echo "FAIL cannot find $CFG"; exit 1; }
 
-mkrepo() { # mkrepo <name> -> path to a repo with one seed commit
-  local r="$tmp/$1"
-  mkdir -p "$r"
-  git -C "$r" init -q .
-  git -C "$r" config user.email test@example.com
-  git -C "$r" config user.name test
-  echo seed > "$r/seed.txt"
+have_bl=0
+command -v betterleaks >/dev/null 2>&1 && command -v jq >/dev/null 2>&1 && have_bl=1
+
+# A NUL byte is what makes git report a blob as binary, which is the same test
+# betterleaks uses to skip it in git mode. Every binary fixture below carries
+# one, so the equivalence the scan rests on is exercised rather than assumed.
+# The token is a random string shaped like a GitHub PAT. It matches no live
+# account. betterleaks:allow keeps this file from blocking its own commit.
+secret_bin() { # a binary that genuinely holds a secret, under an innocuous name
+  printf 'BIN\000\000token = "ghp_9f3Kd82jSlqQm4Zx7VbNc1Rt6Yu0Ii5Oo3Pp"\000\000\n' # betterleaks:allow
+}
+plain_bin() { printf 'PK\003\004\000\000plain\000payload\n'; } # binary, no secret
+
+names=(
+  .env .env.local .envrc .netrc .pgpass .htpasswd .git-credentials .dockercfg
+  .s3cfg .gitrobrc .bash_history .zsh_history credentials.json
+  id_rsa id_dsa id_ecdsa id_ed25519 server.pem private.key deploy.keypair
+  key.p8 key.pkcs8 putty.ppk cert.pfx bundle.p12 bundle.pkcs12
+  store.keystore my.keyring app.jks vault.kdb login.keychain
+  vpn.ovpn cluster.kubeconfig conn.tblk/config.ovpn pw.agilekeychain/data.json
+)
+
+# --- Binary scan ---
+# The scan must judge on secrets, not on undiffability. An ordinary image or
+# archive has to commit freely; only a binary holding a secret blocks.
+if [ "$have_bl" -eq 1 ]; then
+  r=$(mkrepo binplain)
+  plain_bin > "$r/archive.dat"
+  printf 'GIF89a\000\000\001\000\001\000\200' > "$r/pic.gif"
   git -C "$r" add -A
-  git -C "$r" commit -qm seed
-  echo "$r"
-}
+  assert 0 "$(run "$r" 'git commit -m x')" "ordinary binary and image allowed"
 
-hook() { # hook <repo> <command-text> -> run the hook against that repo
-  CLAUDE_PROJECT_DIR="$1" bash "$HOOK" \
-    <<< "$(printf '{"tool_name":"Bash","tool_input":{"command":"%s"}}' "$2")"
-}
+  # An innocuous name with a private key inside: neither the old file-name list
+  # nor the secret-filename rule would catch this one, only the content scan.
+  r=$(mkrepo binsecret)
+  secret_bin > "$r/payload.dat"
+  git -C "$r" add -A
+  runmsg "$r" 'git commit -m x'
+  assert 2 "$rc" "binary holding a private key blocked"
+  contains "payload.dat" "$out" "binary block message names the file"
 
-run() { # run <repo> <command-text> -> hook exit code
-  hook "$@" >/dev/null 2>&1
-  echo $?
-}
+  # A name with a space and a quote must survive the -z parsing intact.
+  r=$(mkrepo binodd)
+  secret_bin > "$r/we ird\".dat"
+  git -C "$r" add -A
+  assert 2 "$(run "$r" 'git commit -m x')" "binary with space and quote blocked"
 
-msg() { # msg <repo> <command-text> -> the block reason the hook writes to stderr
-  { hook "$@" >/dev/null; } 2>&1 # drop stdout (the Cursor JSON), keep stderr
-}
+  # --diff-filter=A covers added files only.
+  r=$(mkrepo binmod)
+  plain_bin > "$r/logo.dat"
+  git -C "$r" add -A && git -C "$r" commit -qm addbin
+  secret_bin > "$r/logo.dat" # a secret swapped into a tracked binary
+  git -C "$r" add -A
+  assert 0 "$(run "$r" 'git commit -m x')" "modified tracked binary allowed"
 
-assert() { # assert <expected-code> <actual-code> <label>
-  if [ "$1" = "$2" ]; then echo "ok   $3"; else echo "FAIL $3 (want $1, got $2)"; fail=1; fi
-}
+  # The allowlist has to exempt a binary too, not just a secret name.
+  r=$(mkrepo binallow)
+  secret_bin > "$r/payload.dat"
+  echo 'payload.dat' > "$r/.claude-allow-secrets"
+  git -C "$r" add -A
+  assert 0 "$(run "$r" 'git commit -m x')" "binary exempted by .claude-allow-secrets"
 
-names() { # every file name the secret-filename rule must block
-  cat <<'EOF'
-.env
-.env.local
-.envrc
-.netrc
-.pgpass
-.htpasswd
-.git-credentials
-.dockercfg
-.s3cfg
-.gitrobrc
-.bash_history
-.zsh_history
-credentials.json
-id_rsa
-id_dsa
-id_ecdsa
-id_ed25519
-server.pem
-private.key
-deploy.keypair
-key.p8
-key.pkcs8
-putty.ppk
-cert.pfx
-bundle.p12
-bundle.pkcs12
-store.keystore
-my.keyring
-app.jks
-vault.kdb
-login.keychain
-vpn.ovpn
-cluster.kubeconfig
-conn.tblk/config.ovpn
-pw.agilekeychain/data.json
-EOF
-}
+  r=$(mkrepo binenv)
+  secret_bin > "$r/payload.dat"
+  git -C "$r" add -A
+  assert 0 "$(CLAUDE_ALLOW_SECRETS=payload.dat run "$r" 'git commit -m x')" \
+    "binary exempted by CLAUDE_ALLOW_SECRETS"
+fi
 
-# --- Binary scan: no betterleaks needed ---
-# A NUL byte is what makes git report the blob as binary, which is the same test
-# betterleaks uses to skip it. That equivalence is the whole basis of the check.
-r=$(mkrepo binary)
-printf 'PK\003\004\000\000bundle\000payload\n' > "$r/keys.p12"
+# Without betterleaks the scan cannot judge, so it blocks every added binary.
+# This is the one check that never fails open, and it must hold with no tools.
+r=$(mkrepo binnobl)
+plain_bin > "$r/archive.dat"
 git -C "$r" add -A
-assert 2 "$(run "$r" 'git commit -m x')" "binary file blocked"
+assert 2 "$(PATH=/usr/bin:/bin run "$r" 'git commit -m x')" \
+  "binary blocked when betterleaks is unavailable"
 
-case "$(msg "$r" 'git commit -m x')" in
-  *"keys.p12"*) echo "ok   binary block message names the file" ;;
-  *) echo "FAIL binary block message names the file"; fail=1 ;;
-esac
-
-# A name with a space and a quote must survive the -z parsing intact.
-r=$(mkrepo binaryodd)
-printf 'PK\003\004\000\000x\000y\n' > "$r/we ird\".p12"
-git -C "$r" add -A
-assert 2 "$(run "$r" 'git commit -m x')" "binary file with space and quote blocked"
-
-# A text file is diffable, so betterleaks reads it and the binary scan ignores it.
-r=$(mkrepo textonly)
-echo 'plain text, nothing secret' > "$r/notes.txt"
-git -C "$r" add -A
-assert 0 "$(run "$r" 'git commit -m x')" "ordinary text file allowed"
-
-# A modified tracked binary is out of scope: --diff-filter=A covers added only.
-r=$(mkrepo binarymod)
-printf 'PK\003\004\000\000v1\000\n' > "$r/logo.bin"
-git -C "$r" add -A
-git -C "$r" commit -qm addbin
-printf 'PK\003\004\000\000v2\000changed\n' > "$r/logo.bin"
-git -C "$r" add -A
-assert 0 "$(run "$r" 'git commit -m x')" "modified tracked binary allowed"
-
-# The allowlist has to exempt a binary too, not just a secret name.
-r=$(mkrepo binaryallow)
-printf 'PK\003\004\000\000x\000y\n' > "$r/keys.p12"
-echo 'keys.p12' > "$r/.claude-allow-secrets"
-git -C "$r" add -A
-assert 0 "$(run "$r" 'git commit -m x')" "binary exempted by .claude-allow-secrets"
-
-r=$(mkrepo binaryenv)
-printf 'PK\003\004\000\000x\000y\n' > "$r/keys.p12"
-git -C "$r" add -A
-assert 0 "$(CLAUDE_ALLOW_SECRETS=keys.p12 run "$r" 'git commit -m x')" \
-  "binary exempted by CLAUDE_ALLOW_SECRETS"
-
-# --- Name rule: needs betterleaks and jq ---
-if ! command -v betterleaks >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
+# --- Name rule ---
+if [ "$have_bl" -eq 0 ]; then
   echo "skip: betterleaks or jq missing, so the name rule fails open"
-  [ "$fail" -eq 0 ] && { echo "all pass"; exit 0; }
-  echo "FAILURES"; exit 1
+  summary
 fi
 
 # Every dangerous name, staged together as text, must be named in one block.
-# Text content keeps the binary scan out of the way, so a hit proves the rule.
 r=$(mkrepo names)
-while IFS= read -r n; do
+for n in "${names[@]}"; do
   case "$n" in */*) mkdir -p "$r/${n%/*}" ;; esac # bundle names only
   echo 'placeholder' > "$r/$n"
-done < <(names)
+done
 git -C "$r" add -A
-assert 2 "$(run "$r" 'git commit -m x')" "secret file names blocked"
-
-out=$(msg "$r" 'git commit -m x')
+runmsg "$r" 'git commit -m x'
+assert 2 "$rc" "secret file names blocked"
 missed=""
-while IFS= read -r n; do
+for n in "${names[@]}"; do
   case "$out" in *"$n"*) ;; *) missed="$missed $n" ;; esac
-done < <(names)
+done
 if [ -z "$missed" ]; then echo "ok   every secret name appears in the block message"
 else echo "FAIL names missing from block message:$missed"; fail=1; fi
 
@@ -171,7 +125,7 @@ done
 git -C "$r" add -A
 assert 0 "$(run "$r" 'git commit -m x')" "templates and ordinary files allowed"
 
-# The allowlist exempts a secret name by bare basename and by path.
+# The allowlist exempts a secret name.
 r=$(mkrepo nameallow)
 echo 'placeholder' > "$r/.env"
 echo '.env' > "$r/.claude-allow-secrets"
@@ -185,4 +139,4 @@ echo 'placeholder' > "$r/.env"
 git -C "$r" add -A
 assert 0 "$(run "$r" 'git commit -m x')" "repo .betterleaks.toml wins over the shipped config"
 
-if [ "$fail" -eq 0 ]; then echo "all pass"; else echo "FAILURES"; exit 1; fi
+summary

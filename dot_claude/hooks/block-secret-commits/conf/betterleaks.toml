@@ -12,7 +12,7 @@
 # exemption in the [allowlist] block below, not as a negative pattern.
 
 [extend]
-useDefault = true # keep the 222 upstream rules, then add the one below
+useDefault = true # keep the upstream rules, then add the one below
 
 # A file name alone can prove a secret. The upstream rules match secret values,
 # so they cannot flag a file whose name is the only evidence: a .pgpass or a

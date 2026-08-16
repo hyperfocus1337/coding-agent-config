@@ -32,7 +32,7 @@ Run it:
 bash test-content.sh
 ```
 
-It cannot source the hook, because `scan_content` sits below the sourcing guard and needs a real repo and a real payload. So each case builds a throwaway git repo under `mktemp -d`, pipes a `PreToolUse` JSON payload into `../hook.sh` as a subprocess with `CLAUDE_PROJECT_DIR` pointed at that repo, and asserts the exit code: 0 allows, 2 blocks.
+It cannot source the hook, because `scan_content` needs a real repo and a real payload. So each case builds a throwaway git repo under `mktemp -d`, pipes a `PreToolUse` JSON payload into `../hook.sh` as a subprocess with `CLAUDE_PROJECT_DIR` pointed at that repo, and asserts the exit code: 0 allows, 2 blocks.
 
 The cases cover a staged secret on commit (blocks), the same secret on `git add` (allows, because the check is commit-only), clean staged content, an empty stage, an unstaged secret, a directory that is not a git repository (fails open), and an unrelated command.
 

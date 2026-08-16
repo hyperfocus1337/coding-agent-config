@@ -13,4 +13,5 @@ README.md
 .claude/hooks/README.md
 .claude/hooks/**/README.md
 .claude/hooks/**/docs/**
+.claude/hooks/**/test/**
 .claude/commands/**/README.md

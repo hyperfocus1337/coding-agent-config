@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
-# End-to-end test for the betterleaks content scan in hook.sh.
+# End-to-end test for the betterleaks content scan in hook.sh, the scan_content
+# function that blocks a secret value pasted into an ordinary file.
+#
 # Run: bash test-content.sh
 # Builds throwaway repos, pipes a hook payload into hook.sh, asserts the exit
-# code: 0 = allowed, 2 = blocked. Skips if betterleaks is not installed.
+# code: 0 = allowed, 2 = blocked. Skips if betterleaks or jq is missing.
+# shellcheck source=helpers.sh
+# shellcheck disable=SC1091  # the source path is built at runtime
+# shellcheck disable=SC2034  # fail is read by summary in helpers.sh
+# shellcheck disable=SC2154  # tmp is set by helpers.sh
 set -u
-HOOK="$(cd "$(dirname "$0")/.." && pwd)/hook.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/helpers.sh"
 
 if ! command -v betterleaks >/dev/null 2>&1; then
   echo "skip: betterleaks not installed (hook fails open, nothing to test)"
@@ -15,60 +21,10 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
-tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
-fail=0
-
-mkrepo() { # mkrepo <name> -> path to a repo with one seed commit
-  local r="$tmp/$1"
-  mkdir -p "$r"
-  git -C "$r" init -q .
-  git -C "$r" config user.email test@example.com
-  git -C "$r" config user.name test
-  echo seed > "$r/seed.txt"
-  git -C "$r" add -A
-  git -C "$r" commit -qm seed
-  echo "$r"
-}
-
-hook() { # hook <repo> <command-text> -> run the hook against that repo
-  # jq builds the payload so a command containing quotes stays valid JSON. A
-  # malformed payload would leave the hook with an empty command and silently
-  # skip the -a test, which would pass the wrong cases.
-  CLAUDE_PROJECT_DIR="$1" bash "$HOOK" \
-    <<< "$(jq -nc --arg c "$2" '{tool_name:"Bash",tool_input:{command:$c}}')"
-}
-
-run() { # run <repo> <command-text> -> hook exit code
-  hook "$@" >/dev/null 2>&1
-  echo $?
-}
-
-msg() { # msg <repo> <command-text> -> the block reason the hook writes to stderr
-  { hook "$@" >/dev/null; } 2>&1 # drop stdout (the Cursor JSON), keep stderr
-}
-
-# The fixture token is a random string shaped like a GitHub PAT. It matches no
-# live account. betterleaks:allow keeps this file from blocking its own commit.
 secret() { printf 'token = "ghp_9f3Kd82jSlqQm4Zx7VbNc1Rt6Yu0Ii5Oo3Pp"\n'; } # betterleaks:allow
 
-assert() { # assert <expected-code> <actual-code> <label>
-  if [ "$1" = "$2" ]; then echo "ok   $3"; else echo "FAIL $3 (want $1, got $2)"; fail=1; fi
-}
 
-contains() { # contains <needle> <haystack> <label>
-  case "$2" in
-    *"$1"*) echo "ok   $3" ;;
-    *) echo "FAIL $3 (no '$1' in output)"; fail=1 ;;
-  esac
-}
 
-lacks() { # lacks <needle> <haystack> <label>
-  case "$2" in
-    *"$1"*) echo "FAIL $3 (found '$1' in output)"; fail=1 ;;
-    *) echo "ok   $3" ;;
-  esac
-}
 
 # staged secret in an ordinary file → commit blocks
 r=$(mkrepo leak)
@@ -76,12 +32,12 @@ secret > "$r/app.py"
 git -C "$r" add -A
 assert 2 "$(run "$r" 'git commit -m wip')" "block  staged secret on commit"
 
-# same repo, same staged secret, but a `git add` must not block: at add time the
-# scan is skipped, and the filename rules see nothing dangerous
+# same repo, same staged secret, but a `git add` must not block: the hook
+# triggers on `git commit` alone, so an add never reaches a scan
 assert 0 "$(run "$r" 'git add .')" "allow  staged secret on git add"
 
-# the word "commit" inside a path must not read as the git subcommand. These are
-# still `git add`, so the content scan has to stay off.
+# the word "commit" inside a path must not read as the git subcommand, or the
+# scan would run against an index the command has not written yet
 assert 0 "$(run "$r" 'git add hooks/block-secret-commits/test')" "allow  'commits' in an added path"
 assert 0 "$(run "$r" 'git add .git/hooks/commit-msg')" "allow  'commit-msg' in an added path"
 
@@ -181,4 +137,4 @@ echo "config/prod.env" > "$r/.claude-allow-secrets"
 git -C "$r" add -A -f
 assert 2 "$(run "$r" 'git commit -m wip')" "block  second file not allowlisted"
 
-if [ "$fail" -eq 0 ]; then echo "all pass"; else echo "FAILURES"; exit 1; fi
+summary

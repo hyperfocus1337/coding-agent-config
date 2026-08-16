@@ -11,7 +11,7 @@ Two orderings are load-bearing and must not be rearranged:
 1. The stdin read has to precede the `jq` that parses the payload. The payload arrives once on stdin and cannot be read twice.
 2. The repo root has to precede both the allowlist that reads a file under it and every git command, which must run inside the repository.
 
-The two scans run last, binary first and content second. The binary scan is git and bash only and costs about 1 ms, so putting it first means a blocked binary never pays for a betterleaks start.
+The two scans run last, binary first and content second. The binary scan usually finds nothing to check and returns after one `git diff`, so ordering it first costs almost nothing and lets a blocked binary skip the staged scan entirely.
 
 ## Host contract
 
@@ -44,9 +44,9 @@ Two sources feed one list, and both are additive:
 
 An entry matches either a repo-relative path or a bare basename. Both feed `is_allowed`, which is the single definition of "allowed" for the binary scan and the content scan alike, so one entry covers every check.
 
-This list exists rather than deferring to betterleaks' own allowlisting for two reasons. The binary scan never runs betterleaks, so no betterleaks mechanism can exempt a binary. And a repo that adds a `.betterleaks.toml` to allowlist a path loses the name rules entirely, by the precedence described in [Config resolution](#config-resolution), which makes the obvious native alternative a trap.
+This list exists rather than deferring to betterleaks' own allowlisting for two reasons. A finding from `betterleaks dir` carries an **empty** `Fingerprint`, so `.betterleaksignore`, which is fingerprint-keyed, cannot exempt anything the binary scan reports. And a repo that adds a `.betterleaks.toml` to allowlist a path loses the name rules entirely, by the precedence described in [Config resolution](#config-resolution), which makes the obvious native alternative a trap.
 
-`is_allowed` returns early on an empty list. Expanding an empty array under `set -u` is an error on bash before 4.4.
+The list is one newline-delimited string rather than an array, so a membership test is a single `[[ ]]` pattern match with no loop. Entries containing spaces still work, because the delimiter is a newline.
 
 ## Binary scan
 
@@ -61,9 +61,30 @@ betterleaks skips a binary blob in git mode, so a keystore, a key bundle, or a d
 
 The name rules do not close this on their own. `pkcs12-file` is already in the upstream ruleset and still missed the file, because a rule cannot match a blob the scanner never reads.
 
-### Why git decides what counts as binary
+### Why git decides which files to check
 
-`git diff --cached --numstat` prints `-` in place of the added and deleted line counts for a blob it cannot diff as text. That is the same NUL-byte test betterleaks uses to skip a file. So the set this scan collects is, by construction, the set the content scan cannot read. Blocking it closes the gap with no second name list to maintain and nothing to keep in sync when either tool changes.
+`git diff --cached --numstat` prints `-` in place of the added and deleted line counts for a blob it cannot diff as text. That is the same NUL-byte test betterleaks uses to skip a file. So the set this scan collects is, by construction, the set the staged scan could not read, with no second name list to maintain.
+
+### Why the verdict is delegated, not assumed
+
+Selecting that set is not the same as condemning it. An earlier version blocked every newly added binary outright, on the reasoning that an unreadable file cannot be cleared. That blocks an ordinary PNG, and it pushed every committed image, font and icon into `.claude-allow-secrets`.
+
+`betterleaks dir` reads binaries, so the hook hands it exactly the paths git selected and blocks only on a finding. Measured with the shipped config:
+
+| Path                                         | `betterleaks dir`               |
+| -------------------------------------------- | ------------------------------- |
+| `blob.dat` (random bytes)                    | exit 0, allowed                 |
+| `pic.gif` (image)                            | exit 0, allowed                 |
+| `payload.dat` (binary holding a private key) | exit 9, blocked (`private-key`) |
+| `real.p12` (keystore)                        | exit 9, blocked (`pkcs12-file`) |
+
+`payload.dat` is the case that shows the delegation earns its place: an innocuous name with a secret inside, which neither the deleted file-name list nor the `secret-filename` rule would ever match.
+
+The earlier rejection of `dir` (measured at 1.4 s and ignoring `.gitignore`) was measured over the **whole repo**. Neither objection survives on an explicit path list: a gitignored file never appears in `--diff-filter=A` output, and a single-file scan costs 34 ms, paid only when a binary is actually added.
+
+Two calls at most: one over the whole set, and a per-file loop only when that set is dirty, to name which file.
+
+Beware when writing fixtures: the upstream config globally allowlists `.bin`, `.png`, `.pdf`, `.exe` and similar by extension, so a test binary under one of those names scans clean regardless of content.
 
 ### Flags
 
@@ -75,7 +96,7 @@ The name rules do not close this on their own. `pkcs12-file` is already in the u
 
 ### Failure behaviour
 
-The scan is git and bash only. It is the one check that still runs when betterleaks is missing, and the only one that never fails open.
+This is the one check that never fails open. Anything that stops a candidate being cleared blocks it: betterleaks missing, a scan error, a timeout, or a file staged and then removed from the worktree, which `dir` cannot read.
 
 ## Config resolution
 
@@ -91,7 +112,7 @@ Resolving the path from `BASH_SOURCE` also keeps the hook self-contained. A copy
 
 betterleaks resolves its config in this order: `--config`, then `BETTERLEAKS_CONFIG` / `GITLEAKS_CONFIG`, then `BETTERLEAKS_CONFIG_TOML` / `GITLEAKS_CONFIG_TOML`, then a config file in the scanned directory, then the built-in defaults.
 
-The hook passes `--config` only when the repo defines no config of its own and no config environment variable is set, so a repo carrying a gitleaks config still wins. Such a repo keeps the content rules and loses the name rules. Its config can extend this file to get them back:
+Rather than re-implement that table, the hook asks `betterleaks config path`, which answers `default` when nothing else selected a config and the file name otherwise. It passes `--config` only on `default`, so a repo carrying a gitleaks config still wins and the check cannot drift when betterleaks adds a source. The call costs 8 ms, on the commit path only. Such a repo keeps the content rules and loses the name rules. Its config can extend this file to get them back:
 
 ```toml
 [extend]
@@ -116,7 +137,7 @@ Encrypted blobs (`*.gpg`, `*.pgp`) and public keys (`id_rsa.pub`, `*.crt`) are n
 
 Both were evaluated as a maintained list to depend on. Neither works:
 
-- The **GitLab ruleset** has 94 rules across 316 files and **no name or path matcher at all**. Every rule there, including the eight tagged `cryptographic_key`, is a content regex; the GCP one is `\"private_key\":\s*\"-{5}BEGIN PRIVATE KEY-{5}...`. `rules.schema.json` has no filename concept. Its rules also overlap what betterleaks already ships in its 222 defaults, so importing them mostly duplicates.
+- The **GitLab ruleset** has 94 rules across 316 files and **no name or path matcher at all**. Every rule there, including the eight tagged `cryptographic_key`, is a content regex; the GCP one is `\"private_key\":\s*\"-{5}BEGIN PRIVATE KEY-{5}...`. `rules.schema.json` has no filename concept. Its rules also overlap what betterleaks already ships by default, so importing them mostly duplicates.
 - **talisman** does maintain a 40-pattern filename list, which is the only such list found in a comparable tool. Its patterns are too loose to adopt as they stand: `\.?env` is unanchored, and the list treats `schema.rb`, `settings.py`, `database.yml`, `.bashrc`, `\bsql\b`, and `\bdump\b` as secret indicators. On a sample of 19 realistic file names it fired on 15, including `environment.ts`, `venv/lib/x.py`, `mysqldump.sh`, and `.env.example`, against 4 for this ruleset. Adopting it would trade maintaining a name list for maintaining a suppression list.
 
 The non-noisy entries talisman has and GitLab does not (`*.keychain`, `*.kdb`, `*.agilekeychain`, `*.tblk`, `*.keyring`, `.s3cfg`, `.*_history`) were copied in once. That is a one-time import, not a sync.
@@ -211,11 +232,13 @@ Median of 9 runs on the installed hook:
 | Command                                       | Hook cost |
 | --------------------------------------------- | --------- |
 | any non-git command                           | 1 ms      |
-| `git add` (no longer a trigger)               | 1 ms      |
-| `git commit`, newly added binary blocked      | 2 ms      |
-| `git commit`, clean 1000-line staged diff     | 46 ms     |
-| `git commit -am`, clean (runs both scans)     | 64 ms     |
+| `git commit`, clean 1000-line staged diff     | 50 ms     |
+| `git commit -am`, clean (runs both scans)     | 69 ms     |
+| `git commit`, innocent binary added           | 79 ms     |
+| `git commit`, secret binary blocked           | 139 ms    |
 | `git commit`, staged content past the 4 s cap | 4040 ms   |
+
+A binary costs one extra `betterleaks dir` (about 34 ms), and a blocked one a second pass to name the offending file. Both are paid only when a binary is actually added.
 
 betterleaks costs about 35 ms of fixed startup plus about 0.18 ms per KB of staged diff. A 50000-line (3.5 MB) diff scans in 656 ms. The `settings.json` timeout is 10 s, which covers the worst case of two capped scans on an `-a` commit.
 
