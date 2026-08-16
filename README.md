@@ -26,6 +26,10 @@ just chezmoi        # apply repo to $HOME
 just chezmoi-diff   # preview without writing
 ```
 
+Agent instructions live in [`dot_claude/rules/`](dot_claude/rules/). Claude Code discovers that directory on its own, so `CLAUDE.md` does not import the files with `@`. An import loads a rule unconditionally and bypasses its `paths:` frontmatter, which defeats the scoping.
+
+Almost every rule there stays unscoped on purpose. A path-gated rule loads only after a matching file enters context, so it arrives too late for the decisions these rules govern: which search tool to run, whether to fetch library documentation before generating code, how to word a commit message. Scoping them costs adherence and saves about 900 tokens, which is not a trade worth making. Only `ast-grep.md` keeps a `paths:` glob, because it is noise in a repository with no source files.
+
 ### APM: cross-agent dependencies
 
 APM (agent package manager) resolves the deps that are not plain files: third-party skills pulled from git and MCP servers. `apm.yml` is the manifest, and `targets:` decides which agent platforms they fan out to (Claude today, Gemini/Codex/Cursor later). No lockfile is committed: install re-resolves refs to latest upstream every run, so you always get the newest skills. Secrets stay out of the manifest by resolving from the environment at install time. Every way a skill reaches an agent (local files, plugins, standalone CLIs, and the APM bundle) is mapped in [`docs/sources/channels.md`](docs/sources/channels.md).

@@ -1,8 +1,3 @@
----
-paths:
-  - "**/rules/*.md"
----
-
 # Claude rules
 
 Claude Code discovers every `*.md` file in this directory on its own. Do not import them from `CLAUDE.md` with `@`. An `@` import loads the file unconditionally and bypasses its `paths:` frontmatter, which defeats the scoping.
