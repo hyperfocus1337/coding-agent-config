@@ -24,20 +24,21 @@ The user wants a plugin available in one repo instead of every session, or wants
 
 Each row records intent, never live state:
 
-| Field                | Meaning                                                                       |
-| :------------------- | :---------------------------------------------------------------------------- |
-| `id`                 | `plugin@marketplace`, the exact argument for `claude plugin install`          |
-| `marketplace.source` | argument for `claude plugin marketplace add`                                  |
-| `scope`              | where this plugin belongs: `user`, `project`, or `local`                      |
-| `status`             | `user-keep`, `project-candidate`, `local-candidate`, `superseded`, `disabled` |
-| `requires`           | binaries that must be on `PATH` for the plugin to work                        |
-| `why`                | the reason for `scope` and `status`                                           |
-| `use_when`           | the condition under which a project should take it                            |
-| `superseded_by`      | what covers it instead, on `superseded` rows only                             |
+| Field                | Meaning                                                                          |
+| :------------------- | :------------------------------------------------------------------------------- |
+| `id`                 | `plugin@marketplace`, the exact argument for `claude plugin install`             |
+| `marketplace.source` | argument for `claude plugin marketplace add`                                     |
+| `url`                | page a human opens to read what the plugin does, not always the marketplace repo |
+| `scope`              | where this plugin belongs: `user`, `project`, or `local`                         |
+| `status`             | `user-keep`, `project-candidate`, `local-candidate`, `superseded`, `disabled`    |
+| `requires`           | binaries that must be on `PATH` for the plugin to work                           |
+| `why`                | the reason for `scope` and `status`                                              |
+| `use_when`           | the condition under which a project should take it                               |
+| `superseded_by`      | what covers it instead, on `superseded` rows only                                |
 
 Component inventory and token cost are not stored. Read them live with `claude plugin details <name>`.
 
-`scripts/extensions/plugins/install.sh` reads the same file and installs every `scope: "user"` row, so a row is the single declaration of a user-scope plugin.
+`scripts/extensions/plugins/install.sh` reads the same file and installs every `scope: "user"` row that is not `superseded`, so a row is the single declaration of a user-scope plugin.
 
 Enable and disable state is not in the catalog. `dot_claude/settings.json` owns it under `enabledPlugins`, chezmoi deploys that file to `~/.claude/settings.json`, and `scripts/extensions/plugins/disable.sh` applies the `false` entries after an install. Installing a disabled plugin re-enables it, which is why that step runs last.
 

@@ -53,16 +53,19 @@ echo "==> Adding plugin marketplaces"
 while read -r source; do
   echo "==> Marketplace: $source"
   claude plugin marketplace add "$source"
-done < <(jq -r '[.plugins[] | select(.scope == "user") | .marketplace.source] | unique[]' "$CATALOG")
+done < <(jq -r '[.plugins[] | select(.scope == "user" and .status != "superseded") | .marketplace.source] | unique[]' "$CATALOG")
 
 # --- Plugins ---
-# Install every user-scope row. Ids carry @marketplace so resolution never
-# depends on which marketplaces a machine happens to have.
+# Install every user-scope row except the superseded ones: those name a
+# replacement in `superseded_by` and installing them re-adds the duplicate the
+# catalog records. A `disabled` row IS installed here, then switched off by
+# disable.sh. Ids carry @marketplace so resolution never depends on which
+# marketplaces a machine happens to have.
 echo "==> Installing user-scope plugins"
 while read -r id; do
   echo "==> Plugin: $id"
   claude plugin install "$id"
-done < <(jq -r '.plugins[] | select(.scope == "user") | .id' "$CATALOG")
+done < <(jq -r '.plugins[] | select(.scope == "user" and .status != "superseded") | .id' "$CATALOG")
 
 # --- Binaries ---
 # Not a plugin: pyright-lsp bridges to this language server, which must be on
