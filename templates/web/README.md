@@ -10,17 +10,13 @@ Cloud sessions are usually ephemeral, so the hook re-runs from scratch every tim
 
 `bootstrap.sh` is the real installer. It is self-contained: it installs its own prerequisites (chezmoi, apm), clones this repo, applies the config, and installs the full APM manifest. It is hosted in this public repo and fetched raw over https, so it always runs the latest version and lives in exactly one place.
 
-`settings.json` is the tiny drop-in a fresh repo commits. It contains only the `SessionStart` hook that curls `bootstrap.sh`.
+Do not move or rename `bootstrap.sh`. Its path is part of the hook URL in every repository already bootstrapped, and `raw.githubusercontent.com` does not redirect.
 
 ## Install into a fresh repo
 
-Copy the settings file into the target repository:
+Ask Claude to "bootstrap this repo for the web", or invoke the `install-agent-resources` skill. That routes to the `install-bootstrap` skill, which is also invocable by exact name. It writes the `SessionStart` hook into the target repo's `.claude/settings.json`, merging into any existing config rather than overwriting it, and stops if the hook is already there. The skill holds the hook block, so this folder ships no copyable settings file.
 
-```bash
-cp templates/web/settings.json <target-repo>/.claude/settings.json
-```
-
-If the target repo already has a `.claude/settings.json`, merge the `SessionStart` block into it rather than overwriting. Commit the change. The next cloud session that opens the repo runs the hook automatically.
+Commit the change. The next cloud session that opens the repo runs the hook automatically.
 
 That is all the target repo needs. The global hooks, plugins, and agent instructions come from `~/.claude`, which the bootstrap lays down with chezmoi. The target repo does not carry a copy of the bootstrap script, so there is nothing to keep in sync.
 
