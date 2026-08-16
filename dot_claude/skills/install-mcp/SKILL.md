@@ -19,11 +19,32 @@ The user wants to add one or more MCP servers. Every server in the registry is a
 3. **Which agent(s)**: `claude`, `cursor`, `codex`, `gemini` (apm target names; others apm supports are fine too).
 4. **Target project**: default to the current working directory unless told otherwise.
 
+## The registry
+
+[`references/servers.json`](references/servers.json) holds one entry per server, keyed by server name, under `servers`.
+
+### Fields
+
+| Field     | Meaning                                                                         |
+| :-------- | :------------------------------------------------------------------------------ |
+| `summary` | one line describing what the server does, shown when offering the choice        |
+| `docs`    | upstream page for the connection details                                        |
+| `dep`     | the apm.yml `dependencies.mcp` entry: `{name, registry: false, transport, ...}` |
+| `secrets` | env var names the dep references as `${VAR}`, checked but never written         |
+| `prompts` | values the user must supply: `key`, `target`, `ask`, optional `default`         |
+| `notes`   | auth options and post-install steps to surface to the user                      |
+
+A `dep` is transport-shaped: `stdio` carries `command`, `args`, and optional `env`; `http` carries `url` and optional `headers`.
+
+### How a row is used
+
+The `dep` is the source of truth for the install command in step 6. Step 3 resolves it: `prompts` answers replace the `{{KEY}}` placeholders, `${VAR}` secrets stay literal. Every registry server is a project candidate. A user-scope server also needs a declaration in the config repo, see step 7.
+
 ## Procedure
 
 ### 0. Preflight the toolchain
 
-Confirm `apm` and `uv` are both on `PATH` (`command -v apm uv`). Without `apm` the install cannot run; without `uv` the merge helper cannot run. Stop and tell the user how to install whichever is missing.
+Confirm `apm` is on `PATH` (`command -v apm`). Without it the install cannot run. Stop and tell the user how to install it.
 
 ### 1. Read the registry
 
@@ -35,23 +56,32 @@ Present `project`, `local`, `user` with `project` preselected. State the consequ
 
 `local` runs the project procedure, then adds each file apm wrote (`.mcp.json`, `.cursor/mcp.json`, `.codex/config.toml`, `.gemini/settings.json`) to the project's `.gitignore`.
 
-`user` replaces steps 4 to 7 with the user-scope procedure in step 8.
+`user` replaces steps 4 to 6 with the user-scope procedure in step 7.
 
 ### 3. Resolve config per chosen server
 
-For each selected server, take its `dep` and:
+For each selected server, take its `dep` and apply its fields:
 
-- **`prompts`**: each entry marks a value that must be filled in (e.g. a Directus instance URL). Ask the user, using `default` if present, and substitute the answer for the `{{KEY}}` placeholder in the `dep`. These are baked in as literals, not env vars.
-- **`secrets`**: leave every `${VAR}` in the dep exactly as written (the agent interpolates it from the environment at launch). For each secret, check whether it is set (`printenv VAR`). Do not assume the user already has it. If any are unset, offer one of these, do not just warn:
-  - Scaffold a credentials file in the project root so there is one place to fill them in. Ask which the user prefers: `.envrc` (direnv style, `export VAR=` lines, matching this repo's own pattern; direnv loads it into the environment automatically so the agent picks it up at launch) or `.env` (plain `VAR=` lines; remind the user it only takes effect if their shell or tooling loads it before the agent starts). Append only the missing vars without duplicating an existing line, write empty placeholders and never real values, and tell the user to add the file to `.gitignore` if it is not already ignored.
-  - Point at the server's official auth flow when it has one (e.g. tessl's `tessl auth login`, per `notes`/`docs`), in which case no variable is needed.
+| Field     | What to do                                                                                           |
+| :-------- | :--------------------------------------------------------------------------------------------------- |
+| `prompts` | ask the user, offering `default` if present, and substitute the answer for the `{{KEY}}` placeholder |
+| `secrets` | leave every `${VAR}` exactly as written, then check whether it is set with `printenv VAR`            |
+| `notes`   | surface to the user: optional auth headers, post-install steps like jcodemunch's `index_folder`      |
 
-  Never ask for or write the secret value itself.
+A `prompts` answer is baked in as a literal. A `${VAR}` is not: the agent interpolates it from the environment at launch.
 
-- **`notes`**: surface these to the user (optional auth headers, post-install steps like jcodemunch's `index_folder`).
-- **bundled rules**: if a chosen server has a companion rule file in [`references/rules/`](references/rules/) (currently `jcodemunch.md`), offer to copy it into the target project's `.claude/rules/` so its tool-selection guidance loads there. Only jcodemunch ships one today.
+#### An unset secret
 
-### 4. Preflight
+Never ask for or write the secret value itself. Do not just warn either. Offer one of these:
+
+- Scaffold a credentials file in the project root so there is one place to fill them in. Ask which the user prefers: `.envrc` (direnv style, `export VAR=` lines, matching this repo's own pattern; direnv loads it into the environment automatically so the agent picks it up at launch) or `.env` (plain `VAR=` lines; remind the user it only takes effect if their shell or tooling loads it before the agent starts). Append only the missing vars without duplicating an existing line, write empty placeholders and never real values, and tell the user to add the file to `.gitignore` if it is not already ignored.
+- Point at the server's official auth flow when it has one (e.g. tessl's `tessl auth login`, per `notes`/`docs`), in which case no variable is needed.
+
+#### Bundled rules
+
+If a chosen server has a companion rule file in [`references/rules/`](references/rules/) (currently `jcodemunch.md`), offer to copy it into the target project's `.claude/rules/` so its tool-selection guidance loads there. Only jcodemunch ships one today.
+
+### 4. Check the server's requirements
 
 - For any `stdio` server, check the dep's `command` is on `PATH` (`command -v <command>`). Warn if missing; the server will not launch without it. This covers registry servers and any custom stdio server the user defined in step 1.
 - If a chosen server name already exists in the project's `apm.yml` under `dependencies.mcp`, tell the user it will be replaced and confirm before continuing.
@@ -60,41 +90,55 @@ For each selected server, take its `dep` and:
 
 Most agents' project MCP writers only fire when that agent's config dir already exists, and skip silently otherwise. Before installing, `mkdir -p` the dir for each chosen agent in the project root: `.claude/`, `.cursor/`, `.gemini/`. Codex is the exception (it creates `.codex/` itself), but `mkdir -p .codex/` is a harmless no-op, so create it too for uniformity.
 
-### 6. Merge into apm.yml
+### 6. Install
 
-Build a JSON array of the resolved `dep` dicts and merge them into the project `apm.yml` with the helper (dedups by name, unions targets, preserves existing comments, creates the file if absent). The helper refuses to write a dep that still contains an unresolved `{{PLACEHOLDER}}`, so make sure step 2 filled every `prompts` value first:
-
-```bash
-uv run ~/.claude/skills/install-mcp/scripts/merge_apm_mcp.py \
-  --project <project-dir> \
-  --targets claude,cursor \
-  --deps-json '[ {resolved dep}, ... ]'
-```
-
-### 7. Install
-
-Run from the project directory:
+`apm mcp install` writes the server into `apm.yml` and configures the agents in one step. It needs an `apm.yml`, so create one first when the project has none:
 
 ```bash
-apm install --only mcp
+apm init -y --target claude,cursor
 ```
 
-`--only mcp` guarantees only MCP servers are configured, so a project that already uses `apm.yml` for skills is unaffected. Add `--force` only when the user has confirmed overwriting an existing same-name server. Report apm's per-agent output ("Configured for Cursor, Claude...") verbatim, plus any secret still unset and any `notes` follow-ups.
+Then install one server per command, mapping the resolved `dep` to the flags:
 
-### 8. User scope
+| `dep` field       | Command form                       |
+| :---------------- | :--------------------------------- |
+| `name`            | the positional argument            |
+| `transport`       | `--transport stdio\|http`          |
+| `url`             | `--url <value>`                    |
+| `command`, `args` | after `--`, in order               |
+| `env`             | one `--env KEY=VALUE` per entry    |
+| `headers`         | one `--header KEY=VALUE` per entry |
+
+```bash
+apm mcp install tessl --transport stdio --env 'TESSL_TOKEN=${TESSL_TOKEN}' -- tessl mcp start
+apm mcp install directus --transport http --url https://cms.example.com/mcp \
+  --header 'Authorization=Bearer ${DIRECTUS_TOKEN}'
+```
+
+Single-quote every `${VAR}` so the shell does not expand it; the value must reach `apm.yml` literally. Never type a `{{PLACEHOLDER}}` into a command: step 3 substitutes the `prompts` answers first, and an unsubstituted placeholder writes a broken server config.
+
+apm refuses a name that already exists in `apm.yml` and tells you to pass `--force`. Pass it only after the user confirms the replacement in step 4. `--force` replaces the whole entry, so re-state every flag the server needs.
+
+`--target` selects which agents this command configures. It does not update the `targets:` list in `apm.yml`, which apm writes only when it creates the file. To add an agent for later bare installs, edit the list first:
+
+```bash
+yq -i '.targets = ((.targets // []) + ["gemini"] | unique)' apm.yml
+```
+
+Report apm's per-agent output ("Configured for Cursor, Claude...") verbatim, plus any secret still unset and any `notes` follow-ups.
+
+### 7. User scope
 
 Only for `user` scope, and only after the user confirms the write. A user-scope server that is not declared in the config repo disappears on the next clean rebuild.
 
 Locate the config repo in this order: `$AGENT_CONFIG_REPO`, then `/workspaces/coding-agent-config` if it exists, then ask.
 
-Resolve the dep as in step 3, then merge it into the config repo's root `apm.yml` and install globally:
+Resolve the dep as in step 3, then run the same `apm mcp install` command from the config repo root so it writes that manifest, and install globally:
 
 ```bash
-uv run ~/.claude/skills/install-mcp/scripts/merge_apm_mcp.py \
-  --project <config-repo> \
-  --targets claude \
-  --deps-json '[ {resolved dep}, ... ]'
-<config-repo>/scripts/extensions/apm/install.sh
+cd <config-repo>
+apm mcp install <name> --transport http --url https://example.com/mcp
+./scripts/extensions/apm/install.sh
 ```
 
 That script stages the manifest into `~/.apm/` and runs `apm install -g --update --force`, because `apm install -g` reads `~/.apm/`, not the working directory. The root manifest carries its own `targets:` list, today `claude` only; another agent needs that agent added there, which fans every dep of the manifest out to it. Tell the user to commit the `apm.yml` change.
@@ -102,4 +146,4 @@ That script stages the manifest into `~/.apm/` and runs `apm install -g --update
 ## Notes
 
 - [`references/servers.json`](references/servers.json) is the source of truth for the server set; its human companion is [`docs/scope/mcp-servers.md`](../../../docs/scope/mcp-servers.md). Update both when adding a server or changing connection details.
-- Verified output paths (apm 0.25): Claude -> project `.mcp.json`, Cursor -> `.cursor/mcp.json`, Codex -> `.codex/config.toml`, Gemini -> `.gemini/settings.json`. Claude, Cursor, and Gemini need their dir pre-created (step 4); Codex does not. Always report apm's actual per-agent output rather than assuming.
+- Verified output paths (apm 0.25): Claude -> project `.mcp.json`, Cursor -> `.cursor/mcp.json`, Codex -> `.codex/config.toml`, Gemini -> `.gemini/settings.json`. Claude, Cursor, and Gemini need their dir pre-created (step 5); Codex does not. Always report apm's actual per-agent output rather than assuming.

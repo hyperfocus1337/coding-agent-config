@@ -4,7 +4,7 @@ Some MCP servers make sense only inside a single project rather than installed u
 
 ## Installing
 
-Do not wire these up by hand. Ask Claude to "install the <server> MCP server in this project", or invoke the `install-agent-resources` skill and pick the MCP channel. That routes to `install-mcp`, which is also invocable by exact name. It prompts for the server, the scope, and the coding agent(s) to target, fills in any placeholder values, checks the required secrets and stdio commands, and installs through a project `apm.yml` with `apm install --only mcp`. The same manifest fans the server out to Claude Code, Cursor, Codex, and Gemini in one step, so there is no per-agent config to maintain.
+Do not wire these up by hand. Ask Claude to "install the <server> MCP server in this project", or invoke the `install-agent-resources` skill and pick the MCP channel. That routes to `install-mcp`, which is also invocable by exact name. It prompts for the server, the scope, and the coding agent(s) to target, fills in any placeholder values, checks the required secrets and stdio commands, and installs through a project `apm.yml` with `apm mcp install`. The same manifest fans the server out to Claude Code, Cursor, Codex, and Gemini in one step, so there is no per-agent config to maintain.
 
 The skill needs `apm` and `uv` on `PATH`. It writes each agent's native config (Claude to the project root `.mcp.json`, Cursor to `.cursor/mcp.json`, Codex to `.codex/config.toml`, Gemini to `.gemini/settings.json`) and merges into any existing config rather than overwriting it.
 
