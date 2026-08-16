@@ -83,7 +83,7 @@
       "requires": ["glab"],
       "scope": "project",
       "status": "project-candidate",
-      "why": "glab writes .agents/skills, which Claude does not read, so --path is required to land in the Claude skills directory. The --global form in skills/install.sh produced nothing on this machine.",
+      "why": "glab writes .agents/skills, which Claude does not read, so both arg sets carry --path to land in the harness skills directory.",
       "use_when": "GitLab repo using the Duo agent platform",
       "project_args": "--path $SKILLS_DIR",
       "global_args": "--path $HOME/$SKILLS_DIR"
