@@ -1,0 +1,39 @@
+# betterleaks rules for block-secret-commits/hook.sh.
+#
+# The hook passes this file with --config, but only when the repository defines
+# no config of its own. A repo that carries a .betterleaks.toml or .gitleaks.toml
+# keeps winning, so this file never overrides a project's own rules. To keep
+# these rules in a repo that has its own config, extend this path from it:
+#
+#   [extend]
+#   path = "~/.claude/hooks/block-secret-commits/conf/betterleaks.toml"
+#
+# Regexes use Go RE2. RE2 has no lookahead or backreference. Express an
+# exemption in the [allowlist] block below, not as a negative pattern.
+
+[extend]
+useDefault = true # keep the 222 upstream rules, then add the one below
+
+# A file name alone can prove a secret. The upstream rules match secret values,
+# so they cannot flag a file whose name is the only evidence: a .pgpass or a
+# .netrc holds a human-chosen password with no entropy and no vendor prefix, and
+# no content rule fires on it.
+#
+# A rule with `path` and no `regex` matches on the file name alone. The name
+# list covers three groups: exact file names, secret-bearing extensions, and two
+# bundle directories that hold their secrets in child files.
+#
+# Public keys and encrypted blobs are absent on purpose. Committing an
+# id_rsa.pub, a *.crt or a *.gpg is a normal workflow, and `id_(rsa|...)$` is
+# anchored so it does not match the .pub sibling.
+[[rules]]
+id = "secret-filename"
+description = "File name indicates a secret. A name alone is proof enough; the file content is not read."
+path = '''(^|/)(\.env(\.[^/]*)?|\.envrc|\.netrc|\.pgpass|\.htpasswd|\.git-credentials|\.dockercfg|\.s3cfg|\.gitrobrc|credentials\.json|id_(rsa|dsa|ecdsa|ed25519)|\.[A-Za-z0-9]+_history)$|\.(pem|key|keypair|p8|pkcs8|ppk|pfx|p12|pkcs12|keystore|keyring|jks|kdb|keychain|ovpn|kubeconfig)$|\.(tblk|agilekeychain)(/|$)'''
+
+# A rule-scoped allowlist does not suppress a `path` rule; only this global one
+# does. Scoping it here costs nothing, because the upstream config already skips
+# these template names for the content rules.
+[allowlist]
+description = "Template files carry placeholders, not real secrets."
+paths = ['''(^|/)\.env\.(example|sample|template|dist)$''']

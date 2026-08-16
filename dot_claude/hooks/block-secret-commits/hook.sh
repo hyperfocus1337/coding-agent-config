@@ -1,95 +1,42 @@
 #!/usr/bin/env bash
+# Blocks a `git commit` that would commit a secret. Two checks: a binary scan
+# for files the scanner cannot read, and a betterleaks scan for secret values
+# and secret file names.
+#
+# Reasoning, measurements and rejected alternatives: docs/implementation.md
+# Behaviour and escape hatches: README.md
 set -u
 
-# Sections:
-#   1. Danger classifier
-#   2. Sourcing guard
-#   3. Allow / deny helpers
-#   4. Trigger filter
-#   5. Repo root
-#   6. Allowlist overrides
-#   7. Content scan helpers
-#   8. Content scan
-#   9. Filename scan
-#  10. Block and report
-#
-# The order is load-bearing throughout: the classifier has to precede the
-# sourcing guard, the guard has to precede the stdin read, and the repo root has
-# to precede the allowlist that reads a file under it.
-
-# --- Danger classifier ---
-# is_dangerous <basename> -> exit 0 if the name looks like a real secret that
-# must never be committed, 1 otherwise (templates and everything else). Match
-# on basename, not full path.
-is_dangerous() {
-  case "$1" in
-    # allowlist: templates carry placeholders, not real secrets
-    .env.example|.env.sample|.env.template|.env.dist) return 1 ;;
-    # env files
-    .env|.env.*|.envrc) return 0 ;;
-    # private keys (ssh + generic)
-    id_rsa|id_dsa|id_ecdsa|id_ed25519) return 0 ;;
-    *.pem|*.key|*.p8|*.pkcs8|*.ppk) return 0 ;;
-    # keystores / pkcs bundles
-    *.pfx|*.p12|*.pkcs12|*.keystore|*.jks) return 0 ;;
-    # credential / auth files
-    .netrc|.pgpass|.htpasswd|.git-credentials|.dockercfg) return 0 ;;
-    credentials.json|*.ovpn|*.kubeconfig) return 0 ;;
-  esac
-  return 1
-}
-
-# --- Sourcing guard ---
-# Sourced (e.g. by test.sh)? Only the classifier above is wanted; stop before
-# the hook body reads stdin. Defined first so sourcing never blocks on `read`.
-[[ "${BASH_SOURCE[0]}" == "${0}" ]] || return 0
+# Order is load-bearing twice: the stdin read precedes the jq that parses the
+# payload, and the repo root precedes the allowlist and every git command.
+# docs/implementation.md#execution-order
 
 # --- Allow / deny helpers ---
-# Cursor's beforeShellExecution hook requires valid JSON on stdout (empty stdout
-# is rejected as "not valid JSON" and blocks the command). Claude Code ignores
-# the unknown "permission" field and proceeds on exit 0, so this satisfies both.
+# One exit path for two hosts: Cursor reads the JSON verdict, Claude Code reads
+# the exit code. Pass deny a static string, never a filename.
+# docs/implementation.md#host-contract
 allow() { printf '{"permission":"allow"}\n'; exit 0; }
-
-# deny <message> -> Cursor's deny verdict plus exit 2, which Claude Code honors
-# as a block. Pass a static string: a filename with a " or a newline would
-# malform the JSON, and Cursor fails open on bad JSON. The exact paths go to
-# stderr instead, which Claude Code feeds back to the model as the block reason.
 deny() { printf '{"permission":"deny","agent_message":"%s"}\n' "$1"; exit 2; }
 
 # --- Trigger filter ---
-# git add / git commit only. Look for the command text inside the raw JSON
-# payload. Matching too widely is harmless: a wrong match just runs the scans
-# below, which only ever block on a real secret. We look for the exact phrase
-# "git add" because "add" by itself turns up in too many unrelated paths and
-# words. is_commit carries the commit test to the content scan, so the pattern
-# is written once.
-#
-# "commit" has to be a word of its own. A plain *git*commit* glob also matched
-# the literal path hooks/block-secret-commits/, so `git add` on any path holding
-# that word ran the commit-only content scan, against an index the command had
-# not written yet. Requiring whitespace in front rejects -commits and /commit
-# alike, and rejecting a trailing word character rejects commit-msg. The two
-# words are tested apart because flags sit between them in `git -C /tmp commit`.
+# `git commit` only, matched in the raw payload. Both scans read the index, and
+# at `git add` time the command has not written it yet. `commit` must be a whole
+# word, and the two words are tested apart because flags sit between them.
+# docs/implementation.md#trigger-filter
 IFS= read -r -d '' payload
-is_commit=0
-if [[ $payload == *git* ]] && [[ $payload =~ [[:space:]]commit([^[:alnum:]_-]|$) ]]; then
-  is_commit=1
-elif [[ $payload != *"git add"* ]]; then
-  allow
-fi
+[[ $payload == *git* ]] || allow
+[[ $payload =~ [[:space:]]commit([^[:alnum:]_-]|$) ]] || allow
 
 # --- Repo root ---
-# Fall back to cwd if Claude did not set the project dir.
+# Both scans run against the current directory, so move there first. A failed cd
+# means no such directory, which allows. docs/implementation.md#repo-root
 root="${CLAUDE_PROJECT_DIR:-$PWD}"
+cd "$root" 2>/dev/null || allow
 
 # --- Allowlist overrides ---
-# See README. The override names the specific secret file(s) that may be
-# committed, by repo-relative path or by bare basename, so it no longer waves
-# through every secret at once. Two sources, both additive:
-#   * .claude-allow-secrets file: one entry per line (# comments / blanks ok)
-#   * CLAUDE_ALLOW_SECRETS env var: whitespace- or colon-separated, one-off skips
-# Both feed is_allowed, which is the single definition of "allowed" for the
-# filename scan and the content scan alike.
+# Two additive sources feed one list: the .claude-allow-secrets file and the
+# CLAUDE_ALLOW_SECRETS variable. is_allowed is the single definition of
+# "allowed" for both scans. docs/implementation.md#allowlist-overrides
 allowlist=()
 if [ -f "$root/.claude-allow-secrets" ]; then
   while IFS= read -r line; do
@@ -111,28 +58,65 @@ is_allowed() { # $1 = repo-relative path; allowed if path or basename is listed
   return 1
 }
 
+# --- Binary scan ---
+# betterleaks skips a binary blob in git mode, so a keystore reaches the commit
+# unread. `--numstat` prints "-\t-" for a blob git cannot diff as text, which is
+# the same NUL-byte test betterleaks uses to skip it, so this set is exactly
+# what the content scan cannot read. Added files only; git and bash only, so it
+# is the one check that never fails open. docs/implementation.md#binary-scan
+scan_binary() {
+  local rec f offenders=()
+  while IFS= read -r -d '' rec; do
+    case $rec in
+      $'-\t-\t'*) f=${rec#$'-\t-\t'}; is_allowed "$f" || offenders+=("$f") ;;
+    esac
+  done < <(git diff --cached --numstat -z --diff-filter=A 2>/dev/null)
+  [ ${#offenders[@]} -eq 0 ] && return 0
+
+  # stderr: Claude Code feeds this back to the model as the block reason.
+  {
+    echo "Blocked: this commit would add binary file(s), which the secret scanner cannot read:"
+    printf '  - %s\n' "${offenders[@]}"
+    echo
+    echo "A binary file is never scanned for secrets, so a keystore, a key bundle or a"
+    echo "database dump would reach the commit unchecked. Fix one of:"
+    echo "  * drop the file, or add it to .gitignore if it is build output (recommended), or"
+    echo "  * list the path(s) in $root/.claude-allow-secrets (persistent, per-repo), or"
+    echo "  * set CLAUDE_ALLOW_SECRETS to the path(s), colon-separated (one-off)"
+    echo
+    echo "Check one by hand with: betterleaks dir <path> --redact --verbose"
+  } 1>&2
+
+  deny "Blocked: this commit would add binary file(s) that the secret scanner cannot read. See the blocked-command output for the path(s); drop or gitignore them, or list them in .claude-allow-secrets / CLAUDE_ALLOW_SECRETS."
+}
+
+# --- betterleaks config ---
+# conf/betterleaks.toml holds the file-name rules. It sits next to this script
+# because betterleaks has no XDG lookup, and is passed only when the repo
+# defines no config of its own, so a repo's own config still wins.
+# docs/implementation.md#config-resolution
+bl_cfg=()
+if [ -z "${BETTERLEAKS_CONFIG:-}${GITLEAKS_CONFIG:-}${BETTERLEAKS_CONFIG_TOML:-}${GITLEAKS_CONFIG_TOML:-}" ] &&
+   [ ! -f "$root/.betterleaks.toml" ] && [ ! -f "$root/.gitleaks.toml" ]; then
+  cfg="${BASH_SOURCE[0]%/*}/conf/betterleaks.toml"
+  [ -f "$cfg" ] && bl_cfg=(--config "$cfg")
+fi
+
 # --- Content scan helpers ---
-# bl_scan <mode> -> sets bl_report to the JSON findings array, or to empty when
-# the scan is clean, errors, or times out. Not called in a $( ) substitution, so
-# the global it sets survives.
+# bl_scan <mode> -> sets bl_report to the findings JSON, or empty when the scan
+# is clean, errors, or times out. Sets a global rather than printing, so it is
+# never called in a $( ) subshell. --exit-code 9 keeps "leaks found" distinct
+# from betterleaks' error exit of 1, so a broken scan allows instead of blocking
+# every commit.
 #
-# --exit-code 9 separates "leaks found" from betterleaks' own error exit (1), so
-# a broken scan allows the commit instead of blocking every commit.
-# --redact keeps the secret value out of the report, the logs, and this output.
-#
-# timeout bounds the run. A large high-entropy staged blob (base64, minified
-# bundle) otherwise scans for tens of seconds: ~26MB takes 7s and ~104MB takes
-# 41s, well past the hook timeout in settings.json. A hook killed by that
-# timeout exits 124, which reaches Claude as an error and not as a block, so the
-# scan has to cap itself instead. Ordinary source is nowhere near this: 20MB of
-# code scans in 2s. A capped scan is the one fail-open path a reader cannot
-# infer from a clean run, so it warns here; Claude Code shows hook stderr in the
-# transcript. $bl is the resolved binary path, so timeout skips its PATH walk.
+# The timeout wrapper is load-bearing. Do NOT replace it with betterleaks'
+# own --timeout, which aborts the scan and exits 0, turning a truncated scan
+# into a silent pass. docs/implementation.md#scan-cap
 bl_cap=4
 bl_scan() {
   local out rc
-  out=$(timeout "$bl_cap" "$bl" git "$1" --no-banner --redact --log-level error \
-    --exit-code 9 -f json -r - 2>/dev/null)
+  out=$(timeout "$bl_cap" "$bl" git "$1" ${bl_cfg[@]+"${bl_cfg[@]}"} \
+    --no-banner --redact --log-level error --exit-code 9 -f json -r - 2>/dev/null)
   rc=$?
   bl_report=""
   [ "$rc" -eq 9 ] && bl_report=$out
@@ -141,11 +125,9 @@ bl_scan() {
   return 0
 }
 
-# stages_all <command> -> 0 when this is a `git commit -a`, which stages tracked
-# edits as part of the commit, after this hook has already run. Truncate at the
-# message flag first, so `git commit -m "add -a flag"` does not count as -a. A
-# message glued to the flag (-m"...") defeats that and costs one extra scan.
-# --all is anchored on both ends so --allow-empty does not read as --all.
+# stages_all <command> -> 0 for a `git commit -a`, which stages tracked edits
+# after this hook has run. Truncates at the message flag so message text does
+# not read as a flag. docs/implementation.md#git-commit--a
 stages_all() {
   local flags=${1%%-m *}
   flags=${flags%%--message*}
@@ -153,44 +135,31 @@ stages_all() {
 }
 
 # --- Content scan ---
-# The filename rules cannot see a secret pasted into an ordinary file, so hand
-# the committable content to betterleaks. Never returns: it allows or blocks.
-#
-# Commit only. At `git add` time the index does not hold the new files yet, so a
-# staged scan would find nothing. By commit time it does, because the git slash
-# commands stage and commit in the same response.
-#
-# Fails open on every path except a real finding: a missing binary, no git repo,
-# a scanner error, or a timeout all allow, and the filename guard still applies.
-# jq is a hard requirement rather than a partial degradation, because the
-# allowlist filter below runs on the report: without jq a file listed in
-# .claude-allow-secrets would still block, contradicting the escape hatch the
-# block message names.
+# Blocks on a secret value pasted into a file, and on the secret-filename rule
+# matching a name alone. Fails open on every path except a real finding: missing
+# tool, no repo, scanner error, or timeout all allow.
+# docs/implementation.md#content-scan
 scan_content() {
-  [ "$is_commit" -eq 1 ] || allow
   bl=$(command -v betterleaks) || allow
   command -v jq >/dev/null 2>&1 || allow
 
   local cmd mode where lines=() line f
 
   mode=--staged
-  bl_scan --staged
+  bl_scan "$mode"
   if [ -z "$bl_report" ]; then
-    # `// .command` is Cursor, which passes the command flat rather than under
-    # tool_input. Same extraction as enforce-cli-tools/hook.sh. Read here, not
-    # earlier, so a blocking scan never pays for a jq it will not use.
+    # Parsed only now, so a blocking scan never pays for a jq it will not use.
+    # `// .command` is Cursor, which passes the command flat.
     cmd=$(printf '%s' "$payload" | jq -r '.tool_input.command // .command // empty' 2>/dev/null)
     if stages_all "$cmd"; then
       mode=--pre-commit
-      bl_scan --pre-commit
+      bl_scan "$mode"
     fi
   fi
   [ -z "$bl_report" ] && allow
 
-  # Drop findings in a file the allowlist already exempts, so
-  # .claude-allow-secrets and CLAUDE_ALLOW_SECRETS cover both checks with one
-  # list. Reuses is_allowed, so "allowed" has exactly one definition. One jq
-  # pass emits the filter key and the display line together, tab-separated.
+  # Drop findings the allowlist already exempts, so one list covers every check.
+  # One jq pass emits the filter key and the display line, tab-separated.
   while IFS=$'\t' read -r f line; do
     [ -n "$f" ] && ! is_allowed "$f" && lines+=("$line")
   done < <(printf '%s' "$bl_report" | jq -r \
@@ -202,44 +171,22 @@ scan_content() {
 
   # stderr: Claude Code feeds this back to the model as the block reason.
   {
-    echo "Blocked: betterleaks found secret(s) in the $where:"
+    echo "Blocked: betterleaks flagged the $where:"
     printf '%s\n' "${lines[@]}"
+    echo
+    echo "A 'secret-filename' rule means the file name alone marks it as a secret."
+    echo "Any other rule means a secret value was found on that line."
     echo
     echo "Inspect with: betterleaks git $mode --redact --verbose"
     echo "Fix one of:"
-    echo "  * remove the secret from the content (recommended), or"
+    echo "  * remove the secret, or add the file to .gitignore (recommended), or"
     echo "  * mark a false positive with a 'betterleaks:allow' comment on the line, or"
     echo "  * add the fingerprint to $root/.betterleaksignore, or"
-    echo "  * list the file in $root/.claude-allow-secrets (exempts it from both checks)"
+    echo "  * list the file in $root/.claude-allow-secrets (exempts it from every check)"
   } 1>&2
 
-  deny "Blocked: betterleaks found secret(s) in the content this commit would add. See the blocked-command output for the rule, file and line; remove the secret, mark the line betterleaks:allow, add the fingerprint to .betterleaksignore, or list the file in .claude-allow-secrets."
+  deny "Blocked: betterleaks flagged the content this commit would add. See the blocked-command output for the rule, file and line; a 'secret-filename' rule means the name itself is the problem, so gitignore the file or list it in .claude-allow-secrets. Otherwise remove the secret, mark the line betterleaks:allow, or add the fingerprint to .betterleaksignore."
 }
 
-# --- Filename scan ---
-# Scan committable files (non-repo → ls-files errors → empty → allow).
-cd "$root" 2>/dev/null || allow # run from repo root so git sees this repo's files
-
-# git ls-files flags: --cached=tracked, --others=untracked,
-# --exclude-standard=drop gitignored, -z=NUL-separate names (spaces/newlines safe)
-offenders=()
-while IFS= read -r -d '' path; do # read one NUL-terminated filename per iteration
-  is_dangerous "${path##*/}" && ! is_allowed "$path" && offenders+=("$path") # basename builtin, no fork; skip allowlisted
-done < <(git ls-files -z --cached --others --exclude-standard 2>/dev/null) # < <() not a pipe, so offenders survives the loop
-
-# no dangerous filename → hand off to the content scan, which allows or blocks
-[ ${#offenders[@]} -eq 0 ] && scan_content
-
-# --- Block and report ---
-# stderr: Claude Code feeds this back to the model as the block reason (exit 2).
-{
-  echo "Blocked: this git command would stage or commit secret file(s) that are not gitignored:"
-  printf '  - %s\n' "${offenders[@]}"
-  echo
-  echo "Fix one of:"
-  echo "  * add the file(s) to .gitignore (recommended), or"
-  echo "  * list the path(s) in $root/.claude-allow-secrets (persistent, per-repo), or"
-  echo "  * set CLAUDE_ALLOW_SECRETS to the path(s), colon-separated (one-off)"
-} 1>&2
-
-deny "Blocked: git command would stage/commit an untracked secret file. See the blocked-command output for the path(s); gitignore them or add them to .claude-allow-secrets / CLAUDE_ALLOW_SECRETS."
+scan_binary  # blocks on an unreadable binary, otherwise returns
+scan_content # always allows or blocks

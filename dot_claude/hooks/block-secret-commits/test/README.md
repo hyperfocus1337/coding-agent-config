@@ -2,7 +2,7 @@
 
 ## test.sh
 
-Smoke test for the `is_dangerous` classifier in `../hook.sh`, the function that decides which filenames count as secrets that must never be committed.
+End-to-end test for the two name-based checks in `../hook.sh`: the binary scan, and the `secret-filename` rule in `../conf/betterleaks.toml`.
 
 Run it:
 
@@ -10,9 +10,17 @@ Run it:
 bash test.sh
 ```
 
-It sources `../hook.sh` and calls `is_dangerous` directly. The hook defines the classifier at the top, then a sourcing guard (`[[ "${BASH_SOURCE[0]}" == "${0}" ]] || return 0`) stops before the hook body, so sourcing loads only the function without reading stdin or scanning the repo.
+Like `test-content.sh`, it cannot source the hook. Each case builds a throwaway git repo under `mktemp -d`, pipes a `PreToolUse` JSON payload into `../hook.sh` as a subprocess with `CLAUDE_PROJECT_DIR` pointed at that repo, and asserts the exit code: 0 allows, 2 blocks.
 
-Each case asserts one basename: real secrets (`.env`, `id_rsa`, `*.pem`, `credentials.json`, ...) must block, templates and ordinary files (`.env.example`, `main.go`, ...) must pass. Prints `ok`/`FAIL` per case and exits non-zero if any case fails, so it doubles as a CI check. Add a case here whenever you tune the `is_dangerous` list.
+Six cases cover the binary scan, and they run unconditionally because that scan needs only git and bash. A newly added binary file must block, and the block message must name it. A binary named `we ird".p12` must block too, which is what proves the `-z` parsing survives a space and a quote. An ordinary text file must allow, because git can diff it and betterleaks can therefore read it. A modified tracked binary must allow, because `--diff-filter=A` covers added files only. Both allowlist forms must exempt a binary.
+
+The fixtures embed a literal NUL byte. That is what makes git report the blob as binary, and it is the same test betterleaks uses to skip the file, so the equivalence the check rests on is exercised rather than assumed.
+
+Five cases cover the name rule. One stages a file for each of the 35 sample names, asserts the commit blocks, and then asserts every one of those names appears in the block message, so a rule that silently stops matching cannot pass on the exit code alone. Add a name to the `names()` list whenever you tune the `path` pattern in `../conf/betterleaks.toml`. A second case stages the templates (`.env.example`, `.env.sample`, `.env.template`, `.env.dist`) together with ordinary files and the deliberately permitted `id_rsa.pub`, `server.crt`, and `notes.gpg`, and asserts they all pass. A third asserts `.claude-allow-secrets` exempts a secret name. A fourth asserts a repo carrying its own `.betterleaks.toml` keeps it, so the shipped rules stop applying.
+
+These five skip if `betterleaks` or `jq` is missing, matching the hook's fail-open behavior; the binary cases have already run by then.
+
+Run this file after any edit to `../conf/betterleaks.toml`. A config error is fatal to betterleaks rather than a warning, so a bad pattern makes the whole scan fail open with no visible sign.
 
 ## test-content.sh
 
