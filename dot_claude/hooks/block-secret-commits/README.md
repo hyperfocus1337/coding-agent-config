@@ -26,6 +26,8 @@ The content check also needs `jq`, which is normally already installed. It reads
 
 The hook is wired to the `Bash` tool in `settings.json`, so it runs before every shell command. It exits immediately unless the command text contains `git add` or a `git ... commit`, so the cost on ordinary commands is a single fast bail (about 1ms of process startup, no external tools spawned).
 
+`commit` is matched as a word of its own, with whitespace in front and no word character after. Otherwise a path such as `hooks/block-secret-commits/` or `.git/hooks/commit-msg` reads as the subcommand, and a `git add` on that path runs the commit-only content check below against an index the command has not written yet. `git` and `commit` are matched apart, because flags sit between them in `git -C /tmp commit`.
+
 ### Filename check
 
 When the hook does see one of those commands, it lists everything git would actually track with `git ls-files --cached --others --exclude-standard`. That set is tracked files plus untracked-but-not-ignored files, and it deliberately excludes anything gitignored. So a properly gitignored `.env` is silently allowed, because git could never stage it anyway, and gitignore is the natural first escape hatch. Each basename is checked against the ruleset; if any match, the command is blocked with exit code 2 and a message naming the offending files.
@@ -126,7 +128,7 @@ The default rule set already allowlists well-known documentation values, so the 
 
 `test/test.sh` is a smoke test for the `is_dangerous` classifier: it sources `hook.sh` (stopping at the sourcing guard so only the function loads) and asserts that real secrets block and templates/ordinary files pass. Run `bash test/test.sh`.
 
-`test/test-content.sh` is an end-to-end test for the content check: it builds throwaway repos, pipes a hook payload into `hook.sh`, and asserts the outcome for a staged secret, clean content, an empty stage, a `git add`, a non-repo, an unrelated command, the four `-a` spellings, a `-a` that appears only inside the commit message, `--allow-empty`, each allowlist form, and the text of the block message. Run `bash test/test-content.sh`. It skips with exit 0 if betterleaks or `jq` is missing.
+`test/test-content.sh` is an end-to-end test for the content check: it builds throwaway repos, pipes a hook payload into `hook.sh`, and asserts the outcome for a staged secret, clean content, an empty stage, a `git add`, a non-repo, an unrelated command, the four `-a` spellings, a `-a` that appears only inside the commit message, `--allow-empty`, a `git add` whose path holds the word `commit`, `commit` behind a `git` flag, each allowlist form, and the text of the block message. Run `bash test/test-content.sh`. It skips with exit 0 if betterleaks or `jq` is missing.
 
 See [test/README.md](test/README.md).
 

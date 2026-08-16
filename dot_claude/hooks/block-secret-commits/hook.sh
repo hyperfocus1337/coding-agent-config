@@ -63,12 +63,20 @@ deny() { printf '{"permission":"deny","agent_message":"%s"}\n' "$1"; exit 2; }
 # "git add" because "add" by itself turns up in too many unrelated paths and
 # words. is_commit carries the commit test to the content scan, so the pattern
 # is written once.
+#
+# "commit" has to be a word of its own. A plain *git*commit* glob also matched
+# the literal path hooks/block-secret-commits/, so `git add` on any path holding
+# that word ran the commit-only content scan, against an index the command had
+# not written yet. Requiring whitespace in front rejects -commits and /commit
+# alike, and rejecting a trailing word character rejects commit-msg. The two
+# words are tested apart because flags sit between them in `git -C /tmp commit`.
 IFS= read -r -d '' payload
-case $payload in
-  *git*commit*) is_commit=1 ;;
-  *"git add"*) is_commit=0 ;;
-  *) allow ;;
-esac
+is_commit=0
+if [[ $payload == *git* ]] && [[ $payload =~ [[:space:]]commit([^[:alnum:]_-]|$) ]]; then
+  is_commit=1
+elif [[ $payload != *"git add"* ]]; then
+  allow
+fi
 
 # --- Repo root ---
 # Fall back to cwd if Claude did not set the project dir.

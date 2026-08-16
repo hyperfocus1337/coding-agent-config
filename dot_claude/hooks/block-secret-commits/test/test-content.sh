@@ -80,6 +80,14 @@ assert 2 "$(run "$r" 'git commit -m wip')" "block  staged secret on commit"
 # scan is skipped, and the filename rules see nothing dangerous
 assert 0 "$(run "$r" 'git add .')" "allow  staged secret on git add"
 
+# the word "commit" inside a path must not read as the git subcommand. These are
+# still `git add`, so the content scan has to stay off.
+assert 0 "$(run "$r" 'git add hooks/block-secret-commits/test')" "allow  'commits' in an added path"
+assert 0 "$(run "$r" 'git add .git/hooks/commit-msg')" "allow  'commit-msg' in an added path"
+
+# the real subcommand must still register through an intervening flag
+assert 2 "$(run "$r" 'git -C . commit -m wip')" "block  commit behind a git flag"
+
 # clean staged content → commit allowed
 r=$(mkrepo clean)
 printf 'def main():\n    print("hello")\n' > "$r/app.py"

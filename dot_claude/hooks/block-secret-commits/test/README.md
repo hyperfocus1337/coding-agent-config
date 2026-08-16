@@ -28,6 +28,8 @@ It cannot source the hook, because `scan_content` sits below the sourcing guard 
 
 The cases cover a staged secret on commit (blocks), the same secret on `git add` (allows, because the check is commit-only), clean staged content, an empty stage, an unstaged secret, a directory that is not a git repository (fails open), and an unrelated command.
 
+Three cases guard the trigger filter, which decides whether a command counts as a commit. A `git add hooks/block-secret-commits/test` and a `git add .git/hooks/commit-msg` must allow: the word `commit` is inside a path, not the subcommand, and treating it as the subcommand runs the content check against an index the command has not written yet. `git -C . commit -m wip` must still block, because a `git` flag between the two words does not stop it from being a commit.
+
 Four cases cover `git commit -a`, which stages tracked edits after the hook runs: `-am`, `-a -m`, `--all`, and a bare `-a` must each block on a secret sitting unstaged in a tracked file. Three more guard the flag test from the other side, because a false match costs an extra scan and can block a commit that carries no secret: the same repo without `-a` must allow, `git commit -m "add -a flag"` must allow because the `-a` there is message text and not a flag, and `git commit --allow-empty` must allow because it only looks like `--all`.
 
 Four cases cover the allowlist: a file exempted by path, by bare basename, and through `CLAUDE_ALLOW_SECRETS` must all allow, and a second file that is not exempted must still block.
