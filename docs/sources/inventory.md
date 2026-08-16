@@ -50,17 +50,24 @@ Third-party skills pulled by `apm install`, which re-resolves to latest upstream
 
 A bundle is either flat (the whole repo is one skill) or a repo whose `skills/` dir holds many, in which case `apm.yml` names the subset to pull. Add a row here whenever a new bundle is added to `apm.yml`.
 
-| Skill                                                                                                            | Bundle                                                                            | Description                                            |
-| ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| [`terraform-skill`](https://github.com/antonbabenko/terraform-skill/blob/master/skills/terraform-skill/SKILL.md) | [`antonbabenko/terraform-skill`](https://github.com/antonbabenko/terraform-skill) | Write, review, and debug Terraform or OpenTofu.        |
-| `neon`                                                                                                           | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)       | Overview of the Neon platform.                         |
-| `neon-postgres`                                                                                                  | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)       | Setup and best practices for Neon serverless Postgres. |
-| `neon-postgres-branches`                                                                                         | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)       | Create the right Neon branch type for dev and test.    |
-| 7 cmux skills (table below)                                                                                      | [`manaflow-ai/cmux`](https://github.com/manaflow-ai/cmux/tree/main/skills)        | Drive the cmux terminal from an agent.                 |
+| Skill                                                                                                            | Bundle                                                                            | Description                                     |
+| ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------- |
+| [`terraform-skill`](https://github.com/antonbabenko/terraform-skill/blob/master/skills/terraform-skill/SKILL.md) | [`antonbabenko/terraform-skill`](https://github.com/antonbabenko/terraform-skill) | Write, review, and debug Terraform or OpenTofu. |
+
+## By APM skill bundles, per repo
+
+Bundles that cost resident tokens in every session but earn them in one kind of repo only. They are not in the user-scope [`apm.yml`](../../apm.yml); their rows in [`skills.json`](../../dot_claude/skills/install-skills/references/skills.json) carry `scope: project` or `scope: local`, and `install-skills` writes the `skills:` subset into the target repo's own `apm.yml`. All are of kind `skill`.
+
+| Skill                    | Bundle                                                                      | Description                                            |
+| ------------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `neon`                   | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills) | Overview of the Neon platform.                         |
+| `neon-postgres`          | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills) | Setup and best practices for Neon serverless Postgres. |
+| `neon-postgres-branches` | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills) | Create the right Neon branch type for dev and test.    |
+| 7 cmux skills            | [`manaflow-ai/cmux`](https://github.com/manaflow-ai/cmux/tree/main/skills)  | Drive the cmux terminal from an agent (table below).   |
 
 ### cmux skills (`manaflow-ai/cmux`)
 
-The cmux terminal ships its skills in the repo's [`skills/`](https://github.com/manaflow-ai/cmux/tree/main/skills) dir, documented at [cmux.com/docs/skills](https://cmux.com/docs/skills). Upstream installs them with `npx skills add manaflow-ai/cmux`; here APM pulls the same directories so they stay declared in `apm.yml`. Only the seven user-facing skills below are enabled; the rest of that dir (`cmux-backend`, `-billing`, `-release`, `-testing`, `-architecture`, and others) targets contributors to cmux itself. Each name links to its upstream `SKILL.md`.
+The cmux terminal ships its skills in the repo's [`skills/`](https://github.com/manaflow-ai/cmux/tree/main/skills) dir, documented at [cmux.com/docs/skills](https://cmux.com/docs/skills). Upstream installs them with `npx skills add manaflow-ai/cmux`; here APM pulls the same directories into a project. Only the seven user-facing skills below are taken; the rest of that dir (`cmux-backend`, `-billing`, `-release`, `-testing`, `-architecture`, and others) targets contributors to cmux itself. Each name links to its upstream `SKILL.md`.
 
 | Skill                                                                                                    | Description                                                                    |
 | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |

@@ -20,28 +20,14 @@ dependencies:
     - git: cursor/plugins/cursor-team-kit
       skills:
         - thermo-nuclear-code-quality-review
-    # Neon skills only. The neon-postgres plugin bundles a hosted Neon MCP that
-    # can't be disabled per-server, so we take just the skills via APM (which
-    # never wires mcp.json). Resolved from the repo's top-level skills/ dir.
-    - git: neondatabase/agent-skills
-      skills:
-        - neon
-        - neon-postgres
-        - neon-postgres-branches
-    # cmux skills (https://cmux.com/docs/skills). Upstream installs via
-    # `npx skills add manaflow-ai/cmux`; APM pulls the same skills/ dir instead
-    # so it stays in this manifest. Subset = the user-facing set the docs list;
-    # the other dirs (cmux-backend, -billing, -release, -testing, -architecture,
-    # ...) are for contributors to cmux itself.
-    - git: manaflow-ai/cmux
-      skills:
-        - cmux
-        - cmux-workspace
-        - cmux-settings
-        - cmux-customization
-        - cmux-diagnostics
-        - cmux-browser
-        - cmux-markdown
+  # Two bundles are deliberately absent, both non-user rows in the
+  # install-skills catalog. Install either per repo with the install-skills
+  # skill, which writes the `skills:` subset into the project apm.yml:
+  #   neondatabase/agent-skills  project-candidate, 441 resident tokens for
+  #                              one vendor's database.
+  #   manaflow-ai/cmux           local-candidate, 479 resident tokens of
+  #                              personal terminal tooling. Never commit it
+  #                              into a shared repo.
   # User-scoped MCP servers. Secrets come from the environment at install time
   # (${VAR}) so this manifest stays committable.
   mcp:

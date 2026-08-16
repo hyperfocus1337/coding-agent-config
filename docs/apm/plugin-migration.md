@@ -1,6 +1,6 @@
 # Which Claude plugins could move to APM
 
-The MCP servers, the terraform skill, and the Neon skills live in [`apm.yml`](../../apm.yml). This doc classifies the enabled Claude plugins for an APM move. One (terraform-skill) has since moved; the rest stay on the `claude plugin` CLI, either by design (hooks/LSP/binaries) or because of apm 0.23.1 tooling limits. See "What actually moved" at the bottom for the tested outcome; the classification below is the portability assessment that predates the attempt.
+The MCP servers and the user-scope skill bundles live in [`apm.yml`](../../apm.yml). This doc classifies the enabled Claude plugins for an APM move. One (terraform-skill) has since moved; the rest stay on the `claude plugin` CLI, either by design (hooks/LSP/binaries) or because of apm 0.23.1 tooling limits. See "What actually moved" at the bottom for the tested outcome; the classification below is the portability assessment that predates the attempt.
 
 ## "APM supports plugins" vs "APM can carry this plugin"
 
