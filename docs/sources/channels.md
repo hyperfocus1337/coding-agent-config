@@ -19,14 +19,14 @@ Portable skills committed as plain files under [`dot_claude/skills/`](../../dot_
 
 ## Standalone CLI skills
 
-Installed by vendor CLIs because they ship with a companion binary, see [`scripts/extensions/skills/install.sh`](../../scripts/extensions/skills/install.sh):
+Installed by vendor CLIs because they ship with a companion binary. The set is declared in [`skills.json`](../../dot_claude/skills/install-skills/references/skills.json), which [`scripts/extensions/skills/install.sh`](../../scripts/extensions/skills/install.sh) reads:
 
 - `playwright` installed via `playwright-cli install --skills`.
-- `orbit` installed via `glab skills install --global orbit` (GitLab AI coding agents).
+- `orbit` installed via `glab skills install orbit --path <skills dir>` (GitLab AI coding agents). Both rows are project-scope today, so the script installs neither at user scope.
 
 ## Plugin skills
 
-Most skills arrive bundled inside Claude plugins. The full list, with the marketplace and upstream URL for each, lives in [`scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh) (each `claude plugin install` line is commented with its source repo). That script is the source of truth; it is not mirrored here because the set changes often. Which plugins were considered for an APM move and why they stayed on the plugin CLI is covered in [`docs/apm/plugin-migration.md`](../apm/plugin-migration.md). The largest bundle is `mattpocock-skills` (25 engineering and productivity skills); its per-skill quick reference and the intended feature-build chain live in [`inventory.md`](inventory.md#matt-pocock-skills-mattpocock-skills).
+Most skills arrive bundled inside Claude plugins. The full list, with the marketplace and upstream URL for each, lives in [`plugins.json`](../../dot_claude/skills/install-plugins/references/plugins.json), which [`scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh) reads. That catalog is the source of truth; it is not mirrored here because the set changes often. Which plugins were considered for an APM move and why they stayed on the plugin CLI is covered in [`docs/apm/plugin-migration.md`](../apm/plugin-migration.md). The largest bundle is `mattpocock-skills` (25 engineering and productivity skills); its per-skill quick reference and the intended feature-build chain live in [`inventory.md`](inventory.md#matt-pocock-skills-mattpocock-skills).
 
 ## APM bundle skills
 

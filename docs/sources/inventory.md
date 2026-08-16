@@ -74,7 +74,7 @@ The cmux terminal ships its skills in the repo's [`skills/`](https://github.com/
 
 ## By standalone CLI
 
-Installed by a vendor CLI that ships with a companion binary. Source of truth: [`../../scripts/extensions/skills/install.sh`](../../scripts/extensions/skills/install.sh).
+Installed by a vendor CLI that ships with a companion binary. Source of truth for the set: [`../../dot_claude/skills/install-skills/references/skills.json`](../../dot_claude/skills/install-skills/references/skills.json), which [`../../scripts/extensions/skills/install.sh`](../../scripts/extensions/skills/install.sh) executes.
 
 | Skill                                                           | Kind  | Installed via                        | Description                                             |
 | --------------------------------------------------------------- | ----- | ------------------------------------ | ------------------------------------------------------- |
@@ -83,32 +83,29 @@ Installed by a vendor CLI that ships with a companion binary. Source of truth: [
 
 ## By Claude plugins (`claude plugin install`)
 
-Bundled inside plugins from various marketplaces. Source of truth for the set: [`../../scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh). The reasoning on which plugins could move to APM is in [`../apm/plugin-migration.md`](../apm/plugin-migration.md).
+Bundled inside plugins from various marketplaces. Source of truth for the set: [`../../dot_claude/skills/install-plugins/references/plugins.json`](../../dot_claude/skills/install-plugins/references/plugins.json), which [`../../scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh) executes. The reasoning on which plugins could move to APM is in [`../apm/plugin-migration.md`](../apm/plugin-migration.md).
 
-| Plugin                                                                                                       | Marketplace          | Provides                                                         | Kind     |
-| ------------------------------------------------------------------------------------------------------------ | -------------------- | ---------------------------------------------------------------- | -------- |
-| [`code-review`](https://github.com/anthropics/claude-code/tree/main/plugins/code-review)                     | official             | `/code-review:code-review`                                       | command  |
-| [`feature-dev`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)                     | official             | `/feature-dev:feature-dev`                                       | command  |
-| [`feature-dev`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)                     | official             | `code-architect`, `code-explorer`, `code-reviewer`               | subagent |
-| [`code-simplifier`](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-simplifier) | official             | `code-simplifier`                                                | subagent |
-| [`iterative-development`](https://github.com/prime-radiant-inc/iterative-development)                        | prime-radiant        | `iterative-development:*`                                        | skill    |
-| [`greenfield`](https://github.com/prime-radiant-inc/greenfield)                                              | prime-radiant        | `greenfield:analyze`, `greenfield:sanitize`                      | skill    |
-| [`context7`](https://github.com/upstash/context7)                                                            | upstash              | `context7:docs`                                                  | skill    |
-| [`context7`](https://github.com/upstash/context7)                                                            | upstash              | context7 server                                                  | MCP      |
-| [`code-refactoring`](https://github.com/wshobson/agents/tree/main/plugins/code-refactoring)                  | wshobson/agents      | `code-reviewer`, `legacy-modernizer`                             | subagent |
-| [`mattpocock-skills`](https://github.com/mattpocock/skills)                                                  | mattpocock           | 25 engineering and productivity skills (table below)             | skill    |
-| [`ast-grep`](https://github.com/ast-grep/agent-skill)                                                        | ast-grep/agent-skill | `ast-grep:ast-grep`                                              | skill    |
-| [`astral`](https://github.com/astral-sh/claude-code-plugins/tree/main/plugins/astral)                        | astral-sh            | `astral:ruff`, `astral:ty`, `astral:uv`                          | skill    |
-| [`codex`](https://github.com/openai/codex-plugin-cc)                                                         | openai               | `codex:rescue`, `codex:setup`                                    | skill    |
-| [`codex`](https://github.com/openai/codex-plugin-cc)                                                         | openai               | codex-rescue                                                     | subagent |
-| [`caveman`](https://github.com/JuliusBrussee/caveman)                                                        | caveman              | `caveman`, `caveman-review`, `caveman-help`, `compress`          | skill    |
-| [`ponytail`](https://github.com/DietrichGebert/ponytail)                                                     | ponytail             | `ponytail`, `ponytail-review`, `ponytail-audit`, `ponytail-debt` | skill    |
-| [`pyright`](https://github.com/Piebald-AI/claude-code-lsps/tree/main/pyright)                                | piebald-ai           | pyright                                                          | LSP      |
-| [`watch`](https://github.com/bradautomates/claude-video)                                                     | claude-video         | `watch:watch`                                                    | skill    |
-| [`glab`](https://gitlab.com/gitlab-org/ai/skills)                                                            | gitlab               | GitLab CLI skills                                                | skill    |
-| [`cloudflare`](https://github.com/cloudflare/skills)                                                         | cloudflare           | Cloudflare skills                                                | skill    |
-| [`chrome-devtools-mcp`](https://github.com/ChromeDevTools/chrome-devtools-mcp)                               | chrome-devtools      | browser automation                                               | MCP      |
-| [`notion-workspace-plugin`](https://github.com/makenotion/claude-code-notion-plugin)                         | notion               | Notion workspace access                                          | skill    |
+| Plugin                                                                                      | Marketplace          | Provides                                                         | Kind     |
+| ------------------------------------------------------------------------------------------- | -------------------- | ---------------------------------------------------------------- | -------- |
+| [`feature-dev`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)    | official             | `/feature-dev:feature-dev`                                       | command  |
+| [`feature-dev`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)    | official             | `code-architect`, `code-explorer`, `code-reviewer`               | subagent |
+| [`iterative-development`](https://github.com/prime-radiant-inc/iterative-development)       | prime-radiant        | `iterative-development:*`                                        | skill    |
+| [`context7`](https://github.com/upstash/context7)                                           | upstash              | `context7:docs`                                                  | skill    |
+| [`context7`](https://github.com/upstash/context7)                                           | upstash              | context7 server                                                  | MCP      |
+| [`code-refactoring`](https://github.com/wshobson/agents/tree/main/plugins/code-refactoring) | wshobson/agents      | `code-reviewer`, `legacy-modernizer`                             | subagent |
+| [`mattpocock-skills`](https://github.com/mattpocock/skills)                                 | mattpocock           | 25 engineering and productivity skills (table below)             | skill    |
+| [`ast-grep`](https://github.com/ast-grep/agent-skill)                                       | ast-grep/agent-skill | `ast-grep:ast-grep`                                              | skill    |
+| [`astral`](https://github.com/astral-sh/claude-code-plugins/tree/main/plugins/astral)       | astral-sh            | `astral:ruff`, `astral:ty`, `astral:uv`                          | skill    |
+| [`codex`](https://github.com/openai/codex-plugin-cc)                                        | openai               | `codex:rescue`, `codex:setup`                                    | skill    |
+| [`codex`](https://github.com/openai/codex-plugin-cc)                                        | openai               | codex-rescue                                                     | subagent |
+| [`caveman`](https://github.com/JuliusBrussee/caveman)                                       | caveman              | `caveman`, `caveman-review`, `caveman-help`, `compress`          | skill    |
+| [`ponytail`](https://github.com/DietrichGebert/ponytail)                                    | ponytail             | `ponytail`, `ponytail-review`, `ponytail-audit`, `ponytail-debt` | skill    |
+| [`pyright`](https://github.com/Piebald-AI/claude-code-lsps/tree/main/pyright)               | piebald-ai           | pyright                                                          | LSP      |
+| [`watch`](https://github.com/bradautomates/claude-video)                                    | claude-video         | `watch:watch`                                                    | skill    |
+| [`glab`](https://gitlab.com/gitlab-org/ai/skills)                                           | gitlab               | GitLab CLI skills                                                | skill    |
+| [`cloudflare`](https://github.com/cloudflare/skills)                                        | cloudflare           | Cloudflare skills                                                | skill    |
+| [`chrome-devtools-mcp`](https://github.com/ChromeDevTools/chrome-devtools-mcp)              | chrome-devtools      | browser automation                                               | MCP      |
+| [`notion-workspace-plugin`](https://github.com/makenotion/claude-code-notion-plugin)        | notion               | Notion workspace access                                          | skill    |
 
 ### Matt Pocock skills (`mattpocock-skills`)
 
