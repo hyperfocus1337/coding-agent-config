@@ -6,12 +6,12 @@ Single source of truth for coding-agent dependencies: skills, MCP servers, plugi
 
 Coding-agent configuration drifts across contexts. This repository centralises it so any change propagates everywhere by pulling the latest config and applying it:
 
-| Environment               | Notes                                                                                                       |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| GitHub Actions            | CI/CD workflows use this repo to bootstrap                                                                  |
-| Claude on the web         | Shared config synced via this repository (bootstrap a repo with the [`templates/web`](templates/web/) pack) |
-| Claude CLI (local macOS)  | Installed on the MacBook and configured from this repo                                                      |
-| Claude CLI (devcontainer) | Cannot share config with the local macOS install due to path and OS compatibility differences               |
+| Environment               | Notes                                                                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| GitHub Actions            | CI/CD workflows use this repo to bootstrap                                                                                            |
+| Claude on the web         | Shared config synced via this repository (bootstrap a repo with the `install-bootstrap` skill, see [`templates/web`](templates/web/)) |
+| Claude CLI (local macOS)  | Installed on the MacBook and configured from this repo                                                                                |
+| Claude CLI (devcontainer) | Cannot share config with the local macOS install due to path and OS compatibility differences                                         |
 
 ## Two install paths
 

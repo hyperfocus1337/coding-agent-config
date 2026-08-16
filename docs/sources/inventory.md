@@ -65,6 +65,7 @@ Local skills under [`dot_claude/skills/`](../../dot_claude/skills/). Grouped by 
 | Skill                                                                                 | Description                                                  |
 | ------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | [`install-agent-resources`](../../dot_claude/skills/install-agent-resources/SKILL.md) | Route an install request to the skill that owns the channel. |
+| [`install-bootstrap`](../../dot_claude/skills/install-bootstrap/SKILL.md)             | Install the cloud bootstrap hook into a repository.          |
 | [`install-mcp`](../../dot_claude/skills/install-mcp/SKILL.md)                         | Install an MCP server at project, local, or user scope.      |
 | [`install-plugins`](../../dot_claude/skills/install-plugins/SKILL.md)                 | Install a Claude plugin at project, local, or user scope.    |
 | [`install-skills`](../../dot_claude/skills/install-skills/SKILL.md)                   | Install a skill at project, local, or user scope.            |

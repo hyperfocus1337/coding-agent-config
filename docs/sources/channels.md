@@ -13,7 +13,7 @@ Skills reach an agent through four channels in this repo. Each is declared in a 
 
 Only the APM channel fans out to other agents (Gemini/Codex/Cursor) once their `targets:` are added. The other three are Claude-specific: local files land in `~/.claude`, and plugins/standalone CLIs register with Claude directly.
 
-Every channel above declares user scope, which costs resident tokens in every session. The same channel installs into one repo instead, which costs tokens only there. The [`install-agent-resources`](../../dot_claude/skills/install-agent-resources/SKILL.md) skill is the entry point for that: it resolves a name against the three catalogs, then routes to `install-skills`, `install-plugins`, or `install-mcp`. Per-resource reasoning lives in [`docs/scope/skills.md`](../scope/skills.md), [`docs/scope/plugins.md`](../scope/plugins.md), and [`docs/scope/mcp-servers.md`](../scope/mcp-servers.md).
+Every channel above declares user scope, which costs resident tokens in every session. The same channel installs into one repo instead, which costs tokens only there. The [`install-agent-resources`](../../dot_claude/skills/install-agent-resources/SKILL.md) skill is the entry point for that: it resolves a name against the three catalogs, then routes to `install-skills`, `install-plugins`, or `install-mcp`. It also routes to `install-bootstrap`, which installs no resource from a catalog: it writes the `SessionStart` hook that gives a cloud session this whole config. Per-resource reasoning lives in [`docs/scope/skills.md`](../scope/skills.md), [`docs/scope/plugins.md`](../scope/plugins.md), and [`docs/scope/mcp-servers.md`](../scope/mcp-servers.md).
 
 ## Local skills
 
