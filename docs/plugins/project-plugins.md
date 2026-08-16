@@ -21,15 +21,15 @@ Scope decides where the declaration lands:
 The current table, printed from the catalog rather than copied into this page:
 
 ```bash
-jq -r '["ID","SCOPE","STATUS","USE WHEN"], (.plugins[] | [.id, .scope, .status, .use_when]) | @tsv' \
-  ~/.claude/skills/install-plugins/references/plugins.json | column -t -s $'\t'
+jq -r '["ID","SCOPE","STATUS","USE WHEN"], (.plugins[] | [.id, .scope, .status, .use_when]) | join("|")' \
+  ~/.claude/skills/install-plugins/references/plugins.json | column -t -s '|'
 ```
 
 Candidates to move off user scope:
 
 ```bash
-jq -r '.plugins[] | select(.status | test("candidate")) | "\(.id)\t\(.use_when)"' \
-  ~/.claude/skills/install-plugins/references/plugins.json | column -t -s $'\t'
+jq -r '.plugins[] | select(.status | test("candidate")) | "\(.id)|\(.use_when)"' \
+  ~/.claude/skills/install-plugins/references/plugins.json | column -t -s '|'
 ```
 
 ## Status values
