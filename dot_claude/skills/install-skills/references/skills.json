@@ -10,6 +10,15 @@
       "use_when": "sectioning any config or code file"
     },
     {
+      "id": "install-agent-resources",
+      "channel": "local",
+      "dir": "dot_claude/skills/install-agent-resources",
+      "scope": "user",
+      "status": "user-keep",
+      "why": "the entry point to the three mechanism skills. The only one of the four that is model-invocable, so it is the single resident cost of the set.",
+      "use_when": "installing any MCP server, skill, or plugin at a chosen scope"
+    },
+    {
       "id": "install-mcp",
       "channel": "local",
       "dir": "dot_claude/skills/install-mcp",

@@ -37,12 +37,15 @@ Prompt templates under [`dot_claude/commands/`](../../dot_claude/commands/README
 
 Local skills under [`dot_claude/skills/`](../../dot_claude/skills/).
 
-| Skill                                                                       | Description                                                     |
-| --------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| [`gh-cli`](../../dot_claude/skills/gh-cli/SKILL.md)                         | Comprehensive `gh` reference for repos, PRs, Actions, releases. |
-| [`install-mcp`](../../dot_claude/skills/install-mcp/SKILL.md)               | Add a project-scoped MCP server to the repo.                    |
-| [`meeting-summarizer`](../../dot_claude/skills/meeting-summarizer/SKILL.md) | Turn a transcript into structured English notes.                |
-| [`organize`](../../dot_claude/skills/organize/SKILL.md)                     | Reorganize a config or code file into labeled sections.         |
+| Skill                                                                                 | Description                                                     |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| [`gh-cli`](../../dot_claude/skills/gh-cli/SKILL.md)                                   | Comprehensive `gh` reference for repos, PRs, Actions, releases. |
+| [`install-agent-resources`](../../dot_claude/skills/install-agent-resources/SKILL.md) | Route an install request to the skill that owns the channel.    |
+| [`install-mcp`](../../dot_claude/skills/install-mcp/SKILL.md)                         | Install an MCP server at project, local, or user scope.         |
+| [`install-plugins`](../../dot_claude/skills/install-plugins/SKILL.md)                 | Install a Claude plugin at project, local, or user scope.       |
+| [`install-skills`](../../dot_claude/skills/install-skills/SKILL.md)                   | Install a skill at project, local, or user scope.               |
+| [`meeting-summarizer`](../../dot_claude/skills/meeting-summarizer/SKILL.md)           | Turn a transcript into structured English notes.                |
+| [`organize`](../../dot_claude/skills/organize/SKILL.md)                               | Reorganize a config or code file into labeled sections.         |
 
 ## By APM skill bundles (`apm.yml`)
 

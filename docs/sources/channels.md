@@ -4,18 +4,20 @@ Skills reach an agent through four channels in this repo. Each is declared in a 
 
 ## Channels
 
-| Channel        | Declared in                             | Installed by                          | Scope       |
-| -------------- | --------------------------------------- | ------------------------------------- | ----------- |
-| Local          | `dot_claude/skills/`                    | chezmoi apply (plain files)           | Claude only |
-| Standalone CLI | `scripts/extensions/skills/install.sh`  | vendor CLIs (playwright-cli, glab)    | Claude only |
-| Plugins        | `scripts/extensions/plugins/install.sh` | `claude plugin install`               | Claude only |
-| APM bundle     | `apm.yml` (`dependencies.apm`)          | `apm install` (re-resolves to latest) | Cross-agent |
+| Channel        | Declared in                                                 | Installed by                          | Agents      | Project scope                            |
+| -------------- | ----------------------------------------------------------- | ------------------------------------- | ----------- | ---------------------------------------- |
+| Local          | `dot_claude/skills/`                                        | chezmoi apply (plain files)           | Claude only | copy the dir, via `install-skills`       |
+| Standalone CLI | `dot_claude/skills/install-skills/references/skills.json`   | vendor CLIs (playwright-cli, glab)    | Claude only | vendor `--path`, via `install-skills`    |
+| Plugins        | `dot_claude/skills/install-plugins/references/plugins.json` | `claude plugin install`               | Claude only | `--scope project`, via `install-plugins` |
+| APM bundle     | `apm.yml` (`dependencies.apm`)                              | `apm install` (re-resolves to latest) | Cross-agent | project `apm.yml`, via `install-skills`  |
 
 Only the APM channel fans out to other agents (Gemini/Codex/Cursor) once their `targets:` are added. The other three are Claude-specific: local files land in `~/.claude`, and plugins/standalone CLIs register with Claude directly.
 
+Every channel above declares user scope, which costs resident tokens in every session. The same channel installs into one repo instead, which costs tokens only there. The [`install-agent-resources`](../../dot_claude/skills/install-agent-resources/SKILL.md) skill is the entry point for that: it resolves a name against the three catalogs, then routes to `install-skills`, `install-plugins`, or `install-mcp`. Per-resource reasoning lives in [`docs/skills/project-skills.md`](../skills/project-skills.md), [`docs/plugins/project-plugins.md`](../plugins/project-plugins.md), and [`docs/mcp/project-servers.md`](../mcp/project-servers.md).
+
 ## Local skills
 
-Portable skills committed as plain files under [`dot_claude/skills/`](../../dot_claude/skills/) and laid into `~/.claude` by chezmoi: `gh-cli`, `meeting-summarizer`, `organize`. Edit the files directly; there is no install step beyond `just chezmoi`.
+Portable skills committed as plain files under [`dot_claude/skills/`](../../dot_claude/skills/) and laid into `~/.claude` by chezmoi: `gh-cli`, `meeting-summarizer`, `organize`, and the four install skills. Edit the files directly; there is no install step beyond `just chezmoi`.
 
 ## Standalone CLI skills
 
