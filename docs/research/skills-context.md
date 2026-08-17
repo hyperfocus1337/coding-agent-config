@@ -90,11 +90,11 @@ Two costs the script cannot see, measured separately:
 
 Claude Code's own built-in skills (`dataviz`, `claude-api`, `artifact-*`, `update-config`, `code-review`, `simplify`, `loop`, `schedule`, `run`, `init`, `security-review`, `keybindings-help`, `fewer-permission-prompts`) add 15 entries and roughly **6,000 characters**. Two of them dominate: `dataviz` at 1,182 characters and `claude-api` at 1,086. These are not configurable from this repo, but they are the single largest block competing for the same listing budget.
 
-`SessionStart` hooks inject plain text straight into the conversation, which is not a listing and is never truncated. `ponytail` injects its full mode description at roughly **5,100 characters** on every startup, resume, clear and compact; `caveman` adds about **1,700**. That is **~6,800 characters (~1,700 tokens)** of instruction text per session, more than any single plugin's breadcrumbs and more than double `ponytail`'s own listing cost. It also re-fires on compaction, so a long session pays it repeatedly.
+`SessionStart` hooks inject plain text straight into the conversation, which is not a listing and is never truncated. Measured 2026-08-17: `ponytail` injects **5,229 characters** on every startup, resume, clear and compact; `caveman` adds **4,180**. That is **9,409 characters (~2,350 tokens)** of instruction text per session, more than any single plugin's breadcrumbs and more than three times `ponytail`'s own listing cost. It also re-fires on compaction, so a long session pays it repeatedly. `caveman` charges a further ~150 characters per prompt through its `UserPromptSubmit` hook.
 
-Those two hooks are the largest single cost on this machine, worth **62% of what the whole enabled listing costs**, and no scope decision touches them.
+Those two hooks are the largest single cost on this machine, worth **92% of what the whole enabled listing costs**, and no scope decision touches them.
 
-For comparison, the whole `CLAUDE.md` plus its five `rules/` files total 3,071 characters. The activation hooks cost more than twice the hand-written instructions.
+For comparison, the whole `CLAUDE.md` plus its two `rules/` files total 3,039 characters. The activation hooks cost more than three times the hand-written instructions.
 
 ### Consistency check
 
@@ -104,7 +104,7 @@ context7 reaches Claude through exactly one channel, the user-scoped MCP server 
 
 ## The real constraint is truncation, not tokens
 
-Token cost is small and linear. Roughly 2,700 tokens of listings from disk, plus ~1,500 for the built-ins and ~1,700 for hook injections, is well under 1% of a 1M context window.
+Token cost is small and linear. Roughly 2,700 tokens of listings from disk, plus ~1,500 for the built-ins and ~2,350 for hook injections, is well under 1% of a 1M context window.
 
 The constraint is the character budget on the listing itself. Claude Code scales that at roughly 1% of the model's context window: about 2,000 characters at 200k, about 10,000 at 1M. The listing always contains every name, but when the descriptions overflow, Claude Code shortens them to fit, dropping description text starting with the entries invoked least so the ones used most keep their keywords.
 
@@ -114,7 +114,7 @@ Closing the 6,200-character gap cannot come from the local side alone. The built
 
 ## What to do about it
 
-**Trim the activation hooks first.** `ponytail` and `caveman` together inject ~6,800 characters of untruncatable text on every session start and every compaction, against 10,194 for the entire enabled listing. This is the only lever that pays on every compaction rather than once. Both plugins support intensity levels; a lighter level, or dropping one of the two, is a direct saving with no effect on the listing budget.
+**Trim the activation hooks first.** `ponytail` and `caveman` together inject 9,409 characters of untruncatable text on every session start and every compaction, against 10,194 for the entire enabled listing. This is the only lever that pays on every compaction rather than once. Intensity levels are not that lever: `ponytail` emits 5,202 characters at `lite` against 5,229 at `full`, a 27-character difference, and `caveman` emits 4,180 at every level. Only disabling a `SessionStart` hook, and keeping the plugin for on-demand slash-command use, is a real saving. See [`instruction-load.md`](instruction-load.md) for what these hooks cost in adherence as well as characters.
 
 **Cut the heaviest breadcrumbs.** The top of the list:
 
