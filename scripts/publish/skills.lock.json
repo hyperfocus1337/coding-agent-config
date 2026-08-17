@@ -4,15 +4,35 @@
     "hash": "9494181451d543006978bb8b86dd2474e1f13deae69a12eb3ef1126fc66008f8"
   },
   "install-mcp": {
-    "version": "0.1.1",
-    "hash": "bbea4699a80d472cfcd780ede6f08bcd454cd3da615ea6e17317cf2aa6850195"
+    "version": "0.1.2",
+    "hash": "2da0befc3bf87dd6a9d4f28254a58226e686e66339a186219e0b5057ab293630"
   },
   "meeting-summarizer": {
-    "version": "0.1.1",
-    "hash": "942699a64df5582c8a3771737acf0099c10ee38af201670cc6cb8648cbaf5220"
+    "version": "0.1.2",
+    "hash": "43129602270343d918cb6930da131d08afc324abbe741003c5f9d48b187d0bef"
   },
   "organize": {
     "version": "0.1.0",
     "hash": "2fb8ed97b4d4a10b39a907f7e324d8a46dc13391a297feceed0252e2c8c81e97"
+  },
+  "install-agent-resources": {
+    "version": "0.1.0",
+    "hash": "e94abd335727ea5dd81e8ea47002134cc3cb707d7331497cbda7ca0caa835782"
+  },
+  "install-bootstrap": {
+    "version": "0.1.0",
+    "hash": "4288cf1dcaeb44daaa02af5b691988a5a9347cbe9ee37943a909128ee944e05e"
+  },
+  "install-plugins": {
+    "version": "0.1.0",
+    "hash": "271cb4299ae78b38c72260438b712e589a7dc3e365f1802820d68bab1a97cbec"
+  },
+  "install-skills": {
+    "version": "0.1.0",
+    "hash": "880978ff70169fdaf22c2312a628284adadae053d225b30d5376b9ba7149f334"
+  },
+  "technical-writing": {
+    "version": "0.1.0",
+    "hash": "53f69d78166b1e9e12f25fe8cbcadd6b9f4bb76b2b77480b0ea9353a34c20d95"
   }
 }
