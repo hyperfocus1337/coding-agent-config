@@ -12,6 +12,8 @@ Check LSP diagnostics after you write or edit code. Fix type errors and missing 
 
 Resolve the library id with Context7 and fetch the documentation before you generate code, configuration, or setup steps. Do not wait to be asked. "Use c7" means the Context7 MCP server.
 
+Do not read a PDF or other binary document directly. Convert it to Markdown with the `markitdown` skill, write the output to the scratchpad directory, and read that instead.
+
 Use `pnpm` for Node package work, never `npm` or `yarn`. The `enforce-cli-tools` hook blocks both, so reaching for them costs a turn.
 
 Other preinstalled tools, preferred over slower equivalents: `jq` and `yq` for JSON and YAML, `mlr` and `csvkit` for CSV, `http` for HTTP requests, `shellcheck` for shell linting, `rsync` for file sync, `sponge` and `ts` for pipelines, plus `lsof`, `strace`, `socat`, and `nc`.
