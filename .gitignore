@@ -1,5 +1,6 @@
 dist/skills/
 .DS_Store
 apm_modules/
+assets
 .env
 .envrc
