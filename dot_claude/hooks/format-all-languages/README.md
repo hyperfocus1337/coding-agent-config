@@ -24,6 +24,14 @@ So the sweep collects roots instead of assuming one: the session cwd, plus every
 
 Only **absolute** paths are followed. A relative path in the command is ambiguous after an arbitrary `cd`, and guessing wrong would sweep the wrong repo. So a cross-repo edit reached by a relative `cd ../other-repo` is still missed; use an absolute path, or make the edit through Write/Edit. The trade-off is marked with a `ponytail:` comment in `hook.sh`.
 
+#### Nested repos and submodules
+
+A git repo inside a repo is opaque to the parent, so the parent sweep cannot see its markdown. An embedded repo appears in `git ls-files --others` as one bare `nested/` entry, never as the files inside it; a submodule appears in `git diff HEAD` as a gitlink path. Both are directories, so the file filter dropped them and the inner markdown stayed unformatted.
+
+A worktree checked out inside the repo (`git worktree add .worktrees/feat`) is the same case, and the most common one here: the parent lists `.worktrees/feat/` as one entry, because the worktree directory holds a `.git` file rather than tracked content. `git rev-parse --show-toplevel` inside it returns the worktree path, not the main repo, so the worktree becomes a root of its own and its changed and untracked markdown is swept there.
+
+So the roots are a queue, not a fixed list. The sweep loop enumerates one root, sends file entries to the candidate list and directory entries back onto the queue as roots of their own, and continues until the queue is drained. Any nesting depth is covered, and the membership check on push keeps a symlink that points back at an existing root from looping. `test/test.sh` covers a plain subdirectory, an embedded repo, an embedded repo two levels down, and a dirty submodule.
+
 Note the side effect: any repo whose absolute path appears in a shell command gets its changed and untracked markdown formatted, even if the command only read from it. That is the same pass the session repo already gets, and it only ever touches files git already reports as modified or untracked.
 
 Git failures (not a repo, no commits so no `HEAD`) are swallowed with `stderr` silenced, so "not a git repository" never leaks as hook noise; the sweep just finds nothing and exits clean.

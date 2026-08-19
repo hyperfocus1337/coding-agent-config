@@ -43,14 +43,27 @@ else
   [[ -n "$repo_roots" ]] || exit 0
 
   # Per root: changed vs HEAD, plus untracked. Git errors stay silent.
-  while IFS= read -r root; do
+  # A git repo inside a repo is opaque to the parent: an embedded repo lists as
+  # a bare `nested/` entry, a submodule as a gitlink path, so their markdown is
+  # invisible to the parent sweep. Directory entries queue as roots of their own,
+  # which is why the roots are a growing queue and not a fixed list.
+  mapfile -t queue <<<"$repo_roots"
+  for ((i = 0; i < ${#queue[@]}; i++)); do
+    root=${queue[i]}
     while IFS= read -r rel_path; do
-      [[ -n "$rel_path" ]] && candidates+=("$root/$rel_path")
+      [[ -n "$rel_path" ]] || continue
+      if [[ -d "$root/$rel_path" ]]; then
+        nested=$(git -C "$root/$rel_path" rev-parse --show-toplevel 2>/dev/null) || continue
+        # ponytail: membership scan; roots per sweep stay single digits.
+        [[ " ${queue[*]} " == *" $nested "* ]] || queue+=("$nested")
+      else
+        candidates+=("$root/$rel_path")
+      fi
     done < <(
       { git -C "$root" diff --name-only --diff-filter=d HEAD
         git -C "$root" ls-files --others --exclude-standard; } 2>/dev/null | sort -u
     )
-  done <<<"$repo_roots"
+  done
   ext_filter='md|markdown'
 fi
 
