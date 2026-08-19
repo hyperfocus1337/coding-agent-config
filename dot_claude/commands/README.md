@@ -19,18 +19,19 @@ Source: [Claude Code tip (YouTube Shorts)](https://youtube.com/shorts/I12Mf8KBT1
 
 Ten commands covering the everyday flow, branch hygiene, and history rewriting.
 
-| Command             | Description                                                                      |
-| ------------------- | -------------------------------------------------------------------------------- |
-| `/git:commit`       | Create a git commit (stage all, single commit).                                  |
-| `/git:multiple`     | Split changes into a logical sequence of commits.                                |
-| `/git:push`         | Commit and push.                                                                 |
-| `/git:pr`           | Commit, push, and open a PR.                                                     |
-| `/git:changelog`    | Generate a changelog file for a time period (day, week, month, year, or N days). |
-| `/git:branches`     | Delete stale local branches whose remote tracking branch is gone.                |
-| `/git:worktrees`    | Remove worktrees whose branch is `[gone]` on the remote, then delete them.       |
-| `/git:amend-author` | Rewrite the author of the whole branch or the last N commits.                    |
-| `/git:amend-date`   | Set an absolute commit and author date on the most recent commit.                |
-| `/git:shift-dates`  | Shift the last N commit dates by a number of hours (GNU and BSD `date`).         |
+| Command                    | Description                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------- |
+| `/git:commit`              | Create a git commit (stage all, single commit).                                  |
+| `/git:multiple`            | Split changes into a logical sequence of commits.                                |
+| `/git:push`                | Commit and push.                                                                 |
+| `/git:pr`                  | Commit, push, and open a PR.                                                     |
+| `/git:changelog`           | Generate a changelog file for a time period (day, week, month, year, or N days). |
+| `/git:branches`            | Delete stale local branches whose remote tracking branch is gone.                |
+| `/git:worktrees:cleanup`   | Remove worktrees whose branch is `[gone]` on the remote, then delete them.       |
+| `/git:worktrees:configure` | Set `worktree.useRelativePaths` so worktrees work from a container and the host. |
+| `/git:amend-author`        | Rewrite the author of the whole branch or the last N commits.                    |
+| `/git:amend-date`          | Set an absolute commit and author date on the most recent commit.                |
+| `/git:shift-dates`         | Shift the last N commit dates by a number of hours (GNU and BSD `date`).         |
 
 The three history-rewriting commands (`amend-author`, `amend-date`, `shift-dates`) show current commits and confirm before running. See [git/README.md](git/README.md) for their argument slots and the three ways to call them safely.
 

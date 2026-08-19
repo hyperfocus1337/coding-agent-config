@@ -6,18 +6,19 @@ disable-model-invocation: true
 
 Shorthand command names and what they map to.
 
-| Command        | Description                                          |
-| -------------- | ---------------------------------------------------- |
-| `commit`       | Create a git commit                                  |
-| `multiple`     | Split changes into a logical sequence of commits     |
-| `push`         | Commit and push                                      |
-| `pr`           | Commit, push, and open a PR                          |
-| `branches`     | Delete stale local branches whose remote was deleted |
-| `worktrees`    | Remove worktrees + delete their `[gone]` branches    |
-| `changelog`    | Generate a changelog for a time period               |
-| `amend-author` | Rewrite author of the whole branch or last N commits |
-| `amend-date`   | Set an absolute date on the most recent commit       |
-| `shift-dates`  | Shift dates of the last N commits by hours           |
+| Command               | Description                                                 |
+| --------------------- | ----------------------------------------------------------- |
+| `commit`              | Create a git commit                                         |
+| `multiple`            | Split changes into a logical sequence of commits            |
+| `push`                | Commit and push                                             |
+| `pr`                  | Commit, push, and open a PR                                 |
+| `branches`            | Delete stale local branches whose remote was deleted        |
+| `worktrees:cleanup`   | Remove worktrees + delete their `[gone]` branches           |
+| `worktrees:configure` | Set `worktree.useRelativePaths` for container + host access |
+| `changelog`           | Generate a changelog for a time period                      |
+| `amend-author`        | Rewrite author of the whole branch or last N commits        |
+| `amend-date`          | Set an absolute date on the most recent commit              |
+| `shift-dates`         | Shift dates of the last N commits by hours                  |
 
 ## Calling the history-rewriting commands
 
