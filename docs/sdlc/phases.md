@@ -207,9 +207,9 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 | [`/git:branches`](../../dot_claude/commands/git/branches.md)                       | Delete stale local branches whose remote tracking branch is gone.                |
 | [`/git:worktrees:cleanup`](../../dot_claude/commands/git/worktrees/cleanup.md)     | Remove worktrees whose branch is gone on the remote, then delete them.           |
 | [`/git:worktrees:configure`](../../dot_claude/commands/git/worktrees/configure.md) | Set `worktree.useRelativePaths` so worktrees work from a container and the host. |
-| [`/git:amend-author`](../../dot_claude/commands/git/amend-author.md)               | Rewrite the author of the whole branch or the last N commits.                    |
-| [`/git:amend-date`](../../dot_claude/commands/git/amend-date.md)                   | Set an absolute commit and author date on the most recent commit.                |
-| [`/git:shift-dates`](../../dot_claude/commands/git/shift-dates.md)                 | Shift the last N commit dates by a number of hours.                              |
+| [`/git:rewrite:author`](../../dot_claude/commands/git/rewrite/author.md)           | Rewrite the author of the whole branch or the last N commits.                    |
+| [`/git:rewrite:date`](../../dot_claude/commands/git/rewrite/date.md)               | Set an absolute commit and author date on the most recent commit.                |
+| [`/git:rewrite:shift-dates`](../../dot_claude/commands/git/rewrite/shift-dates.md) | Shift the last N commit dates by a number of hours.                              |
 
 ### Merge and platform
 

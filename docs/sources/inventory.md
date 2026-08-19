@@ -22,15 +22,15 @@ Prompt templates under [`dot_claude/commands/`](../../dot_claude/commands/README
 
 | Command                                                                            | Description                                                                      |
 | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [`/git:amend-author`](../../dot_claude/commands/git/amend-author.md)               | Rewrite the author of the whole branch or the last N commits.                    |
-| [`/git:amend-date`](../../dot_claude/commands/git/amend-date.md)                   | Set an absolute commit and author date on the most recent commit.                |
 | [`/git:branches`](../../dot_claude/commands/git/branches.md)                       | Delete stale local branches whose remote tracking branch is gone.                |
 | [`/git:changelog`](../../dot_claude/commands/git/changelog.md)                     | Generate a changelog for a time period.                                          |
 | [`/git:commit`](../../dot_claude/commands/git/commit.md)                           | Create a git commit (stage all, single commit).                                  |
 | [`/git:multiple`](../../dot_claude/commands/git/multiple.md)                       | Split changes into a logical sequence of commits.                                |
 | [`/git:pr`](../../dot_claude/commands/git/pr.md)                                   | Commit, push, and open a pull request.                                           |
 | [`/git:push`](../../dot_claude/commands/git/push.md)                               | Commit and push.                                                                 |
-| [`/git:shift-dates`](../../dot_claude/commands/git/shift-dates.md)                 | Shift the last N commit dates by a number of hours.                              |
+| [`/git:rewrite:author`](../../dot_claude/commands/git/rewrite/author.md)           | Rewrite the author of the whole branch or the last N commits.                    |
+| [`/git:rewrite:date`](../../dot_claude/commands/git/rewrite/date.md)               | Set an absolute commit and author date on the most recent commit.                |
+| [`/git:rewrite:shift-dates`](../../dot_claude/commands/git/rewrite/shift-dates.md) | Shift the last N commit dates by a number of hours.                              |
 | [`/git:worktrees:cleanup`](../../dot_claude/commands/git/worktrees/cleanup.md)     | Remove worktrees whose branch is gone on the remote, then delete them.           |
 | [`/git:worktrees:configure`](../../dot_claude/commands/git/worktrees/configure.md) | Set `worktree.useRelativePaths` so worktrees work from a container and the host. |
 

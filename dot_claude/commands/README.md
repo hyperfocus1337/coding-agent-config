@@ -29,11 +29,11 @@ Ten commands covering the everyday flow, branch hygiene, and history rewriting.
 | `/git:branches`            | Delete stale local branches whose remote tracking branch is gone.                |
 | `/git:worktrees:cleanup`   | Remove worktrees whose branch is `[gone]` on the remote, then delete them.       |
 | `/git:worktrees:configure` | Set `worktree.useRelativePaths` so worktrees work from a container and the host. |
-| `/git:amend-author`        | Rewrite the author of the whole branch or the last N commits.                    |
-| `/git:amend-date`          | Set an absolute commit and author date on the most recent commit.                |
-| `/git:shift-dates`         | Shift the last N commit dates by a number of hours (GNU and BSD `date`).         |
+| `/git:rewrite:author`      | Rewrite the author of the whole branch or the last N commits.                    |
+| `/git:rewrite:date`        | Set an absolute commit and author date on the most recent commit.                |
+| `/git:rewrite:shift-dates` | Shift the last N commit dates by a number of hours (GNU and BSD `date`).         |
 
-The three history-rewriting commands (`amend-author`, `amend-date`, `shift-dates`) show current commits and confirm before running. See [git/README.md](git/README.md) for their argument slots and the three ways to call them safely.
+The three history-rewriting commands (`rewrite:author`, `rewrite:date`, `rewrite:shift-dates`) show current commits and confirm before running. See [git/README.md](git/README.md) for their argument slots and the three ways to call them safely.
 
 ## organize/ — section a config or code file
 

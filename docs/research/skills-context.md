@@ -71,16 +71,16 @@ But callable is not the same as chosen. Asked to commit, Claude generally commit
 
 Every command in `dot_claude/commands/` except `git:commit`, `git:multiple`, `git:pr` and `git:push` carries `disable-model-invocation: true`, which keeps its breadcrumb out of the listing while leaving `/name` working. The four exceptions pin this repo's commit and PR conventions, which is exactly the case where auto-selection beats improvising:
 
-| Flagged                                                   | Chars if listed | Reason                                                                                                                                |
-| --------------------------------------------------------- | --------------: | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 8 × `organize:*`                                          |             984 | thin wrappers over the `organize-with-comments` skill, which already prompts for a style; the skill is the correct auto-invoke target |
-| `issues:*` (3)                                            |             368 | each needs an issue number as an argument, so the request always arrives as a slash command                                           |
-| `git:amend-author`, `git:amend-date`, `git:shift-dates`   |             279 | history surgery, never something to auto-select                                                                                       |
-| `git:branches`, `git:worktrees:cleanup`, `git:changelog`  |             365 | deliberate maintenance runs, invoked by hand at a moment of the user's choosing                                                       |
-| `simple:explain`, `simple:proofread`, `simple:markitdown` |             192 | within default competence; the breadcrumb buys nothing the model cannot already do                                                    |
-| `style:concise`, `style:current-state`                    |             136 | mode switches the user types explicitly                                                                                               |
-| `summarize:transscripts`                                  |             102 | a standalone prompt for the same task as the flagged `meeting-summarizer` skill                                                       |
-| **Total**                                                 |       **2,426** |                                                                                                                                       |
+| Flagged                                                             | Chars if listed | Reason                                                                                                                                |
+| ------------------------------------------------------------------- | --------------: | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 8 × `organize:*`                                                    |             984 | thin wrappers over the `organize-with-comments` skill, which already prompts for a style; the skill is the correct auto-invoke target |
+| `issues:*` (3)                                                      |             368 | each needs an issue number as an argument, so the request always arrives as a slash command                                           |
+| `git:rewrite:author`, `git:rewrite:date`, `git:rewrite:shift-dates` |             279 | history surgery, never something to auto-select                                                                                       |
+| `git:branches`, `git:worktrees:cleanup`, `git:changelog`            |             365 | deliberate maintenance runs, invoked by hand at a moment of the user's choosing                                                       |
+| `simple:explain`, `simple:proofread`, `simple:markitdown`           |             192 | within default competence; the breadcrumb buys nothing the model cannot already do                                                    |
+| `style:concise`, `style:current-state`                              |             136 | mode switches the user types explicitly                                                                                               |
+| `summarize:transscripts`                                            |             102 | a standalone prompt for the same task as the flagged `meeting-summarizer` skill                                                       |
+| **Total**                                                           |       **2,426** |                                                                                                                                       |
 
 `dot_claude/commands/README.md` and `dot_claude/commands/git/README.md` carry the same flag, and `.chezmoiignore` keeps both out of `~/.claude`. Either guard alone is enough; both are documentation, not commands.
 
