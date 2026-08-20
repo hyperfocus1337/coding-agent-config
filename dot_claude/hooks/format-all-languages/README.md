@@ -8,7 +8,7 @@ The hook is wired to two matchers in `settings.json`, and behaves differently de
 
 ### Write / Edit / MultiEdit (single file)
 
-The payload names exactly one file in `tool_input.file_path`. The hook formats that one file if its extension is one Prettier handles natively (see the extension table). It runs after nothing else formatting-related and before `stage-edited-file`, so the staged copy already carries the formatting.
+The payload names exactly one file in `tool_input.file_path`. The hook formats that one file if its extension is one Prettier handles natively (see the extension table).
 
 ### Bash (markdown sweep)
 
