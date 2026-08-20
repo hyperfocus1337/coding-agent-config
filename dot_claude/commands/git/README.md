@@ -10,6 +10,7 @@ Shorthand command names and what they map to.
 | --------------------- | ----------------------------------------------------------- |
 | `commit`              | Create a git commit                                         |
 | `multiple`            | Split changes into a logical sequence of commits            |
+| `extend`              | Fold working directory changes into an existing commit      |
 | `push`                | Commit and push                                             |
 | `pr`                  | Commit, push, and open a PR                                 |
 | `branches`            | Delete stale local branches whose remote was deleted        |
