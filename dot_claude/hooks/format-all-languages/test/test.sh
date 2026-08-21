@@ -94,7 +94,7 @@ unchanged "sweep leaves .ts"    "$outer/code.ts"      'const a  =  1'
 unchanged "sweep leaves .json"  "$outer/data.json"    '{"a":1,   "b":2}'
 unchanged "gitignored markdown" "$outer/vendor/V.md"  "$(printf '| a | bbbbbbbbbbbb |\n| --- | --- |\n| ccccccccccccccc | d |')"
 
-# The wide table proves --print-width 400: at Prettier's default 80 it would
+# The wide table proves the markdown --print-width: at Prettier's default 80 it would
 # collapse to the compact `| --- |` form instead of staying padded.
 if grep -q '^| --------' "$outer/WIDE.md"; then
   echo "ok   format wide table stays padded"

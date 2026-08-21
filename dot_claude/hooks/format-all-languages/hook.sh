@@ -92,8 +92,8 @@ command -v prettier >/dev/null 2>&1 || exit 0
 prettier_cmd=(prettier --write --prose-wrap never)
 
 # Markdown: wide width keeps tables column-aligned. Code: Prettier's default 80.
-# ponytail: tables wider than 400 cols still compact; bump if that bites.
-[[ ${#md_targets[@]} -gt 0 ]] && "${prettier_cmd[@]}" --print-width 400 "${md_targets[@]}" >/dev/null 2>&1
+# ponytail: tables wider than 1000 cols still compact; bump if that bites.
+[[ ${#md_targets[@]} -gt 0 ]] && "${prettier_cmd[@]}" --print-width 1000 "${md_targets[@]}" >/dev/null 2>&1
 [[ ${#other_targets[@]} -gt 0 ]] && "${prettier_cmd[@]}" "${other_targets[@]}" >/dev/null 2>&1
 
 exit 0

@@ -56,15 +56,15 @@ Everything is formatted with `--prose-wrap never`, so prose stays on a single li
 
 ## Markdown gets its own pass (wide-table alignment)
 
-Markdown is formatted in a **separate Prettier invocation** from the other languages, with `--print-width 400`. This is the non-obvious part, and the reason the code splits `targets` into `md_targets` and `other_targets`.
+Markdown is formatted in a **separate Prettier invocation** from the other languages, with `--print-width 1000`. This is the non-obvious part, and the reason the code splits `targets` into `md_targets` and `other_targets`.
 
 Prettier normally pads table columns to equal width, which is what makes tables human-readable. But under `--prose-wrap never` it stops padding any table wider than `printWidth` (default `80`) and collapses it to the compact `| --- |` form instead, because padding it would produce lines longer than the width it was told never to wrap. The result: narrow tables aligned, wide tables not.
 
-`printWidth` does **not** re-wrap prose when `--prose-wrap never` is set (prose stays one line regardless of width), so raising it only changes the table-compaction threshold. Formatting markdown at `--print-width 400` therefore keeps wide tables column-aligned while leaving prose single-line.
+`printWidth` does **not** re-wrap prose when `--prose-wrap never` is set (prose stays one line regardless of width), so raising it only changes the table-compaction threshold. Formatting markdown at `--print-width 1000` therefore keeps wide tables column-aligned while leaving prose single-line.
 
-`printWidth` is a global Prettier option, so it cannot be raised for markdown without also raising it for code, where an 80 column limit is wanted. Hence the split: markdown runs at `--print-width 400`, every other language runs at Prettier's default `80`.
+`printWidth` is a global Prettier option, so it cannot be raised for markdown without also raising it for code, where an 80 column limit is wanted. Hence the split: markdown runs at `--print-width 1000`, every other language runs at Prettier's default `80`.
 
-Ceiling: tables wider than 400 columns still collapse. Bump the number if that ever bites; it is marked with a `ponytail:` comment in `hook.sh`.
+Ceiling: tables wider than 1000 columns still collapse. Bump the number if that ever bites; it is marked with a `ponytail:` comment in `hook.sh`. It bit once at 400: a 430-column function table in `chezmoi/dot_config/fish/README.md` compacted, which is what raised the number to 1000.
 
 ## Never blocks Claude
 
@@ -78,4 +78,4 @@ The hook calls the `prettier` binary directly (like `lint-all-languages` calls i
 npm install -g prettier
 ```
 
-A per-project `.prettierrc` (and `.prettierignore`) in the file's directory tree is picked up automatically, so project style wins over Prettier defaults. Note that a `printWidth` set in a project `.prettierrc` overrides the `--print-width 400` above for markdown in that project.
+A per-project `.prettierrc` (and `.prettierignore`) in the file's directory tree is picked up automatically, so project style wins over Prettier defaults. Note that a `printWidth` set in a project `.prettierrc` overrides the `--print-width 1000` above for markdown in that project.
