@@ -34,5 +34,9 @@
   "technical-writing": {
     "version": "0.1.0",
     "hash": "53f69d78166b1e9e12f25fe8cbcadd6b9f4bb76b2b77480b0ea9353a34c20d95"
+  },
+  "markitdown": {
+    "version": "0.1.0",
+    "hash": "9cfe39379d6e0e9b595278e10f312098d72ecd940bef10030d7b0a34c0d231dd"
   }
 }
