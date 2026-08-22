@@ -51,13 +51,13 @@ The three `install-*` executors carry the flag because `install-agent-resources`
 
 **Commands, 4 listed entries, 169 characters.** All are authored here, under `dot_claude/commands/`:
 
-| Entry          | Chars | Note                                                   |
-| -------------- | ----: | ------------------------------------------------------ |
-| `git:multiple` |    64 | listed                                                 |
-| `git:pr`       |    37 | listed                                                 |
-| `git:commit`   |    33 | listed                                                 |
-| `git:push`     |    31 | listed                                                 |
-| 23 others      |     0 | `disable-model-invocation: true`, reachable as `/name` |
+| Entry             | Chars | Note                                                   |
+| ----------------- | ----: | ------------------------------------------------------ |
+| `git:multiple`    |    64 | listed                                                 |
+| `git:pr:create`   |    37 | listed                                                 |
+| `git:commit`      |    33 | listed                                                 |
+| `git:commit:push` |    31 | listed                                                 |
+| 23 others         |     0 | `disable-model-invocation: true`, reachable as `/name` |
 
 **Agents, 2 entries, 487 characters.** `thermo-nuclear-code-quality-review` 301 and `ci-watcher` 186, both deployed by the `cursor-team-kit` APM entry. `apm.yml` notes there is no `agents:` subset key, so taking that kit's one skill means taking both agents. `codex` contributes a third, `codex-rescue`.
 
@@ -65,18 +65,18 @@ The three `install-*` executors carry the flag because `install-agent-resources`
 
 Worth being precise, because it decides how aggressively to trim. A command in the listing is callable by the model through the Skill tool, not just by a human typing `/name`. That is verifiable from a live session: `- git:commit: Create a git commit` appears in the skill listing, and the Skill tool's contract accepts only names from that listing. The negative case confirms the mechanism, `codex`'s flagged commands and `mattpocock-skills`' flagged skills are absent from the same listing.
 
-But callable is not the same as chosen. Asked to commit, Claude generally commits directly rather than routing through `/git:commit`, because the task is within its default competence. The breadcrumb only earns its cost when the command encodes a procedure Claude would otherwise improvise differently, and when the request arrives in prose rather than as an explicit slash command. By that test most commands here are hand-invoked tools whose descriptions are dead weight in the auto-invocation listing, and only a few (`git:commit`, `git:multiple`, `git:pr`, which pin this repo's commit and PR conventions) have a real claim to auto-selection.
+But callable is not the same as chosen. Asked to commit, Claude generally commits directly rather than routing through `/git:commit`, because the task is within its default competence. The breadcrumb only earns its cost when the command encodes a procedure Claude would otherwise improvise differently, and when the request arrives in prose rather than as an explicit slash command. By that test most commands here are hand-invoked tools whose descriptions are dead weight in the auto-invocation listing, and only a few (`git:commit`, `git:multiple`, `git:pr:create`, which pin this repo's commit and PR conventions) have a real claim to auto-selection.
 
 ### Which commands carry the flag
 
-Every command in `dot_claude/commands/` except `git:commit`, `git:multiple`, `git:pr` and `git:push` carries `disable-model-invocation: true`, which keeps its breadcrumb out of the listing while leaving `/name` working. The four exceptions pin this repo's commit and PR conventions, which is exactly the case where auto-selection beats improvising:
+Every command in `dot_claude/commands/` except `git:commit`, `git:multiple`, `git:pr:create` and `git:commit:push` carries `disable-model-invocation: true`, which keeps its breadcrumb out of the listing while leaving `/name` working. The four exceptions pin this repo's commit and PR conventions, which is exactly the case where auto-selection beats improvising:
 
 | Flagged                                                             | Chars if listed | Reason                                                                                                                                |
 | ------------------------------------------------------------------- | --------------: | ------------------------------------------------------------------------------------------------------------------------------------- |
 | 8 × `organize:*`                                                    |             984 | thin wrappers over the `organize-with-comments` skill, which already prompts for a style; the skill is the correct auto-invoke target |
 | `issues:*` (3)                                                      |             368 | each needs an issue number as an argument, so the request always arrives as a slash command                                           |
 | `git:rewrite:author`, `git:rewrite:date`, `git:rewrite:shift-dates` |             279 | history surgery, never something to auto-select                                                                                       |
-| `git:branches`, `git:worktrees:cleanup`, `git:changelog`            |             365 | deliberate maintenance runs, invoked by hand at a moment of the user's choosing                                                       |
+| `git:branches:cleanup`, `git:worktrees:cleanup`, `git:changelog`    |             365 | deliberate maintenance runs, invoked by hand at a moment of the user's choosing                                                       |
 | `simple:explain`, `simple:proofread`, `simple:markitdown`           |             192 | within default competence; the breadcrumb buys nothing the model cannot already do                                                    |
 | `style:concise`, `style:current-state`                              |             136 | mode switches the user types explicitly                                                                                               |
 | `summarize:transscripts`                                            |             102 | a standalone prompt for the same task as the flagged `meeting-summarizer` skill                                                       |

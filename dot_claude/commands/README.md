@@ -4,7 +4,7 @@ disable-model-invocation: true
 
 # slash commands
 
-Slash commands are prompt templates Claude Code runs when you type `/<namespace>:<name>` (e.g. `/git:push`, or `/git:commit:single` for a nested group). Each lives as its own file at `commands/<namespace>/<name>.md`, and the file's frontmatter `description` is what shows in the command picker. They deploy via chezmoi to `~/.claude/commands/`.
+Slash commands are prompt templates Claude Code runs when you type `/<namespace>:<name>` (e.g. `/git:changelog`, or `/git:pr:create` for a nested group). Each lives as its own file at `commands/<namespace>/<name>.md`, and the file's frontmatter `description` is what shows in the command picker. They deploy via chezmoi to `~/.claude/commands/`.
 
 ## style/ — response style
 
@@ -24,11 +24,11 @@ Thirteen commands covering the everyday flow, branch hygiene, and history rewrit
 | `/git:commit:single`       | Create a git commit (stage all, single commit).                                  |
 | `/git:commit:session`      | Commit one task's changes from the current conversation.                         |
 | `/git:commit:multiple`     | Split changes into a logical sequence of commits.                                |
-| `/git:extend`              | Fold working directory changes into an existing commit.                          |
-| `/git:push`                | Commit and push.                                                                 |
-| `/git:pr`                  | Commit, push, and open a PR.                                                     |
+| `/git:commit:extend`       | Fold working directory changes into an existing commit.                          |
+| `/git:commit:push`         | Commit and push.                                                                 |
+| `/git:pr:create`           | Commit, push, and open a PR.                                                     |
 | `/git:changelog`           | Generate a changelog file for a time period (day, week, month, year, or N days). |
-| `/git:branches`            | Delete stale local branches whose remote tracking branch is gone.                |
+| `/git:branches:cleanup`    | Delete stale local branches whose remote tracking branch is gone.                |
 | `/git:worktrees:cleanup`   | Remove worktrees whose branch is `[gone]` on the remote, then delete them.       |
 | `/git:worktrees:configure` | Set `worktree.useRelativePaths` so worktrees work from a container and the host. |
 | `/git:rewrite:author`      | Rewrite the author of the whole branch or the last N commits.                    |

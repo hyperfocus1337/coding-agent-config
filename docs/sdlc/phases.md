@@ -197,15 +197,15 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 | [`/git:commit:single`](../../dot_claude/commands/git/commit/single.md)                       | Create a git commit (stage all, single commit).                       |
 | [`/git:commit:session`](../../dot_claude/commands/git/commit/session.md)                     | Commit one task's changes from the current conversation.              |
 | [`/git:commit:multiple`](../../dot_claude/commands/git/commit/multiple.md)                   | Split changes into a logical sequence of commits.                     |
-| [`/git:push`](../../dot_claude/commands/git/push.md)                                         | Commit and push.                                                      |
-| [`/git:pr`](../../dot_claude/commands/git/pr.md)                                             | Commit, push, and open a pull request.                                |
+| [`/git:commit:push`](../../dot_claude/commands/git/commit/push.md)                           | Commit and push.                                                      |
+| [`/git:pr:create`](../../dot_claude/commands/git/pr/create.md)                               | Commit, push, and open a pull request.                                |
 | [`/issues:github-coding-process`](../../dot_claude/commands/issues/github-coding-process.md) | Plan, implement, test, and ship a GitHub issue end to end using `gh`. |
 
 ### Branch and history hygiene
 
 | Command                                                                            | Description                                                                      |
 | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [`/git:branches`](../../dot_claude/commands/git/branches.md)                       | Delete stale local branches whose remote tracking branch is gone.                |
+| [`/git:branches:cleanup`](../../dot_claude/commands/git/branches/cleanup.md)       | Delete stale local branches whose remote tracking branch is gone.                |
 | [`/git:worktrees:cleanup`](../../dot_claude/commands/git/worktrees/cleanup.md)     | Remove worktrees whose branch is gone on the remote, then delete them.           |
 | [`/git:worktrees:configure`](../../dot_claude/commands/git/worktrees/configure.md) | Set `worktree.useRelativePaths` so worktrees work from a container and the host. |
 | [`/git:rewrite:author`](../../dot_claude/commands/git/rewrite/author.md)           | Rewrite the author of the whole branch or the last N commits.                    |

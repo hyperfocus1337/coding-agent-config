@@ -11,10 +11,10 @@ Shorthand command names and what they map to.
 | `commit:single`       | Create a git commit                                         |
 | `commit:session`      | Commit one task's changes from the current conversation     |
 | `commit:multiple`     | Split changes into a logical sequence of commits            |
-| `extend`              | Fold working directory changes into an existing commit      |
-| `push`                | Commit and push                                             |
-| `pr`                  | Commit, push, and open a PR                                 |
-| `branches`            | Delete stale local branches whose remote was deleted        |
+| `commit:extend`       | Fold working directory changes into an existing commit      |
+| `commit:push`         | Commit and push                                             |
+| `pr:create`           | Commit, push, and open a PR                                 |
+| `branches:cleanup`    | Delete stale local branches whose remote was deleted        |
 | `worktrees:cleanup`   | Remove worktrees + delete their `[gone]` branches           |
 | `worktrees:configure` | Set `worktree.useRelativePaths` for container + host access |
 | `changelog`           | Generate a changelog for a time period                      |
