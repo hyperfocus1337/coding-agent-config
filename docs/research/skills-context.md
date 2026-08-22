@@ -2,7 +2,7 @@
 
 Every skill, command and agent this machine installs contributes one line to a listing that Claude Code injects at session start: the entry's name plus its frontmatter `description`. This "breadcrumb" is the only part loaded up front. The body of `SKILL.md`, its `references/`, `scripts/`, and any bundled files cost zero tokens until the entry is actually invoked, and scripts Claude runs never enter context at all, only their output does.
 
-This doc measures what that standing cost is. Numbers come from [`scripts/context-budget/measure-context.py`](../../scripts/context-budget/measure-context.py), which walks `~/.claude` plus every installed plugin, reconstructs the listings, and counts characters with tokens estimated at length over four. Snapshot taken 2026-08-16.
+This doc measures what that standing cost is. Numbers come from [`scripts/context-budget/measure-context.py`](../../scripts/context-budget/measure-context.py), which walks `~/.claude` plus every installed plugin, reconstructs the listings, and counts characters with tokens estimated at length over four. Snapshot taken 2026-08-22.
 
 ## What reaches the model, and what does not
 
@@ -20,44 +20,47 @@ Skills and commands share one listing block, so a command in `~/.claude/commands
 
 ### Enabled (loaded every session)
 
-| Source                            | Skills |  Cmds | Agents |      Chars |    ~Tokens |
-| --------------------------------- | -----: | ----: | -----: | ---------: | ---------: |
-| `~/.claude` (see breakdown below) |      4 |     4 |      2 |      2,445 |        611 |
-| `ponytail@ponytail`               |      6 |     0 |      0 |      2,736 |        684 |
-| `mattpocock-skills@mattpocock`    |     11 |     0 |      0 |      2,645 |        661 |
-| `caveman@caveman`                 |      4 |     0 |      0 |      1,331 |        333 |
-| `codex@openai-codex`              |      3 |     2 |      1 |        838 |        210 |
-| `astral@astral-sh`                |      3 |     0 |      0 |        473 |        118 |
-| `ast-grep@ast-grep-marketplace`   |      1 |     0 |      0 |        447 |        112 |
-| **Total from disk**               | **32** | **6** |  **3** | **10,915** | **~2,729** |
+| Source                            | Skills |   Cmds | Agents |     Chars |    ~Tokens |
+| --------------------------------- | -----: | -----: | -----: | --------: | ---------: |
+| `~/.claude` (see breakdown below) |      6 |     11 |      2 |     3,949 |        987 |
+| `mattpocock-skills@mattpocock`    |     11 |      0 |      0 |     2,645 |        661 |
+| `codex@openai-codex`              |      3 |      2 |      1 |       838 |        210 |
+| `astral@astral-sh`                |      3 |      0 |      0 |       473 |        118 |
+| `ast-grep@ast-grep-marketplace`   |      1 |      0 |      0 |       447 |        112 |
+| **Total from disk**               | **24** | **13** |  **3** | **8,352** | **~2,088** |
 
-The skill and command listing alone is 38 entries and 10,194 characters; the agents listing adds 721.
+The skill and command listing alone is 37 entries and 7,631 characters; the agents listing adds 721.
 
-Six plugins load in every session. The other rows in the plugin catalog carry project or local scope, so they cost nothing here and reach a repo through the `install-plugins` and `install-skills` skills.
+Four plugins load in every session. The other rows in the plugin catalog carry project or local scope, so they cost nothing here and reach a repo through the `install-plugins` and `install-skills` skills.
 
 ### What is in the `~/.claude` row
 
 That row is the only source this repo controls directly, so it is worth expanding. Per-entry figures below are the rendered breadcrumb (`- name: description`) without its trailing newline, which is why the group sums come out one character per entry below the table totals.
 
-**Skills, 4 listed entries, 1,787 characters.** Nine skill directories sit in `~/.claude/skills/`; five carry `disable-model-invocation: true` and cost nothing:
+**Skills, 6 listed entries, 2,871 characters.** Eleven skill directories sit in `~/.claude/skills/`; five carry `disable-model-invocation: true` and cost nothing:
 
 | Channel                                     | Listed | Chars | Detail                                                                                                                             |
 | ------------------------------------------- | -----: | ----: | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Local, authored here (`dot_claude/skills/`) |      3 | 1,544 | `install-agent-resources` 720, `organize-with-comments` 610, `gh-cli` 214                                                          |
+| Local, authored here (`dot_claude/skills/`) |      5 | 2,626 | `install-agent-resources` 862, `organize-with-comments` 610, `technical-writing` 528, `markitdown` 412, `gh-cli` 214               |
 | APM, `antonbabenko/terraform-skill`         |      1 |   239 | `terraform-skill`                                                                                                                  |
 | Flagged, not listed                         |      5 |     0 | `meeting-summarizer` 721, `install-skills` 423, `install-mcp` 372, `install-plugins` 359, `thermo-nuclear-code-quality-review` 291 |
 
 The three `install-*` executors carry the flag because `install-agent-resources` is the single entry point that routes to them; only the router needs a breadcrumb. `thermo-nuclear-code-quality-review` comes from the `cursor/plugins/cursor-team-kit` APM entry, which also deploys the kit's two agents, the whole of the agents column for this row.
 
-**Commands, 4 listed entries, 169 characters.** All are authored here, under `dot_claude/commands/`:
+**Commands, 11 listed entries, 589 characters on disk in `$HOME`, of which only 6 entries and 352 characters come from this repo.** The gap is files in `~/.claude/commands/git/` that `dot_claude/commands/` does not declare. chezmoi writes what the source declares and deletes nothing else, so such a file persists in `$HOME` and keeps charging the listing for a command the repo does not define. Ten sit there, five of them unflagged:
 
-| Entry             | Chars | Note                                                   |
-| ----------------- | ----: | ------------------------------------------------------ |
-| `git:multiple`    |    64 | listed                                                 |
-| `git:pr:create`   |    37 | listed                                                 |
-| `git:commit`      |    33 | listed                                                 |
-| `git:commit:push` |    31 | listed                                                 |
-| 23 others         |     0 | `disable-model-invocation: true`, reachable as `/name` |
+| Entry                 | Chars | Note                                                                                                                 |
+| --------------------- | ----: | -------------------------------------------------------------------------------------------------------------------- |
+| `git:commit:session`  |    77 | listed, declared here                                                                                                |
+| `git:commit:extend`   |    75 | listed, declared here                                                                                                |
+| `git:commit:multiple` |    71 | listed, declared here                                                                                                |
+| `git:commit:single`   |    47 | listed, declared here                                                                                                |
+| `git:pr:create`       |    44 | listed, declared here                                                                                                |
+| `git:commit:push`     |    38 | listed, declared here                                                                                                |
+| 5 stale files         |   237 | `git:commit`, `git:push`, `git:extend`, `git:multiple`, `git:pr`; not in `dot_claude/commands/`, delete from `$HOME` |
+| 23 others             |     0 | `disable-model-invocation: true`, reachable as `/name`                                                               |
+
+`/style:caveman` carries the flag, so its 1,292 characters cost nothing until it is invoked.
 
 **Agents, 2 entries, 487 characters.** `thermo-nuclear-code-quality-review` 301 and `ci-watcher` 186, both deployed by the `cursor-team-kit` APM entry. `apm.yml` notes there is no `agents:` subset key, so taking that kit's one skill means taking both agents. `codex` contributes a third, `codex-rescue`.
 
@@ -90,48 +93,55 @@ Two costs the script cannot see, measured separately:
 
 Claude Code's own built-in skills (`dataviz`, `claude-api`, `artifact-*`, `update-config`, `code-review`, `simplify`, `loop`, `schedule`, `run`, `init`, `security-review`, `keybindings-help`, `fewer-permission-prompts`) add 15 entries and roughly **6,000 characters**. Two of them dominate: `dataviz` at 1,182 characters and `claude-api` at 1,086. These are not configurable from this repo, but they are the single largest block competing for the same listing budget.
 
-`SessionStart` hooks inject plain text straight into the conversation, which is not a listing and is never truncated. Measured 2026-08-17: `ponytail` injects **5,229 characters** on every startup, resume, clear and compact; `caveman` adds **4,180**. That is **9,409 characters (~2,350 tokens)** of instruction text per session, more than any single plugin's breadcrumbs and more than three times `ponytail`'s own listing cost. It also re-fires on compaction, so a long session pays it repeatedly. `caveman` charges a further ~150 characters per prompt through its `UserPromptSubmit` hook.
+`SessionStart` hooks inject plain text straight into the conversation, which is not a listing, is never truncated, and re-fires on every startup, resume, clear and compact. A hook that injects instruction text is therefore the most expensive shape a directive set can take, and no plugin on this machine has one: the enabled four contribute breadcrumbs only. Anything that would arrive that way is authored here instead, in [`rules/code.md`](../../dot_claude/rules/code.md) at 1,325 characters loaded once per session, and in [`commands/style/caveman.md`](../../dot_claude/commands/style/caveman.md) at 1,292 characters loaded only when `/style:caveman` runs.
 
-Those two hooks are the largest single cost on this machine, worth **92% of what the whole enabled listing costs**, and no scope decision touches them.
+Before installing a plugin that ships a `SessionStart` hook, measure what it injects and check whether it can be silenced. Feed the hook a payload and count the bytes:
 
-For comparison, the whole `CLAUDE.md` plus its two `rules/` files total 3,039 characters. The activation hooks cost more than three times the hand-written instructions.
+```sh
+echo '{"session_id":"t","hook_event_name":"SessionStart","source":"startup"}' \
+  | CLAUDE_PLUGIN_ROOT="$P" node "$P/hooks/<activate>.js" | wc -c
+```
+
+Some hooks read an environment variable that suppresses the injection, which keeps the plugin's skills reachable while dropping the text to a couple of bytes. Many do not, and for those the only lever is not installing the plugin. A hook that injects on `SubagentStart` as well charges the same text per subagent spawned.
+
+`CLAUDE.md` plus its three `rules/` files total 4,409 characters, which is the whole standing instruction load on this machine.
 
 ### Consistency check
 
-Three views of the plugin set agree: the catalog holds six `scope: "user"` rows, `settings.json` holds six `enabledPlugins` entries, all `true`, the machine has six plugins installed, and every marketplace in `extraKnownMarketplaces` backs a catalog row. The measurement script warns when a plugin is enabled but missing from `installed_plugins.json`, which is how a mismatch surfaces.
+Three views of the plugin set agree: the catalog holds four `scope: "user"` rows, `settings.json` holds four `enabledPlugins` entries, all `true`, the machine has four plugins installed, and every marketplace in `extraKnownMarketplaces` backs a catalog row. The measurement script warns when a plugin is enabled but missing from `installed_plugins.json`, which is how a mismatch surfaces.
 
 context7 reaches Claude through exactly one channel, the user-scoped MCP server that APM installs from `apm.yml`. A session shows one instruction block and one tool set, `mcp__context7__*`.
 
 ## The real constraint is truncation, not tokens
 
-Token cost is small and linear. Roughly 2,700 tokens of listings from disk, plus ~1,500 for the built-ins and ~2,350 for hook injections, is well under 1% of a 1M context window.
+Token cost is small and linear. Roughly 2,100 tokens of listings from disk plus ~1,500 for the built-ins is well under 1% of a 1M context window.
 
 The constraint is the character budget on the listing itself. Claude Code scales that at roughly 1% of the model's context window: about 2,000 characters at 200k, about 10,000 at 1M. The listing always contains every name, but when the descriptions overflow, Claude Code shortens them to fit, dropping description text starting with the entries invoked least so the ones used most keep their keywords.
 
-This machine's skill and command listing is **10,194 characters from disk plus ~6,000 from built-ins**, so about 16,200 against a 10,000-character budget on the 1M-context Opus this machine runs, roughly 1.6x over. Truncation is not a future risk, it is happening: rarely-used entries lose their descriptions in the auto-invocation listing, stay callable as `/name`, and cannot be matched to a request in prose.
+This machine's skill and command listing is **7,631 characters from disk plus ~6,000 from built-ins**, so about 13,600 against a 10,000-character budget on the 1M-context Opus this machine runs, roughly 1.36x over. Truncation is not a future risk, it is happening: rarely-used entries lose their descriptions in the auto-invocation listing, stay callable as `/name`, and cannot be matched to a request in prose.
 
-Closing the 6,200-character gap cannot come from the local side alone. The built-ins are 6,000 of the 16,200 and are not configurable. What sits on disk is six plugins and eight `~/.claude` entries, and the three heaviest are `ponytail` (2,736 across six entries), `mattpocock-skills` (2,645 across eleven) and `caveman` (1,331 across four).
+Closing the ~3,600-character gap cannot come from the local side alone. The built-ins are 6,000 of the 13,600 and are not configurable. What sits on disk is four plugins and 17 `~/.claude` entries, and the heaviest single source is `mattpocock-skills` (2,645 across eleven entries), of which the eleven listed skills are a subset of 25 declared.
 
 ## What to do about it
 
-**Trim the activation hooks first.** `ponytail` and `caveman` together inject 9,409 characters of untruncatable text on every session start and every compaction, against 10,194 for the entire enabled listing. This is the only lever that pays on every compaction rather than once. Intensity levels are not that lever: `ponytail` emits 5,202 characters at `lite` against 5,229 at `full`, a 27-character difference, and `caveman` emits 4,180 at every level. Only disabling a `SessionStart` hook, and keeping the plugin for on-demand slash-command use, is a real saving. See [`instruction-load.md`](instruction-load.md) for what these hooks cost in adherence as well as characters.
+**Keep instruction text out of `SessionStart` hooks.** A hook injection is untruncatable and re-fires on every session start and every compaction, so it is the one cost that scales with session length rather than being paid once. An installed plugin that injects 5,000 characters of behavioural rules outweighs its own breadcrumbs several times over. Where such a rule set is wanted, author it here: a condensed version runs 20 to 30 percent of the injected size, and `disable-model-invocation: true` keeps the opt-in half out of the listing as well. [`instruction-load.md`](instruction-load.md) covers what a directive set costs in adherence and how to condense one without dropping a condition that makes a directive actionable.
 
 **Cut the heaviest breadcrumbs.** The top of the list:
 
-| Entry                           | Chars | Source           |
-| ------------------------------- | ----: | ---------------- |
-| `ponytail:ponytail`             |   848 | plugin           |
-| `install-agent-resources`       |   720 | local, this repo |
-| `organize-with-comments`        |   610 | local, this repo |
-| `ponytail:ponytail-review`      |   486 | plugin           |
-| `mattpocock-skills:code-review` |   451 | plugin           |
-| `ast-grep:ast-grep`             |   446 | plugin           |
-| `ponytail:ponytail-audit`       |   428 | plugin           |
-| `ponytail:ponytail-debt`        |   413 | plugin           |
-| `caveman:caveman`               |   412 | plugin           |
-| `caveman:compress`              |   357 | plugin           |
+| Entry                               | Chars | Source           |
+| ----------------------------------- | ----: | ---------------- |
+| `install-agent-resources`           |   862 | local, this repo |
+| `organize-with-comments`            |   610 | local, this repo |
+| `technical-writing`                 |   528 | local, this repo |
+| `mattpocock-skills:code-review`     |   451 | plugin           |
+| `ast-grep:ast-grep`                 |   446 | plugin           |
+| `markitdown`                        |   412 | local, this repo |
+| `mattpocock-skills:wizard`          |   341 | plugin           |
+| `mattpocock-skills:codebase-design` |   302 | plugin           |
+| `mattpocock-skills:research`        |   268 | plugin           |
+| `mattpocock-skills:domain-modeling` |   253 | plugin           |
 
-The six `ponytail` entries cost 2,736 and the four `caveman` entries 1,331, so those two plugins are 40 percent of the listing. Only the locally-authored entries (`install-agent-resources`, `organize-with-comments`) are editable here, and at 1,330 characters for two entries they are the cheapest remaining win: trim their trigger lists to distinctive keywords. `meeting-summarizer` carries the flag, so its 721 characters stay out of the listing and it is reached by name. `/summarize:transscripts` covers the same task with its own prompt and is flagged too.
+The four heaviest entries this repo can edit are `install-agent-resources` 862, `organize-with-comments` 610, `technical-writing` 528 and `markitdown` 412: 2,412 characters across four entries, and the cheapest win available. Trim their trigger lists to distinctive keywords. `meeting-summarizer` carries the flag, so its 721 characters stay out of the listing and it is reached by name. `/summarize:transscripts` covers the same task with its own prompt and is flagged too.
 
 **Use `disable-model-invocation: true` deliberately.** It is the precise tool for this problem: an entry you always invoke by hand does not need a description in the auto-invocation listing at all, and the flag removes the breadcrumb while keeping the slash command working. It covers 23 command entries and the three `install-*` executor skills, which route through `install-agent-resources` and never need matching on their own. It is the only lever that reduces the listing without removing function.
 
