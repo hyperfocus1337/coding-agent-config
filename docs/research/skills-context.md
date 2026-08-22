@@ -57,7 +57,6 @@ The three `install-*` executors carry the flag because `install-agent-resources`
 | `git:commit:single`   |    47 | listed, declared here                                                                                                |
 | `git:pr:create`       |    44 | listed, declared here                                                                                                |
 | `git:commit:push`     |    38 | listed, declared here                                                                                                |
-| 5 stale files         |   237 | `git:commit`, `git:push`, `git:extend`, `git:multiple`, `git:pr`; not in `dot_claude/commands/`, delete from `$HOME` |
 | 23 others             |     0 | `disable-model-invocation: true`, reachable as `/name`                                                               |
 
 `/style:caveman` carries the flag, so its 1,292 characters cost nothing until it is invoked.
