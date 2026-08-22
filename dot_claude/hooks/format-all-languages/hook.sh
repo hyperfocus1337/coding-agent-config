@@ -27,14 +27,20 @@ else
   # Bash: no file named, so sweep instead. README "Bash (markdown sweep)".
   cwd=$(jq -r '.cwd // empty' <<<"$payload")
   [[ -n "$cwd" ]] || cwd=$PWD
+  cmd=$(jq -r '.tool_input.command // empty' <<<"$payload")
+
+  # A command that writes and commits in one call leaves a clean tree by the time
+  # the hook runs, so the working-tree sweep finds nothing. README "Write and
+  # commit in one command".
+  committed=''
+  [[ "$cmd" == *"git commit"* ]] && committed=1
 
   # Roots = cwd + absolute paths in the command; a `cd` there never moves the
   # hook's own cwd. README "Cross-repo Bash edits".
   # ponytail: absolute paths only; relative ones are ambiguous after a cd.
   repo_roots=$(
     { printf '%s\n' "$cwd"
-      jq -r '.tool_input.command // empty' <<<"$payload" |
-        grep -oE '/[^[:space:]:;|&"'"'"'`()<>]+'
+      grep -oE '/[^[:space:]:;|&"'"'"'`()<>]+' <<<"$cmd"
     } | while IFS= read -r path; do
       [[ -d "$path" ]] || path=${path%/*}
       git -C "$path" rev-parse --show-toplevel 2>/dev/null
@@ -61,7 +67,9 @@ else
       fi
     done < <(
       { git -C "$root" diff --name-only --diff-filter=d HEAD
-        git -C "$root" ls-files --others --exclude-standard; } 2>/dev/null | sort -u
+        git -C "$root" ls-files --others --exclude-standard
+        [[ -n "$committed" ]] && git -C "$root" diff --name-only --diff-filter=d HEAD~1 HEAD; } \
+        2>/dev/null | sort -u
     )
   done
   ext_filter='md|markdown'
@@ -95,5 +103,23 @@ prettier_cmd=(prettier --write --prose-wrap never)
 # ponytail: tables wider than 1000 cols still compact; bump if that bites.
 [[ ${#md_targets[@]} -gt 0 ]] && "${prettier_cmd[@]}" --print-width 1000 "${md_targets[@]}" >/dev/null 2>&1
 [[ ${#other_targets[@]} -gt 0 ]] && "${prettier_cmd[@]}" "${other_targets[@]}" >/dev/null 2>&1
+
+# --- Report a commit that needs amending ---
+# Formatting a file the command already committed fixes the file, not the commit.
+# Say so, because only Claude can amend. README "Write and commit in one command".
+if [[ -n "${committed:-}" ]]; then
+  dirty=()
+  for f in "${md_targets[@]}"; do
+    git -C "${f%/*}" diff --quiet -- "$f" 2>/dev/null || dirty+=("$f")
+  done
+  if [[ ${#dirty[@]} -gt 0 ]]; then
+    jq -nc --arg files "${dirty[*]}" '{
+      hookSpecificOutput: {
+        hookEventName: "PostToolUse",
+        additionalContext: ("Prettier reformatted markdown after your commit, so the commit holds the unformatted version and the working tree is now dirty: " + $files + ". Fold the formatting into that commit (amend or a fixup), and force-push if it was already pushed.")
+      }
+    }'
+  fi
+fi
 
 exit 0

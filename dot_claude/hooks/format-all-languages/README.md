@@ -36,6 +36,14 @@ Note the side effect: any repo whose absolute path appears in a shell command ge
 
 Git failures (not a repo, no commits so no `HEAD`) are swallowed with `stderr` silenced, so "not a git repository" never leaks as hook noise; the sweep just finds nothing and exits clean.
 
+#### Write and commit in one command
+
+A single Bash call can write a file, commit it, and push it (`cat > README.md <<'EOF' ... && git commit -am docs && git push`). By the time the hook runs the tree is clean, so the working-tree sweep finds zero candidates and exits, and the unformatted table is already in the pushed commit.
+
+So when the command text contains `git commit`, each root also contributes the files of the last commit (`git diff --name-only --diff-filter=d HEAD~1 HEAD`). A repo with a single commit has no `HEAD~1`; that git call fails silently and the working-tree sources still apply.
+
+Formatting those files fixes the file, not the commit: the commit still holds the unformatted version, and the working tree is now dirty. Only Claude can amend, so the hook says so, through `hookSpecificOutput.additionalContext` naming the files it reformatted. The hint is emitted only when a file the command committed actually changed.
+
 ## Supported extensions
 
 | Extension                  | Parser     |

@@ -135,6 +135,28 @@ jq -nc --arg cwd "$outer" --arg p "$other/OTHER.md" \
   { echo "FAIL hook exited non-zero or timed out on the cross-repo sweep"; fail=1; }
 formatted "cross-repo absolute path" "$other/OTHER.md"
 
+# A command that writes and commits in one call leaves a clean tree, so the
+# working-tree sweep finds nothing. With `git commit` in the command the sweep
+# also covers the last commit, and reports that the commit needs amending.
+committed=$tmp/committed
+mkdir -p "$committed" && git -C "$committed" init -q .
+git -C "$committed" commit -q --allow-empty -m seed
+unaligned "$committed/C.md"
+git -C "$committed" add -A && git -C "$committed" commit -qm docs
+out=$(jq -nc --arg cwd "$committed" '{cwd:$cwd,tool_input:{command:"git add -A && git commit -m docs && git push"}}' | hook)
+formatted "file committed in the same command" "$committed/C.md"
+if jq -e '.hookSpecificOutput.additionalContext | test("amend")' >/dev/null 2>&1 <<<"$out"; then
+  echo "ok   report amend hint after a commit sweep"
+else
+  echo "FAIL no amend hint after a commit sweep"; fail=1
+fi
+
+# The same sweep on a command that did not commit must stay silent, so an
+# ordinary shell call never gets an amend hint.
+unaligned "$committed/D.md"
+out=$(jq -nc --arg cwd "$committed" '{cwd:$cwd,tool_input:{command:"echo x"}}' | hook)
+[[ -z "$out" ]] && echo "ok   quiet  no hint without a commit" || { echo "FAIL hint without a commit"; fail=1; }
+
 # --- Edit matcher: one named file, dispatched by extension ---
 # The edit path formats every supported extension, not just markdown, and skips
 # the rest. `.org` belongs to the format-org-tables hook, so this one must not
