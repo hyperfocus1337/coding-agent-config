@@ -16,6 +16,18 @@ A Bash tool call carries no `file_path`, but a shell command (`sed`, `perl`, `ec
 
 The sweep is deliberately **markdown-only**. The edit path formats every supported extension because the edit is the point; the Bash path does not, because reformatting every changed `.ts`/`.css`/`.json` on _every_ shell command would fight edits still in progress. Markdown table drift is the specific problem worth a repo-wide pass; the rest is not.
 
+#### Markdown the command names
+
+The sweep asks git what changed, so anything git does not report is invisible. `git ls-files --others --exclude-standard` honours `.gitignore`, and hooks run after the whole command finishes: a call that writes `docs/refactor.md` and adds it to `.gitignore` in one go leaves a file that git already refuses to list. `git ls-files --others` shows it, `--exclude-standard` does not.
+
+So before any git question is asked, the sweep takes every `.md`/`.markdown` path the command text names, absolute or relative to the session cwd, and formats those directly. A file the command names outright is a file being authored now, which is why it gets the pass the rest of the ignored tree does not. Paths that do not resolve to a file drop out on the existing `-f` check, and a named file formats even when the cwd is in no repo at all.
+
+Relative paths are resolved against the session cwd, so a `cd` elsewhere in the command can resolve one wrong. The `-f` check makes that a silent miss, or at worst a no-op pass over an already formatted file of the same name.
+
+This is the same failure as [Write and commit in one command](#write-and-commit-in-one-command) from the other side: there git had already been told the file is clean, here git has been told to ignore it. Naming the file removes git from the question.
+
+Note the asymmetry with [`format-org-tables`](../format-org-tables/README.md): that hook matches `Write|Edit|MultiEdit` only, so an `.org` table written through a Bash heredoc is not aligned by anything.
+
 #### Cross-repo Bash edits
 
 The hook's cwd is the session cwd; a `cd` inside the shell command does not move it. So a command that writes markdown in a _different_ repo (`cd /other/repo && cat > UPGRADING.md <<'EOF'`) used to be invisible: the sweep was scoped to the session repo's toplevel only, and the file stayed unformatted until something else touched it.

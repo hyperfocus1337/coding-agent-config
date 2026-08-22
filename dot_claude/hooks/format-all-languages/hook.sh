@@ -35,6 +35,14 @@ else
   committed=''
   [[ "$cmd" == *"git commit"* ]] && committed=1
 
+  # Markdown the command names outright, taken before any git question is asked:
+  # git hides an ignored file from the sweep, and a commit in the same call hides
+  # a tracked one. README "Markdown the command names".
+  while IFS= read -r path; do
+    [[ "$path" == /* ]] || path=$cwd/$path
+    candidates+=("$path")
+  done < <(grep -oE '[^[:space:]:;|&"'"'"'`()<>=]+\.(md|markdown)\b' <<<"$cmd")
+
   # Roots = cwd + absolute paths in the command; a `cd` there never moves the
   # hook's own cwd. README "Cross-repo Bash edits".
   # ponytail: absolute paths only; relative ones are ambiguous after a cd.
@@ -46,14 +54,13 @@ else
       git -C "$path" rev-parse --show-toplevel 2>/dev/null
     done | sort -u
   )
-  [[ -n "$repo_roots" ]] || exit 0
 
   # Per root: changed vs HEAD, plus untracked. Git errors stay silent.
   # A git repo inside a repo is opaque to the parent: an embedded repo lists as
   # a bare `nested/` entry, a submodule as a gitlink path, so their markdown is
   # invisible to the parent sweep. Directory entries queue as roots of their own,
   # which is why the roots are a growing queue and not a fixed list.
-  mapfile -t queue <<<"$repo_roots"
+  mapfile -t queue < <(printf '%s' "$repo_roots")
   for ((i = 0; i < ${#queue[@]}; i++)); do
     root=${queue[i]}
     while IFS= read -r rel_path; do

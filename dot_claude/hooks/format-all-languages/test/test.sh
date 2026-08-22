@@ -116,13 +116,16 @@ err=$(jq -nc --arg cwd "$fresh" '{cwd:$cwd,tool_input:{command:"echo x"}}' | hoo
 formatted "repo with no HEAD" "$fresh/NEW.md"
 [[ -z "$err" ]] && echo "ok   quiet  no-HEAD repo prints nothing" || { echo "FAIL noise  $err"; fail=1; }
 
-# A cwd outside any repo must exit clean rather than error.
+# A cwd outside any repo must exit clean rather than error, and a file it names
+# still formats: the sweep having no root is not a reason to skip a named file.
 mkdir -p "$tmp/norepo"
-if jq -nc --arg cwd "$tmp/norepo" '{cwd:$cwd,tool_input:{command:"echo x"}}' | hook; then
+unaligned "$tmp/norepo/N.md"
+if jq -nc --arg cwd "$tmp/norepo" '{cwd:$cwd,tool_input:{command:"cat > N.md <<EOF\nx\nEOF"}}' | hook; then
   echo "ok   exit   non-repo cwd"
 else
   echo "FAIL exit   non-repo cwd"; fail=1
 fi
+formatted "named file outside any repo" "$tmp/norepo/N.md"
 
 # A markdown file in a second repo, reached only by an absolute path inside the
 # command text, is the cross-repo case the root grep exists for.
@@ -134,6 +137,22 @@ jq -nc --arg cwd "$outer" --arg p "$other/OTHER.md" \
   '{cwd:$cwd,tool_input:{command:("cat > " + $p + " <<EOF\nx\nEOF")}}' | hook ||
   { echo "FAIL hook exited non-zero or timed out on the cross-repo sweep"; fail=1; }
 formatted "cross-repo absolute path" "$other/OTHER.md"
+
+# Markdown the command names is formatted even when git cannot see it: a file
+# written and gitignored in the same call is already ignored by hook time, so
+# `ls-files --others --exclude-standard` never reports it.
+unaligned "$outer/vendor/NAMED.md"
+jq -nc --arg cwd "$outer" '{cwd:$cwd,tool_input:{command:"cat > vendor/NAMED.md <<EOF\nx\nEOF"}}' | hook
+formatted "gitignored file named in the command" "$outer/vendor/NAMED.md"
+
+# The same path relative, in a repo the sweep would otherwise skip entirely.
+unaligned "$outer/vendor/REL.md"
+jq -nc --arg cwd "$outer" '{cwd:$cwd,tool_input:{command:"sed -i s/a/b/ vendor/REL.md"}}' | hook
+formatted "relative path named in the command" "$outer/vendor/REL.md"
+
+# A named path that does not exist must not break the sweep or leak an error.
+err=$(jq -nc --arg cwd "$outer" '{cwd:$cwd,tool_input:{command:"rm gone.md"}}' | hook 2>&1)
+[[ -z "$err" ]] && echo "ok   quiet  named path that does not exist" || { echo "FAIL noise  $err"; fail=1; }
 
 # A command that writes and commits in one call leaves a clean tree, so the
 # working-tree sweep finds nothing. With `git commit` in the command the sweep
