@@ -123,7 +123,7 @@ if [[ -n "${committed:-}" ]]; then
     jq -nc --arg files "${dirty[*]}" '{
       hookSpecificOutput: {
         hookEventName: "PostToolUse",
-        additionalContext: ("Prettier reformatted markdown after your commit, so the commit holds the unformatted version and the working tree is now dirty: " + $files + ". Fold the formatting into that commit (amend or a fixup), and force-push if it was already pushed.")
+        additionalContext: ("Prettier reformatted markdown after your commit, so the commit holds the unformatted version and the working tree is now dirty: " + $files + ". Fold the formatting into that commit (amend, or a fixup commit if it is already pushed).")
       }
     }'
   fi
