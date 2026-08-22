@@ -1,6 +1,6 @@
 ---
 allowed-tools: Bash(git add:*), Bash(git reset:*), Bash(git status:*), Bash(git commit:*), Bash(git diff:*), Bash(git log:*)
-argument-hint: [scope, e.g. "the new session command"]
+argument-hint: [scope]
 description: Commit one task's changes from the current conversation
 ---
 
