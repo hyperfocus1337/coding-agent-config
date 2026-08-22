@@ -1,5 +1,6 @@
 .env
 .envrc
+assets
 apm_modules
 dist
 docs
