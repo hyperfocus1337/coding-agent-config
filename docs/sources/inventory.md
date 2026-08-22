@@ -24,8 +24,9 @@ Prompt templates under [`dot_claude/commands/`](../../dot_claude/commands/README
 | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | [`/git:branches`](../../dot_claude/commands/git/branches.md)                       | Delete stale local branches whose remote tracking branch is gone.                |
 | [`/git:changelog`](../../dot_claude/commands/git/changelog.md)                     | Generate a changelog for a time period.                                          |
-| [`/git:commit`](../../dot_claude/commands/git/commit.md)                           | Create a git commit (stage all, single commit).                                  |
-| [`/git:multiple`](../../dot_claude/commands/git/multiple.md)                       | Split changes into a logical sequence of commits.                                |
+| [`/git:commit:multiple`](../../dot_claude/commands/git/commit/multiple.md)         | Split changes into a logical sequence of commits.                                |
+| [`/git:commit:session`](../../dot_claude/commands/git/commit/session.md)           | Commit one task's changes from the current conversation.                         |
+| [`/git:commit:single`](../../dot_claude/commands/git/commit/single.md)             | Create a git commit (stage all, single commit).                                  |
 | [`/git:pr`](../../dot_claude/commands/git/pr.md)                                   | Commit, push, and open a pull request.                                           |
 | [`/git:push`](../../dot_claude/commands/git/push.md)                               | Commit and push.                                                                 |
 | [`/git:rewrite:author`](../../dot_claude/commands/git/rewrite/author.md)           | Rewrite the author of the whole branch or the last N commits.                    |

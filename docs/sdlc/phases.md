@@ -2,7 +2,7 @@
 
 This page maps the slash commands, skills, and subagents installed in this environment onto the phases of the software development lifecycle (SDLC). The goal is a practical answer to one question: at any point in building software, which installed tools can I reach for. Entries are grouped by SDLC phase, and within each phase into categories of related tools. A tool that genuinely serves more than one phase is listed under each phase it fits, so every phase table stands on its own.
 
-Two conventions keep the tables lean. Slash commands are recognizable by their leading `/` prefix (for example `/git:commit`), so there is no separate column marking commands apart from skills. Subagents are called out in their own description: any entry whose description begins with "Subagent that" is dispatched through the Agent tool and spawns a separate agent rather than running inline.
+Two conventions keep the tables lean. Slash commands are recognizable by their leading `/` prefix (for example `/git:commit:single`), so there is no separate column marking commands apart from skills. Subagents are called out in their own description: any entry whose description begins with "Subagent that" is dispatched through the Agent tool and spawns a separate agent rather than running inline.
 
 Where each tool comes from (manually committed, pulled by APM, a standalone CLI, a Claude plugin, or built into Claude Code) is documented separately in [`inventory.md`](../sources/inventory.md). Each name below links to the same source as its `inventory.md` row (repo file, upstream repo, or docs page).
 
@@ -194,8 +194,9 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 | Command                                                                                      | Description                                                           |
 | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| [`/git:commit`](../../dot_claude/commands/git/commit.md)                                     | Create a git commit (stage all, single commit).                       |
-| [`/git:multiple`](../../dot_claude/commands/git/multiple.md)                                 | Split changes into a logical sequence of commits.                     |
+| [`/git:commit:single`](../../dot_claude/commands/git/commit/single.md)                       | Create a git commit (stage all, single commit).                       |
+| [`/git:commit:session`](../../dot_claude/commands/git/commit/session.md)                     | Commit one task's changes from the current conversation.              |
+| [`/git:commit:multiple`](../../dot_claude/commands/git/commit/multiple.md)                   | Split changes into a logical sequence of commits.                     |
 | [`/git:push`](../../dot_claude/commands/git/push.md)                                         | Commit and push.                                                      |
 | [`/git:pr`](../../dot_claude/commands/git/pr.md)                                             | Commit, push, and open a pull request.                                |
 | [`/issues:github-coding-process`](../../dot_claude/commands/issues/github-coding-process.md) | Plan, implement, test, and ship a GitHub issue end to end using `gh`. |

@@ -8,8 +8,9 @@ Shorthand command names and what they map to.
 
 | Command               | Description                                                 |
 | --------------------- | ----------------------------------------------------------- |
-| `commit`              | Create a git commit                                         |
-| `multiple`            | Split changes into a logical sequence of commits            |
+| `commit:single`       | Create a git commit                                         |
+| `commit:session`      | Commit one task's changes from the current conversation     |
+| `commit:multiple`     | Split changes into a logical sequence of commits            |
 | `extend`              | Fold working directory changes into an existing commit      |
 | `push`                | Commit and push                                             |
 | `pr`                  | Commit, push, and open a PR                                 |
