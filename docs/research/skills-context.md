@@ -14,22 +14,22 @@ A plugin manifest's `skills` array, when present, gates which on-disk skills reg
 
 An entry with no `description` never reaches the listing, with one exception. A user-level command file with no frontmatter at all is still listed, using its H1 as the description. `.chezmoiignore` keeps every `commands/**/README.md` out of `~/.claude` for that reason, and the repo copies carry `disable-model-invocation: true` as a second guard. Plugin command files in exactly the same shape (prompt bodies with an H1 and no frontmatter) were not observed in the listing, so the fallback appears to be user-level only. The measurement script encodes it that way and says so in a comment; if a future session shows plugin equivalents listed, that assumption is what to revisit.
 
-Skills and commands share one listing block, so a command in `~/.claude/commands/` costs exactly what a skill of the same verbosity costs. Agents are a separate listing. Of this repo's 28 user-level commands, 23 carry the flag above and cost nothing; the other five are a real slice of the skills budget.
+Skills and commands share one listing block, so a command in `~/.claude/commands/` costs exactly what a skill of the same verbosity costs. Agents are a separate listing. Of this repo's 30 user-level commands, 24 carry the flag above and cost nothing; the other six are a real slice of the skills budget.
 
 ## Current cost
 
 ### Enabled (loaded every session)
 
-| Source                            | Skills |   Cmds | Agents |     Chars |    ~Tokens |
-| --------------------------------- | -----: | -----: | -----: | --------: | ---------: |
-| `~/.claude` (see breakdown below) |      6 |     11 |      2 |     3,949 |        987 |
-| `mattpocock-skills@mattpocock`    |     11 |      0 |      0 |     2,645 |        661 |
-| `codex@openai-codex`              |      3 |      2 |      1 |       838 |        210 |
-| `astral@astral-sh`                |      3 |      0 |      0 |       473 |        118 |
-| `ast-grep@ast-grep-marketplace`   |      1 |      0 |      0 |       447 |        112 |
-| **Total from disk**               | **24** | **13** |  **3** | **8,352** | **~2,088** |
+| Source                            | Skills |  Cmds | Agents |     Chars |    ~Tokens |
+| --------------------------------- | -----: | ----: | -----: | --------: | ---------: |
+| `~/.claude` (see breakdown below) |      5 |     6 |      2 |     3,503 |        876 |
+| `mattpocock-skills@mattpocock`    |     11 |     0 |      0 |     2,645 |        661 |
+| `codex@openai-codex`              |      3 |     2 |      1 |       838 |        210 |
+| `astral@astral-sh`                |      3 |     0 |      0 |       473 |        118 |
+| `ast-grep@ast-grep-marketplace`   |      1 |     0 |      0 |       447 |        112 |
+| **Total from disk**               | **23** | **8** |  **3** | **7,906** | **~1,976** |
 
-The skill and command listing alone is 37 entries and 7,631 characters; the agents listing adds 721.
+The skill and command listing alone is 31 entries and 7,185 characters; the agents listing adds 721.
 
 Four plugins load in every session. The other rows in the plugin catalog carry project or local scope, so they cost nothing here and reach a repo through the `install-plugins` and `install-skills` skills.
 
@@ -37,19 +37,17 @@ Four plugins load in every session. The other rows in the plugin catalog carry p
 
 That row is the only source this repo controls directly, so it is worth expanding. Per-entry figures below are the rendered breadcrumb (`- name: description`) without its trailing newline, which is why the group sums come out one character per entry below the table totals.
 
-**Skills, 6 listed entries, 2,871 characters.** Eleven skill directories sit in `~/.claude/skills/`; five carry `disable-model-invocation: true` and cost nothing:
+**Skills, 5 listed entries, 2,656 characters.** Eleven skill directories sit in `~/.claude/skills/`; six carry `disable-model-invocation: true` and cost nothing:
 
-| Channel                                     | Listed | Chars | Detail                                                                                                                             |
-| ------------------------------------------- | -----: | ----: | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Local, authored here (`dot_claude/skills/`) |      5 | 2,626 | `install-agent-resources` 862, `organize-with-comments` 610, `technical-writing` 528, `markitdown` 412, `gh-cli` 214               |
-| APM, `antonbabenko/terraform-skill`         |      1 |   239 | `terraform-skill`                                                                                                                  |
-| Flagged, not listed                         |      5 |     0 | `meeting-summarizer` 721, `install-skills` 423, `install-mcp` 372, `install-plugins` 359, `thermo-nuclear-code-quality-review` 291 |
+| Channel                                     | Listed | Chars | Detail                                                                                                                                                      |
+| ------------------------------------------- | -----: | ----: | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Local, authored here (`dot_claude/skills/`) |      4 | 2,412 | `install-agent-resources` 862, `organize-with-comments` 610, `technical-writing` 528, `markitdown` 412                                                      |
+| APM, `antonbabenko/terraform-skill`         |      1 |   239 | `terraform-skill`                                                                                                                                           |
+| Flagged, not listed                         |      6 |     0 | `meeting-summarizer` 721, `install-bootstrap` 573, `install-skills` 423, `install-mcp` 372, `install-plugins` 359, `thermo-nuclear-code-quality-review` 291 |
 
-Two entries changed after this snapshot: `gh-cli` was deleted, and `install-bootstrap` was added with the flag set. Both move the totals above by their own size and nothing else.
+The four `install-*` executors carry the flag because `install-agent-resources` is the single entry point that routes to them; only the router needs a breadcrumb. `thermo-nuclear-code-quality-review` comes from the `cursor/plugins/cursor-team-kit` APM entry, which also deploys the kit's two agents, the whole of the agents column for this row.
 
-The three `install-*` executors carry the flag because `install-agent-resources` is the single entry point that routes to them; only the router needs a breadcrumb. `thermo-nuclear-code-quality-review` comes from the `cursor/plugins/cursor-team-kit` APM entry, which also deploys the kit's two agents, the whole of the agents column for this row.
-
-**Commands, 11 listed entries, 589 characters on disk in `$HOME`, of which only 6 entries and 352 characters come from this repo.** The gap is files in `~/.claude/commands/git/` that `dot_claude/commands/` does not declare. chezmoi writes what the source declares and deletes nothing else, so such a file persists in `$HOME` and keeps charging the listing for a command the repo does not define. Ten sit there, five of them unflagged:
+**Commands, 6 listed entries, 358 characters, every one of them declared here.** Thirty command files sit in `~/.claude/commands/`, exactly what `dot_claude/commands/` declares, and 24 carry the flag. An earlier snapshot found ten extra files under `~/.claude/commands/git/` that the repo no longer declared: chezmoi writes what the source declares and deletes nothing else, so a renamed or deleted command persists in `$HOME` and keeps charging the listing. Those are gone, but the failure mode returns on the next rename, so it is worth re-running the script after one.
 
 | Entry                 | Chars | Note                                                   |
 | --------------------- | ----: | ------------------------------------------------------ |
@@ -59,32 +57,32 @@ The three `install-*` executors carry the flag because `install-agent-resources`
 | `git:commit:single`   |    47 | listed, declared here                                  |
 | `git:pr:create`       |    44 | listed, declared here                                  |
 | `git:commit:push`     |    38 | listed, declared here                                  |
-| 23 others             |     0 | `disable-model-invocation: true`, reachable as `/name` |
+| 24 others             |     0 | `disable-model-invocation: true`, reachable as `/name` |
 
-`/style:caveman` carries the flag, so its 1,292 characters cost nothing until it is invoked.
+`/style:caveman` carries the flag, so its 70-character breadcrumb stays out of the listing and the 1,292 characters of the file itself cost nothing until it is invoked.
 
-**Agents, 2 entries, 487 characters.** `thermo-nuclear-code-quality-review` 301 and `ci-watcher` 186, both deployed by the `cursor-team-kit` APM entry. `apm.yml` notes there is no `agents:` subset key, so taking that kit's one skill means taking both agents. `codex` contributes a third, `codex-rescue`.
+**Agents, 2 entries, 489 characters.** `thermo-nuclear-code-quality-review` 301 and `ci-watcher` 186, both deployed by the `cursor-team-kit` APM entry. `apm.yml` notes there is no `agents:` subset key, so taking that kit's one skill means taking both agents. `codex` contributes a third, `codex-rescue`.
 
 ### What a command breadcrumb actually buys
 
-Worth being precise, because it decides how aggressively to trim. A command in the listing is callable by the model through the Skill tool, not just by a human typing `/name`. That is verifiable from a live session: `- git:commit: Create a git commit` appears in the skill listing, and the Skill tool's contract accepts only names from that listing. The negative case confirms the mechanism, `codex`'s flagged commands and `mattpocock-skills`' flagged skills are absent from the same listing.
+Worth being precise, because it decides how aggressively to trim. A command in the listing is callable by the model through the Skill tool, not just by a human typing `/name`. That is verifiable from a live session: `- git:commit:single: Create a single git commit` appears in the skill listing, and the Skill tool's contract accepts only names from that listing. The negative case confirms the mechanism, `codex`'s flagged commands and `mattpocock-skills`' flagged skills are absent from the same listing.
 
-But callable is not the same as chosen. Asked to commit, Claude generally commits directly rather than routing through `/git:commit`, because the task is within its default competence. The breadcrumb only earns its cost when the command encodes a procedure Claude would otherwise improvise differently, and when the request arrives in prose rather than as an explicit slash command. By that test most commands here are hand-invoked tools whose descriptions are dead weight in the auto-invocation listing, and only a few (`git:commit`, `git:multiple`, `git:pr:create`, which pin this repo's commit and PR conventions) have a real claim to auto-selection.
+But callable is not the same as chosen. Asked to commit, Claude generally commits directly rather than routing through `/git:commit:single`, because the task is within its default competence. The breadcrumb only earns its cost when the command encodes a procedure Claude would otherwise improvise differently, and when the request arrives in prose rather than as an explicit slash command. By that test most commands here are hand-invoked tools whose descriptions are dead weight in the auto-invocation listing, and only a few (`git:commit:single`, `git:commit:multiple`, `git:pr:create`, which pin this repo's commit and PR conventions) have a real claim to auto-selection.
 
 ### Which commands carry the flag
 
-Every command in `dot_claude/commands/` except `git:commit`, `git:multiple`, `git:pr:create` and `git:commit:push` carries `disable-model-invocation: true`, which keeps its breadcrumb out of the listing while leaving `/name` working. The four exceptions pin this repo's commit and PR conventions, which is exactly the case where auto-selection beats improvising:
+Every command in `dot_claude/commands/` except the five `git:commit:*` variants and `git:pr:create` carries `disable-model-invocation: true`, which keeps its breadcrumb out of the listing while leaving `/name` working. The six exceptions pin this repo's commit and PR conventions, which is exactly the case where auto-selection beats improvising:
 
 | Flagged                                                             | Chars if listed | Reason                                                                                                                                |
 | ------------------------------------------------------------------- | --------------: | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 8 × `organize:*`                                                    |             984 | thin wrappers over the `organize-with-comments` skill, which already prompts for a style; the skill is the correct auto-invoke target |
+| 8 × `organize:*`                                                    |             972 | thin wrappers over the `organize-with-comments` skill, which already prompts for a style; the skill is the correct auto-invoke target |
 | `issues:*` (3)                                                      |             368 | each needs an issue number as an argument, so the request always arrives as a slash command                                           |
-| `git:rewrite:author`, `git:rewrite:date`, `git:rewrite:shift-dates` |             279 | history surgery, never something to auto-select                                                                                       |
-| `git:branches:cleanup`, `git:worktrees:cleanup`, `git:changelog`    |             365 | deliberate maintenance runs, invoked by hand at a moment of the user's choosing                                                       |
-| `simple:explain`, `simple:proofread`, `simple:markitdown`           |             192 | within default competence; the breadcrumb buys nothing the model cannot already do                                                    |
-| `style:concise`, `style:current-state`                              |             136 | mode switches the user types explicitly                                                                                               |
+| `git:rewrite:author`, `git:rewrite:date`, `git:rewrite:shift-dates` |             291 | history surgery, never something to auto-select                                                                                       |
+| `git:branches:cleanup`, `git:changelog`, `git:worktrees:*` (2)      |             558 | deliberate maintenance runs, invoked by hand at a moment of the user's choosing                                                       |
+| `style:caveman`, `style:concise`, `style:current-state`             |             206 | mode switches the user types explicitly                                                                                               |
 | `summarize:transscripts`                                            |             102 | a standalone prompt for the same task as the flagged `meeting-summarizer` skill                                                       |
-| **Total**                                                           |       **2,426** |                                                                                                                                       |
+| `simple:explain`, `simple:proofread`                                |              88 | within default competence; the breadcrumb buys nothing the model cannot already do                                                    |
+| **Total**                                                           |       **2,585** |                                                                                                                                       |
 
 `dot_claude/commands/README.md` and `dot_claude/commands/git/README.md` carry the same flag, and `.chezmoiignore` keeps both out of `~/.claude`. Either guard alone is enough; both are documentation, not commands.
 
@@ -115,13 +113,13 @@ context7 reaches Claude through exactly one channel, the user-scoped MCP server 
 
 ## The real constraint is truncation, not tokens
 
-Token cost is small and linear. Roughly 2,100 tokens of listings from disk plus ~1,500 for the built-ins is well under 1% of a 1M context window.
+Token cost is small and linear. Roughly 2,000 tokens of listings from disk plus ~1,500 for the built-ins is well under 1% of a 1M context window.
 
 The constraint is the character budget on the listing itself. Claude Code scales that at roughly 1% of the model's context window: about 2,000 characters at 200k, about 10,000 at 1M. The listing always contains every name, but when the descriptions overflow, Claude Code shortens them to fit, dropping description text starting with the entries invoked least so the ones used most keep their keywords.
 
-This machine's skill and command listing is **7,631 characters from disk plus ~6,000 from built-ins**, so about 13,600 against a 10,000-character budget on the 1M-context Opus this machine runs, roughly 1.36x over. Truncation is not a future risk, it is happening: rarely-used entries lose their descriptions in the auto-invocation listing, stay callable as `/name`, and cannot be matched to a request in prose.
+This machine's skill and command listing is **7,185 characters from disk plus ~6,000 from built-ins**, so about 13,200 against a 10,000-character budget on the 1M-context Opus this machine runs, roughly 1.32x over. Truncation is not a future risk, it is happening: rarely-used entries lose their descriptions in the auto-invocation listing, stay callable as `/name`, and cannot be matched to a request in prose.
 
-Closing the ~3,600-character gap cannot come from the local side alone. The built-ins are 6,000 of the 13,600 and are not configurable. What sits on disk is four plugins and 17 `~/.claude` entries, and the heaviest single source is `mattpocock-skills` (2,645 across eleven entries), of which the eleven listed skills are a subset of 25 declared.
+Closing the ~3,200-character gap cannot come from the local side alone. The built-ins are 6,000 of the 13,200 and are not configurable. What sits on disk is four plugins and 13 `~/.claude` entries, and the heaviest single source is `mattpocock-skills` (2,645 across eleven entries), of which the eleven listed skills are a subset of 25 declared.
 
 ## What to do about it
 
@@ -144,7 +142,7 @@ Closing the ~3,600-character gap cannot come from the local side alone. The buil
 
 The four heaviest entries this repo can edit are `install-agent-resources` 862, `organize-with-comments` 610, `technical-writing` 528 and `markitdown` 412: 2,412 characters across four entries, and the cheapest win available. Trim their trigger lists to distinctive keywords. `meeting-summarizer` carries the flag, so its 721 characters stay out of the listing and it is reached by name. `/summarize:transscripts` covers the same task with its own prompt and is flagged too.
 
-**Use `disable-model-invocation: true` deliberately.** It is the precise tool for this problem: an entry you always invoke by hand does not need a description in the auto-invocation listing at all, and the flag removes the breadcrumb while keeping the slash command working. It covers 23 command entries and the three `install-*` executor skills, which route through `install-agent-resources` and never need matching on their own. It is the only lever that reduces the listing without removing function.
+**Use `disable-model-invocation: true` deliberately.** It is the precise tool for this problem: an entry you always invoke by hand does not need a description in the auto-invocation listing at all, and the flag removes the breadcrumb while keeping the slash command working. It covers 24 command entries and the four `install-*` executor skills, which route through `install-agent-resources` and never need matching on their own. It is the only lever that reduces the listing without removing function.
 
 **Remove rather than disable.** Disabling and not installing cost the same at session start, but a disabled plugin holds reserve on disk plus a `false` entry to keep in step with the catalog. A plugin wanted occasionally belongs at project or local scope, where it loads only in the repo that needs it.
 

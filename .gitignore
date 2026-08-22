@@ -4,3 +4,4 @@ apm_modules/
 assets
 .env
 .envrc
+__pycache__/
