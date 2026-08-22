@@ -54,7 +54,7 @@
           {
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/lint-all-languages/hook.sh\"",
-            "timeout": 5
+            "timeout": 10
           },
           {
             "type": "command",
