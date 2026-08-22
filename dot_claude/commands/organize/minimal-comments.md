@@ -1,5 +1,5 @@
 ---
-description: Reorganize a config or code file into sections using minimal single-line divider headers.
+description: Reorganize a config or code file into sections using minimal divider headers.
 argument-hint: <file-path-or-glob>
 disable-model-invocation: true
 ---
