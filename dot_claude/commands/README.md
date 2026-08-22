@@ -8,12 +8,15 @@ Slash commands are prompt templates Claude Code runs when you type `/<namespace>
 
 ## style/ — response style
 
-| Command                | Description                                                                     |
-| ---------------------- | ------------------------------------------------------------------------------- |
-| `/style:concise`       | Report back extremely concisely, sacrificing grammar for the sake of concision. |
-| `/style:current-state` | Write docs describing only the current state, with no change-history framing.   |
+| Command                | Description                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| `/style:concise`       | Report back extremely concisely, sacrificing grammar for the sake of concision.  |
+| `/style:current-state` | Write docs describing only the current state, with no change-history framing.    |
+| `/style:caveman`       | Compressed prose: drop articles, filler, and hedging, keep every technical fact. |
 
 Source: [Claude Code tip (YouTube Shorts)](https://youtube.com/shorts/I12Mf8KBT1I).
+
+`/style:caveman` condenses the [caveman plugin](https://github.com/JuliusBrussee/caveman)'s `SessionStart` instructions into 9 directives, from about 22 across 4,180 characters. The plugin is not installed, so the mode is opt-in: the command carries `disable-model-invocation: true` and costs nothing until it is invoked, and it names the `rules/writing.md` rules it overrides while active. See `docs/research/instruction-load.md`.
 
 ## git/ — version control helpers
 
