@@ -28,8 +28,8 @@ F=$(jq -r '.tool_input.file_path // empty')
 # --- Per-language off switch ---
 # CLAUDE_LINT_DISABLE = space/comma list of keys to skip (py js sh yaml tf),
 # or "all" to disable the hook entirely. To *tune* rather than disable YAML,
-# drop a .yamllint (plain YAML) or .ansible-lint (Ansible) config in the repo;
-# both linters read it natively, no config here.
+# edit the bundled configs in config/; both YAML linters run with -c against
+# them, so a repo's own .yamllint / .ansible-lint is never read.
 DISABLE=" ${CLAUDE_LINT_DISABLE//,/ } "
 disabled() { [[ "$DISABLE" == *" all "* || "$DISABLE" == *" $1 "* ]]; }
 

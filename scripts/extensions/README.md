@@ -14,7 +14,7 @@ Scripts for installing and managing agent extensions across environments. Two me
 - `skills/install.sh` — vendor-CLI skills, driven by the `skills.json` catalog (every `scope: "user"` row with `channel: "vendor-cli"`).
 - `apm/install.sh` — runs `apm install -g --update` from the repo root, deploying the `apm.yml` MCP servers and skills to user scope (`~/.claude.json`, `~/.claude/skills/`). Idempotent; re-resolves refs to latest upstream every run (no committed lockfile).
 
-The declared MCP servers and skills live in `apm.yml` at the repo root; no lockfile is committed, so each install pulls the latest upstream ref. To add or drop one, edit `apm.yml` and re-run `just apm-install` (then `apm prune` to remove orphans).
+The declared MCP servers and skills live in `apm.yml` at the repo root; no lockfile is committed, so each install pulls the latest upstream ref. To add or drop one, edit `apm.yml` and re-run `just apm` (then `apm prune` to remove orphans).
 
 Run `./install.sh` to install everything. The child scripts can be run individually but assume the preamble has already executed.
 

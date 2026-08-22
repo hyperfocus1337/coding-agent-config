@@ -29,8 +29,8 @@ export CLAUDE_LINT_DISABLE="all"       # off
 
 To _tune_ YAML rather than disable it, edit the bundled configs in [`config/`](config/); the hook passes them via `-c` on every invocation, so a repo's own `.yamllint` / `.ansible-lint` is ignored and there is nothing to copy per project:
 
-- [`config/.yamllint`](config/.yamllint) sets the relaxed indentation and line-length rules for plain YAML ([yamllint config docs](https://yamllint.readthedocs.io/en/stable/configuration.html)).
-- [`config/.ansible-lint`](config/.ansible-lint) downgrades the noisy `yaml[indentation]` / `yaml[line-length]` findings to non-blocking warnings for Ansible files ([ansible-lint config docs](https://ansible.readthedocs.io/projects/lint/configuring/)). ansible-lint discovers its embedded yamllint config by directory search, so indentation for Ansible is tuned here via `warn_list`, not in `config/.yamllint`.
+- [`config/dot_yamllint`](config/dot_yamllint), deployed as `.yamllint`, sets the relaxed indentation and line-length rules for plain YAML ([yamllint config docs](https://yamllint.readthedocs.io/en/stable/configuration.html)).
+- [`config/dot_ansible-lint`](config/dot_ansible-lint), deployed as `.ansible-lint`, downgrades the noisy `yaml[indentation]` / `yaml[line-length]` findings to non-blocking warnings for Ansible files ([ansible-lint config docs](https://ansible.readthedocs.io/projects/lint/configuring/)). ansible-lint discovers its embedded yamllint config by directory search, so indentation for Ansible is tuned here via `warn_list`, not in `config/dot_yamllint`.
 
 ## YAML routing
 
@@ -44,7 +44,7 @@ macOS (Homebrew):
 
 ```sh
 brew install ruff shellcheck yamllint ansible-lint
-npm install -g oxlint
+pnpm add -g oxlint
 ```
 
 Debian / Ubuntu:

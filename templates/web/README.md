@@ -4,7 +4,7 @@ Drop-in pack that brings the full coding-agent-config environment into a Claude 
 
 Cloud sessions start from a minimal base image. None of the config in this repo is present until something installs it. This pack wires a `SessionStart` hook that runs once at the beginning of every session and installs the config before the agent starts working.
 
-Cloud sessions are usually ephemeral, so the hook re-runs from scratch every time. This pack installs the portable config plus the full APM manifest (skill bundles, MCP servers, and the pyright LSP). It deliberately skips the 21 Claude plugins from the marketplace and playwright browser binaries, which would push a per-session hook past 5 minutes. See [What gets installed](#what-gets-installed) for the exact scope, and [MCP servers and secrets](#mcp-servers-and-secrets) for the env vars the MCP servers need.
+Cloud sessions are usually ephemeral, so the hook re-runs from scratch every time. This pack installs the portable config plus the full APM manifest (skill bundles, MCP servers, and the pyright LSP). It deliberately skips the four user-scope Claude plugins from the marketplace and playwright browser binaries, which would push a per-session hook past 5 minutes. See [What gets installed](#what-gets-installed) for the exact scope, and [MCP servers and secrets](#mcp-servers-and-secrets) for the env vars the MCP servers need.
 
 ## What is in here
 
@@ -54,7 +54,7 @@ Claude Code sets `CLAUDE_CODE_REMOTE=true` in cloud environments. `bootstrap.sh`
 
 It deliberately **skips**, to keep session start fast:
 
-- the 21 Claude plugins from the marketplace
+- the four user-scope Claude plugins from the marketplace
 - playwright browser binaries
 
 You keep every local skill, command, rule, hook, the APM skill bundles, and the APM MCP/LSP servers. You lose only the plugin-provided skills in cloud sessions. For the split between the chezmoi layer and the APM layer, see the root [README.md](../../README.md).
@@ -67,7 +67,7 @@ If a cloud session needs the full environment, run the complete chain manually o
 ~/coding-agent-config/scripts/extensions/install.sh
 ```
 
-That adds the plugins, standalone skills, and playwright browsers on top of what the bootstrap already installed. It is the same entry point local `just setup` uses.
+That adds the plugins, standalone skills, and playwright browsers on top of what the bootstrap already installed. It is the same entry point `just extensions` runs locally.
 
 ## MCP servers and secrets
 

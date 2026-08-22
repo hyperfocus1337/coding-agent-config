@@ -48,7 +48,6 @@ Prompt templates under [`dot_claude/commands/`](../../dot_claude/commands/README
 | Command                                                                          | Description                                                        |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | [`/simple:explain`](../../dot_claude/commands/simple/explain.md)                 | Explain a code snippet step by step.                               |
-| [`/simple:markitdown`](../../dot_claude/commands/simple/markitdown.md)           | Convert files (PDF, Office, images, audio, HTML) to Markdown.      |
 | [`/simple:proofread`](../../dot_claude/commands/simple/proofread.md)             | Proofread text for spelling, grammar, and readability.             |
 | [`/summarize:transscripts`](../../dot_claude/commands/summarize/transscripts.md) | Summarize a meeting or transcript into sections with action items. |
 
@@ -68,10 +67,12 @@ Local skills under [`dot_claude/skills/`](../../dot_claude/skills/). Grouped by 
 
 #### Text and files
 
-| Skill                                                                       | Description                                             |
-| --------------------------------------------------------------------------- | ------------------------------------------------------- |
-| [`meeting-summarizer`](../../dot_claude/skills/meeting-summarizer/SKILL.md) | Turn a transcript into structured English notes.        |
-| [`organize`](../../dot_claude/skills/organize/SKILL.md)                     | Reorganize a config or code file into labeled sections. |
+| Skill                                                                       | Description                                                                   |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [`markitdown`](../../dot_claude/skills/markitdown/SKILL.md)                 | Convert a PDF, Office, image, audio, or HTML file to Markdown.                |
+| [`meeting-summarizer`](../../dot_claude/skills/meeting-summarizer/SKILL.md) | Turn a transcript into structured English notes.                              |
+| [`organize`](../../dot_claude/skills/organize/SKILL.md)                     | Reorganize a config or code file into labeled sections.                       |
+| [`technical-writing`](../../dot_claude/skills/technical-writing/SKILL.md)   | Write or edit technical English against Google developer documentation style. |
 
 ## By APM skill bundles (`apm.yml`)
 

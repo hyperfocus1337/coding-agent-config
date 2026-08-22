@@ -45,19 +45,21 @@ That row is the only source this repo controls directly, so it is worth expandin
 | APM, `antonbabenko/terraform-skill`         |      1 |   239 | `terraform-skill`                                                                                                                  |
 | Flagged, not listed                         |      5 |     0 | `meeting-summarizer` 721, `install-skills` 423, `install-mcp` 372, `install-plugins` 359, `thermo-nuclear-code-quality-review` 291 |
 
+Two entries changed after this snapshot: `gh-cli` was deleted, and `install-bootstrap` was added with the flag set. Both move the totals above by their own size and nothing else.
+
 The three `install-*` executors carry the flag because `install-agent-resources` is the single entry point that routes to them; only the router needs a breadcrumb. `thermo-nuclear-code-quality-review` comes from the `cursor/plugins/cursor-team-kit` APM entry, which also deploys the kit's two agents, the whole of the agents column for this row.
 
 **Commands, 11 listed entries, 589 characters on disk in `$HOME`, of which only 6 entries and 352 characters come from this repo.** The gap is files in `~/.claude/commands/git/` that `dot_claude/commands/` does not declare. chezmoi writes what the source declares and deletes nothing else, so such a file persists in `$HOME` and keeps charging the listing for a command the repo does not define. Ten sit there, five of them unflagged:
 
-| Entry                 | Chars | Note                                                                                                                 |
-| --------------------- | ----: | -------------------------------------------------------------------------------------------------------------------- |
-| `git:commit:session`  |    77 | listed, declared here                                                                                                |
-| `git:commit:extend`   |    75 | listed, declared here                                                                                                |
-| `git:commit:multiple` |    71 | listed, declared here                                                                                                |
-| `git:commit:single`   |    47 | listed, declared here                                                                                                |
-| `git:pr:create`       |    44 | listed, declared here                                                                                                |
-| `git:commit:push`     |    38 | listed, declared here                                                                                                |
-| 23 others             |     0 | `disable-model-invocation: true`, reachable as `/name`                                                               |
+| Entry                 | Chars | Note                                                   |
+| --------------------- | ----: | ------------------------------------------------------ |
+| `git:commit:session`  |    77 | listed, declared here                                  |
+| `git:commit:extend`   |    75 | listed, declared here                                  |
+| `git:commit:multiple` |    71 | listed, declared here                                  |
+| `git:commit:single`   |    47 | listed, declared here                                  |
+| `git:pr:create`       |    44 | listed, declared here                                  |
+| `git:commit:push`     |    38 | listed, declared here                                  |
+| 23 others             |     0 | `disable-model-invocation: true`, reachable as `/name` |
 
 `/style:caveman` carries the flag, so its 1,292 characters cost nothing until it is invoked.
 
