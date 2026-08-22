@@ -17,13 +17,14 @@ Source: [Claude Code tip (YouTube Shorts)](https://youtube.com/shorts/I12Mf8KBT1
 
 ## git/ — version control helpers
 
-Ten commands covering the everyday flow, branch hygiene, and history rewriting.
+Thirteen commands covering the everyday flow, branch hygiene, and history rewriting.
 
 | Command                    | Description                                                                      |
 | -------------------------- | -------------------------------------------------------------------------------- |
 | `/git:commit:single`       | Create a git commit (stage all, single commit).                                  |
 | `/git:commit:session`      | Commit one task's changes from the current conversation.                         |
 | `/git:commit:multiple`     | Split changes into a logical sequence of commits.                                |
+| `/git:extend`              | Fold working directory changes into an existing commit.                          |
 | `/git:push`                | Commit and push.                                                                 |
 | `/git:pr`                  | Commit, push, and open a PR.                                                     |
 | `/git:changelog`           | Generate a changelog file for a time period (day, week, month, year, or N days). |
