@@ -50,9 +50,9 @@ echo "==> Installing MCP servers and skills via APM"
 "$SCRIPT_DIR/apm/install.sh"
 
 # --- Disable unwanted defaults ---
-# Disable plugins and skills we don't want enabled by default.
-echo "==> Disabling unwanted plugins and skills"
+# Apply the `false` entries in dot_claude/settings.json, because installing a
+# disabled plugin re-enables it.
+echo "==> Disabling unwanted plugins"
 "$SCRIPT_DIR/plugins/disable.sh"
-"$SCRIPT_DIR/skills/remove.sh"
 
 echo "==> Done"
