@@ -16,3 +16,5 @@ README.md
 .claude/hooks/**/docs/**
 .claude/hooks/**/test/**
 .claude/commands/**/README.md
+.claude/skills/README.md
+.claude/skills/**/README.md

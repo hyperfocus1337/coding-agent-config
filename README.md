@@ -19,35 +19,34 @@ The repo installs dependencies two ways, each covering a different layer.
 
 ### chezmoi: files into `$HOME`
 
-The repo root is a [chezmoi](https://www.chezmoi.io/) source directory. Source names map to home paths (`dot_claude/` becomes `~/.claude`, `dot_config/` becomes `~/.config`, `dot_gemini/` becomes `~/.gemini`). Applying it lays down portable config that is just files: commands, skills, rules, hooks, statusline, and global agent instructions.
+The repo root is a [chezmoi](https://www.chezmoi.io/) source directory. Source names map to home paths: `dot_claude/` becomes `~/.claude`, `dot_config/` becomes `~/.config`. Applying it lays down portable config that is just files: commands, skills, rules, hooks, statusline, and global agent instructions.
 
 ```
 just chezmoi        # apply repo to $HOME
 just chezmoi-diff   # preview without writing
 ```
 
-Agent instructions live in [`dot_claude/rules/`](dot_claude/rules/). Claude Code discovers that directory on its own, so `CLAUDE.md` does not import the files with `@`. An import loads a rule unconditionally and bypasses its `paths:` frontmatter, which defeats the scoping.
-
-The rules stay unscoped on purpose. A path-gated rule loads only after a matching file enters context, so it arrives too late for the decisions these rules govern: which search tool to run, whether to fetch library documentation before generating code, how to word a commit message. Scoping them costs adherence and saves a few hundred tokens, which is not a trade worth making.
-
-A rule names the decision the agent must take and stops there. Detail the agent can read off a tool schema or a skill stays out, which keeps the always-on set at roughly 450 words across two files.
+What lands in `~/.claude` is documented next to the files, one README per directory: [rules](dot_claude/rules/README.md), [commands](dot_claude/commands/README.md), [skills](dot_claude/skills/README.md), [hooks](dot_claude/hooks/README.md). [`dot_claude/README.md`](dot_claude/README.md) indexes them.
 
 ### APM: cross-agent dependencies
 
 APM (agent package manager) resolves the deps that are not plain files: third-party skills pulled from git and MCP servers. `apm.yml` is the manifest, and `targets:` decides which agent platforms they fan out to (Claude today, Gemini/Codex/Cursor later). No lockfile is committed: install re-resolves refs to latest upstream every run, so you always get the newest skills. Secrets stay out of the manifest by resolving from the environment at install time. Every way a skill reaches an agent (local files, plugins, standalone CLIs, and the APM bundle) is mapped in [`docs/sources/channels.md`](docs/sources/channels.md).
 
 ```
-just apm-install    # deploy apm.yml deps to user scope (latest upstream)
+just apm            # deploy apm.yml deps to user scope (latest upstream)
 just apm-diff       # preview without writing
-just apm-list       # show installed deps
+just apm-list       # show deps resolved in the lockfile
 ```
 
 ## Setup
 
 ```
-just setup          # chezmoi apply + install plugins, MCP servers, deps
-just update         # git pull, then re-run setup
+just extensions     # chezmoi apply + node hook deps + Claude plugins + APM deps
+just pull           # pull the repo, then re-run chezmoi (light, local only)
+just update-all     # pull, then refresh locally and inside the devcontainer
 ```
+
+The `chezmoi`, `apm`, and `extensions` recipes each have a `-devcontainer` and an `-all` variant, so the same state can be applied to the host, the container, or both.
 
 Run `just` with no arguments to list every recipe.
 
@@ -56,10 +55,9 @@ Run `just` with no arguments to list every recipe.
 ```
 .
 ├── apm.yml           # Cross-agent dependency manifest (skills + MCP servers)
-├── justfile          # Install, sync, lint, and package recipes
+├── Justfile          # Install, sync, lint, and package recipes
 ├── dot_claude/       # Portable Claude Code config (commands, skills, hooks, rules, CLAUDE.md)
-├── dot_config/       # ~/.config entries (e.g. ccstatusline)
-├── dot_gemini/       # Gemini CLI config
+├── dot_config/       # ~/.config entries (currently the ccstatusline settings)
 ├── scripts/          # Install/bootstrap scripts (extensions/, apm/)
 ├── templates/        # Copyable config: mcp/ (project MCP) and web/ (cloud bootstrap pack)
 └── docs/             # Integration guides (sdlc/, sources/, scope/, mcp/, research/)

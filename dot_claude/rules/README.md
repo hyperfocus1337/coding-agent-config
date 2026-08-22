@@ -1,5 +1,13 @@
 # Claude rules
 
+| Rule                       | What it governs                                                                                                            |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| [`writing.md`](writing.md) | Prose in ASD-STE100 Simplified Technical English, plus formatting: no hard wrapping, no em dashes, sentence-case headings. |
+| [`tools.md`](tools.md)     | Which tool to reach for: `rg`/`fd` over Grep/Glob, LSP for navigation, ast-grep for structure, Context7 for docs, `pnpm`.  |
+| [`code.md`](code.md)       | How much to build: a seven-rung ladder from "does this need to exist" to "write the minimum code that works".              |
+
+All three are unscoped, so they load at session start. Together with `CLAUDE.md` they are about 715 words, which is the budget the principles below defend.
+
 Claude Code discovers every `*.md` file in this directory on its own. Do not import them from `CLAUDE.md` with `@`. An `@` import loads the file unconditionally and bypasses its `paths:` frontmatter, which defeats the scoping.
 
 The frontmatter decides when a rule loads:

@@ -71,8 +71,9 @@ Eight variants of the same operation: reorganize a file into comment-delimited s
 
 ## simple/ — everyday utilities
 
-| Command              | Description                                                                         |
-| -------------------- | ----------------------------------------------------------------------------------- |
-| `/simple:explain`    | Explain a code snippet step-by-step.                                                |
-| `/simple:proofread`  | Proofread text (spelling, grammar, readability).                                    |
-| `/simple:markitdown` | Convert files (PDF, Office, images, audio, HTML, etc.) to Markdown with markitdown. |
+| Command             | Description                                      |
+| ------------------- | ------------------------------------------------ |
+| `/simple:explain`   | Explain a code snippet step-by-step.             |
+| `/simple:proofread` | Proofread text (spelling, grammar, readability). |
+
+File conversion moved out of this namespace: it is the [`markitdown`](../skills/markitdown/) skill now, which the `rules/tools.md` rule reaches for on its own before reading a binary document.

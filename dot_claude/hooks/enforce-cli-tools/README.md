@@ -62,7 +62,7 @@ A clean command costs **zero tokens**. Claude Code writes hook stdout to the deb
 
 A block costs roughly **80 tokens** of stderr (the message is about 320 characters, and grows with the length of the repo path in the override hint), plus the turn spent producing the rejected command and re-emitting the corrected one. Call it a few hundred tokens for a block, against zero for everything else. Both the rejected tool call and the block message stay in the transcript for the rest of the session, so a block is paid once and then carried.
 
-That is the trade chosen over rewriting the command silently: a rewrite would cost nothing and the model would never learn the rule, so it would keep reaching for `npm` all session. The line in `rules/cli-tools.md` is what makes blocks rare in the first place, the hook is the backstop for when the instruction is missed.
+That is the trade chosen over rewriting the command silently: a rewrite would cost nothing and the model would never learn the rule, so it would keep reaching for `npm` all session. The line in `rules/tools.md` is what makes blocks rare in the first place, the hook is the backstop for when the instruction is missed.
 
 ## The rules
 
@@ -102,7 +102,7 @@ Both are additive and tool-scoped: exempting `npm` leaves every other rule enfor
 
 ## Why a hook and not a permissions rule
 
-`settings.json` can already deny commands directly (`"permissions": {"deny": ["Bash(npm:*)"]}`), and its matcher is better than this one: it uses a real parser rather than a textual split. It is deliberately not used here because a deny rule can only say no. It cannot name the replacement, cannot hand back a corrected command, cannot be exempted per repo (deny always wins over allow, so there is no equivalent of `.claude-allow-cli-tools`), and Cursor does not read it at all. Those four are the whole reason this hook exists. If per-repo exemption and Cursor support ever stop mattering, a deny rule plus the line in `rules/cli-tools.md` replaces this directory.
+`settings.json` can already deny commands directly (`"permissions": {"deny": ["Bash(npm:*)"]}`), and its matcher is better than this one: it uses a real parser rather than a textual split. It is deliberately not used here because a deny rule can only say no. It cannot name the replacement, cannot hand back a corrected command, cannot be exempted per repo (deny always wins over allow, so there is no equivalent of `.claude-allow-cli-tools`), and Cursor does not read it at all. Those four are the whole reason this hook exists. If per-repo exemption and Cursor support ever stop mattering, a deny rule plus the line in `rules/tools.md` replaces this directory.
 
 ## Dependencies
 
