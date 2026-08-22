@@ -23,28 +23,6 @@
       "use_when": "any Python work"
     },
     {
-      "id": "caveman@caveman",
-      "marketplace": {
-        "source": "JuliusBrussee/caveman"
-      },
-      "url": "https://github.com/JuliusBrussee/caveman",
-      "scope": "user",
-      "status": "user-keep",
-      "why": "session-wide output mode, set by a SessionStart hook. A project-scoped install would change response style per repo.",
-      "use_when": "always on"
-    },
-    {
-      "id": "ponytail@ponytail",
-      "marketplace": {
-        "source": "DietrichGebert/ponytail"
-      },
-      "url": "https://github.com/DietrichGebert/ponytail",
-      "scope": "user",
-      "status": "user-keep",
-      "why": "session-wide coding mode, set by a SessionStart hook, same reason as caveman.",
-      "use_when": "always on"
-    },
-    {
       "id": "codex@openai-codex",
       "marketplace": {
         "source": "openai/codex-plugin-cc"

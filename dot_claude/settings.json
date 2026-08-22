@@ -74,10 +74,8 @@
   "enabledPlugins": {
     "ast-grep@ast-grep-marketplace": true,
     "astral@astral-sh": true,
-    "caveman@caveman": true,
     "codex@openai-codex": true,
-    "mattpocock-skills@mattpocock": true,
-    "ponytail@ponytail": true
+    "mattpocock-skills@mattpocock": true
   },
   "extraKnownMarketplaces": {
     "ast-grep-marketplace": {
@@ -90,12 +88,6 @@
       "source": {
         "source": "github",
         "repo": "astral-sh/claude-code-plugins"
-      }
-    },
-    "caveman": {
-      "source": {
-        "source": "github",
-        "repo": "JuliusBrussee/caveman"
       }
     },
     "claude-code-workflows": {
@@ -144,12 +136,6 @@
       "source": {
         "source": "github",
         "repo": "prime-radiant-inc/prime-radiant-marketplace"
-      }
-    },
-    "ponytail": {
-      "source": {
-        "source": "github",
-        "repo": "DietrichGebert/ponytail"
       }
     },
     "chrome-devtools-plugins": {
