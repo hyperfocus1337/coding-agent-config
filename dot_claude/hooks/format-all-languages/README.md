@@ -75,7 +75,7 @@ Unlike `lint-all-languages`, this hook always exits `0`. A missing Prettier (the
 The hook calls the `prettier` binary directly (like `lint-all-languages` calls its linters), so any Prettier on `PATH` works, global, yarn-global, or a project `node_modules/.bin` on `PATH`. It never triggers a network install. Install it whichever way suits you:
 
 ```sh
-npm install -g prettier
+pnpm install -g prettier
 ```
 
 A per-project `.prettierrc` (and `.prettierignore`) in the file's directory tree is picked up automatically, so project style wins over Prettier defaults. Note that a `printWidth` set in a project `.prettierrc` overrides the `--print-width 1000` above for markdown in that project.
