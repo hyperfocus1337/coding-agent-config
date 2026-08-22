@@ -21,6 +21,10 @@ The frontmatter decides when a rule loads:
 
 **Link only to paths that exist at runtime**: A rule runs in whatever repository the agent is working in. Link to `~/.claude/`, never to this repository's `docs/`, which `.chezmoiignore` keeps out of `$HOME`.
 
+## Provenance
+
+`code.md` condenses the [ponytail plugin](https://github.com/DietrichGebert/ponytail)'s `SessionStart` instructions into 13 directives, from about 40 across 5,252 characters. The plugin is not installed; this rule carries the behaviour. It keeps the upstream `ponytail:` marker name, which `hooks/format-all-languages/hook.sh` and `hooks/enforce-cli-tools/hook.sh` use to mark a deliberate shortcut with a known ceiling. `docs/research/instruction-load.md` covers which parts of a directive set are safe to drop and which conditions must survive.
+
 ## Sources
 
 - [Claude Code memory docs, path-scoped rules](https://code.claude.com/docs/en/memory)
