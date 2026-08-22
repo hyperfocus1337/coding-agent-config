@@ -211,11 +211,10 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 ### Merge and platform
 
-| Command                                                                                                                             | Description                                                               |
-| ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [`resolving-merge-conflicts`](https://github.com/mattpocock/skills/blob/main/skills/engineering/resolving-merge-conflicts/SKILL.md) | Work through an in-progress git merge or rebase conflict.                 |
-| [`gh-cli`](../../dot_claude/skills/gh-cli/SKILL.md)                                                                                 | Comprehensive `gh` reference for repos, PRs, Actions, releases, and more. |
-| [`glab`](https://gitlab.com/gitlab-org/ai/skills)                                                                                   | GitLab CLI operations.                                                    |
+| Command                                                                                                                             | Description                                               |
+| ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| [`resolving-merge-conflicts`](https://github.com/mattpocock/skills/blob/main/skills/engineering/resolving-merge-conflicts/SKILL.md) | Work through an in-progress git merge or rebase conflict. |
+| [`glab`](https://gitlab.com/gitlab-org/ai/skills)                                                                                   | GitLab CLI operations.                                    |
 
 ### Release plumbing
 

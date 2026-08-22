@@ -51,7 +51,6 @@ Skills are on-demand reference documents that Claude reads when a task calls for
 
 | Skill                | Description                                                                                       |
 | -------------------- | ------------------------------------------------------------------------------------------------- |
-| `gh-cli`             | Comprehensive GitHub CLI reference: repos, issues, PRs, Actions, releases, and more.              |
 | `meeting-summarizer` | Turn a meeting/call transcript into a structured English summary with decisions and action items. |
 | `organize`           | Reorganize a config or code file into labeled, comment-delimited sections (prompts for a style).  |
 

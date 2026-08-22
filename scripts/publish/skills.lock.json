@@ -1,8 +1,4 @@
 {
-  "gh-cli": {
-    "version": "0.1.1",
-    "hash": "9494181451d543006978bb8b86dd2474e1f13deae69a12eb3ef1126fc66008f8"
-  },
   "install-mcp": {
     "version": "0.1.2",
     "hash": "2da0befc3bf87dd6a9d4f28254a58226e686e66339a186219e0b5057ab293630"

@@ -17,7 +17,7 @@ Every channel above declares user scope, which costs resident tokens in every se
 
 ## Local skills
 
-Portable skills committed as plain files under [`dot_claude/skills/`](../../dot_claude/skills/) and laid into `~/.claude` by chezmoi: `gh-cli`, `meeting-summarizer`, `organize`, and the four install skills. Edit the files directly; there is no install step beyond `just chezmoi`.
+Portable skills committed as plain files under [`dot_claude/skills/`](../../dot_claude/skills/) and laid into `~/.claude` by chezmoi: `meeting-summarizer`, `organize`, and the four install skills. Edit the files directly; there is no install step beyond `just chezmoi`.
 
 ## Standalone CLI skills
 

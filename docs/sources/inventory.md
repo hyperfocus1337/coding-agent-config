@@ -56,12 +56,6 @@ Prompt templates under [`dot_claude/commands/`](../../dot_claude/commands/README
 
 Local skills under [`dot_claude/skills/`](../../dot_claude/skills/). Grouped by task, subheaders and rows sorted alphabetically.
 
-#### Git and GitHub
-
-| Skill                                               | Description                                                     |
-| --------------------------------------------------- | --------------------------------------------------------------- |
-| [`gh-cli`](../../dot_claude/skills/gh-cli/SKILL.md) | Comprehensive `gh` reference for repos, PRs, Actions, releases. |
-
 #### Install
 
 | Skill                                                                                 | Description                                                  |

@@ -46,16 +46,6 @@
       "use_when": "installing a skill at a chosen scope"
     },
     {
-      "id": "gh-cli",
-      "channel": "local",
-      "dir": "dot_claude/skills/gh-cli",
-      "scope": "project",
-      "status": "project-candidate",
-      "requires": ["gh"],
-      "why": "54 resident tokens for a full gh reference. Claude already runs gh without it for common tasks.",
-      "use_when": "repo where gh drives releases, projects, or Actions, not just pull requests"
-    },
-    {
       "id": "meeting-summarizer",
       "channel": "local",
       "dir": "dot_claude/skills/meeting-summarizer",
@@ -68,7 +58,9 @@
       "id": "playwright-cli",
       "channel": "vendor-cli",
       "command": "playwright-cli install --skills",
-      "requires": ["playwright-cli"],
+      "requires": [
+        "playwright-cli"
+      ],
       "scope": "project",
       "status": "project-candidate",
       "why": "the CLI installs into the workspace by default, so project scope is its native mode. It also downloads a ~195 MB browser into the shared /ms-playwright cache on first run.",
@@ -80,7 +72,9 @@
       "id": "orbit",
       "channel": "vendor-cli",
       "command": "glab skills install orbit",
-      "requires": ["glab"],
+      "requires": [
+        "glab"
+      ],
       "scope": "project",
       "status": "project-candidate",
       "why": "glab writes .agents/skills, which Claude does not read, so both arg sets carry --path to land in the harness skills directory.",
