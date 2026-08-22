@@ -14,6 +14,9 @@ done
 # Every invocation goes through here: `timeout` turns a runaway root queue into a
 # reported failure instead of a hung test run.
 hook() { timeout 30 bash "$HOOK"; }
+# Same, but from inside a repo, because Prettier resolves its ignore files against
+# the process cwd: run from elsewhere and a .gitignore rule never applies.
+hook_in() { (cd "$1" && timeout 30 bash "$HOOK"); }
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -142,8 +145,15 @@ formatted "cross-repo absolute path" "$other/OTHER.md"
 # written and gitignored in the same call is already ignored by hook time, so
 # `ls-files --others --exclude-standard` never reports it.
 unaligned "$outer/vendor/NAMED.md"
-jq -nc --arg cwd "$outer" '{cwd:$cwd,tool_input:{command:"cat > vendor/NAMED.md <<EOF\nx\nEOF"}}' | hook
+jq -nc --arg cwd "$outer" '{cwd:$cwd,tool_input:{command:"cat > vendor/NAMED.md <<EOF\nx\nEOF"}}' | hook_in "$outer"
 formatted "gitignored file named in the command" "$outer/vendor/NAMED.md"
+
+# Prettier's own .prettierignore still wins: that one is a formatting decision,
+# .gitignore is not.
+printf 'PIGNORED.md\n' > "$outer/.prettierignore"
+unaligned "$outer/PIGNORED.md"
+jq -nc --arg cwd "$outer" '{cwd:$cwd,tool_input:{command:"cat > PIGNORED.md <<EOF\nx\nEOF"}}' | hook_in "$outer"
+unchanged "prettierignored file named in the command" "$outer/PIGNORED.md" "$(printf '| a | bbbbbbbbbbbb |\n| --- | --- |\n| ccccccccccccccc | d |')"
 
 # The same path relative, in a repo the sweep would otherwise skip entirely.
 unaligned "$outer/vendor/REL.md"

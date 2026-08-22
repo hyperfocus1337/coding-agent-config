@@ -104,7 +104,9 @@ for f in "${targets[@]}"; do
 done
 
 command -v prettier >/dev/null 2>&1 || exit 0
-prettier_cmd=(prettier --write --prose-wrap never)
+# --ignore-path drops .gitignore from Prettier's default ignore list, which would
+# otherwise skip an ignored file silently. README "Prettier's own ignore rules".
+prettier_cmd=(prettier --write --prose-wrap never --ignore-path .prettierignore)
 
 # Markdown: wide width keeps tables column-aligned. Code: Prettier's default 80.
 # ponytail: tables wider than 1000 cols still compact; bump if that bites.

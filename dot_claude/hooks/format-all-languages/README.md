@@ -98,4 +98,12 @@ The hook calls the `prettier` binary directly (like `lint-all-languages` calls i
 pnpm install -g prettier
 ```
 
-A per-project `.prettierrc` (and `.prettierignore`) in the file's directory tree is picked up automatically, so project style wins over Prettier defaults. Note that a `printWidth` set in a project `.prettierrc` overrides the `--print-width 1000` above for markdown in that project.
+A per-project `.prettierrc` in the file's directory tree is picked up automatically, so project style wins over Prettier defaults. Note that a `printWidth` set in a project `.prettierrc` overrides the `--print-width 1000` above for markdown in that project.
+
+## Prettier's own ignore rules
+
+Prettier 3 defaults `--ignore-path` to `.gitignore` **and** `.prettierignore`, so a gitignored file is skipped, silently and with exit `0`. That is a second blind spot behind the one in [Markdown the command names](#markdown-the-command-names): handing the file to Prettier is not enough, because Prettier refuses it for the same reason the sweep missed it.
+
+So the hook passes `--ignore-path .prettierignore`, which drops `.gitignore` from that list and keeps `.prettierignore`. `.prettierignore` is a formatting decision and is honoured; `.gitignore` is a version-control decision and says nothing about formatting. Prettier still skips `node_modules` on its own, without `--with-node-modules`.
+
+Both paths are resolved against the hook's process cwd, which is the session cwd, so a `.prettierignore` in another repo does not apply to a cross-repo edit. That was already true of Prettier's default lookup.
