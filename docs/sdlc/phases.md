@@ -144,13 +144,10 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 ### Focused review
 
-| Command                                                                                                       | Description                                                                       |
-| ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| [`security-review`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/security-review.md) | Security review of the pending changes on the current branch.                     |
-| [`simplify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/simplify.md)               | Review changed code for reuse and simplification, then apply the fixes.           |
-| [`ponytail-review`](https://github.com/DietrichGebert/ponytail)                                               | Review a diff purely for over-engineering: what to delete or replace with stdlib. |
-| [`ponytail-audit`](https://github.com/DietrichGebert/ponytail)                                                | Whole-repo over-engineering audit with a ranked list of what to cut.              |
-| [`caveman-review`](https://github.com/JuliusBrussee/caveman)                                                  | Compressed one-line-per-finding PR review comments.                               |
+| Command                                                                                                       | Description                                                             |
+| ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| [`security-review`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/security-review.md) | Security review of the pending changes on the current branch.           |
+| [`simplify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/simplify.md)               | Review changed code for reuse and simplification, then apply the fixes. |
 
 ### Review agents
 
@@ -278,12 +275,13 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 These apply regardless of which phase you are in.
 
-| Command                                                                                       | Description                                                                            |
-| --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| [`caveman`](https://github.com/JuliusBrussee/caveman)                                         | Ultra-compressed communication mode to cut token usage while keeping substance.        |
-| [`ponytail`](https://github.com/DietrichGebert/ponytail)                                      | Force the simplest solution that works: stdlib and native features before custom code. |
-| [`context7:docs`](https://github.com/upstash/context7)                                        | Fetch current documentation for any library, framework, or SDK.                        |
-| [`install-mcp`](../../dot_claude/skills/install-mcp/SKILL.md)                                 | Add a project-scoped MCP server to the repo.                                           |
-| [`dataviz`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/dataviz.md) | Design guidance for any chart, dashboard, or data visualization.                       |
-| [`watch:watch`](https://github.com/bradautomates/claude-video)                                | Watch a video (tutorial, demo) and answer questions about its content.                 |
-| [`notion-workspace-plugin`](https://github.com/makenotion/claude-code-notion-plugin)          | Read and write a Notion workspace as a knowledge base.                                 |
+| Command                                                                                       | Description                                                                      |
+| --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| [`/style:caveman`](../../dot_claude/commands/style/caveman.md)                                | Compressed prose mode, on until told to stop. Condensed from the caveman plugin. |
+| [`context7:docs`](https://github.com/upstash/context7)                                        | Fetch current documentation for any library, framework, or SDK.                  |
+| [`install-mcp`](../../dot_claude/skills/install-mcp/SKILL.md)                                 | Add a project-scoped MCP server to the repo.                                     |
+| [`dataviz`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/dataviz.md) | Design guidance for any chart, dashboard, or data visualization.                 |
+| [`watch:watch`](https://github.com/bradautomates/claude-video)                                | Watch a video (tutorial, demo) and answer questions about its content.           |
+| [`notion-workspace-plugin`](https://github.com/makenotion/claude-code-notion-plugin)          | Read and write a Notion workspace as a knowledge base.                           |
+
+The lazy-solution ladder is not in this table, because it is a standing rule rather than a command: [`rules/code.md`](../../dot_claude/rules/code.md) applies on every coding turn without an invocation. [`../research/skills-context.md`](../research/skills-context.md) explains which behaviour belongs in a rule, which in a flagged command, and why neither belongs in a `SessionStart` hook.
