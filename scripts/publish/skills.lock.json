@@ -12,20 +12,20 @@
     "hash": "2fb8ed97b4d4a10b39a907f7e324d8a46dc13391a297feceed0252e2c8c81e97"
   },
   "install-agent-resources": {
-    "version": "0.1.0",
-    "hash": "e94abd335727ea5dd81e8ea47002134cc3cb707d7331497cbda7ca0caa835782"
+    "version": "0.1.1",
+    "hash": "fd419a826c1e31f6b054a67c91acc62da6ccb47b044f1ca5f55b9fa47c13bcdb"
   },
   "install-bootstrap": {
     "version": "0.1.0",
     "hash": "4288cf1dcaeb44daaa02af5b691988a5a9347cbe9ee37943a909128ee944e05e"
   },
   "install-plugins": {
-    "version": "0.1.0",
-    "hash": "271cb4299ae78b38c72260438b712e589a7dc3e365f1802820d68bab1a97cbec"
+    "version": "0.1.1",
+    "hash": "4ef42ea1680d2636902713b7186864c1c98d76b2f21feb63472e8cdffe89a80f"
   },
   "install-skills": {
-    "version": "0.1.0",
-    "hash": "880978ff70169fdaf22c2312a628284adadae053d225b30d5376b9ba7149f334"
+    "version": "0.1.1",
+    "hash": "41311d18784177a0cbd51333fc59fa8431ed68af2e8af605684f023f841861ea"
   },
   "technical-writing": {
     "version": "0.1.0",
