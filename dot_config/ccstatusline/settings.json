@@ -14,11 +14,6 @@
         "backgroundColor": "bgBrightYellow"
       },
       {
-        "id": "721a4a8f-7138-4620-a51a-7e5a3d6aad12",
-        "type": "worktree-branch",
-        "backgroundColor": "bgBlue"
-      },
-      {
         "id": "61b6f0af-3674-4f83-8bad-584f6a844a2b",
         "type": "git-changes",
         "backgroundColor": "bgWhite"
@@ -31,15 +26,14 @@
         "backgroundColor": "bgBrightWhite"
       },
       {
-        "id": "b91a1fd7-2176-42bb-9bf8-1655ca484455",
-        "type": "session-clock",
-        "backgroundColor": "bgBrightGreen",
-        "rawValue": true
+        "id": "dafd0253-40a1-474c-b195-c744cd5f0501",
+        "type": "worktree-name",
+        "backgroundColor": "bgBrightWhite"
       },
       {
-        "id": "338fb9ee-923c-46ce-8898-c1f04a3c8ddc",
-        "type": "cache-hit-rate",
-        "backgroundColor": "bgBrightBlue",
+        "id": "caea229d-fce0-486b-a8a4-105569887481",
+        "type": "model",
+        "backgroundColor": "bgBrightRed",
         "rawValue": true
       }
     ],
