@@ -79,6 +79,11 @@ out=$(msg "$r" 'git commit -m wip')
 contains "github-pat in app.py:1" "$out" "msg    names rule, file and line"
 contains "fingerprint: app.py:github-pat:1" "$out" "msg    gives the .betterleaksignore entry"
 lacks "jq: error" "$out" "msg    jq formatted the report cleanly"
+# The portable hatch must be offered, and the local list must be marked as the
+# last resort. Asserting only the first lets the fix list lose it silently: the
+# fingerprint above comes from the finding line, not from the list of fixes.
+contains ".betterleaksignore" "$out" "msg    offers the portable ignore file"
+contains "last resort" "$out" "msg    marks .claude-allow-secrets as the fallback"
 
 # --- git commit -a: stages tracked edits after the hook runs ---
 

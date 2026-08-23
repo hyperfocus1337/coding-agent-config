@@ -2,7 +2,7 @@
 
 Why `hook.sh` is built the way it is. `hook.sh` carries short comments that say what each section does and links here for the reasoning. [README.md](../README.md) describes the behaviour for a user of the hook; this file is for a person changing it.
 
-Every measurement below was taken on the installed hook with betterleaks 1.7.4.
+This file states the decisions. [research.md](research.md) holds the measurements, the comparisons and the alternatives that lost, so a decision here reads as one paragraph and links to its evidence.
 
 ## Execution order
 
@@ -44,7 +44,20 @@ Two sources feed one list, and both are additive:
 
 An entry matches either a repo-relative path or a bare basename. Both feed `is_allowed`, which is the single definition of "allowed" for the binary scan and the content scan alike, so one entry covers every check.
 
-This list exists rather than deferring to betterleaks' own allowlisting for two reasons. A finding from `betterleaks dir` carries an **empty** `Fingerprint`, so `.betterleaksignore`, which is fingerprint-keyed, cannot exempt anything the binary scan reports. And a repo that adds a `.betterleaks.toml` to allowlist a path loses the name rules entirely, by the precedence described in [Config resolution](#config-resolution), which makes the obvious native alternative a trap.
+### Why this list exists at all
+
+It exists for the **binary scan**, which is the one check no betterleaks-native mechanism can exempt. A content finding is covered natively for a secret value on a known line, so the block message names `.betterleaksignore` first and this list last. Prefer the native hatch: it is portable to anyone who runs betterleaks without this hook, and the list is not.
+
+The list is still the right answer for one content case. A `secret-filename` exemption that spans directories has no native equivalent, because a fingerprint keys one file, and this list matches a bare basename anywhere. `test/test.sh` pins that case.
+
+`.betterleaksignore` is keyed by fingerprint alone: only an exact `file:rule:line` entry suppresses anything, and a bare path or a glob matches nothing ([measured](research.md#what-betterleaksignore-accepts)). Two properties of the binary scan put it outside that keying:
+
+- The scan hands betterleaks a **copy at a neutral name** under a fresh `mktemp -d`, for the reason in [The extension allowlist](#the-extension-allowlist). A `dir` finding does carry a fingerprint, but it carries the path it was given, so the fingerprint is `/tmp/tmp.XXXXXX/0.dat:private-key:1` and it changes on every run. Passing the real path instead would restore the fingerprint and lose the extension-allowlist defeat, which is the more valuable half.
+- The fail-closed paths produce **no finding**, so there is no fingerprint to write: betterleaks missing, the file unreadable, the file staged and then removed from the worktree, or the file above `bl_copy_max` and unscannable under its own name.
+
+`[allowlist] paths` in a `.betterleaks.toml` is the one native mechanism that is path-keyed and line-independent. It still cannot exempt a binary. The scan matches `paths` against the copy at `$stage/$i.dat`, never against the path written in the config, and the hook passes `--config` only when `betterleaks config path` answers `default`, so a repo adding that file drops the shipped rules rather than extending them.
+
+It is also a trap for a content finding. By the precedence in [Config resolution](#config-resolution), the repo that adds it loses the name rules, and the `[extend] path` that wins them back points into a single user's home directory, so it is no more portable than this list.
 
 The list is one newline-delimited string rather than an array, so a membership test is a single `[[ ]]` pattern match with no loop. Entries containing spaces still work, because the delimiter is a newline.
 
@@ -52,12 +65,7 @@ The list is one newline-delimited string rather than an array, so a membership t
 
 ### The gap
 
-betterleaks skips a binary blob in git mode, so a keystore, a key bundle, or a database dump reaches the commit unread. Measured on a real PKCS#12 file built with `openssl pkcs12 -export`:
-
-| Scan                       | `real.p12`              |
-| -------------------------- | ----------------------- |
-| `betterleaks git --staged` | not flagged             |
-| `betterleaks dir`          | flagged (`pkcs12-file`) |
+betterleaks skips a binary blob in git mode, so a keystore, a key bundle, or a database dump reaches the commit unread. A real PKCS#12 file passes `betterleaks git --staged` and is flagged by `betterleaks dir` ([measured](research.md#binary-blobs-in-git-mode)).
 
 The name rules do not close this on their own. `pkcs12-file` is already in the upstream ruleset and still missed the file, because a rule cannot match a blob the scanner never reads.
 
@@ -69,18 +77,7 @@ The name rules do not close this on their own. `pkcs12-file` is already in the u
 
 Selecting that set is not the same as condemning it. An earlier version blocked every newly added binary outright, on the reasoning that an unreadable file cannot be cleared. That blocks an ordinary PNG, and it pushed every committed image, font and icon into `.claude-allow-secrets`.
 
-`betterleaks dir` reads binaries, so the hook hands it exactly the paths git selected and blocks only on a finding. Measured with the shipped config:
-
-| Path                                         | `betterleaks dir`               |
-| -------------------------------------------- | ------------------------------- |
-| `blob.dat` (random bytes)                    | exit 0, allowed                 |
-| `pic.gif` (image)                            | exit 0, allowed                 |
-| `payload.dat` (binary holding a private key) | exit 9, blocked (`private-key`) |
-| `real.p12` (keystore)                        | exit 9, blocked (`pkcs12-file`) |
-
-`payload.dat` is the case that shows the delegation earns its place: an innocuous name with a secret inside, which neither the deleted file-name list nor the `secret-filename` rule would ever match.
-
-The earlier rejection of `dir` (measured at 1.4 s and ignoring `.gitignore`) was measured over the **whole repo**. Neither objection survives on an explicit path list: a gitignored file never appears in `--diff-filter=A` output, and a single-file scan costs 34 ms, paid only when a binary is actually added.
+`betterleaks dir` reads binaries, so the hook hands it exactly the paths git selected and blocks only on a finding. An ordinary image or a random blob passes; a binary holding a private key blocks even under an innocuous name, which no file-name rule would ever match. The earlier rejection of `dir` was measured over the whole repo and does not apply to an explicit path list. [The measurements](research.md#delegating-the-binary-verdict).
 
 Two calls at most: one over the whole set, and a per-file loop only when that set is dirty, to name which file.
 
@@ -96,22 +93,11 @@ Delegating the verdict to `betterleaks dir` is necessary but not sufficient. The
 
 Upstream sets these to suppress false positives on compressed bytes. The cost is that a real private key inside `logo.png` scans clean, and so does a password list inside `notes.xlsx`, which is a realistic accident in an office setting.
 
-Three ways to defeat the allowlist were measured. Only the file name decides, so the scanned path has to differ from the real one:
-
-| Approach                           | Finds a key in `logo.png` | Cost                                                    |
-| ---------------------------------- | ------------------------- | ------------------------------------------------------- |
-| `--enable-rule private-key`        | no                        | the allowlist outranks rule selection                   |
-| symlink under a neutral name       | no                        | `dir` does not follow a symlink                         |
-| `betterleaks stdin` per file       | yes                       | 74 ms per file, and one timeout per file instead of one |
-| copy to a neutral name, then `dir` | yes                       | one batched scan, one timeout, plus the bytes copied    |
-
-The copy wins on bulk. Twenty added binaries cost 1.48 s through `stdin` against 0.05 s through one `dir` call. The per-file timeout is the deciding point: `stdin` makes the 4 s cap apply N times, so twenty files could stall for 80 s, while the batched form keeps one 4 s bound.
+Only the file name decides, so the hook copies each candidate to a neutral name and scans the copy. Rule selection and a symlink were both tried and neither defeats the allowlist; a per-file `betterleaks stdin` does, but it multiplies the 4 s cap by the number of files, while one batched `dir` keeps a single bound. Scanning 300 real images, fonts and PDFs under neutral names produced no finding, so the copy does not reintroduce what the allowlist suppresses. [The measurements](research.md#defeating-the-extension-allowlist).
 
 `bl_copy_max` (100 MB) stops the copy from dominating on large media. A file above it keeps its own path and stays exempt if its extension is listed. Closing that remainder would mean copying a file large enough to fill `/tmp`.
 
-False positives were measured before the change, because suppressing them is the reason upstream ships the allowlist. 300 real images, fonts, and PDFs taken from the machine, scanned under neutral `.dat` names: **no finding**. A planted private key in the same set was found, which proves the scan ran.
-
-This also removes a fixture trap that cost time earlier. A test binary named `secret.bin` scanned clean while holding a real RSA key, which looked like a limit of `dir` and was not. Under the current code the name no longer decides, so a fixture may use any extension.
+A fixture may use any extension, because the name no longer decides.
 
 ### Flags
 
@@ -129,7 +115,7 @@ This is the one check that never fails open. Anything that stops a candidate bei
 
 ### Why the file sits in `conf/`
 
-`conf/betterleaks.toml` holds the file-name rules as a `path` rule, rather than a second matcher written in bash. It sits next to `hook.sh` rather than in `~/.config` because betterleaks has no XDG lookup. Verified: with `XDG_CONFIG_HOME` pointed at a directory holding `betterleaks/betterleaks.toml`, a scan with no `--config` produced no finding, while the same scan with `--config` produced `secret-filename`.
+`conf/betterleaks.toml` holds the file-name rules as a `path` rule, rather than a second matcher written in bash. It sits next to `hook.sh` rather than in `~/.config` because betterleaks has no XDG lookup ([verified](research.md#where-betterleaks-looks-for-a-config)).
 
 Putting the file in `~/.config` would therefore imply a convention betterleaks does not follow, and a hand-run `betterleaks git --staged` would silently use different rules than this hook enforces. For a security check, manual verification disagreeing with the enforced check is the worst available failure mode.
 
@@ -139,7 +125,7 @@ Resolving the path from `BASH_SOURCE` also keeps the hook self-contained. A copy
 
 betterleaks resolves its config in this order: `--config`, then `BETTERLEAKS_CONFIG` / `GITLEAKS_CONFIG`, then `BETTERLEAKS_CONFIG_TOML` / `GITLEAKS_CONFIG_TOML`, then a config file in the scanned directory, then the built-in defaults.
 
-Rather than re-implement that table, the hook asks `betterleaks config path`, which answers `default` when nothing else selected a config and the file name otherwise. It passes `--config` only on `default`, so a repo carrying a gitleaks config still wins and the check cannot drift when betterleaks adds a source. The call costs 8 ms, on the commit path only. Such a repo keeps the content rules and loses the name rules. Its config can extend this file to get them back:
+Rather than re-implement that table, the hook asks `betterleaks config path`, which answers `default` when nothing else selected a config and the file name otherwise. It passes `--config` only on `default`, so a repo carrying a gitleaks config still wins and the check cannot drift when betterleaks adds a source. Such a repo keeps the content rules and loses the name rules. Its config can extend this file to get them back:
 
 ```toml
 [extend]
@@ -150,55 +136,33 @@ path = "~/.claude/hooks/block-secret-commits/conf/betterleaks.toml"
 
 `path` patterns are Go RE2. RE2 has no lookahead and no backreference. A pattern using `(?!...)` does not fail softly: betterleaks exits fatal, and because the hook fails open on a scanner error, the whole scan is disabled with no visible sign. Run `bash test/test.sh` after editing the config.
 
-A rule-scoped allowlist (`[rules.allowlist]` or `[[rules.allowlists]]`) does not suppress a `path` rule. Only the global `[allowlist]` does. Both forms were tested and both left `.env.example` flagged. Scoping the template exemption globally costs nothing, because the upstream config already skips those names for the content rules: identical content in a file named `decoy.txt` fires `generic-api-key`, and in `.env.example` it does not.
+A rule-scoped allowlist (`[rules.allowlist]` or `[[rules.allowlists]]`) does not suppress a `path` rule. Only the global `[allowlist]` does, and scoping the template exemption globally costs nothing ([measured](research.md#rule-dialect)).
 
 `[extend] useDefault = true` preserves the upstream global allowlist, so the canonical AWS example key `AKIAIOSFODNN7EXAMPLE` still does not block a commit.
 
 ## Name ruleset provenance
 
-The `secret-filename` rule is deliberately name-based rather than content-based. Its names and extensions come from the key-file categories in GitLab's [secret-detection-rules](https://gitlab.com/gitlab-org/security-products/secret-detection/secret-detection-rules/-/tree/main/rules/mit) and from the filename detector in [talisman](https://github.com/thoughtworks/talisman), plus the common credential files.
+The `secret-filename` rule is deliberately name-based rather than content-based, because a content rule matches secret values and cannot flag a file whose name is the only evidence.
+
+Its names come from GitLab's secret-detection-rules and from talisman's filename detector, plus the common credential files. Neither upstream is consumed directly: GitLab ships no name matcher at all, and talisman's list is too loose to adopt. The useful talisman entries were imported once; this is not a synced list. [The evaluation](research.md#name-ruleset-provenance).
 
 Encrypted blobs (`*.gpg`, `*.pgp`) and public keys (`id_rsa.pub`, `*.crt`) are not matched, because committing those is a legitimate workflow. The `id_(rsa|dsa|ecdsa|ed25519)` arm is anchored so it does not match the `.pub` sibling.
 
-### Why the env arm accepts a prefix
-
-The arm was `\.env(\.[^/]*)?`, anchored to a name that starts with `.env`. That blocked `.env` and `.env.local` and let `prod.env`, `production.env`, and `config/prod.env` through. The content rules do not cover the difference: an env file holds `DB_PASSWORD=hunter2`, which has no entropy and no vendor prefix, so nothing fires on it. The name rule is the only check, and it missed the most common production spelling.
-
-Two tests hid this. Every `prod.env` fixture carried a high-entropy token, so it blocked on content and never exercised the name rule. The README used `config/prod.env` as its example of a file needing an allowlist entry, which only makes sense if it was expected to block.
-
-The arm is now `[^/]*\.env(\.[^/]*)?`. Enumerating prefixes was rejected: `prod`, `dev`, `staging`, `local`, `app`, `api` and the rest are unbounded, so a prefix list would be a second name list to maintain. The template allowlist gained the mirrored spelling, because `.env.example` and `example.env` are the same file to a reader.
-
-### Why neither upstream is consumed directly
-
-Both were evaluated as a maintained list to depend on. Neither works:
-
-- The **GitLab ruleset** has 94 rules across 316 files and **no name or path matcher at all**. Every rule there, including the eight tagged `cryptographic_key`, is a content regex; the GCP one is `\"private_key\":\s*\"-{5}BEGIN PRIVATE KEY-{5}...`. `rules.schema.json` has no filename concept. Its rules also overlap what betterleaks already ships by default, so importing them mostly duplicates.
-- **talisman** does maintain a 40-pattern filename list, which is the only such list found in a comparable tool. Its patterns are too loose to adopt as they stand: `\.?env` is unanchored, and the list treats `schema.rb`, `settings.py`, `database.yml`, `.bashrc`, `\bsql\b`, and `\bdump\b` as secret indicators. On a sample of 19 realistic file names it fired on 15, including `environment.ts`, `venv/lib/x.py`, `mysqldump.sh`, and `.env.example`, against 4 for this ruleset. Adopting it would trade maintaining a name list for maintaining a suppression list.
-
-The non-noisy entries talisman has and GitLab does not (`*.keychain`, `*.kdb`, `*.agilekeychain`, `*.tblk`, `*.keyring`, `.s3cfg`, `.*_history`) were copied in once. That is a one-time import, not a sync.
-
-Other tools checked and rejected as sources: `detect-secrets`, `git-secrets`, `trufflehog`, and `ripsecrets` are content-only by design and carry no filename policy.
+The env arm is `[^/]*\.env(\.[^/]*)?`, which accepts a prefix. It was once anchored to a leading `.env` and so missed `prod.env`, the most common production spelling; enumerating prefixes was rejected as a second name list to maintain. [How that was found](research.md#the-env-arm-missed-the-common-spelling).
 
 ## Scan cap
 
 `bl_scan` wraps each betterleaks run in `timeout 4`.
 
-A large high-entropy staged blob otherwise runs far past any sane hook budget. Measured: about 26 MB of base64 takes 7 s, and about 104 MB takes 41 s. Ordinary source is nowhere near that, at 2 s for 20 MB of code, so only generated or encoded content reaches the cap.
+A large high-entropy staged blob otherwise runs far past any sane hook budget: about 104 MB of base64 takes 41 s, while 20 MB of ordinary code takes 2 s, so only generated or encoded content reaches the cap ([measured](research.md#scan-cap-timings)).
 
-Without the wrapper the hook itself is killed by the `settings.json` timeout and exits 124, which Claude Code reads as an error rather than as a block. The scan has to cap itself instead. `--max-target-megabytes` does not help, because it governs `dir` scans and not git blobs.
+Without the wrapper the hook itself is killed by the `settings.json` timeout and exits 124, which Claude Code reads as an error rather than as a block. The scan has to cap itself instead.
 
 A capped scan allows the commit, in line with the rest of the fail-open behaviour, but it is the one fail-open path a reader cannot infer from a clean run. It prints a warning to stderr naming the command to run by hand. To fail closed instead, change that branch to `deny`.
 
 ### Do not use betterleaks' own `--timeout`
 
-Measured on a 40 MB high-entropy blob that needs 11 s unbounded:
-
-| Approach                      | Exit code | Detected   |
-| ----------------------------- | --------- | ---------- |
-| `timeout 2 betterleaks ...`   | 124       | yes, warns |
-| `betterleaks --timeout 2 ...` | 0         | no         |
-
-The native flag aborts the scan and reports success, which is indistinguishable from a clean result. Swapping to it would convert the one loud fail-open path into a silent pass.
+The native flag aborts the scan and reports **success**, which is indistinguishable from a clean result, so swapping to it would convert the one loud fail-open path into a silent pass. `--max-target-megabytes` is no help either; it governs `dir` scans and not git blobs. [The measurements](research.md#betterleaks-own---timeout-fails-silently).
 
 `$bl` holds the resolved binary path from `command -v`, so `timeout` skips its own PATH walk.
 
@@ -219,20 +183,11 @@ Two kinds of finding block, and the block message says which is which:
 - a content rule matched a secret value on a line, for example `generic-api-key` or `github-pat`;
 - the `secret-filename` rule matched the file name alone.
 
-The name rule earns its place because a content rule matches secret values and cannot flag a file whose name is the only evidence. Measured, with realistic high-entropy values where the file allowed them:
-
-| File                                                        | Content rules alone |
-| ----------------------------------------------------------- | ------------------- |
-| `id_rsa`, `.git-credentials`, `.env` with an AWS-shaped key | flagged             |
-| `.env` with `DB_PASSWORD=hunter2`                           | missed              |
-| `.netrc` with `password s3cret`                             | missed              |
-| `.pgpass` with `appuser:MyPassw0rd`                         | missed              |
-
-A `.pgpass` or a `.netrc` holds a human-chosen password with no entropy and no vendor prefix, so no content rule fires on it.
+The name rule earns its place because a `.pgpass` or a `.netrc` holds a human-chosen password with no entropy and no vendor prefix, so no content rule fires on it. [The measurements](research.md#why-the-name-rule-earns-its-place).
 
 ### Why not a `dir` scan
 
-`betterleaks dir` would catch binary files directly and remove the need for the separate binary scan, but it is unusable here for two measured reasons. It does not respect `.gitignore`, which breaks the primary escape hatch. And it walks everything including `.git`, taking 1.4 s on this 118-file repo against 65 ms for a 316-file repo with a smaller object store.
+`betterleaks dir` would catch binary files directly and remove the need for the separate binary scan, but it is unusable as the only scan for two measured reasons. It does not respect `.gitignore`, which breaks the primary escape hatch. And it walks everything including `.git`, which is why it is given an explicit path list instead. [The measurements](research.md#why-not-a-dir-scan-for-everything).
 
 ### Exit codes and fail-open
 
@@ -248,7 +203,7 @@ A `.pgpass` or a `.netrc` holds a human-chosen password with no entropy and no v
 | config fails to parse    | allow                  |
 | scan hits the 4 s cap    | allow, warns on stderr |
 
-`jq` is a hard requirement rather than a partial degradation. The allowlist filter runs on the report, so without `jq` a file listed in `.claude-allow-secrets` would still block, contradicting the escape hatch the block message names.
+`jq` is a hard requirement rather than a partial degradation. The block message is built from the report, so without `jq` the hook could not name the rule, the file or the line.
 
 `--redact` keeps the secret value out of the report, the logs, the hook output, and the model's context.
 
@@ -262,20 +217,7 @@ Findings in an allowlisted file are dropped before the hook decides, which is wh
 
 ## Cost
 
-Median of 9 runs on the installed hook:
-
-| Command                                       | Hook cost |
-| --------------------------------------------- | --------- |
-| any non-git command                           | 1 ms      |
-| `git commit`, clean 1000-line staged diff     | 50 ms     |
-| `git commit -am`, clean (runs both scans)     | 69 ms     |
-| `git commit`, innocent binary added           | 79 ms     |
-| `git commit`, secret binary blocked           | 139 ms    |
-| `git commit`, staged content past the 4 s cap | 4040 ms   |
-
-A binary costs one extra `betterleaks dir` (about 34 ms), and a blocked one a second pass to name the offending file. Both are paid only when a binary is actually added.
-
-betterleaks costs about 35 ms of fixed startup plus about 0.18 ms per KB of staged diff. A 50000-line (3.5 MB) diff scans in 656 ms. The `settings.json` timeout is 10 s, which covers the worst case of two capped scans on an `-a` commit.
+About 1 ms on a non-git command, which is the case that runs before every `Bash` call, and 50 ms on a clean commit. A binary adds one `betterleaks dir`, paid only when a binary is actually added. The `settings.json` timeout of 10 s covers the worst case of two capped scans on an `-a` commit. [The full table](research.md#cost).
 
 ## Changing this hook
 

@@ -35,8 +35,9 @@ cd "$root" 2>/dev/null || allow
 # --- Allowlist overrides ---
 # Two additive sources feed one newline-delimited string: the
 # .claude-allow-secrets file and the CLAUDE_ALLOW_SECRETS variable. is_allowed
-# is the single definition of "allowed" for both scans.
-# docs/implementation.md#allowlist-overrides
+# is the single definition of "allowed" for both scans, but it exists for the
+# binary scan, which no betterleaks setting can exempt.
+# docs/implementation.md#why-this-list-exists-at-all
 allowlist=$'\n'
 if [ -f "$root/.claude-allow-secrets" ]; then
   while IFS= read -r line; do
@@ -209,14 +210,19 @@ scan_content() {
     echo "Any other rule means a secret value was found on that line."
     echo
     echo "Inspect with: betterleaks git $mode --redact --verbose"
+    # Ordered portable first: the three betterleaks hatches work for anyone
+    # scanning this repo, the local list only for a user running this hook. The
+    # list is named last, not omitted, because a fingerprint keys one line in one
+    # file, which cannot express a name rule repeated across directories.
+    # docs/implementation.md#why-this-list-exists-at-all
     echo "Fix one of:"
     echo "  * remove the secret, or add the file to .gitignore (recommended), or"
     echo "  * mark a false positive with a 'betterleaks:allow' comment on the line, or"
-    echo "  * add the fingerprint to $root/.betterleaksignore, or"
-    echo "  * list the file in $root/.claude-allow-secrets (exempts it from every check)"
+    echo "  * add the fingerprint above to $root/.betterleaksignore, or"
+    echo "  * last resort, and not portable to anyone without this hook: list the file in $root/.claude-allow-secrets"
   } 1>&2
 
-  deny "Blocked: betterleaks flagged the content this commit would add. See the blocked-command output for the rule, file and line; a 'secret-filename' rule means the name itself is the problem, so gitignore the file or list it in .claude-allow-secrets. Otherwise remove the secret, mark the line betterleaks:allow, or add the fingerprint to .betterleaksignore."
+  deny "Blocked: betterleaks flagged the content this commit would add. See the blocked-command output for the rule, file and line; a 'secret-filename' rule means the name itself is the problem, so gitignore the file. Otherwise remove the secret, mark the line betterleaks:allow, or add the printed fingerprint to .betterleaksignore. Only if no fingerprint fits, list the file in .claude-allow-secrets."
 }
 
 scan_binary  # blocks on a binary holding a secret, otherwise returns

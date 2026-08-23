@@ -2,7 +2,7 @@
 
 A `PreToolUse` hook that blocks a `git commit` which would commit a secret. It runs two checks: a **betterleaks scan** over the staged diff, which catches a secret value pasted into an ordinary file and a file whose name alone marks it as a secret, and a **binary scan** that rescans newly added binary files, which the staged diff cannot show. It is a safety net for an accidental `git add .`, not a replacement for a good `.gitignore`.
 
-This file describes what the hook does and how to work around it. For why it is built this way, including the measurements behind each decision and the alternatives that were tested and rejected, see [docs/implementation.md](docs/implementation.md).
+This file describes what the hook does and how to work around it. For why it is built this way, see [docs/implementation.md](docs/implementation.md). For the measurements behind each decision and the alternatives that were tested and rejected, see [docs/research.md](docs/research.md).
 
 ## Requirements
 
@@ -44,6 +44,8 @@ A modified tracked binary is not checked, because it was checked when it was fir
 
 This is the one check that never fails open: if betterleaks is missing, the scan errors, or the file was staged and then removed from the worktree, the file cannot be cleared and so it blocks.
 
+No betterleaks setting can exempt this check, so a binary you intend to commit needs [override 3](#3-per-repo-allowlist-file-a-binary-scan-block).
+
 ### betterleaks scan
 
 The hook runs `betterleaks git --staged`, which scans the index against `HEAD`, so it reads only what this commit would add. Two kinds of finding block, and the block message says which is which:
@@ -53,7 +55,7 @@ The hook runs `betterleaks git --staged`, which scans the index against `HEAD`, 
 
 A finding blocks with exit code 2 and a message naming the rule, the file, the line, and the fingerprint. `--redact` keeps the secret value out of the report, the hook output, and the model's context.
 
-The name rule exists because a content rule matches secret _values_, and so cannot flag a `.pgpass` or a `.netrc`, which hold a human-chosen password with no entropy and no vendor prefix. See [the measurements](docs/implementation.md#content-scan).
+The name rule exists because a content rule matches secret _values_, and so cannot flag a `.pgpass` or a `.netrc`, which hold a human-chosen password with no entropy and no vendor prefix. See [the measurements](docs/research.md#why-the-name-rule-earns-its-place).
 
 ### `git commit -a`
 
@@ -79,7 +81,7 @@ A config error is fatal to betterleaks rather than a warning, so a typo in `conf
 
 ### Cost
 
-About 1 ms on a non-git command, which is the case that runs before every shell command. A commit pays for the scan. Full table in [docs/implementation.md](docs/implementation.md#cost).
+About 1 ms on a non-git command, which is the case that runs before every shell command. A commit pays for the scan. Full table in [docs/research.md](docs/research.md#cost).
 
 ## The name ruleset
 
@@ -89,7 +91,7 @@ Any file ending in `.env` counts, not only `.env` itself, so `prod.env` and `con
 
 Encrypted blobs (`*.gpg`, `*.pgp`) and public keys (`id_rsa.pub`, `*.crt`) are deliberately not matched, since committing those is a legitimate workflow.
 
-Before editing the pattern, read [Rule dialect](docs/implementation.md#rule-dialect). Patterns are Go RE2, which has no lookahead, and an invalid pattern disables the scan silently rather than erroring visibly. [Name ruleset provenance](docs/implementation.md#name-ruleset-provenance) records where the list came from.
+Before editing the pattern, read [Rule dialect](docs/implementation.md#rule-dialect). Patterns are Go RE2, which has no lookahead, and an invalid pattern disables the scan silently rather than erroring visibly. [Name ruleset provenance](docs/research.md#name-ruleset-provenance) records where the list came from and which upstreams were rejected.
 
 ### Per-repo configs
 
@@ -104,41 +106,50 @@ The shipped config sets `[extend] useDefault = true`, so the upstream rules and 
 
 ## Overrides
 
+Pick by which check blocked you. A **content finding** names a rule, a file and a line, and betterleaks' own escape hatches cover it. A **binary scan** block names a path only, and nothing in betterleaks can exempt it, so it needs this hook's own list.
+
 ### 1. gitignore (preferred)
 
 If the file is gitignored, git never stages it, so neither check ever sees it. This is the right answer almost every time: a secret that should never be committed belongs in `.gitignore`, and then the hook stays silent with no override needed. Reach for the explicit overrides below only when you genuinely intend to commit a secret-shaped or binary file.
 
-### 2. Per-repo allowlist file
+### 2. betterleaks escape hatches (a content finding)
+
+These are portable: they are betterleaks features, so a teammate scanning the same repo without this hook inherits them, and a repo that already carries a gitleaks config keeps working unchanged.
+
+- **Inline comment.** Put a `betterleaks:allow` comment on the flagged line. `gitleaks:allow` also works. Use it for a value that looks like a secret but is not, such as a test fixture or a documented example key.
+- **Ignore file.** Add the fingerprint from the block message to `.betterleaksignore` in the repo root, one per line. `.gitleaksignore` also works.
+- **Custom rules.** Drop a `.betterleaks.toml` or `.gitleaks.toml` in the repo root, or point `BETTERLEAKS_CONFIG` at a shared config. See [Per-repo configs](#per-repo-configs) for what that turns off.
+
+A fingerprint is `file:rule:line`, so `app.py:generic-api-key:42`, and that exact form is the only thing the ignore file accepts. A bare path, a `file:rule` pair and a glob are all silently ignored; see [the measurements](docs/research.md#what-betterleaksignore-accepts).
+
+One entry clears one secret on one line, so a file holding five secrets needs five entries. The line number is part of the key, so inserting a line above the secret invalidates the entry and the commit blocks again. A `secret-filename` finding is always reported on line 1, so it does not drift.
+
+### 3. Per-repo allowlist file (a binary scan block)
 
 Create a `.claude-allow-secrets` file in the repo root listing the file(s) you intend to commit, one per line. An entry matches either a repo-relative path or a bare basename, and `#` comments and blank lines are ignored:
 
 ```sh
 # .claude-allow-secrets
-config/prod.env      # only this exact path
-test/fixtures/id_rsa # a key fixture
-.pgpass              # bare basename: any file named .pgpass, anywhere
-assets/logo.ico      # a binary the binary scan would otherwise block
+test/fixtures/keystore.p12 # a keystore fixture the binary scan blocks
+build/assets.bin           # a blob betterleaks cannot clear
+.pgpass                    # bare basename: any file named .pgpass, anywhere
 ```
 
-One entry exempts the file from **every** check: the binary scan, the `secret-filename` rule, and the content rules. Only the listed files are exempted; everything else still blocks. It is persistent, survives across sessions, and because it lives in the repo you can commit it so the whole team inherits the exemption.
+This list is the only mechanism that covers the binary scan, because that scan reports no stable fingerprint to write down. See [Why this list exists at all](docs/implementation.md#why-this-list-exists-at-all).
 
-### 3. Environment variable
+An entry exempts the file from **every** check, the content rules included. Only the listed files are exempted; everything else still blocks.
+
+For a content finding this is the last resort, because the exemption is invisible to anyone without this hook. One case still lands here: a `secret-filename` hit you want cleared by bare basename across many directories has no fingerprint that expresses it.
+
+### 4. Environment variable
 
 Set `CLAUDE_ALLOW_SECRETS` to the file(s) to exempt, whitespace- or colon-separated, using the same path-or-basename matching and covering the same checks:
 
 ```sh
-CLAUDE_ALLOW_SECRETS=config/prod.env:.pgpass
+CLAUDE_ALLOW_SECRETS=test/fixtures/keystore.p12:.pgpass
 ```
 
 This is best for a one-off or session-scoped skip that leaves no trace in the repo.
-
-### 4. betterleaks escape hatches
-
-For a content finding only, the standard betterleaks escape hatches also work, so a repo that already carries a gitleaks config keeps working unchanged:
-
-- **Inline comment.** Put a `betterleaks:allow` comment on the flagged line. `gitleaks:allow` also works. Use it for a value that looks like a secret but is not, such as a test fixture or a documented example key.
-- **Ignore file.** Add the fingerprint from the block message to `.betterleaksignore` in the repo root, one per line. A fingerprint is `file:rule:line`, so `app.py:generic-api-key:42`. `.gitleaksignore` also works. Use it for a false positive that no comment can carry, such as one inside generated content.
-- **Custom rules.** Drop a `.betterleaks.toml` or `.gitleaks.toml` in the repo root, or point `BETTERLEAKS_CONFIG` at a shared config. See [Per-repo configs](#per-repo-configs) for what that turns off.
 
 ## Tests
 
@@ -157,6 +168,7 @@ See [test/README.md](test/README.md).
 
 - `hook.sh` is the hook, invoked from `settings.json`. It deploys via chezmoi to `~/.claude/hooks/block-secret-commits/`.
 - `conf/betterleaks.toml` is the rule config the hook passes with `--config`. It deploys alongside `hook.sh`, which resolves it relative to its own path.
-- `docs/implementation.md` carries the reasoning, the measurements, and the rejected alternatives, so `hook.sh` and this file stay readable. Not deployed; it is a source-tree document.
+- `docs/implementation.md` carries the reasoning behind each decision, so `hook.sh` and this file stay readable. Not deployed; it is a source-tree document.
+- `docs/research.md` carries the measurements, the comparisons, and the alternatives that were tested and rejected, so `implementation.md` stays readable. Not deployed either.
 - `test/test.sh` is the name-rule and binary-scan test (see [Tests](#tests)).
 - `test/test-content.sh` is the content-scan test (see [Tests](#tests)).

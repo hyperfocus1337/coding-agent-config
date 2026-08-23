@@ -42,7 +42,7 @@ Four cases cover `git commit -a`, which stages tracked edits after the hook runs
 
 Four cases cover the allowlist: a file exempted by path, by bare basename, and through `CLAUDE_ALLOW_SECRETS` must all allow, and a second file that is not exempted must still block.
 
-Three cases assert the text of the block message, not just the exit code. A broken report filter still exits 2, so the exit code alone cannot tell a useful block from one whose finding list failed to render. These assert that the message names the rule, file and line, that it carries the fingerprint for `.betterleaksignore`, and that `jq` did not error while formatting.
+Five cases assert the text of the block message, not just the exit code. A broken report filter still exits 2, so the exit code alone cannot tell a useful block from one whose finding list failed to render. These assert that the message names the rule, file and line, that it carries the fingerprint for `.betterleaksignore`, that `jq` did not error while formatting, that the fix list offers `.betterleaksignore`, and that it marks `.claude-allow-secrets` as the last resort. The last two pin the order the fix list recommends, which the fingerprint assertion cannot see: that fingerprint comes from the finding line, not from the fix list.
 
 Prints `ok`/`FAIL` per case and exits non-zero if any case fails.
 
