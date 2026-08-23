@@ -7,6 +7,9 @@
     "commit": "",
     "pr": ""
   },
+  "permissions": {
+    "defaultMode": "bypassPermissions"
+  },
   "model": "opus[1m]",
   "hooks": {
     "PermissionRequest": [],
@@ -151,11 +154,9 @@
       }
     }
   },
-  "permissions": {
-    "defaultMode": "bypassPermissions"
-  },
   "alwaysThinkingEnabled": true,
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
+  "theme": "auto",
   "skipAutoPermissionPrompt": true
 }
