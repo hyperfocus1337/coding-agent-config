@@ -74,7 +74,7 @@
   "enabledPlugins": {
     "ast-grep@ast-grep-marketplace": true,
     "astral@astral-sh": true,
-    "codex@openai-codex": true,
+    "codex@openai-codex": false,
     "mattpocock-skills@mattpocock": true
   },
   "extraKnownMarketplaces": {
