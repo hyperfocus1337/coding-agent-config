@@ -22,21 +22,21 @@ Source: [Claude Code tip (YouTube Shorts)](https://youtube.com/shorts/I12Mf8KBT1
 
 Thirteen commands covering the everyday flow, branch hygiene, and history rewriting.
 
-| Command                    | Description                                                                      |
-| -------------------------- | -------------------------------------------------------------------------------- |
-| `/git:commit:single`       | Create a git commit (stage all, single commit).                                  |
-| `/git:commit:session`      | Commit one task's changes from the current conversation.                         |
-| `/git:commit:multiple`     | Split changes into a logical sequence of commits.                                |
-| `/git:commit:extend`       | Fold working directory changes into an existing commit.                          |
-| `/git:commit:push`         | Commit and push.                                                                 |
-| `/git:pr:create`           | Commit, push, and open a PR.                                                     |
-| `/git:changelog`           | Generate a changelog file for a time period (day, week, month, year, or N days). |
-| `/git:branches:cleanup`    | Delete stale local branches whose remote tracking branch is gone.                |
-| `/git:worktrees:cleanup`   | Remove worktrees whose branch is `[gone]` on the remote, then delete them.       |
-| `/git:worktrees:configure` | Set `worktree.useRelativePaths` so worktrees work from a container and the host. |
-| `/git:rewrite:author`      | Rewrite the author of the whole branch or the last N commits.                    |
-| `/git:rewrite:date`        | Set an absolute commit and author date on the most recent commit.                |
-| `/git:rewrite:shift-dates` | Shift the last N commit dates by a number of hours (GNU and BSD `date`).         |
+| Command                    | Description                                                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `/git:commit:single`       | Create a git commit (stage all, single commit).                                                                   |
+| `/git:commit:session`      | Commit one task's changes from the current conversation.                                                          |
+| `/git:commit:multiple`     | Split changes into a logical sequence of commits.                                                                 |
+| `/git:commit:extend`       | Fold working directory changes into an existing commit.                                                           |
+| `/git:commit:push`         | Commit and push.                                                                                                  |
+| `/git:pr:create`           | Commit, push, and open a PR.                                                                                      |
+| `/git:changelog`           | Generate a changelog file for a time period (day, week, month, year, or N days).                                  |
+| `/git:branches:cleanup`    | Delete local branches whose remote is gone, or that are merged into main or master, after confirming an overview. |
+| `/git:worktrees:cleanup`   | Remove worktrees whose branch is `[gone]` on the remote, then delete them.                                        |
+| `/git:worktrees:configure` | Set `worktree.useRelativePaths` so worktrees work from a container and the host.                                  |
+| `/git:rewrite:author`      | Rewrite the author of the whole branch or the last N commits.                                                     |
+| `/git:rewrite:date`        | Set an absolute commit and author date on the most recent commit.                                                 |
+| `/git:rewrite:shift-dates` | Shift the last N commit dates by a number of hours (GNU and BSD `date`).                                          |
 
 The three history-rewriting commands (`rewrite:author`, `rewrite:date`, `rewrite:shift-dates`) show current commits and confirm before running. See [git/README.md](git/README.md) for their argument slots and the three ways to call them safely.
 

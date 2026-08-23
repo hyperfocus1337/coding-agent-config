@@ -14,13 +14,17 @@ Shorthand command names and what they map to.
 | `commit:extend`       | Fold working directory changes into an existing commit      |
 | `commit:push`         | Commit and push                                             |
 | `pr:create`           | Commit, push, and open a PR                                 |
-| `branches:cleanup`    | Delete stale local branches whose remote was deleted        |
+| `branches:cleanup`    | Delete gone or merged branches, after confirmation          |
 | `worktrees:cleanup`   | Remove worktrees + delete their `[gone]` branches           |
 | `worktrees:configure` | Set `worktree.useRelativePaths` for container + host access |
 | `changelog`           | Generate a changelog for a time period                      |
 | `rewrite:author`      | Rewrite author of the whole branch or last N commits        |
 | `rewrite:date`        | Set an absolute date on the most recent commit              |
 | `rewrite:shift-dates` | Shift dates of the last N commits by hours                  |
+
+## Branch cleanup
+
+`branches:cleanup` deletes two classes of local branch and keeps everything else, after you confirm an overview of the candidates. See [`branches/README.md`](branches/README.md) for the full include and exclude list, how the default branch is resolved, and why squash merges are not detected.
 
 ## Calling the history-rewriting commands
 
