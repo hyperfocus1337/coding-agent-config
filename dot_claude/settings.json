@@ -12,7 +12,6 @@
   },
   "model": "opus[1m]",
   "hooks": {
-    "PermissionRequest": [],
     "PreToolUse": [
       {
         "matcher": "Bash",
@@ -155,6 +154,7 @@
     }
   },
   "alwaysThinkingEnabled": true,
+  "autoCompactWindow": 250000,
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "theme": "auto",
