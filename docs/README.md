@@ -26,6 +26,7 @@ docs/
 └── research/                 # Investigations into the agent environment and session
     ├── cmux-notifications.md — Why the Claude Code notification hook is automatic (do not hand-install it)
     ├── codex-compat.md       — Sharing skills and instructions between Claude Code and Codex
+    ├── instruction-load.md   — How many directives a session stacks, and where they contradict
     ├── plugin-migration.md   — Which Claude plugins could move to APM (audit)
     └── skills-context.md     — Context budget consumed by installed skill breadcrumbs
 ```
@@ -48,6 +49,6 @@ The `mcp/` folder covers configuring MCP (Model Context Protocol) servers on eac
 
 ## Research
 
-The `research/` folder holds investigations into the agent environment and session. These record what was true when measured and can go stale. [`cmux-notifications.md`](research/cmux-notifications.md) explains why Claude Code needs no `cmux notify` hook of its own: the cmux Claude wrapper injects the whole hook set when `claude` starts inside a cmux terminal, so following the published hook guide only produces duplicate notifications, and no hook fires at all in sessions started outside cmux. [`codex-compat.md`](research/codex-compat.md) covers where Claude Code and Codex each look for skills and instructions, and what works today to share content across both. [`plugin-migration.md`](research/plugin-migration.md) audits which Claude plugins APM could carry instead. [`skills-context.md`](research/skills-context.md) estimates the session-start context cost of every installed skill's listing breadcrumb, and explains why the real constraint is description truncation rather than token count.
+The `research/` folder holds investigations into the agent environment and session. These record what was true when measured and can go stale. [`cmux-notifications.md`](research/cmux-notifications.md) explains why Claude Code needs no `cmux notify` hook of its own: the cmux Claude wrapper injects the whole hook set when `claude` starts inside a cmux terminal, so following the published hook guide only produces duplicate notifications, and no hook fires at all in sessions started outside cmux. [`codex-compat.md`](research/codex-compat.md) covers where Claude Code and Codex each look for skills and instructions, and what works today to share content across both. [`instruction-load.md`](research/instruction-load.md) counts the separate directives one session asks the model to obey and finds where they contradict each other. [`plugin-migration.md`](research/plugin-migration.md) audits which Claude plugins APM could carry instead. [`skills-context.md`](research/skills-context.md) estimates the session-start context cost of every installed skill's listing breadcrumb, and explains why the real constraint is description truncation rather than token count.
 
 To bootstrap a fresh repository so a Claude Code cloud session (web, Android, CI) gets the same environment as a local machine, invoke the `install-bootstrap` skill. It writes a `SessionStart` hook that fetches the bootstrap script in [`templates/web`](../templates/web/).
