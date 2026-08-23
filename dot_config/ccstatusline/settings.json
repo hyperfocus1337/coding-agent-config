@@ -28,7 +28,22 @@
       {
         "id": "dafd0253-40a1-474c-b195-c744cd5f0501",
         "type": "worktree-name",
-        "backgroundColor": "bgBrightWhite"
+        "backgroundColor": "bgBrightWhite",
+        "merge": true
+      },
+      {
+        "id": "a1a50068-33e0-4d17-b7e9-9397e432694b",
+        "type": "cache-timer",
+        "backgroundColor": "bgBrightBlack",
+        "rawValue": true,
+        "metadata": {
+          "symbolHot": "",
+          "symbolFresh": "",
+          "symbolDraining": "",
+          "symbolUrgent": "",
+          "symbolCold": "",
+          "ttlSeconds": "3600"
+        }
       },
       {
         "id": "caea229d-fce0-486b-a8a4-105569887481",
