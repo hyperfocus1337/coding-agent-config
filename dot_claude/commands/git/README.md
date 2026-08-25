@@ -13,6 +13,7 @@ Shorthand command names and what they map to.
 | `commit:multiple`     | Split changes into a logical sequence of commits            |
 | `commit:extend`       | Fold working directory changes into an existing commit      |
 | `commit:push`         | Commit and push                                             |
+| `push`                | Push the current branch to origin, ask about other remotes  |
 | `pr:create`           | Commit, push, and open a PR                                 |
 | `branches:cleanup`    | Delete gone or merged branches, after confirmation          |
 | `worktrees:cleanup`   | Remove worktrees + delete their `[gone]` branches           |

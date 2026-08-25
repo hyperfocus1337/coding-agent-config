@@ -20,7 +20,7 @@ Source: [Claude Code tip (YouTube Shorts)](https://youtube.com/shorts/I12Mf8KBT1
 
 ## git/ — version control helpers
 
-Thirteen commands covering the everyday flow, branch hygiene, and history rewriting.
+Fourteen commands covering the everyday flow, branch hygiene, and history rewriting.
 
 | Command                    | Description                                                                                                       |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -29,6 +29,7 @@ Thirteen commands covering the everyday flow, branch hygiene, and history rewrit
 | `/git:commit:multiple`     | Split changes into a logical sequence of commits.                                                                 |
 | `/git:commit:extend`       | Fold working directory changes into an existing commit.                                                           |
 | `/git:commit:push`         | Commit and push.                                                                                                  |
+| `/git:push`                | Push the current branch to origin, then ask before pushing to any other remote.                                   |
 | `/git:pr:create`           | Commit, push, and open a PR.                                                                                      |
 | `/git:changelog`           | Generate a changelog file for a time period (day, week, month, year, or N days).                                  |
 | `/git:branches:cleanup`    | Delete local branches whose remote is gone, or that are merged into main or master, after confirming an overview. |
