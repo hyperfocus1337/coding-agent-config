@@ -96,11 +96,23 @@
         "source": "anthropics/claude-plugins-official"
       },
       "url": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/pyright-lsp",
-      "scope": "project",
-      "status": "project-candidate",
+      "scope": "user",
+      "status": "user-keep",
       "requires": ["pyright-langserver"],
-      "why": "LSP wiring costs 0 resident tokens but starts a language server. Run it where there is Python to serve. Installed on this machine although the install.sh line was commented out.",
-      "use_when": "repo has meaningful Python"
+      "why": "LSP wiring costs 0 resident tokens and the server only starts for open Python files. Moved to user scope so the LSP recommendation prompt never fires for .py: Claude skips a plugin that is already installed.",
+      "use_when": "always; the server starts only where there is Python"
+    },
+    {
+      "id": "typescript-lsp@claude-plugins-official",
+      "marketplace": {
+        "source": "anthropics/claude-plugins-official"
+      },
+      "url": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/typescript-lsp",
+      "scope": "user",
+      "status": "user-keep",
+      "requires": ["typescript-language-server"],
+      "why": "same reasoning as pyright-lsp, for the other language in the image. The binary comes from Dockerfile.node in coding-agent-sandbox.",
+      "use_when": "always; the server starts only where there is TypeScript or JavaScript"
     },
     {
       "id": "cloudflare@cloudflare",

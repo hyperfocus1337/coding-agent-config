@@ -78,7 +78,9 @@
     "ast-grep@ast-grep-marketplace": true,
     "astral@astral-sh": true,
     "codex@openai-codex": false,
-    "mattpocock-skills@mattpocock": true
+    "mattpocock-skills@mattpocock": true,
+    "pyright-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "ast-grep-marketplace": {
