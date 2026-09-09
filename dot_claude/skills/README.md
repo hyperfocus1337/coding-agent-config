@@ -24,7 +24,16 @@ The four channel skills carry `disable-model-invocation: true`. Start from `inst
 | [`technical-writing`](technical-writing/)   | Writes or edits technical English against Google developer documentation style plus ASD-STE100 principles.      |
 | [`meeting-summarizer`](meeting-summarizer/) | Turns a meeting or call transcript into a structured English summary with decisions and an action-items table.  |
 | [`organize`](organize/)                     | Reorganizes a config or code file into labeled, comment-delimited sections, prompting for a header style first. |
+| [`explain-diff`](explain-diff/)             | Builds a self-contained HTML explainer of a code change: background, intuition, diagrams, and a quiz.           |
 
 `markitdown` backs the rule in `rules/tools.md` that a binary document is converted before it is read. `organize` declares the skill name `organize-with-comments` and pairs with the `/organize:*` commands, which pick a header style without the prompt.
 
 Third-party skills do not live here. They arrive through APM or a plugin, and every channel is mapped in [`docs/sources/channels.md`](../../docs/sources/channels.md).
+
+## Explain-diff sources
+
+The `explain-diff` prompt is adapted from Geoffrey Litt's `/explain-diff`. Keep these for reference when the skill is revised:
+
+- [Gist](https://gist.github.com/geoffreylitt/a29df1b5f9865506e8952488eac3d524): the original prompt this skill is based on.
+- [Understanding is the new bottleneck](https://www.geoffreylitt.com/2026/07/02/understanding-is-the-new-bottleneck.html): the argument for the format. An agent writes code faster than a human reads a raw diff, so the explainer teaches the background and the intuition first, and the quiz measures what the reader understood.
+- [Talk](https://www.youtube.com/watch?v=WkBPX-oDMnA): the same argument on video.

@@ -69,6 +69,7 @@ Local skills under [`dot_claude/skills/`](../../dot_claude/skills/). Grouped by 
 
 | Skill                                                                       | Description                                                                   |
 | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [`explain-diff`](../../dot_claude/skills/explain-diff/SKILL.md)             | Explain a code change as a self-contained HTML page with a quiz.              |
 | [`markitdown`](../../dot_claude/skills/markitdown/SKILL.md)                 | Convert a PDF, Office, image, audio, or HTML file to Markdown.                |
 | [`meeting-summarizer`](../../dot_claude/skills/meeting-summarizer/SKILL.md) | Turn a transcript into structured English notes.                              |
 | [`organize`](../../dot_claude/skills/organize/SKILL.md)                     | Reorganize a config or code file into labeled sections.                       |
