@@ -84,6 +84,15 @@ Eight variants of the same operation: reorganize a file into comment-delimited s
 | ------------------------- | ----------------------------------------------------------------------------- |
 | `/summarize:transscripts` | Summarize a meeting or transcript into structured sections with action items. |
 
+## doom/ — Doom Emacs maintenance
+
+| Command         | Description                                                         |
+| --------------- | ------------------------------------------------------------------- |
+| `/doom:sync`    | Update `~/.emacs.d` to the latest master, then run `doom sync`.     |
+| `/doom:restart` | Run `doom --tangle`, the `/doom:sync` steps, then `doom --restart`. |
+
+Both carry `disable-model-invocation: true`. The commands run at expansion time through `!` blocks, so `/doom:restart` repeats the sync sequence instead of invoking `/doom:sync`, which the model cannot call.
+
 ## simple/ — everyday utilities
 
 | Command             | Description                                      |
