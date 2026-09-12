@@ -2,14 +2,14 @@
 
 Hooks are shell commands Claude Code runs on tool lifecycle events, for example after every `Write`/`Edit` or before a `Bash` call. Each hook is one directory here holding `hook.sh` and its own README. `settings.json` in the parent directory wires them to events and caps each one with a timeout.
 
-| Hook                                                             | Event                            | Summary                                                                                                                  |
-| ---------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| [`format-all-languages`](format-all-languages/README.md)         | `PostToolUse` (Write/Edit, Bash) | Formats edited files with Prettier by extension; on Bash, re-aligns markdown tables in changed files. Needs `prettier`.  |
-| [`format-org-tables`](format-org-tables/README.md)               | `PostToolUse` (Write/Edit)       | Re-aligns Org tables in edited `.org` files via `emacs --batch`. Needs `emacs`.                                          |
-| [`lint-all-languages`](lint-all-languages/README.md)             | `PostToolUse` (Write/Edit)       | Lints the edited file by extension: ruff, oxlint, shellcheck, yamllint or ansible-lint, `terraform fmt`.                 |
-| [`type-check-all-languages`](type-check-all-languages/README.md) | `PostToolUse` (Write/Edit)       | Type-checks the whole project by extension: pyrefly, tsc.                                                                |
-| [`block-secret-commits`](block-secret-commits/README.md)         | `PreToolUse` (Bash)              | Blocks a `git commit` that would add a secret: a betterleaks scan of the staged diff, plus a rescan of new binary files. |
-| [`enforce-cli-tools`](enforce-cli-tools/README.md)               | `PreToolUse` (Bash)              | Blocks a banned CLI tool in command position and names the replacement. Table-driven.                                    |
+| Hook                                                             | Event                            | Summary                                                                                                                         |
+| ---------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| [`format-all-languages`](format-all-languages/README.md)         | `PostToolUse` (Write/Edit, Bash) | Formats edited files with Prettier by extension; on Bash, re-aligns markdown tables in changed files. Needs `prettier`.         |
+| [`format-org-tables`](format-org-tables/README.md)               | `PostToolUse` (Write/Edit, Bash) | Re-aligns Org tables in edited `.org` files via `emacs --batch`; on Bash, in the `.org` files the command names. Needs `emacs`. |
+| [`lint-all-languages`](lint-all-languages/README.md)             | `PostToolUse` (Write/Edit)       | Lints the edited file by extension: ruff, oxlint, shellcheck, yamllint or ansible-lint, `terraform fmt`.                        |
+| [`type-check-all-languages`](type-check-all-languages/README.md) | `PostToolUse` (Write/Edit)       | Type-checks the whole project by extension: pyrefly, tsc.                                                                       |
+| [`block-secret-commits`](block-secret-commits/README.md)         | `PreToolUse` (Bash)              | Blocks a `git commit` that would add a secret: a betterleaks scan of the staged diff, plus a rescan of new binary files.        |
+| [`enforce-cli-tools`](enforce-cli-tools/README.md)               | `PreToolUse` (Bash)              | Blocks a banned CLI tool in command position and names the replacement. Table-driven.                                           |
 
 ## Shared conventions
 

@@ -26,7 +26,7 @@ Relative paths are resolved against the session cwd, so a `cd` elsewhere in the 
 
 This is the same failure as [Write and commit in one command](#write-and-commit-in-one-command) from the other side: there git had already been told the file is clean, here git has been told to ignore it. Naming the file removes git from the question.
 
-Note the asymmetry with [`format-org-tables`](../format-org-tables/README.md): that hook matches `Write|Edit|MultiEdit` only, so an `.org` table written through a Bash heredoc is not aligned by anything.
+[`format-org-tables`](../format-org-tables/README.md) reads the command text the same way, for `.org` paths, and stops there: no git sweep. An Org file is written by a command that names it, so the sweep buys that hook nothing the name does not already give it.
 
 #### Cross-repo Bash edits
 
