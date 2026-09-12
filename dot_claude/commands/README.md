@@ -84,6 +84,16 @@ Eight variants of the same operation: reorganize a file into comment-delimited s
 | ------------------------- | ----------------------------------------------------------------------------- |
 | `/summarize:transscripts` | Summarize a meeting or transcript into structured sections with action items. |
 
+## chezmoi/ — dotfile sync
+
+| Command          | Description                                                          |
+| ---------------- | -------------------------------------------------------------------- |
+| `/chezmoi:diff`  | Show the diff between the source state and the home directory.       |
+| `/chezmoi:add`   | Add a file to the source state.                                      |
+| `/chezmoi:apply` | Apply the source state to the home directory after showing the diff. |
+
+All three carry `disable-model-invocation: true`: they run only when typed.
+
 ## doom/ — Doom Emacs maintenance
 
 | Command         | Description                                                         |
