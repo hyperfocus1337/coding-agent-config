@@ -16,7 +16,7 @@ All GitHub operations go through a dedicated proxy service that transparently ha
 Two options, either one works. Either grants a cloud session access to any repository the connecting GitHub account can see:
 
 | Method           | How                                                                                        | Notes                                                                            |
-|------------------|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| ---------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
 | **GitHub App**   | Authorize the Claude GitHub App during web onboarding                                      | Also enables PR webhooks for Auto-fix. It is not a session-level access control. |
 | **`/web-setup`** | Run `/web-setup` in your terminal to sync your local `gh` CLI token to your Claude account | Uses your existing `gh` auth.                                                    |
 
@@ -33,12 +33,14 @@ Standard git works against the attached repositories through the proxy:
 The built-in server is GitHub's own MCP server, so it goes well beyond simple reads. All tools are prefixed `mcp__github__`. Confirmed by inspecting a live web session:
 
 **Repositories & files**
+
 - `create_repository`, `fork_repository`, `search_repositories`
 - `get_file_contents`, `create_or_update_file`, `delete_file`, `push_files`
 - `create_branch`, `list_branches`
 - `list_tags`, `get_tag`, `list_commits`, `get_commit`, `search_commits`, `search_code`
 
 **Pull requests**
+
 - `create_pull_request`, `update_pull_request`, `list_pull_requests`, `search_pull_requests`, `pull_request_read`
 - `update_pull_request_branch`
 - `merge_pull_request`, `enable_pr_auto_merge`, `disable_pr_auto_merge`
@@ -47,22 +49,27 @@ The built-in server is GitHub's own MCP server, so it goes well beyond simple re
 - `subscribe_pr_activity`, `unsubscribe_pr_activity`
 
 **Issues**
+
 - `issue_read`, `issue_write` (create and update), `list_issues`, `search_issues`
 - `add_issue_comment`, `sub_issue_write`
 - `list_issue_types`, `list_issue_fields`, `get_label`
 
 **Actions / CI**
+
 - `actions_list`, `actions_get`, `actions_run_trigger`
 - `get_check_run`, `get_job_logs`
 
 **Releases** (read-only)
+
 - `list_releases`, `get_latest_release`, `get_release_by_tag`
 
 **Users, teams & org**
+
 - `get_me`, `search_users`
 - `get_teams`, `get_team_members`, `list_repository_collaborators`
 
 **Security**
+
 - `run_secret_scanning`
 
 ### Usage notes

@@ -5,7 +5,7 @@ Claude Code cannot discover Codex's `.agents/` convention natively, and there is
 ## Where each tool looks
 
 | Thing          | Claude Code                                           | Codex                                                                                                                       |
-|----------------|-------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| -------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | Instructions   | `CLAUDE.md` (project, `~/.claude/`)                   | `AGENTS.md` (repo root up, `~/.codex/AGENTS.md`)                                                                            |
 | Skills         | `.claude/skills/<name>/SKILL.md`, `~/.claude/skills/` | `.agents/skills`, scanned every directory from cwd up to repo root, plus `$HOME/.agents/skills/` (and `/etc/codex/skills/`) |
 | Slash commands | `.claude/commands/*.md` (now merged into skills)      | `$CODEX_HOME/prompts/*.md`, user-level only                                                                                 |

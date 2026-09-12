@@ -7,7 +7,7 @@ When two things share a name, or a command behaves differently than the file you
 The naming already encodes most of the origin, so start here before running anything:
 
 | Form                            | Origin                                                                  |
-|---------------------------------|-------------------------------------------------------------------------|
+| ------------------------------- | ----------------------------------------------------------------------- |
 | `/compact`, `/context`, `/help` | built-in                                                                |
 | `/foo`                          | a plain command or skill in `.claude/` (project) or `~/.claude/` (user) |
 | `/frontend:foo`                 | a nested subdirectory namespace, e.g. `commands/frontend/foo.md`        |

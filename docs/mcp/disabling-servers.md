@@ -5,7 +5,7 @@ There are three kinds of MCP server, and each disables differently. Getting this
 ## The three kinds
 
 | Kind                   | Shown in `claude mcp list` as | Stored in                                               | How to remove/disable                     |
-|------------------------|-------------------------------|---------------------------------------------------------|-------------------------------------------|
+| ---------------------- | ----------------------------- | ------------------------------------------------------- | ----------------------------------------- |
 | User / local / project | `name: ...`                   | `~/.claude.json` (or `$CLAUDE_CONFIG_DIR/.claude.json`) | `claude mcp remove <name>`                |
 | Project `.mcp.json`    | `name: ...` (⏸ pending)       | repo `.mcp.json`                                        | `disabledMcpjsonServers` in settings.json |
 | Plugin-provided        | `plugin:<plugin>:<name>`      | the installed plugin                                    | disable the whole plugin only             |
