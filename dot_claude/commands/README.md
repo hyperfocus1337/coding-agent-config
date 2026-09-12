@@ -22,6 +22,7 @@ Source: [Claude Code tip (YouTube Shorts)](https://youtube.com/shorts/I12Mf8KBT1
 | Command               | Description                                                                   |
 | --------------------- | ----------------------------------------------------------------------------- |
 | `/docs:current-state` | Write docs describing only the current state, with no change-history framing. |
+| `/docs:user-friendly` | Write docs from the reader's point of view, not the implementer's.            |
 
 ## git/ — version control helpers
 
