@@ -23,7 +23,7 @@ Each README above documents its own directory. This file says what is where, and
 
 | Setting                                | Value               | Effect                                                                                                                                                           |
 | -------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `model`                                | `opus[1m]`          | Opus with the 1M-token context window.                                                                                                                           |
+| `model`                                | `opus`              | Opus with the default context window.                                                                                                                            |
 | `permissions.defaultMode`              | `bypassPermissions` | Every session starts with permission prompts off.                                                                                                                |
 | `skipDangerousModePermissionPrompt`    | `true`              | Records that the bypass-permissions warning dialog is accepted, so it does not appear at startup.                                                                |
 | `skipAutoPermissionPrompt`             | `true`              | Records that the auto-mode opt-in dialog is accepted.                                                                                                            |
