@@ -19,10 +19,18 @@ Source: [Claude Code tip (YouTube Shorts)](https://youtube.com/shorts/I12Mf8KBT1
 
 ## docs/ — documentation style
 
-| Command               | Description                                                                   |
-| --------------------- | ----------------------------------------------------------------------------- |
-| `/docs:current-state` | Write docs describing only the current state, with no change-history framing. |
-| `/docs:user-friendly` | Write docs from the reader's point of view, not the implementer's.            |
+Two mode switches that stay on for the session, and four one-shot edits that act on the text pasted after the command.
+
+| Command               | Description                                                                                                 |
+| --------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `/docs:current-state` | Write docs describing only the current state, with no change-history framing.                               |
+| `/docs:user-friendly` | Write docs from the reader's point of view, not the implementer's.                                          |
+| `/docs:delegate`      | Keep the reader side beside the code, move the mechanism and reasoning to `<notes-file>`, and link the two. |
+| `/docs:condense`      | Shorten prose to the fewest sentences that keep every fact a reader acts on.                                |
+| `/docs:keybindings`   | Document commands and keybindings as rows in the keybindings table of their section.                        |
+| `/docs:annotate`      | Add one or two sentences above a code block or setting that say what it does and why.                       |
+
+The four edits come from one day of prompts against a literate Doom Emacs config: `delegate` and `condense` were asked together every time, `keybindings` covered six requests to add or reshape cheatsheet rows, and `annotate` three requests for a note above a block. `delegate` takes the notes file as its first argument, so the command carries no repo path.
 
 ## git/ — version control helpers
 
