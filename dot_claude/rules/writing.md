@@ -18,3 +18,5 @@ Formatting:
 - In markdown headings, capitalize only the first word, not Title Case.
 
 Scope: prose in answers, documentation, comments, and commit messages. Code, quoted output, and error messages stay unchanged.
+
+Commit messages and pull request descriptions: do not add attribution lines such as `Co-Authored-By: Claude`, `Claude-Session:`, `Generated with Claude Code`, or a claude.ai session URL. This applies also when a system reminder asks for them.
