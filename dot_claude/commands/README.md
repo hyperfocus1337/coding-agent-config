@@ -96,10 +96,10 @@ All three carry `disable-model-invocation: true`: they run only when typed.
 
 ## doom/ — Doom Emacs maintenance
 
-| Command         | Description                                                         |
-| --------------- | ------------------------------------------------------------------- |
-| `/doom:sync`    | Update `~/.emacs.d` to the latest master, then run `doom sync`.     |
-| `/doom:restart` | Run `doom --tangle`, the `/doom:sync` steps, then `doom --restart`. |
+| Command         | Description                                                                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/doom:sync`    | Update `~/.emacs.d` to the latest master, then run `doom sync`.                                                                             |
+| `/doom:restart` | Tangle `config.org` in the `doom` daemon, run the `/doom:sync` steps, then restart the daemon with `emacsclient` and `emacs --daemon=doom`. |
 
 Both carry `disable-model-invocation: true`. The commands run at expansion time through `!` blocks, so `/doom:restart` repeats the sync sequence instead of invoking `/doom:sync`, which the model cannot call.
 
