@@ -5,8 +5,9 @@
 | [`writing.md`](writing.md) | Prose in ASD-STE100 Simplified Technical English, plus formatting: no hard wrapping, no em dashes, sentence-case headings. |
 | [`tools.md`](tools.md)     | Which tool to reach for: `rg`/`fd` over Grep/Glob, LSP for navigation, ast-grep for structure, Context7 for docs, `pnpm`.  |
 | [`code.md`](code.md)       | How much to build: a seven-rung ladder from "does this need to exist" to "write the minimum code that works".              |
+| [`apply.md`](apply.md)     | What to run after a successful edit in a chezmoi source directory: `/chezmoi:apply`, then `/doom:sync` for `dot_doom.d/`.  |
 
-All three are unscoped, so they load at session start. Together with `CLAUDE.md` they are about 715 words, which is the budget the principles below defend.
+The first three are unscoped, so they load at session start. Together with `CLAUDE.md` they are about 715 words, which is the budget the principles below defend. `apply.md` is scoped to `dot_claude/**`, `dot_config/**`, and `dot_doom.d/**`, so it loads only after Claude reads a file in a chezmoi source directory, and it costs nothing elsewhere. It names two slash commands, `/chezmoi:apply` and `/doom:sync`, which is why those two commands do not carry `disable-model-invocation: true`.
 
 Claude Code discovers every `*.md` file in this directory on its own. Do not import them from `CLAUDE.md` with `@`. An `@` import loads the file unconditionally and bypasses its `paths:` frontmatter, which defeats the scoping.
 

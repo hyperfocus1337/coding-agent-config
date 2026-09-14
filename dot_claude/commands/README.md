@@ -92,7 +92,7 @@ Eight variants of the same operation: reorganize a file into comment-delimited s
 | `/chezmoi:add`   | Add a file to the source state.                                      |
 | `/chezmoi:apply` | Apply the source state to the home directory after showing the diff. |
 
-All three carry `disable-model-invocation: true`: they run only when typed.
+`diff` and `add` carry `disable-model-invocation: true`: they run only when typed. `apply` does not, so the [`rules/apply.md`](../rules/apply.md) rule can run it after an edit to a chezmoi source directory succeeds.
 
 ## doom/ — Doom Emacs maintenance
 
@@ -101,7 +101,7 @@ All three carry `disable-model-invocation: true`: they run only when typed.
 | `/doom:sync`    | Update `~/.emacs.d` to the latest master, then run `doom sync`.                                                                             |
 | `/doom:restart` | Tangle `config.org` in the `doom` daemon, run the `/doom:sync` steps, then restart the daemon with `emacsclient` and `emacs --daemon=doom`. |
 
-Both carry `disable-model-invocation: true`. The commands run at expansion time through `!` blocks, so `/doom:restart` repeats the sync sequence instead of invoking `/doom:sync`, which the model cannot call.
+`restart` carries `disable-model-invocation: true`: it closes every attached frame, so it runs only when typed. `sync` does not, so the [`rules/apply.md`](../rules/apply.md) rule can run it after an edit under `dot_doom.d/`. The commands run at expansion time through `!` blocks, so `/doom:restart` repeats the sync sequence instead of invoking `/doom:sync`.
 
 ## simple/ — everyday utilities
 

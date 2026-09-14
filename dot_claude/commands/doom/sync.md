@@ -1,7 +1,6 @@
 ---
 allowed-tools: Bash(cd:*), Bash(git checkout:*), Bash(git pull:*), Bash(git submodule:*), Bash(doom:*), Bash(git status:*)
 description: Update ~/.emacs.d to the latest master and run doom sync
-disable-model-invocation: true
 ---
 
 ## Context

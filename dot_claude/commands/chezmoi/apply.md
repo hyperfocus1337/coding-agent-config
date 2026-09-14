@@ -1,7 +1,6 @@
 ---
 allowed-tools: Bash(chezmoi diff:*), Bash(chezmoi apply:*)
 description: Apply the chezmoi source state to the home directory
-disable-model-invocation: true
 ---
 
 ## Context
