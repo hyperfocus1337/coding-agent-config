@@ -6,28 +6,66 @@ disable-model-invocation: true
 
 Shorthand command names and what they map to.
 
+## Commit
+
+Stage and commit working directory changes.
+
+| Command               | Description                                               |
+| --------------------- | --------------------------------------------------------- |
+| `commit:single`       | Create a git commit                                       |
+| `commit:task`         | Commit one task's changes from the current conversation   |
+| `commit:conversation` | Commit every conversation change as a sequence of commits |
+| `commit:multiple`     | Split changes into a logical sequence of commits          |
+| `commit:extend`       | Fold working directory changes into an existing commit    |
+| `commit:push`         | Commit and push                                           |
+
+### Choosing a commit command
+
+The four commit commands differ on two axes: which changes they take, and how many commits they make.
+
+| Scope of changes                     | One commit      | Many commits          |
+| ------------------------------------ | --------------- | --------------------- |
+| Whole working directory              | `commit:single` | `commit:multiple`     |
+| Everything this conversation changed | (none)          | `commit:conversation` |
+| One task from this conversation      | `commit:task`   | (none)                |
+
+`commit:single` and `commit:multiple` take every change in the working directory, including changes that were there before the conversation started.
+
+`commit:conversation` and `commit:task` print an include list and an exclude list before they stage, and leave pre-existing changes uncommitted.
+
+`commit:task` takes an optional scope argument; without one it takes the last request in the conversation. `commit:extend` folds changes into an existing commit instead of creating one.
+
+## Push and pull requests
+
+Send commits to a remote and open pull requests.
+
+| Command     | Description                                                |
+| ----------- | ---------------------------------------------------------- |
+| `push`      | Push the current branch to origin, ask about other remotes |
+| `pr:create` | Commit, push, and open a PR                                |
+
+## Branches and worktrees
+
+Remove stale branches and worktrees, and configure worktree paths.
+
 | Command               | Description                                                 |
 | --------------------- | ----------------------------------------------------------- |
-| `commit:single`       | Create a git commit                                         |
-| `commit:session`      | Commit one task's changes from the current conversation     |
-| `commit:multiple`     | Split changes into a logical sequence of commits            |
-| `commit:extend`       | Fold working directory changes into an existing commit      |
-| `commit:push`         | Commit and push                                             |
-| `push`                | Push the current branch to origin, ask about other remotes  |
-| `pr:create`           | Commit, push, and open a PR                                 |
 | `branches:cleanup`    | Delete gone or merged branches, after confirmation          |
 | `worktrees:cleanup`   | Remove worktrees + delete their `[gone]` branches           |
 | `worktrees:configure` | Set `worktree.useRelativePaths` for container + host access |
-| `changelog`           | Generate a changelog for a time period                      |
-| `rewrite:author`      | Rewrite author of the whole branch or last N commits        |
-| `rewrite:date`        | Set an absolute date on the most recent commit              |
-| `rewrite:shift-dates` | Shift dates of the last N commits by hours                  |
-
-## Branch cleanup
 
 `branches:cleanup` deletes two classes of local branch and keeps everything else, after you confirm an overview of the candidates. See [`branches/README.md`](branches/README.md) for the full include and exclude list, how the default branch is resolved, and why squash merges are not detected.
 
-## Calling the history-rewriting commands
+## History
+
+Summarize or rewrite existing commits.
+
+| Command               | Description                                          |
+| --------------------- | ---------------------------------------------------- |
+| `changelog`           | Generate a changelog for a time period               |
+| `rewrite:author`      | Rewrite author of the whole branch or last N commits |
+| `rewrite:date`        | Set an absolute date on the most recent commit       |
+| `rewrite:shift-dates` | Shift dates of the last N commits by hours           |
 
 `rewrite:author`, `rewrite:date`, and `rewrite:shift-dates` rewrite git history, so they all show current commits, warn about force-pushing, and confirm before running. There is no named-argument (`--flag`) syntax in slash commands, only positional slots and free text, so each command is written to be called three ways:
 
