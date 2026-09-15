@@ -24,6 +24,7 @@ Follow this process:
 1. State the scope in one sentence, from $ARGUMENTS or from the last request in the conversation.
 
 2. Build an include list of the paths you changed for that scope. For each path, name the request that made you change it. A path you cannot tie to a request is out of scope. Out of scope by default:
+
    - a file changed for a different task in the same conversation
    - a fix you made on your own initiative that the user did not ask for
    - reformatting that a hook or formatter applied to a file you only moved or renamed. Check first whether a PostToolUse hook re-applies it after every command. If it does, you cannot hold the file unformatted long enough to stage around it: include the reformatting and name it in the step 7 report instead of fighting the hook.
