@@ -25,9 +25,12 @@ dependencies:
   # skill, which writes the `skills:` subset into the project apm.yml:
   #   neondatabase/agent-skills  project-candidate, 441 resident tokens for
   #                              one vendor's database.
-  #   manaflow-ai/cmux           local-candidate, 479 resident tokens of
+  #   manaflow-ai/cmux/skills/<name>
+  #                              local-candidate, about 480 resident tokens of
   #                              personal terminal tooling. Never commit it
-  #                              into a shared repo.
+  #                              into a shared repo. The repo root has no
+  #                              apm.yml, so each skill is its own subpath
+  #                              ref; the catalog row lists the 7 of 22.
   # User-scoped MCP servers. Secrets come from the environment at install time
   # (${VAR}) so this manifest stays committable.
   mcp:

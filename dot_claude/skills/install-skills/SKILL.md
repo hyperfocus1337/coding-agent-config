@@ -33,23 +33,24 @@ The user wants a skill available in one repo instead of every session, or wants 
 
 ### Fields
 
-| Field          | Meaning                                                              |
-| :------------- | :------------------------------------------------------------------- |
-| `id`           | skill name for `local` and `vendor-cli` rows, git ref for `apm` rows |
-| `channel`      | `apm`, `local`, or `vendor-cli`, which decides the procedure below   |
-| `dir`          | source directory in the config repo, `local` rows only               |
-| `command`      | the vendor command, without scope arguments, `vendor-cli` rows only  |
-| `project_args` | arguments that land the skill in the project, appended to `command`  |
-| `global_args`  | arguments that land it at user scope instead                         |
-| `scope`        | where this skill belongs: `user`, `project`, or `local`              |
-| `status`       | `user-keep`, `project-candidate`, `local-candidate`                  |
-| `requires`     | binaries that must be on `PATH`                                      |
-| `why`          | the reason for `scope`, including its measured resident token cost   |
-| `use_when`     | the condition under which a project should take it                   |
+| Field          | Meaning                                                                                                                                 |
+| :------------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`           | skill name for `local` and `vendor-cli` rows, git ref for `apm` rows. A `<name>` placeholder marks a subpath ref, one install per skill |
+| `channel`      | `apm`, `local`, or `vendor-cli`, which decides the procedure below                                                                      |
+| `skills`       | the names that replace `<name>`, subpath `apm` rows only                                                                                |
+| `dir`          | source directory in the config repo, `local` rows only                                                                                  |
+| `command`      | the vendor command, without scope arguments, `vendor-cli` rows only                                                                     |
+| `project_args` | arguments that land the skill in the project, appended to `command`                                                                     |
+| `global_args`  | arguments that land it at user scope instead                                                                                            |
+| `scope`        | where this skill belongs: `user`, `project`, or `local`                                                                                 |
+| `status`       | `user-keep`, `project-candidate`, `local-candidate`                                                                                     |
+| `requires`     | binaries that must be on `PATH`                                                                                                         |
+| `why`          | the reason for `scope`, including its measured resident token cost                                                                      |
+| `use_when`     | the condition under which a project should take it                                                                                      |
 
 ### How a row is used
 
-An `apm` row names the package, never its skills. Which skills that package deploys is read live from the root [`apm.yml`](../../../apm.yml), so the subset is declared once.
+An `apm` row names the package, never its skills. Which skills that package deploys is read live from the root [`apm.yml`](../../../apm.yml), so the subset is declared once. The exception is a subpath row: its repo root has no `apm.yml` or `SKILL.md`, so apm cannot resolve the bare ref and `--skill` has nothing to subset. The row's `id` holds a `<name>` placeholder and its `skills` list holds the names to substitute.
 
 `scripts/extensions/skills/install.sh` installs every `scope: "user"` row of the `vendor-cli` channel, and the root `apm.yml` carries the `apm` ones. A user-scope skill with no row and no manifest entry disappears on the next clean rebuild.
 
@@ -61,7 +62,7 @@ Check the binaries the chosen channel needs: `apm` for the `apm` channel, and ea
 
 ### 1. Resolve the request to a row
 
-Match on `id` first, then on `use_when`. Show the row's `why` and `use_when`, and for an `apm` row list the skills the package currently declares.
+Match on `id` first, then on `use_when`. Show the row's `why` and `use_when`, and for an `apm` row list the skills the package currently declares: the root `apm.yml` entry, or the row's `skills` list for a subpath row.
 
 For a skill not in the catalog, ask which channel it arrives through and continue. Offer to add a row in step 5.
 
@@ -101,6 +102,18 @@ apm writes the names into the `skills:` key of the package entry in `apm.yml` an
 yq -i '.targets = ((.targets // []) + ["codex"] | unique)' apm.yml
 ```
 
+#### APM, one skill per subpath ref
+
+For a row whose `id` carries `<name>`, run one install per entry of `skills`, with `<name>` replaced:
+
+```bash
+for name in cmux cmux-workspace cmux-settings; do
+  apm install "manaflow-ai/cmux/skills/$name" --target <harnesses> --no-policy
+done
+```
+
+Each run adds its own `git:` entry to `apm.yml` and `apm.lock.yaml`. `--skill` does not apply: the ref already names one skill. `--no-policy` skips org policy enforcement for the run, which the user's install used. The upstream repo can ship more skills than the row lists; `why` names the optional ones. Add one with the same command.
+
 #### Local
 
 Copy the directory from the config repo into the project:
@@ -123,11 +136,11 @@ Confirm the files arrived under `<skills-dir>` and ask commit or gitignore.
 
 Only after the user confirms the write. Then continue to step 5, which records the install.
 
-| Channel      | What to run                                                                                                        |
-| :----------- | :----------------------------------------------------------------------------------------------------------------- |
-| `apm`        | the same `apm install ... --skill ...` command from the config repo root, then `scripts/extensions/apm/install.sh` |
-| `local`      | create the skill under `dot_claude/skills/`, then `just chezmoi`                                                   |
-| `vendor-cli` | `command` plus `global_args`                                                                                       |
+| Channel      | What to run                                                                                                                                                       |
+| :----------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apm`        | the same `apm install ... --skill ...` command from the config repo root, then `scripts/extensions/apm/install.sh`. A subpath row adds one `git:` entry per skill |
+| `local`      | create the skill under `dot_claude/skills/`, then `just chezmoi`                                                                                                  |
+| `vendor-cli` | `command` plus `global_args`                                                                                                                                      |
 
 The root `apm.yml` carries its own `targets:` list, today `claude` only. A skill for another harness needs that harness added there, which fans every dep of the manifest out to it.
 

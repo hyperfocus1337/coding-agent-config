@@ -107,11 +107,20 @@
       "use_when": "repo that connects to Neon or Lakebase Postgres"
     },
     {
-      "id": "manaflow-ai/cmux",
+      "id": "manaflow-ai/cmux/skills/<name>",
       "channel": "apm",
+      "skills": [
+        "cmux",
+        "cmux-workspace",
+        "cmux-settings",
+        "cmux-customization",
+        "cmux-keyboard-shortcuts",
+        "cmux-browser",
+        "cmux-cloud-vm"
+      ],
       "scope": "local",
       "status": "local-candidate",
-      "why": "479 resident tokens across 7 skills for personal terminal tooling. Never commit it into a shared repo.",
+      "why": "the repo root has no apm.yml or SKILL.md, so the bare ref manaflow-ai/cmux fails and each skill is one install of its subpath ref. Upstream ships 22 skills under skills/; the 7 in skills are the end-user set, about 480 resident tokens of personal terminal tooling. Never commit it into a shared repo. Optional end-user extras: cmux-markdown, cmux-diagnostics, cmux-custom-sidebar, cmux-cua. The other 11 target cmux contributors.",
       "use_when": "driving cmux panes or its browser from an agent"
     }
   ]

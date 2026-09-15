@@ -89,26 +89,26 @@ A bundle is either flat (the whole repo is one skill) or a repo whose `skills/` 
 
 Bundles that cost resident tokens in every session but earn them in one kind of repo only. They are not in the user-scope [`apm.yml`](../../apm.yml); their rows in [`skills.json`](../../dot_claude/skills/install-skills/references/skills.json) carry `scope: project` or `scope: local`, and `install-skills` writes the `skills:` subset into the target repo's own `apm.yml`. All are of kind `skill`.
 
-| Skill                    | Bundle                                                                      | Description                                            |
-| ------------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `neon`                   | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills) | Overview of the Neon platform.                         |
-| `neon-postgres`          | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills) | Setup and best practices for Neon serverless Postgres. |
-| `neon-postgres-branches` | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills) | Create the right Neon branch type for dev and test.    |
-| 7 cmux skills            | [`manaflow-ai/cmux`](https://github.com/manaflow-ai/cmux/tree/main/skills)  | Drive the cmux terminal from an agent (table below).   |
+| Skill                    | Bundle                                                                                   | Description                                            |
+| ------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `neon`                   | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)              | Overview of the Neon platform.                         |
+| `neon-postgres`          | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)              | Setup and best practices for Neon serverless Postgres. |
+| `neon-postgres-branches` | [`neondatabase/agent-skills`](https://github.com/neondatabase/agent-skills)              | Create the right Neon branch type for dev and test.    |
+| 7 of 22 cmux skills      | [`manaflow-ai/cmux/skills/<name>`](https://github.com/manaflow-ai/cmux/tree/main/skills) | Drive the cmux terminal from an agent (table below).   |
 
 ### cmux skills (`manaflow-ai/cmux`)
 
-The cmux terminal ships its skills in the repo's [`skills/`](https://github.com/manaflow-ai/cmux/tree/main/skills) dir, documented at [cmux.com/docs/skills](https://cmux.com/docs/skills). Upstream installs them with `npx skills add manaflow-ai/cmux`; here APM pulls the same directories into a project. Only the seven user-facing skills below are taken; the rest of that dir (`cmux-backend`, `-billing`, `-release`, `-testing`, `-architecture`, and others) targets contributors to cmux itself. Each name links to its upstream `SKILL.md`.
+The cmux terminal ships 22 skills in the repo's [`skills/`](https://github.com/manaflow-ai/cmux/tree/main/skills) dir, documented at [cmux.com/docs/skills](https://cmux.com/docs/skills). Upstream installs them with `npx skills add manaflow-ai/cmux`. The repo root has no `apm.yml` or `SKILL.md`, so `apm install manaflow-ai/cmux` fails; APM takes each skill as its own subpath ref, `apm install manaflow-ai/cmux/skills/<name> --target claude --no-policy`. The seven end-user skills below are the catalog row's `skills` list. Four more end-user skills are optional: `cmux-markdown` (live-reloading markdown viewer panel), `cmux-diagnostics` (health checks on hooks, notifications, sockets, restore), `cmux-custom-sidebar` (build a custom sidebar), and `cmux-cua` (macOS Computer Use, only on explicit request). The other 11 (`cmux-backend`, `-billing`, `-release`, `-testing`, `-architecture`, `-ghostty`, and others) target contributors to cmux itself. Each name links to its upstream `SKILL.md`.
 
-| Skill                                                                                                    | Description                                                                    |
-| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| [`cmux`](https://github.com/manaflow-ai/cmux/blob/main/skills/cmux/SKILL.md)                             | Control cmux topology and routing: windows, workspaces, panes, focus, moves.   |
-| [`cmux-workspace`](https://github.com/manaflow-ai/cmux/blob/main/skills/cmux-workspace/SKILL.md)         | Scope work to the workspace and surface that invoked the agent.                |
-| [`cmux-settings`](https://github.com/manaflow-ai/cmux/blob/main/skills/cmux-settings/SKILL.md)           | View and edit `~/.config/cmux/cmux.json`, including shortcuts.                 |
-| [`cmux-customization`](https://github.com/manaflow-ai/cmux/blob/main/skills/cmux-customization/SKILL.md) | Customize actions, layouts, palette entries, and browser routing.              |
-| [`cmux-diagnostics`](https://github.com/manaflow-ai/cmux/blob/main/skills/cmux-diagnostics/SKILL.md)     | Run support-safe health checks on hooks, notifications, sockets, and restore.  |
-| [`cmux-browser`](https://github.com/manaflow-ai/cmux/blob/main/skills/cmux-browser/SKILL.md)             | Automate browser surfaces: open sites, interact, wait for state, extract data. |
-| [`cmux-markdown`](https://github.com/manaflow-ai/cmux/blob/main/skills/cmux-markdown/SKILL.md)           | Open a markdown file in a live-reloading viewer panel next to the terminal.    |
+| Skill                                                                                                              | Description                                                                    |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| [`cmux`](https://github.com/manaflow-ai/cmux/blob/main/skills/cmux/SKILL.md)                                       | Control cmux topology and routing: windows, workspaces, panes, focus, moves.   |
+| [`cmux-workspace`](https://github.com/manaflow-ai/cmux/blob/main/skills/cmux-workspace/SKILL.md)                   | Scope work to the workspace and surface that invoked the agent.                |
+| [`cmux-settings`](https://github.com/manaflow-ai/cmux/blob/main/skills/cmux-settings/SKILL.md)                     | View and edit `~/.config/cmux/cmux.json`.                                      |
+| [`cmux-customization`](https://github.com/manaflow-ai/cmux/blob/main/skills/cmux-customization/SKILL.md)           | Customize actions, layouts, palette entries, and browser routing.              |
+| [`cmux-keyboard-shortcuts`](https://github.com/manaflow-ai/cmux/blob/main/skills/cmux-keyboard-shortcuts/SKILL.md) | Customize, rebind, unbind, reset, or audit keyboard shortcuts.                 |
+| [`cmux-browser`](https://github.com/manaflow-ai/cmux/blob/main/skills/cmux-browser/SKILL.md)                       | Automate browser surfaces: open sites, interact, wait for state, extract data. |
+| [`cmux-cloud-vm`](https://github.com/manaflow-ai/cmux/blob/main/skills/cmux-cloud-vm/SKILL.md)                     | Route work to cmux Cloud machines with the `cmux vm` CLI.                      |
 
 ## By standalone CLI
 
