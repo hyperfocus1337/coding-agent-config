@@ -30,7 +30,7 @@ Two one-shot commands that ask what is unclear before the work starts. Each take
 
 ## docs/ — documentation style
 
-Two mode switches that stay on for the session, and four one-shot edits that act on the text pasted after the command.
+Two mode switches that stay on for the session, and five one-shot edits that act on the text pasted after the command.
 
 | Command               | Description                                                                                                 |
 | --------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -40,8 +40,9 @@ Two mode switches that stay on for the session, and four one-shot edits that act
 | `/docs:condense`      | Shorten prose to the fewest sentences that keep every fact a reader acts on.                                |
 | `/docs:keybindings`   | Document commands and keybindings as rows in the keybindings table of their section.                        |
 | `/docs:annotate`      | Add one or two sentences above a code block or setting that say what it does and why.                       |
+| `/docs:paragraphs`    | Split a wall of text into short paragraphs, one idea each, without changing the words.                      |
 
-The four edits come from one day of prompts against a literate Doom Emacs config: `delegate` and `condense` were asked together every time, `keybindings` covered six requests to add or reshape cheatsheet rows, and `annotate` three requests for a note above a block. `delegate` takes the notes file as its first argument, so the command carries no repo path.
+`delegate`, `condense`, `keybindings`, and `annotate` come from one day of prompts against a literate Doom Emacs config: `delegate` and `condense` were asked together every time, `keybindings` covered six requests to add or reshape cheatsheet rows, and `annotate` three requests for a note above a block. `delegate` takes the notes file as its first argument, so the command carries no repo path.
 
 ## git/ — version control helpers
 
