@@ -17,6 +17,17 @@ Source: [Claude Code tip (YouTube Shorts)](https://youtube.com/shorts/I12Mf8KBT1
 
 `/style:caveman` condenses the [caveman plugin](https://github.com/JuliusBrussee/caveman)'s `SessionStart` instructions into 9 directives, from about 22 across 4,180 characters. The plugin is not installed, so the mode is opt-in: the command carries `disable-model-invocation: true` and costs nothing until it is invoked, and it names the `rules/writing.md` rules it overrides while active. See `docs/research/instruction-load.md`.
 
+## ask/ — ask before acting
+
+Two one-shot commands that ask what is unclear before the work starts. Each takes the task as its argument, and falls back to my last request when called with no argument.
+
+| Command        | Description                                                                 |
+| -------------- | --------------------------------------------------------------------------- |
+| `/ask:clarify` | Ask every question whose answer changes the work, then do the task.         |
+| `/ask:options` | Turn every open decision into a multiple-choice question, then do the task. |
+
+`clarify` delivers a question through the `AskUserQuestion` tool when the answer is a pick from a small set, and as a numbered list when it is open. `options` always uses the tool, which takes four questions per call, so it asks in batches. Both leave out what they can answer from the code, the repository, or the conversation.
+
 ## docs/ — documentation style
 
 Two mode switches that stay on for the session, and four one-shot edits that act on the text pasted after the command.
