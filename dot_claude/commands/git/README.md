@@ -10,16 +10,19 @@ Shorthand command names and what they map to.
 
 Stage and commit working directory changes.
 
-| Command               | Description                                               |
-| --------------------- | --------------------------------------------------------- |
-| `commit:single`       | Create a git commit                                       |
-| `commit:task`         | Commit one task's changes from the current conversation   |
-| `commit:conversation` | Commit every conversation change as a sequence of commits |
-| `commit:multiple`     | Split changes into a logical sequence of commits          |
-| `commit:extend`       | Fold working directory changes into an existing commit    |
-| `commit:push`         | Commit and push                                           |
+| Command               | Description                                                |
+| --------------------- | ---------------------------------------------------------- |
+| `commit:any`          | Pick the commit command that fits the changes, then run it |
+| `commit:single`       | Create a git commit                                        |
+| `commit:task`         | Commit one task's changes from the current conversation    |
+| `commit:conversation` | Commit every conversation change as a sequence of commits  |
+| `commit:multiple`     | Split changes into a logical sequence of commits           |
+| `commit:extend`       | Fold working directory changes into an existing commit     |
+| `commit:push`         | Commit and push                                            |
 
 ### Choosing a commit command
+
+Run `commit:any` to have the choice made for you. It reads the tree and routes to one of the commands below, then that command runs its own process. Pick a command yourself when you already know which one you want, or when you want no routing step in front of it.
 
 The four commit commands differ on two axes: which changes they take, and how many commits they make.
 
@@ -34,6 +37,19 @@ The four commit commands differ on two axes: which changes they take, and how ma
 `commit:conversation` and `commit:task` print an include list and an exclude list before they stage, and leave pre-existing changes uncommitted.
 
 `commit:task` takes an optional scope argument; without one it takes the last request in the conversation. `commit:extend` folds changes into an existing commit instead of creating one.
+
+### How `commit:any` routes
+
+It decides the same two axes, then adds two checks the table does not cover.
+
+1. No changed paths: it says the tree is clean and stops.
+2. The changes only touch paths the most recent commit touched, they correct that commit, and the commit is unpushed: it routes to `commit:extend`.
+3. Scope: a changed path it cannot tie to this conversation means foreign changes are present, so it picks a conversation command, which excludes them. When the session started at the command it has no history to tie paths to, so it picks a working directory command.
+4. Count: one logical unit picks the one-commit command, two or more pick the many-commits command.
+
+Its argument is a free-text hint. It passes the hint on when it routes to `commit:task`, which is the only target that takes one.
+
+Routing works because every command in the table above stays model-invocable. Adding `disable-model-invocation: true` to one of them removes it as a target, and `commit:any` loses that route without reporting an error. `commit:any` itself carries the flag: it runs only when typed, so nothing commits by routing on its own.
 
 ## Push and pull requests
 

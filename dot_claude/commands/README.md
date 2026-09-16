@@ -53,12 +53,14 @@ Two mode switches that stay on for the session, and five one-shot edits that act
 
 ## git/ — version control helpers
 
-Fourteen commands covering the everyday flow, branch hygiene, and history rewriting.
+Sixteen commands covering the everyday flow, branch hygiene, and history rewriting.
 
 | Command                    | Description                                                                                                       |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `/git:commit:any`          | Pick the commit command that fits the current changes, then run it.                                               |
 | `/git:commit:single`       | Create a git commit (stage all, single commit).                                                                   |
-| `/git:commit:session`      | Commit one task's changes from the current conversation.                                                          |
+| `/git:commit:task`         | Commit one task's changes from the current conversation.                                                          |
+| `/git:commit:conversation` | Commit every change this conversation made, as a sequence of scoped commits.                                      |
 | `/git:commit:multiple`     | Split changes into a logical sequence of commits.                                                                 |
 | `/git:commit:extend`       | Fold working directory changes into an existing commit.                                                           |
 | `/git:commit:push`         | Commit and push.                                                                                                  |
@@ -71,6 +73,8 @@ Fourteen commands covering the everyday flow, branch hygiene, and history rewrit
 | `/git:rewrite:author`      | Rewrite the author of the whole branch or the last N commits.                                                     |
 | `/git:rewrite:date`        | Set an absolute commit and author date on the most recent commit.                                                 |
 | `/git:rewrite:shift-dates` | Shift the last N commit dates by a number of hours (GNU and BSD `date`).                                          |
+
+`commit:any` makes the choice between the five commit commands for you, on two axes: which changes to take, and how many commits to make. It routes, then the command it picked runs its own process. See [git/README.md](git/README.md) for the axes and the two extra checks it adds.
 
 The three history-rewriting commands (`rewrite:author`, `rewrite:date`, `rewrite:shift-dates`) show current commits and confirm before running. See [git/README.md](git/README.md) for their argument slots and the three ways to call them safely.
 
