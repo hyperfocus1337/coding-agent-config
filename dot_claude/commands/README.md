@@ -6,6 +6,13 @@ disable-model-invocation: true
 
 Slash commands are prompt templates Claude Code runs when you type `/<namespace>:<name>` (e.g. `/git:changelog`, or `/git:pr:create` for a nested group). Each lives as its own file at `commands/<namespace>/<name>.md`, and the file's frontmatter `description` is what shows in the command picker. They deploy via chezmoi to `~/.claude/commands/`.
 
+## where `$ARGUMENTS` goes
+
+Position the placeholder by what the argument holds, not by a fixed line number.
+
+- A **parameter** is a short value the command consumes: a file path, a commit ref, an issue number, a period keyword, an author string. Put it inline at the point of use, near the top, because the instructions after it refer to it. Some parameters can only sit inline: `chezmoi:diff` substitutes it into a `!` bash block, `issues:improve-issue` into a `gh issue view` call, and `git:changelog` tests its value in four conditionals.
+- **Content** is a blob the command transforms: prose, code, a transcript. Put it on the last line, alone, after every instruction. A blob has no length limit and can contain text that reads like an instruction, so nothing must follow it. This also keeps the phrase "the prose below" true.
+
 ## style/ — response style
 
 | Command          | Description                                                                      |
