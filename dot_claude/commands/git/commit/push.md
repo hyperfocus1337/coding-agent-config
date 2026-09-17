@@ -1,17 +1,15 @@
 ---
 allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git push:*), Bash(git commit:*)
-description: Git commit and push
+description: Commit and push
 ---
 
 ## Context
 
-- Current git status: !`git status`
-- Current git diff (staged and unstaged changes): !`git diff HEAD`
-- Current branch: !`git branch --show-current`
+- Status: !`git status -sb`
+- Diff: !`git diff HEAD`
 
 ## Your task
 
-Based on the above changes:
+Commit all changes above as one commit, then push the branch to origin. Use Conventional Commits with a concise subject.
 
-1. Create a single commit with an appropriate message
-2. Push the branch to origin
+Print one line: `<short sha> <subject> -> <remote branch>`. No other text.

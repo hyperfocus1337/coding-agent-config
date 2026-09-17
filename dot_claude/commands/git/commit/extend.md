@@ -1,25 +1,27 @@
 ---
 allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git commit:*), Bash(git rebase:*)
 argument-hint: [commit to extend]
-description: Fold working directory changes into an existing commit
+description: Fold changes into an existing commit
 ---
 
 ## Context
 
-- Current git status: !`git status`
-- Current git diff (staged and unstaged changes): !`git diff HEAD`
-- Recent commits: !`git log --oneline -10`
+- Status: !`git status -sb`
+- Diff: !`git diff HEAD`
+- Recent commits: !`git log --oneline -5`
 
 ## Your task
 
-Fold the changes above into an existing commit instead of creating a new one. Target commit: $ARGUMENTS (if empty, pick the most recent commit that touched the same files, otherwise `HEAD`).
+Fold the changes above into commit $ARGUMENTS. If that is empty, use the most recent commit that touched the same files, otherwise `HEAD`.
 
 1. Stage the changes.
-2. If the target is `HEAD`, run `git commit --amend --no-edit`.
-3. Otherwise run `git commit --fixup <sha>`, then `GIT_SEQUENCE_EDITOR=true git rebase --autosquash <sha>~1`.
+2. Target is `HEAD`: `git commit --amend --no-edit`.
+3. Otherwise: `git commit --fixup <sha>`, then `GIT_SEQUENCE_EDITOR=true git rebase --autosquash <sha>~1`.
 
 Rules:
 
-- Keep the original commit message unless the user asks to change it.
-- Do not rewrite a commit that is already pushed unless the user confirms the force-push.
-- If the changes do not belong to any existing commit, say so and create a normal commit instead.
+- Keep the original message unless the user asks to change it.
+- Do not rewrite a pushed commit unless the user confirms the force-push.
+- If the changes belong to no existing commit, say so and make a normal commit instead.
+
+Print one line: `<short sha> <subject>` and how you folded it (amend or fixup). No other text.

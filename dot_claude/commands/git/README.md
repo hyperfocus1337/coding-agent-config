@@ -10,15 +10,15 @@ Shorthand command names and what they map to.
 
 Stage and commit working directory changes.
 
-| Command               | Description                                                |
-| --------------------- | ---------------------------------------------------------- |
-| `commit:any`          | Pick the commit command that fits the changes, then run it |
-| `commit:single`       | Create a git commit                                        |
-| `commit:task`         | Commit one task's changes from the current conversation    |
-| `commit:conversation` | Commit every conversation change as a sequence of commits  |
-| `commit:multiple`     | Split changes into a logical sequence of commits           |
-| `commit:extend`       | Fold working directory changes into an existing commit     |
-| `commit:push`         | Commit and push                                            |
+| Command               | Description                                             |
+| --------------------- | ------------------------------------------------------- |
+| `commit:any`          | Route to the commit command that fits the changes       |
+| `commit:single`       | Create a git commit                                     |
+| `commit:task`         | Commit one task's changes from the current conversation |
+| `commit:conversation` | Commit this conversation's changes as scoped commits    |
+| `commit:multiple`     | Split changes into several commits                      |
+| `commit:extend`       | Fold changes into an existing commit                    |
+| `commit:push`         | Commit and push                                         |
 
 ### Choosing a commit command
 
@@ -34,7 +34,7 @@ The four commit commands differ on two axes: which changes they take, and how ma
 
 `commit:single` and `commit:multiple` take every change in the working directory, including changes that were there before the conversation started.
 
-`commit:conversation` and `commit:task` print an include list and an exclude list before they stage, and leave pre-existing changes uncommitted.
+`commit:conversation` and `commit:task` build an include list and an exclude list before they stage, and leave pre-existing changes uncommitted. Every commit command prints one line per commit and nothing else.
 
 `commit:task` takes an optional scope argument; without one it takes the last request in the conversation. `commit:extend` folds changes into an existing commit instead of creating one.
 

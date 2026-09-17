@@ -57,12 +57,12 @@ Sixteen commands covering the everyday flow, branch hygiene, and history rewriti
 
 | Command                    | Description                                                                                                       |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `/git:commit:any`          | Pick the commit command that fits the current changes, then run it.                                               |
-| `/git:commit:single`       | Create a git commit (stage all, single commit).                                                                   |
+| `/git:commit:any`          | Route to the commit command that fits the changes.                                                                |
+| `/git:commit:single`       | Create a single git commit (stage all, one commit).                                                               |
 | `/git:commit:task`         | Commit one task's changes from the current conversation.                                                          |
-| `/git:commit:conversation` | Commit every change this conversation made, as a sequence of scoped commits.                                      |
-| `/git:commit:multiple`     | Split changes into a logical sequence of commits.                                                                 |
-| `/git:commit:extend`       | Fold working directory changes into an existing commit.                                                           |
+| `/git:commit:conversation` | Commit this conversation's changes as scoped commits.                                                             |
+| `/git:commit:multiple`     | Split changes into several commits.                                                                               |
+| `/git:commit:extend`       | Fold changes into an existing commit.                                                                             |
 | `/git:commit:push`         | Commit and push.                                                                                                  |
 | `/git:push`                | Push the current branch to origin, then ask before pushing to any other remote.                                   |
 | `/git:pr:create`           | Commit, push, and open a PR.                                                                                      |

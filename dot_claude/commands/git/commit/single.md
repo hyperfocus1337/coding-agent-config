@@ -5,13 +5,12 @@ description: Create a single git commit
 
 ## Context
 
-- Current git status: !`git status`
-- Current git diff (staged and unstaged changes): !`git diff HEAD`
-- Current branch: !`git branch --show-current`
-- Recent commits: !`git log --oneline -10`
+- Status: !`git status -sb`
+- Diff: !`git diff HEAD`
+- Recent commits: !`git log --oneline -5`
 
 ## Your task
 
-Based on the above changes, create a single git commit. Use the Conventional Commits format with a concise subject line. Add a body only when the reason for the change is not obvious from the subject.
+Commit all changes above as one commit. Use Conventional Commits with a concise subject. Add a body only when the subject does not carry the reason.
 
-Stage and commit in one Bash call. Do not use any other tools or do anything else. Do not send any other text or messages besides this tool call.
+Stage and commit in one Bash call. Then print one line: `<short sha> <subject>`. No other tools, no other text.

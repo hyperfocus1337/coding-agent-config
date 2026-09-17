@@ -1,63 +1,33 @@
 ---
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), SlashCommand, Skill
 argument-hint: [scope or hint]
-description: Pick the commit command that fits the current changes, then run it
+description: Route to the commit command that fits the changes
 disable-model-invocation: true
 ---
 
 ## Context
 
-- Status, branch, and ahead count: !`git status -sb`
+- Status: !`git status -sb`
 - Change size per file: !`git diff HEAD --stat`
-- Recent commits: !`git log --oneline -10`
+- Recent commits: !`git log --oneline -5`
 
 ## Your task
 
-Pick the commit command that fits the changes above, then invoke it. Do not commit anything yourself.
+Pick the commit command that fits the changes above and invoke it. Commit nothing yourself. `$ARGUMENTS`, when set, is a hint about which changes the user means: use it in step 3 and pass it on in step 5.
 
-`$ARGUMENTS`, when it is not empty, is a hint about which changes the user means. Use it in step 3, and pass it on in step 6.
+1. **Nothing to commit.** No changed paths: say the tree is clean and stop.
+2. **Fixup.** Route to `/git:commit:extend` when all three hold: the changes touch only paths the most recent commit touched, they correct or complete that commit, and that commit is unpushed (`ahead` is 1 or more).
+3. **Scope.** Does the tree hold changes this conversation did not make? A path you cannot tie to something you did here is foreign.
+   - Foreign paths exist: the scope is the conversation, so use `/git:commit:task` or `/git:commit:conversation`. They leave foreign changes uncommitted.
+   - Every path is yours: the scope is the whole tree, so use `/git:commit:single` or `/git:commit:multiple`.
+   - No conversation history, because the session started at this command: you can tie no path to yourself, so use the working directory commands.
+4. **Count.** Count the distinct logical units in the diff. Group by concern, not by file.
 
-### 1. Stop when there is nothing to commit
+   | Scope        | One unit             | Two or more                |
+   | ------------ | -------------------- | -------------------------- |
+   | Whole tree   | `/git:commit:single` | `/git:commit:multiple`     |
+   | Conversation | `/git:commit:task`   | `/git:commit:conversation` |
 
-If the status shows no changed paths, say the working directory is clean and stop.
+5. **Run it.** Invoke the pick as a slash command so it runs its own context blocks and its own process. Do not copy its steps here. Pass `$ARGUMENTS` to `/git:commit:task`; the others take no argument.
 
-### 2. Check for a fixup first
-
-Route to `/git:commit:extend` when all three hold:
-
-- The changes touch only paths that the most recent commit already touched.
-- They correct or complete that commit: a fix made after it, formatter or lint hook output, or a review change.
-- That commit is unpushed. The `ahead` count in the status line is 1 or more.
-
-Otherwise continue to step 3.
-
-### 3. Decide the scope axis
-
-Answer one question: does the working directory hold changes this conversation did not make?
-
-Compare every changed path against what you changed in this conversation. A path is foreign when you cannot tie it to something you did here.
-
-- **Foreign paths exist.** The scope is the conversation. Use `/git:commit:task` or `/git:commit:conversation`. Both print an include list and an exclude list before they stage, and they leave the foreign changes uncommitted.
-- **Every changed path is yours.** The scope is the whole working directory. Use `/git:commit:single` or `/git:commit:multiple`. They reach the same result with a shorter process.
-- **You have no conversation history**, because the session started at this command. You cannot tie any path to yourself, so the conversation commands would find nothing to include. Use the working directory commands.
-
-### 4. Decide the count axis
-
-Count the distinct logical units in the diff. Group by concern, not by file: feature vs. fix vs. refactor vs. docs vs. test vs. chore. One file can hold two units, and one unit can span several files.
-
-### 5. Route
-
-| Scope                   | One unit             | Two or more units          |
-| ----------------------- | -------------------- | -------------------------- |
-| Whole working directory | `/git:commit:single` | `/git:commit:multiple`     |
-| This conversation       | `/git:commit:task`   | `/git:commit:conversation` |
-
-### 6. Run it
-
-State the pick in one line: the command you chose, and the signal that chose it.
-
-Then invoke that command as a slash command, so it runs its own context blocks against the current tree and follows its own process. Do not copy its steps into this one.
-
-When you route to `/git:commit:task`, pass `$ARGUMENTS` as its scope argument. The other commands take no argument.
-
-Do not stage, commit, or edit anything yourself. Send the one-line pick and nothing else.
+Print one line: the command you picked and the signal that picked it. Nothing else.
