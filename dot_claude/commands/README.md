@@ -70,6 +70,7 @@ Seventeen commands covering the everyday flow, branch hygiene, and history rewri
 | `/git:push`                | Push the current branch to origin, then ask before pushing to any other remote.                                   |
 | `/git:pr:create`           | Commit, push, and open a PR.                                                                                      |
 | `/git:changelog`           | Generate a changelog file for a time period (day, week, month, year, or N days).                                  |
+| `/git:revert`              | Undo the commits this conversation made, keeping their changes in the working directory.                          |
 | `/git:branches:cleanup`    | Delete local branches whose remote is gone, or that are merged into main or master, after confirming an overview. |
 | `/git:worktrees:cleanup`   | Remove worktrees whose branch is `[gone]` on the remote, then delete them.                                        |
 | `/git:worktrees:configure` | Set `worktree.useRelativePaths` so worktrees work from a container and the host.                                  |
@@ -78,6 +79,8 @@ Seventeen commands covering the everyday flow, branch hygiene, and history rewri
 | `/git:rewrite:shift-dates` | Shift the last N commit dates by a number of hours (GNU and BSD `date`).                                          |
 
 `commit:any` makes the choice between the five commit commands for you, on two axes: which changes to take, and how many commits to make. It routes, then the command it picked runs its own process. See [git/README.md](git/README.md) for the axes and the two extra checks it adds.
+
+`revert` undoes the commits this conversation made, selected by the same conversation boundary `commit:task` and `commit:conversation` use. It keeps the file changes in the working directory, so the undo loses nothing.
 
 The three history-rewriting commands (`rewrite:author`, `rewrite:date`, `rewrite:shift-dates`) show current commits and confirm before running. See [git/README.md](git/README.md) for their argument slots and the three ways to call them safely.
 

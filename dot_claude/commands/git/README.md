@@ -80,9 +80,12 @@ Summarize or rewrite existing commits.
 | Command               | Description                                          |
 | --------------------- | ---------------------------------------------------- |
 | `changelog`           | Generate a changelog for a time period               |
+| `revert`              | Undo the commits this conversation made              |
 | `rewrite:author`      | Rewrite author of the whole branch or last N commits |
 | `rewrite:date`        | Set an absolute date on the most recent commit       |
 | `rewrite:shift-dates` | Shift dates of the last N commits by hours           |
+
+`revert` is the counterpart to the commit commands: it selects the commits by the same conversation boundary they use, then undoes them. It takes a scope argument the same way `commit:task` does, and also accepts a plain commit count. It keeps the file changes in the working directory, unstaged, so the undo loses nothing. The method depends on the commits: unpushed commits that sit contiguous at `HEAD` are dropped with `git reset --mixed`, and pushed commits or a non-contiguous set get `git revert` commits instead. Ask for the changes to be discarded if you want that; the command never does it on its own.
 
 `rewrite:author`, `rewrite:date`, and `rewrite:shift-dates` rewrite git history, so they all show current commits, warn about force-pushing, and confirm before running. There is no named-argument (`--flag`) syntax in slash commands, only positional slots and free text, so each command is written to be called three ways:
 
