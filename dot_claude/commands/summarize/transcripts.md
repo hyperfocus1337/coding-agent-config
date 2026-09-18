@@ -40,4 +40,4 @@ Your task is to analyze the provided transcript and generate a structured summar
    - Avoid repetition.
    - Do not hallucinate missing details—only use information present in the transcript.
 
-Now summarize the attached transscript
+Now summarize the attached transcript

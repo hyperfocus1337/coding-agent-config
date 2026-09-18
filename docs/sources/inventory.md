@@ -45,11 +45,11 @@ Prompt templates under [`dot_claude/commands/`](../../dot_claude/commands/README
 
 #### Text
 
-| Command                                                                          | Description                                                        |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| [`/simple:explain`](../../dot_claude/commands/simple/explain.md)                 | Explain a code snippet step by step.                               |
-| [`/simple:proofread`](../../dot_claude/commands/simple/proofread.md)             | Proofread text for spelling, grammar, and readability.             |
-| [`/summarize:transscripts`](../../dot_claude/commands/summarize/transscripts.md) | Summarize a meeting or transcript into sections with action items. |
+| Command                                                                        | Description                                                        |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| [`/simple:explain`](../../dot_claude/commands/simple/explain.md)               | Explain a code snippet step by step.                               |
+| [`/simple:proofread`](../../dot_claude/commands/simple/proofread.md)           | Proofread text for spelling, grammar, and readability.             |
+| [`/summarize:transcripts`](../../dot_claude/commands/summarize/transcripts.md) | Summarize a meeting or transcript into sections with action items. |
 
 ### Skills
 

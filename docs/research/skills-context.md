@@ -80,7 +80,7 @@ Every command in `dot_claude/commands/` except the five `git:commit:*` variants 
 | `git:rewrite:author`, `git:rewrite:date`, `git:rewrite:shift-dates` |             291 | history surgery, never something to auto-select                                                                                       |
 | `git:branches:cleanup`, `git:changelog`, `git:worktrees:*` (2)      |             558 | deliberate maintenance runs, invoked by hand at a moment of the user's choosing                                                       |
 | `style:caveman`, `style:concise`, `docs:current-state`              |             206 | mode switches the user types explicitly                                                                                               |
-| `summarize:transscripts`                                            |             102 | a standalone prompt for the same task as the flagged `meeting-summarizer` skill                                                       |
+| `summarize:transcripts`                                             |             102 | a standalone prompt for the same task as the flagged `meeting-summarizer` skill                                                       |
 | `simple:explain`, `simple:proofread`                                |              88 | within default competence; the breadcrumb buys nothing the model cannot already do                                                    |
 | **Total**                                                           |       **2,585** |                                                                                                                                       |
 
@@ -140,7 +140,7 @@ Closing the ~3,200-character gap cannot come from the local side alone. The buil
 | `mattpocock-skills:research`        |   268 | plugin           |
 | `mattpocock-skills:domain-modeling` |   253 | plugin           |
 
-The four heaviest entries this repo can edit are `install-agent-resources` 862, `organize-with-comments` 610, `technical-writing` 528 and `markitdown` 412: 2,412 characters across four entries, and the cheapest win available. Trim their trigger lists to distinctive keywords. `meeting-summarizer` carries the flag, so its 721 characters stay out of the listing and it is reached by name. `/summarize:transscripts` covers the same task with its own prompt and is flagged too.
+The four heaviest entries this repo can edit are `install-agent-resources` 862, `organize-with-comments` 610, `technical-writing` 528 and `markitdown` 412: 2,412 characters across four entries, and the cheapest win available. Trim their trigger lists to distinctive keywords. `meeting-summarizer` carries the flag, so its 721 characters stay out of the listing and it is reached by name. `/summarize:transcripts` covers the same task with its own prompt and is flagged too.
 
 **Use `disable-model-invocation: true` deliberately.** It is the precise tool for this problem: an entry you always invoke by hand does not need a description in the auto-invocation listing at all, and the flag removes the breadcrumb while keeping the slash command working. It covers 24 command entries and the four `install-*` executor skills, which route through `install-agent-resources` and never need matching on their own. It is the only lever that reduces the listing without removing function.
 

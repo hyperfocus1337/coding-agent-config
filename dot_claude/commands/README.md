@@ -118,9 +118,9 @@ The `comments/` commands are thin wrappers over the `organize-with-comments` ski
 
 ## summarize/ — transcript summaries
 
-| Command                   | Description                                                                   |
-| ------------------------- | ----------------------------------------------------------------------------- |
-| `/summarize:transscripts` | Summarize a meeting or transcript into structured sections with action items. |
+| Command                  | Description                                                                   |
+| ------------------------ | ----------------------------------------------------------------------------- |
+| `/summarize:transcripts` | Summarize a meeting or transcript into structured sections with action items. |
 
 ## chezmoi/ — dotfile sync
 
