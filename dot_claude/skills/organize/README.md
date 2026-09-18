@@ -4,10 +4,10 @@ A Claude skill that reorganizes config and code files into clearly labeled, comm
 
 ## Install
 
-| Component                 | Path                               |
-|---------------------------|------------------------------------|
-| Skill                     | `~/.claude/skills/organize/`       |
-| Slash commands (optional) | `~/.claude/commands/organize/*.md` |
+| Component                 | Path                                        |
+| ------------------------- | ------------------------------------------- |
+| Skill                     | `~/.claude/skills/organize/`                |
+| Slash commands (optional) | `~/.claude/commands/organize/comments/*.md` |
 
 Replace `~/.claude/` with `<project>/.claude/` to scope to a project.
 
@@ -17,15 +17,15 @@ Replace `~/.claude/` with `<project>/.claude/` to scope to a project.
 - **Style-specific commands**: skip the prompt by naming the style up front.
 
 | Command                            | Header style                                      |
-|------------------------------------|---------------------------------------------------|
-| `/organize:plain-comments`         | Just the comment character and the name           |
-| `/organize:minimal-comments`       | Single-line divider                               |
-| `/organize:trailing-rule-comments` | Name flush-left with a rule trailing to width     |
-| `/organize:banner-comments`        | Three-line rule around the name                   |
-| `/organize:rule-banner-comments`   | Three-line header with box-drawing rules          |
-| `/organize:numbered-comments`      | Numbered banner plus a numbered table of contents |
-| `/organize:underlined-comments`    | Name with a rule on the line beneath it           |
-| `/organize:boxed-comments`         | Full box around the name                          |
+| ---------------------------------- | ------------------------------------------------- |
+| `/organize:comments:plain`         | Just the comment character and the name           |
+| `/organize:comments:minimal`       | Single-line divider                               |
+| `/organize:comments:trailing-rule` | Name flush-left with a rule trailing to width     |
+| `/organize:comments:banner`        | Three-line rule around the name                   |
+| `/organize:comments:rule-banner`   | Three-line header with box-drawing rules          |
+| `/organize:comments:numbered`      | Numbered banner plus a numbered table of contents |
+| `/organize:comments:underlined`    | Name with a rule on the line beneath it           |
+| `/organize:comments:boxed`         | Full box around the name                          |
 
 Each command takes a `<file-path-or-glob>` argument and is a thin wrapper that invokes the skill with the style pre-selected, so `SKILL.md` stays the single source of truth for the technique.
 

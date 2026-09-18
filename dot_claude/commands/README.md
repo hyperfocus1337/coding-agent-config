@@ -90,14 +90,14 @@ Eight variants of the same operation: reorganize a file into comment-delimited s
 
 | Command                            | Header style                                         |
 | ---------------------------------- | ---------------------------------------------------- |
-| `/organize:banner-comments`        | Three-line banner headers.                           |
-| `/organize:rule-banner-comments`   | Three-line banner headers with box-drawing rules.    |
-| `/organize:boxed-comments`         | Full-box headers.                                    |
-| `/organize:numbered-comments`      | Numbered sections with a matching table of contents. |
-| `/organize:underlined-comments`    | Name with a rule beneath it.                         |
-| `/organize:plain-comments`         | Just the comment character and the name.             |
-| `/organize:minimal-comments`       | Single-line divider headers.                         |
-| `/organize:trailing-rule-comments` | Name flush-left with a rule trailing to width.       |
+| `/organize:comments:banner`        | Three-line banner headers.                           |
+| `/organize:comments:rule-banner`   | Three-line banner headers with box-drawing rules.    |
+| `/organize:comments:boxed`         | Full-box headers.                                    |
+| `/organize:comments:numbered`      | Numbered sections with a matching table of contents. |
+| `/organize:comments:underlined`    | Name with a rule beneath it.                         |
+| `/organize:comments:plain`         | Just the comment character and the name.             |
+| `/organize:comments:minimal`       | Single-line divider headers.                         |
+| `/organize:comments:trailing-rule` | Name flush-left with a rule trailing to width.       |
 
 ## issues/ — GitHub issue workflow
 
