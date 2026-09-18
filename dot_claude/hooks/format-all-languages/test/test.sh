@@ -186,6 +186,23 @@ unaligned "$committed/D.md"
 out=$(jq -nc --arg cwd "$committed" '{cwd:$cwd,tool_input:{command:"echo x"}}' | hook)
 [[ -z "$out" ]] && echo "ok   quiet  no hint without a commit" || { echo "FAIL hint without a commit"; fail=1; }
 
+# The sweep reformats every dirty markdown file it reaches, not only the ones the
+# commit holds. Naming an uncommitted file would send Claude to amend a commit
+# that never held it.
+git -C "$committed" commit -q --allow-empty -m other
+unaligned "$committed/E.md"
+out=$(jq -nc --arg cwd "$committed" '{cwd:$cwd,tool_input:{command:"git commit -m other"}}' | hook)
+formatted "uncommitted file in a commit sweep" "$committed/E.md"
+[[ -z "$out" ]] && echo "ok   quiet  no hint for a file the commit does not hold" ||
+  { echo "FAIL hint named an uncommitted file"; fail=1; }
+
+# A commit whose markdown Prettier leaves untouched needs no amend. Reporting the
+# files that merely sit dirty would fire on every commit in a dirty tree.
+git -C "$committed" add -A && git -C "$committed" commit -qm formatted
+out=$(jq -nc --arg cwd "$committed" '{cwd:$cwd,tool_input:{command:"git commit -m formatted"}}' | hook)
+[[ -z "$out" ]] && echo "ok   quiet  no hint when Prettier changed nothing" ||
+  { echo "FAIL hint when Prettier changed nothing"; fail=1; }
+
 # --- Edit matcher: one named file, dispatched by extension ---
 # The edit path formats every supported extension, not just markdown, and skips
 # the rest. `.org` belongs to the format-org-tables hook, so this one must not

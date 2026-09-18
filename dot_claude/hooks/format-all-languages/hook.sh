@@ -108,6 +108,11 @@ command -v prettier >/dev/null 2>&1 || exit 0
 # otherwise skip an ignored file silently. README "Prettier's own ignore rules".
 prettier_cmd=(prettier --write --prose-wrap never --ignore-path .prettierignore)
 
+# The amend hint may name only files Prettier itself rewrote, so record them
+# before the pass. README "Write and commit in one command".
+before=''
+[[ -n "${committed:-}" && ${#md_targets[@]} -gt 0 ]] && before=$(cksum "${md_targets[@]}")
+
 # Markdown: wide width keeps tables column-aligned. Code: Prettier's default 80.
 # ponytail: tables wider than 1000 cols still compact; bump if that bites.
 [[ ${#md_targets[@]} -gt 0 ]] && "${prettier_cmd[@]}" --print-width 1000 "${md_targets[@]}" >/dev/null 2>&1
@@ -116,11 +121,14 @@ prettier_cmd=(prettier --write --prose-wrap never --ignore-path .prettierignore)
 # --- Report a commit that needs amending ---
 # Formatting a file the command already committed fixes the file, not the commit.
 # Say so, because only Claude can amend. README "Write and commit in one command".
-if [[ -n "${committed:-}" ]]; then
+if [[ -n "$before" ]]; then
   dirty=()
-  for f in "${md_targets[@]}"; do
-    git -C "${f%/*}" diff --quiet -- "$f" 2>/dev/null || dirty+=("$f")
-  done
+  # Rewritten by the pass above, and held by the commit the command just made.
+  # A file that was already dirty for its own reasons is not something amending
+  # fixes, and naming it sends Claude to rewrite an unrelated commit.
+  while IFS= read -r f; do
+    [[ -n $(git -C "${f%/*}" diff --name-only HEAD~1 HEAD -- "$f" 2>/dev/null) ]] && dirty+=("$f")
+  done < <(comm -13 <(sort <<<"$before") <(cksum "${md_targets[@]}" | sort) | cut -d' ' -f3-)
   if [[ ${#dirty[@]} -gt 0 ]]; then
     jq -nc --arg files "${dirty[*]}" '{
       hookSpecificOutput: {
