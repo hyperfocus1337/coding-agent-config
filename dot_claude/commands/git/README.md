@@ -18,6 +18,7 @@ Stage and commit working directory changes.
 | `commit:conversation` | Commit this conversation's changes as scoped commits    |
 | `commit:multiple`     | Split changes into several commits                      |
 | `commit:extend`       | Fold changes into an existing commit                    |
+| `commit:split`        | Split the previous commit into separate commits         |
 | `commit:push`         | Commit and push                                         |
 
 ### Choosing a commit command
@@ -36,7 +37,7 @@ The four commit commands differ on two axes: which changes they take, and how ma
 
 `commit:conversation` and `commit:task` build an include list and an exclude list before they stage, and leave pre-existing changes uncommitted. Every commit command prints one line per commit and nothing else.
 
-`commit:task` takes an optional scope argument; without one it takes the last request in the conversation. `commit:extend` folds changes into an existing commit instead of creating one.
+`commit:task` takes an optional scope argument; without one it takes the last request in the conversation. `commit:extend` folds changes into an existing commit instead of creating one. `commit:split` does the reverse: it undoes `HEAD` and recommits it as one commit per logical unit. It takes the reason for the split as its argument.
 
 ### How `commit:any` routes
 

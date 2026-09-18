@@ -54,7 +54,7 @@ Two mode switches that stay on for the session, and five one-shot edits that act
 
 ## git/ — version control helpers
 
-Sixteen commands covering the everyday flow, branch hygiene, and history rewriting.
+Seventeen commands covering the everyday flow, branch hygiene, and history rewriting.
 
 | Command                    | Description                                                                                                       |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -64,6 +64,7 @@ Sixteen commands covering the everyday flow, branch hygiene, and history rewriti
 | `/git:commit:conversation` | Commit this conversation's changes as scoped commits.                                                             |
 | `/git:commit:multiple`     | Split changes into several commits.                                                                               |
 | `/git:commit:extend`       | Fold changes into an existing commit.                                                                             |
+| `/git:commit:split`        | Split the previous commit into separate commits.                                                                  |
 | `/git:commit:push`         | Commit and push.                                                                                                  |
 | `/git:push`                | Push the current branch to origin, then ask before pushing to any other remote.                                   |
 | `/git:pr:create`           | Commit, push, and open a PR.                                                                                      |
