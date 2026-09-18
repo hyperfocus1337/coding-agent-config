@@ -60,7 +60,7 @@ Run `just` with no arguments to list every recipe.
 ├── dot_config/       # ~/.config entries (currently the ccstatusline settings)
 ├── scripts/          # Install/bootstrap scripts (extensions/, apm/)
 ├── templates/        # Copyable config: mcp/ (project MCP) and web/ (cloud bootstrap pack)
-└── docs/             # Integration guides (sdlc/, sources/, scope/, mcp/, research/)
+└── docs/             # Integration guides (sdlc/, sources/, scope/, mcp/, agents/, research/)
 ```
 
 See [`dot_claude/README.md`](dot_claude/README.md) and [`docs/README.md`](docs/README.md) for the detailed breakdowns.
