@@ -103,7 +103,7 @@ No ASCII art beyond the boxed style, no emoji or figlet-style headers unless the
 ## Comment characters by file type
 
 | Family                                                                          | Example files                                                       | Line comment                                              |
-|---------------------------------------------------------------------------------|---------------------------------------------------------------------|-----------------------------------------------------------|
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------- |
 | Shell, YAML, TOML, Python, Ruby, Nginx, Dockerfile, gitconfig, Makefile, tfvars | `.sh`, `.zshrc`, `.bashrc`, `config.fish`, `.yml`, `.toml`, `.conf` | `#`                                                       |
 | C-family, Terraform HCL, JS, Go, Rust                                           | `.tf`, `.js`, `.go`, `.rs`                                          | `//`                                                      |
 | INI, some Windows configs                                                       | `.ini`                                                              | `;`                                                       |
