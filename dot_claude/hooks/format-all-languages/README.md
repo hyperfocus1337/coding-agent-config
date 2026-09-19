@@ -1,10 +1,10 @@
 # format-all-languages
 
-A `PostToolUse` hook that formats files with [Prettier](https://prettier.io/) after Claude changes them, dispatching by extension. This is the single source of truth for the design notes the hook script only points at; `hook.sh` keeps its inline comments short and references the sections below by name.
+A `PostToolUse` and `PostToolUseFailure` hook that formats files with [Prettier](https://prettier.io/) after Claude changes them, dispatching by extension. This is the single source of truth for the design notes the hook script only points at; `hook.sh` keeps its inline comments short and references the sections below by name. For why the hook fires on the events it does, and which other events were considered and rejected, see [docs/implementation.md](docs/implementation.md).
 
 ## Triggers
 
-The hook is wired to two matchers in `settings.json`, and behaves differently depending on which fired. It tells them apart by whether the tool payload carries `tool_input.file_path`.
+The hook is wired to three entries in `settings.json`: `Write|Edit|MultiEdit` and `Bash` on `PostToolUse`, and `Bash` again on `PostToolUseFailure`. It behaves differently depending on which fired, and tells them apart by whether the tool payload carries `tool_input.file_path`. [Why PostToolUse, and not Stop](docs/implementation.md#why-posttooluse-and-not-stop) says why the turn-level events are wrong for a formatter.
 
 ### Write / Edit / MultiEdit (single file)
 
@@ -15,6 +15,8 @@ The payload names exactly one file in `tool_input.file_path`. The hook formats t
 A Bash tool call carries no `file_path`, but a shell command (`sed`, `perl`, `echo`, a redirect) may still have rewritten files, most importantly markdown, whose tables would then sit misaligned until the next Edit touched them. So on the Bash matcher the hook sweeps the git working tree instead: every markdown file changed versus `HEAD` (`git diff --name-only --diff-filter=d HEAD`) plus untracked markdown (`git ls-files --others --exclude-standard`), and re-formats each.
 
 The sweep is deliberately **markdown-only**. The edit path formats every supported extension because the edit is the point; the Bash path does not, because reformatting every changed `.ts`/`.css`/`.json` on _every_ shell command would fight edits still in progress. Markdown table drift is the specific problem worth a repo-wide pass; the rest is not.
+
+The cost of that choice is that a non-markdown file written by a shell command stays unformatted until an `Edit` touches it. [The gap the current wiring leaves](docs/implementation.md#the-gap-the-current-wiring-leaves) records when that matters and what would close it.
 
 #### Markdown the command names
 
