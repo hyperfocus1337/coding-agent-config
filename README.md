@@ -6,12 +6,13 @@ Single source of truth for coding-agent dependencies: skills, MCP servers, plugi
 
 Coding-agent configuration drifts across contexts. This repository centralises it so any change propagates everywhere by pulling the latest config and applying it:
 
-| Environment               | Notes                                                                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| GitHub Actions            | CI/CD workflows use this repo to bootstrap                                                                                            |
-| Claude on the web         | Shared config synced via this repository (bootstrap a repo with the `install-bootstrap` skill, see [`templates/web`](templates/web/)) |
-| Claude CLI (local macOS)  | Installed on the MacBook and configured from this repo                                                                                |
-| Claude CLI (devcontainer) | Cannot share config with the local macOS install due to path and OS compatibility differences                                         |
+| Environment                 | Notes                                                                                                                                                           |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GitHub Actions              | CI/CD workflows use this repo to bootstrap                                                                                                                      |
+| Claude on the web           | Shared config synced via this repository (bootstrap a repo with the `install-bootstrap` skill, see [`templates/web`](templates/web/))                           |
+| Claude CLI (local macOS)    | Installed on the MacBook and configured from this repo                                                                                                          |
+| Claude CLI (devcontainer)   | Cannot share config with the local macOS install due to path and OS compatibility differences                                                                   |
+| pi (macOS and devcontainer) | Reads the same `~/.claude` commands, skills, rules, and `CLAUDE.md` through two extensions and two settings files, see [`dot_pi/agent`](dot_pi/agent/README.md) |
 
 ## Two install paths
 
@@ -19,7 +20,7 @@ The repo installs dependencies two ways, each covering a different layer.
 
 ### chezmoi: files into `$HOME`
 
-The repo root is a [chezmoi](https://www.chezmoi.io/) source directory. Source names map to home paths: `dot_claude/` becomes `~/.claude`, `dot_config/` becomes `~/.config`. Applying it lays down portable config that is just files: commands, skills, rules, hooks, statusline, and global agent instructions.
+The repo root is a [chezmoi](https://www.chezmoi.io/) source directory. Source names map to home paths: `dot_claude/` becomes `~/.claude`, `dot_config/` becomes `~/.config`, `dot_pi/` becomes `~/.pi`. Applying it lays down portable config that is just files: commands, skills, rules, hooks, statusline, and global agent instructions.
 
 ```
 just chezmoi        # apply repo to $HOME
@@ -58,9 +59,10 @@ Run `just` with no arguments to list every recipe.
 ├── Justfile          # Install, sync, lint, and package recipes
 ├── dot_claude/       # Portable Claude Code config (commands, skills, hooks, rules, CLAUDE.md)
 ├── dot_config/       # ~/.config entries (currently the ccstatusline settings)
+├── dot_pi/           # pi settings, the AGENTS.md symlink to CLAUDE.md, and the extensions that load ~/.claude
 ├── scripts/          # Install/bootstrap scripts (extensions/, apm/)
 ├── templates/        # Copyable config: mcp/ (project MCP) and web/ (cloud bootstrap pack)
 └── docs/             # Integration guides (sdlc/, sources/, scope/, mcp/, agents/, research/)
 ```
 
-See [`dot_claude/README.md`](dot_claude/README.md) and [`docs/README.md`](docs/README.md) for the detailed breakdowns.
+See [`dot_claude/README.md`](dot_claude/README.md), [`dot_pi/agent/README.md`](dot_pi/agent/README.md), and [`docs/README.md`](docs/README.md) for the detailed breakdowns.

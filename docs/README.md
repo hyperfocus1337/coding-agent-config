@@ -30,6 +30,14 @@ The `scope/` folder answers "does this resource belong in every session, or in o
 | [`plugins.md`](scope/plugins.md)         | Project-scoped plugins (catalog: `install-plugins/references/plugins.json`) |
 | [`mcp-servers.md`](scope/mcp-servers.md) | Project-scoped MCP servers (catalog: `install-mcp/references/servers.json`) |
 
+## Other agents
+
+The `agents/` folder covers running this repository's Claude Code configuration in another coding agent. [`pi.md`](agents/pi.md) documents how pi loads `~/.claude/skills`, `commands`, `rules`, and `CLAUDE.md` through the extensions, settings, and symlink in [`dot_pi/agent/`](../dot_pi/agent/README.md), and what to do when pi rewrites its own settings file.
+
+| File                    | Description                                              |
+| ----------------------- | -------------------------------------------------------- |
+| [`pi.md`](agents/pi.md) | Claude Code skills, commands, rules, and CLAUDE.md in pi |
+
 ## MCP servers
 
 The `mcp/` folder covers configuring MCP (Model Context Protocol) servers on each platform. [`enabling/`](mcp/enabling/) covers turning servers on per platform (web, desktop, and Android), including repository configuration, authentication, and environment variable setup. [`disabling-servers.md`](mcp/disabling-servers.md) covers turning off servers not wanted by default. [`github-proxy.md`](mcp/github-proxy.md) documents the GitHub MCP tools that Claude Code on the web injects without any configuration. For which servers a project installs, see [`scope/mcp-servers.md`](scope/mcp-servers.md).
@@ -48,14 +56,15 @@ The `research/` folder holds investigations into the agent environment and sessi
 
 ### Other agents
 
-The `research/agents/` folder covers running this repo's Claude Code configuration on other coding agents, and what one shared `.agents/` directory can carry. [`agents-dir.md`](research/agents/agents-dir.md) measures whether one `.agents/` directory can serve both Claude Code and pi, and finds that Claude Code resolves a symlinked `skills`, `commands`, or `rules` directory at both scopes, and needs one pi extension to cover hooks and rules, which have no file-level equivalent. [`pi-code.md`](research/agents/pi-code.md) compares that extension with pi-code, a public package that reproduces the whole `.claude/` surface inside pi, and states which probes decide between them. [`hook-events.md`](research/agents/hook-events.md) lists every lifecycle event a hook can attach to on each side, 33 for Claude Code and 36 for pi, and finds that the two are flexible in opposite directions: pi reaches deeper per event, into the message list and the provider request, while Claude Code fires at more of the points a guardrail cares about and can answer in five ways, three of which need no code. [`codex-compat.md`](research/agents/codex-compat.md) measures what Claude Code 2.1.278 and Codex 0.154.0 already share: Codex runs Claude's hook payload and loads Claude-format plugins, Claude reads `AGENTS.md` once `instructionFiles` is set, and one `.agents/skills/` tree serves both through a symlink.
+The `research/agents/` folder holds the source reading and probes behind [`agents/pi.md`](agents/pi.md) and Codex support. One finding per page:
 
-| File                                                 | Description                                                          |
-| ---------------------------------------------------- | -------------------------------------------------------------------- |
-| [`agents-dir.md`](research/agents/agents-dir.md)     | One `.agents/` directory shared by Claude Code and pi (measured)     |
-| [`pi-code.md`](research/agents/pi-code.md)           | pi-code versus the in-repo adapter for hooks and rules (from source) |
-| [`hook-events.md`](research/agents/hook-events.md)   | Hook lifecycle events in Claude Code and pi, compared (from source)  |
-| [`codex-compat.md`](research/agents/codex-compat.md) | Sharing skills, instructions, and hooks with Codex (measured)        |
+- [`hook-events.md`](research/agents/hook-events.md) lists every lifecycle event a hook can attach to on each side, 33 for Claude Code and 36 for pi. The two are flexible in opposite directions: pi reaches deeper per event, into the message list and the provider request, while Claude Code fires at more of the points a guardrail cares about and can answer in five ways, three of which need no code.
+- [`codex-compat.md`](research/agents/codex-compat.md) measures what Claude Code 2.1.278 and Codex 0.154.0 already share: Codex runs Claude's hook payload and loads Claude-format plugins, Claude reads `AGENTS.md` once `instructionFiles` is set, and one `.agents/skills/` tree serves both through a symlink.
+
+| File                                                 | Description                                                         |
+| ---------------------------------------------------- | ------------------------------------------------------------------- |
+| [`hook-events.md`](research/agents/hook-events.md)   | Hook lifecycle events in Claude Code and pi, compared (from source) |
+| [`codex-compat.md`](research/agents/codex-compat.md) | Sharing skills, instructions, and hooks with Codex (measured)       |
 
 ### Context budget
 
