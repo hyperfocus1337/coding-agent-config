@@ -120,7 +120,7 @@ One real gap: names flatten. Discovery inside a `prompts/` directory is non-recu
 
 Measured by execution on 2026-09-17 against pi 0.85.1. A prototype adapter ran the repo's own `enforce-cli-tools/hook.sh`, unmodified, from the `hooks` block of a Claude `settings.json`, and blocked a `bash` call carrying `npm install`. A second extension injected both rule kinds. Fixture and adapter are in the session scratchpad, not in the repo.
 
-An extension is a TypeScript module in `~/.pi/agent/extensions/` or `.pi/extensions/`, loaded through jiti with no build step. Node built-ins are available, including `node:child_process`, so an extension can spawn a shell script and write JSON to its stdin. That is the whole mechanism the six hooks in this repo need.
+An extension is a TypeScript module in `~/.pi/agent/extensions/` or `.pi/extensions/`, loaded through jiti with no build step. Node built-ins are available, including `node:child_process`, so an extension can spawn a shell script and write JSON to its stdin. That is the whole mechanism five of the six hooks in this repo need; the sixth, `type-check-all-languages`, runs on `Stop`, which the adapter does not bridge yet.
 
 ### Hooks: the events line up
 

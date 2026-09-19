@@ -1,17 +1,19 @@
 # hooks
 
-Hooks are shell commands Claude Code runs on tool lifecycle events, for example after every `Write`/`Edit` or before a `Bash` call. Each hook is one directory here holding `hook.sh` and its own README. `settings.json` in the parent directory wires them to events and caps each one with a timeout.
+Hooks are shell commands Claude Code runs on session lifecycle events, for example after every `Write`/`Edit`, before a `Bash` call, or when Claude finishes responding. Each hook is one directory here holding `hook.sh` and its own README. `settings.json` in the parent directory wires them to events and caps each one with a timeout.
 
 | Hook                                                             | Event                            | Summary                                                                                                                         |
 | ---------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | [`format-all-languages`](format-all-languages/README.md)         | `PostToolUse` (Write/Edit, Bash) | Formats edited files with Prettier by extension; on Bash, re-aligns markdown tables in changed files. Needs `prettier`.         |
 | [`format-org-tables`](format-org-tables/README.md)               | `PostToolUse` (Write/Edit, Bash) | Re-aligns Org tables in edited `.org` files via `emacs --batch`; on Bash, in the `.org` files the command names. Needs `emacs`. |
 | [`lint-all-languages`](lint-all-languages/README.md)             | `PostToolUse` (Write/Edit)       | Lints the edited file by extension: ruff, oxlint, shellcheck, yamllint or ansible-lint, `terraform fmt`.                        |
-| [`type-check-all-languages`](type-check-all-languages/README.md) | `PostToolUse` (Write/Edit)       | Type-checks the whole project by extension: pyrefly, tsc.                                                                       |
+| [`type-check-all-languages`](type-check-all-languages/README.md) | `Stop`                           | Type-checks the whole project once per turn, by the extensions git reports as changed: pyrefly, tsc.                            |
 | [`block-secret-commits`](block-secret-commits/README.md)         | `PreToolUse` (Bash)              | Blocks a `git commit` that would add a secret: a betterleaks scan of the staged diff, plus a rescan of new binary files.        |
 | [`enforce-cli-tools`](enforce-cli-tools/README.md)               | `PreToolUse` (Bash)              | Blocks a banned CLI tool in command position and names the replacement. Table-driven.                                           |
 
 ## Shared conventions
+
+**One file, or the whole project.** A hook that acts on the edited file runs on `PostToolUse` and reads `.tool_input.file_path`. A hook that reads the whole project runs on `Stop`, once per turn, because `PostToolUse` would rerun it after every edit and reprint the same unrelated errors each time. `Stop` carries no file path, so such a hook asks git what changed and reads `.stop_hook_active` to avoid blocking every stop.
 
 **Fail open or fail closed, on purpose.** The advisory formatting hooks swallow failures and exit 0, so a hiccup never blocks a tool call. The lint, type-check, and secret-commit hooks exit 2 to surface the error or the block back to Claude.
 

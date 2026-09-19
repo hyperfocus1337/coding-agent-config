@@ -64,11 +64,17 @@
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/lint-all-languages/hook.sh\"",
             "timeout": 10
-          },
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
           {
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/type-check-all-languages/hook.sh\"",
-            "timeout": 30
+            "timeout": 60
           }
         ]
       }
