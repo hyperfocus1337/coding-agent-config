@@ -25,7 +25,7 @@ Together with the `skills` setting and the `AGENTS.md` symlink documented in [`.
 just check-extensions
 ```
 
-runs [`scripts/extensions/pi/check.sh`](../../../scripts/extensions/pi/check.sh): `tsc --strict` over every `*/index.ts` against the types of the installed pi package, then every `*/test/check.ts` with `node`. Run it after an edit here and after `just chezmoi`. `/reload` in a running pi picks up an edit; `pi -p "hi" </dev/null` starts a headless session for a probe extension, and stdin must be closed or `session_start` never fires.
+runs [`scripts/extensions/pi/check.sh`](../../../scripts/extensions/pi/check.sh): `tsc --strict` over every `*/index.ts` against the types of the installed pi package and of `pi-tui` beside it, then every `*/test/check.ts` with `node`, with `PI_PACKAGE` set to the installed package. The script finds that package from the resolved `pi` binary and from the global install roots; `PI_PACKAGE=<directory that holds dist/index.d.ts>` skips the search. Run it after an edit here and after `just chezmoi`. `/reload` in a running pi picks up an edit; `pi -p "hi" </dev/null` starts a headless session for a probe extension, and stdin must be closed or `session_start` never fires.
 
 ## Adding an extension
 
