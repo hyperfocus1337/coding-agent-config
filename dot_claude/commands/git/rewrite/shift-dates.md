@@ -2,6 +2,7 @@
 allowed-tools: Bash(git rebase:*), Bash(git log:*), Bash(git branch:*), Bash(git status:*)
 description: Shift the commit dates of the last N commits by a number of hours (macOS/BSD date).
 argument-hint: signed hours (e.g. +2 or -3), then commit count
+arguments: [hours, count]
 disable-model-invocation: true
 ---
 
@@ -15,14 +16,14 @@ disable-model-invocation: true
 
 Shift the committer and author dates of the last N commits by a fixed number of hours. Works on both GNU `date` (Debian/Linux) and BSD `date` (macOS) by detecting which is present.
 
-`$1` and `$2` below are slash-command arguments, substituted before the command runs. They are not shell positional variables, so do not wrap them in extra quoting.
+`$hours` and `$count` below are slash-command arguments, declared in the `arguments:` frontmatter and substituted before the command runs. They are not shell variables, unlike `$CURRENT_DATE` and `$NEW_DATE` in the script.
 
 Arguments: `$ARGUMENTS`
 
-- `$1` (required): signed hours to shift. Must include the sign: `+1`, `-3`.
-- `$2` (required): how many commits back from HEAD to rewrite, e.g. `5`.
+- `$hours` (required): signed hours to shift. Must include the sign: `+1`, `-3`.
+- `$count` (required): how many commits back from HEAD to rewrite, e.g. `5`.
 
-If either is missing, ask before proceeding.
+If either is missing, ask before proceeding. An argument you do not pass expands to nothing, so `HEAD~\$count` becomes `HEAD~`, which git reads as `HEAD~1`, and an empty `\$hours` makes `date` fail. Never run the command with either value empty.
 
 ## Safety
 
@@ -41,13 +42,13 @@ This rewrites history and changes every affected commit hash. Before running:
 GIT_SEQUENCE_EDITOR=true git rebase -i --exec '
   CURRENT_DATE="$(git show -s --format=%ci HEAD)"
   if date --version >/dev/null 2>&1; then
-    NEW_DATE="$(date -d "$CURRENT_DATE $1 hours" +"%Y-%m-%dT%H:%M:%S%z")"
+    NEW_DATE="$(date -d "$CURRENT_DATE $hours hours" +"%Y-%m-%dT%H:%M:%S%z")"
   else
-    NEW_DATE="$(date -j -v$1H -f "%Y-%m-%d %H:%M:%S %z" "$CURRENT_DATE" +"%Y-%m-%dT%H:%M:%S%z")"
+    NEW_DATE="$(date -j -v"$hours"H -f "%Y-%m-%d %H:%M:%S %z" "$CURRENT_DATE" +"%Y-%m-%dT%H:%M:%S%z")"
   fi
   GIT_COMMITTER_DATE="$NEW_DATE" GIT_AUTHOR_DATE="$NEW_DATE" \
     git commit --amend --no-edit --date "$NEW_DATE"
-' HEAD~$2
+' HEAD~$count
 ```
 
-`$1` carries its own sign: GNU reads `$CURRENT_DATE +2 hours` / `$CURRENT_DATE -3 hours`, BSD reads `-v+2H` / `-v-3H`. After the rebase, show `git log --pretty=format:'%h %ci %s' -10` to verify the shifted dates.
+`$hours` carries its own sign: GNU reads `$CURRENT_DATE +2 hours` / `$CURRENT_DATE -3 hours`, BSD reads `-v+2H` / `-v-3H`. After the rebase, show `git log --pretty=format:'%h %ci %s' -10` to verify the shifted dates.
