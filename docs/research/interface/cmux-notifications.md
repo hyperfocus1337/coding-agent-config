@@ -37,5 +37,5 @@ Empty output means the wrapper never ran.
 
 ## Related
 
-- cmux source vendored via APM at [apm_modules/manaflow-ai/cmux](../../apm_modules/manaflow-ai/cmux): `docs/agent-hooks.md`, `docs/notifications.md`, `Resources/bin/cmux-claude-wrapper`.
+- cmux source vendored via APM at [apm_modules/manaflow-ai/cmux](../../../apm_modules/manaflow-ai/cmux): `docs/agent-hooks.md`, `docs/notifications.md`, `Resources/bin/cmux-claude-wrapper`.
 - Bundled skills for cmux itself: `cmux-diagnostics` (health check when hooks or notifications misbehave), `cmux-settings` (`cmux.json` keys), `cmux-customization`.

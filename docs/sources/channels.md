@@ -28,7 +28,7 @@ Installed by vendor CLIs because they ship with a companion binary. The set is d
 
 ## Plugin skills
 
-Most skills arrive bundled inside Claude plugins. The full list, with the marketplace and upstream URL for each, lives in [`plugins.json`](../../dot_claude/skills/install-plugins/references/plugins.json), which [`scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh) reads. That catalog is the source of truth; it is not mirrored here because the set changes often. Which plugins were considered for an APM move and why they stayed on the plugin CLI is covered in [`docs/research/plugin-migration.md`](../research/plugin-migration.md). The largest bundle is `mattpocock-skills` (25 engineering and productivity skills); its per-skill quick reference and the intended feature-build chain live in [`inventory.md`](inventory.md#matt-pocock-skills-mattpocock-skills).
+Most skills arrive bundled inside Claude plugins. The full list, with the marketplace and upstream URL for each, lives in [`plugins.json`](../../dot_claude/skills/install-plugins/references/plugins.json), which [`scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh) reads. That catalog is the source of truth; it is not mirrored here because the set changes often. Which plugins were considered for an APM move and why they stayed on the plugin CLI is covered in [`docs/research/install/plugin-migration.md`](../research/install/plugin-migration.md). The largest bundle is `mattpocock-skills` (25 engineering and productivity skills); its per-skill quick reference and the intended feature-build chain live in [`inventory.md`](inventory.md#matt-pocock-skills-mattpocock-skills).
 
 ## APM bundle skills
 

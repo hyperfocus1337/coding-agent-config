@@ -121,7 +121,7 @@ Installed by a vendor CLI that ships with a companion binary. Source of truth fo
 
 ## By Claude plugins (`claude plugin install`)
 
-Bundled inside plugins from various marketplaces. Source of truth for the set: [`../../dot_claude/skills/install-plugins/references/plugins.json`](../../dot_claude/skills/install-plugins/references/plugins.json), which [`../../scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh) executes. The reasoning on which plugins could move to APM is in [`../research/plugin-migration.md`](../research/plugin-migration.md).
+Bundled inside plugins from various marketplaces. Source of truth for the set: [`../../dot_claude/skills/install-plugins/references/plugins.json`](../../dot_claude/skills/install-plugins/references/plugins.json), which [`../../scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh) executes. The reasoning on which plugins could move to APM is in [`../research/install/plugin-migration.md`](../research/install/plugin-migration.md).
 
 | Plugin                                                                                               | Marketplace          | Provides                                             | Kind     |
 | ---------------------------------------------------------------------------------------------------- | -------------------- | ---------------------------------------------------- | -------- |

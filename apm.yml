@@ -12,7 +12,7 @@ dependencies:
   # run (--update in install.sh).
   apm:
     # terraform-skill, moved off the `claude plugin` CLI. Which other plugins
-    # were considered and why they stayed: docs/research/plugin-migration.md.
+    # were considered and why they stayed: docs/research/install/plugin-migration.md.
     - git: antonbabenko/terraform-skill
     # Cursor's team kit, nested plugin layout. Subpath ref (owner/repo/plugin)
     # resolves .cursor-plugin/plugin.json, so apm finds the nested skills/ dir.

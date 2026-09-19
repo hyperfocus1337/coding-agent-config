@@ -42,27 +42,46 @@ The `mcp/` folder covers configuring MCP (Model Context Protocol) servers on eac
 | [`enabling/desktop.md`](mcp/enabling/desktop.md)   | Enable MCP servers on desktop                        |
 | [`enabling/web.md`](mcp/enabling/web.md)           | Enable MCP servers on the web (claude.ai/code)       |
 
-## Other agents
-
-The `agents/` folder covers running this repo's Claude Code configuration on other coding agents, and what one shared `.agents/` directory can carry. [`agents-dir.md`](agents/agents-dir.md) measures whether one `.agents/` directory can serve both Claude Code and pi, and finds that Claude Code resolves a symlinked `skills`, `commands`, or `rules` directory at both scopes, still ignores `AGENTS.md`, and needs one pi extension to cover hooks and rules, which have no file-level equivalent. [`pi-code.md`](agents/pi-code.md) compares that extension with pi-code, a public package that reproduces the whole `.claude/` surface inside pi, and states which probes decide between them. [`codex-compat.md`](agents/codex-compat.md) covers where Claude Code and Codex each look for skills and instructions, and what works today to share content across both.
-
-| File                                        | Description                                                          |
-| ------------------------------------------- | -------------------------------------------------------------------- |
-| [`agents-dir.md`](agents/agents-dir.md)     | One `.agents/` directory shared by Claude Code and pi (measured)     |
-| [`pi-code.md`](agents/pi-code.md)           | pi-code versus the in-repo adapter for hooks and rules (from source) |
-| [`codex-compat.md`](agents/codex-compat.md) | Sharing skills and instructions between Claude Code and Codex        |
-
 ## Research
 
-The `research/` folder holds investigations into the agent environment and session. These record what was true when measured and can go stale. [`cmux-notifications.md`](research/cmux-notifications.md) explains why Claude Code needs no `cmux notify` hook of its own: the cmux Claude wrapper injects the whole hook set when `claude` starts inside a cmux terminal, so following the published hook guide only produces duplicate notifications, and no hook fires at all in sessions started outside cmux. [`instruction-load.md`](research/instruction-load.md) counts the separate directives one session asks the model to obey and finds where they contradict each other. [`plugin-migration.md`](research/plugin-migration.md) audits which Claude plugins APM could carry instead. [`prompt-autocompletion.md`](research/prompt-autocompletion.md) records how the `@` file picker and the `/` command picker list, rank, and accept entries, why Tab on a folder inserts `@folder/ ` with a trailing space, and which query shapes and settings give shell-style directory descent instead. [`prompt-cache-ttl.md`](research/prompt-cache-ttl.md) records what `ENABLE_PROMPT_CACHING_1H` costs: the 1-hour TTL doubles the price of a cache write, so it pays off across long gaps between turns and loses on rapid ones. [`skills-context.md`](research/skills-context.md) estimates the session-start context cost of every installed skill's listing breadcrumb, and explains why the real constraint is description truncation rather than token count.
+The `research/` folder holds investigations into the agent environment and session. These record what was true when measured and can go stale. One subfolder per subject: `agents/` for other coding agents, `context/` for what a session loads and what that costs, `interface/` for the prompt and the terminal around it, and `install/` for how a tool reaches the agent.
 
-| File                                                            | Description                                                                 |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| [`cmux-notifications.md`](research/cmux-notifications.md)       | Why the Claude Code notification hook is automatic (do not hand-install it) |
-| [`instruction-load.md`](research/instruction-load.md)           | How many directives a session stacks, and where they contradict             |
-| [`plugin-migration.md`](research/plugin-migration.md)           | Which Claude plugins could move to APM (audit)                              |
-| [`prompt-autocompletion.md`](research/prompt-autocompletion.md) | How the `@` and `/` pickers list, rank, and accept entries                  |
-| [`prompt-cache-ttl.md`](research/prompt-cache-ttl.md)           | What the 1-hour prompt cache TTL costs, and when it loses                   |
-| [`skills-context.md`](research/skills-context.md)               | Context budget consumed by installed skill breadcrumbs                      |
+### Other agents
+
+The `research/agents/` folder covers running this repo's Claude Code configuration on other coding agents, and what one shared `.agents/` directory can carry. [`agents-dir.md`](research/agents/agents-dir.md) measures whether one `.agents/` directory can serve both Claude Code and pi, and finds that Claude Code resolves a symlinked `skills`, `commands`, or `rules` directory at both scopes, and needs one pi extension to cover hooks and rules, which have no file-level equivalent. [`pi-code.md`](research/agents/pi-code.md) compares that extension with pi-code, a public package that reproduces the whole `.claude/` surface inside pi, and states which probes decide between them. [`hook-events.md`](research/agents/hook-events.md) lists every lifecycle event a hook can attach to on each side, 33 for Claude Code and 36 for pi, and finds that the two are flexible in opposite directions: pi reaches deeper per event, into the message list and the provider request, while Claude Code fires at more of the points a guardrail cares about and can answer in five ways, three of which need no code. [`codex-compat.md`](research/agents/codex-compat.md) measures what Claude Code 2.1.278 and Codex 0.154.0 already share: Codex runs Claude's hook payload and loads Claude-format plugins, Claude reads `AGENTS.md` once `instructionFiles` is set, and one `.agents/skills/` tree serves both through a symlink.
+
+| File                                                 | Description                                                          |
+| ---------------------------------------------------- | -------------------------------------------------------------------- |
+| [`agents-dir.md`](research/agents/agents-dir.md)     | One `.agents/` directory shared by Claude Code and pi (measured)     |
+| [`pi-code.md`](research/agents/pi-code.md)           | pi-code versus the in-repo adapter for hooks and rules (from source) |
+| [`hook-events.md`](research/agents/hook-events.md)   | Hook lifecycle events in Claude Code and pi, compared (from source)  |
+| [`codex-compat.md`](research/agents/codex-compat.md) | Sharing skills, instructions, and hooks with Codex (measured)        |
+
+### Context budget
+
+The `research/context/` folder answers what a session carries before it does any work, and what that costs. [`instruction-load.md`](research/context/instruction-load.md) counts the separate directives one session asks the model to obey and finds where they contradict each other. [`skills-context.md`](research/context/skills-context.md) estimates the session-start context cost of every installed skill's listing breadcrumb, and explains why the real constraint is description truncation rather than token count. [`prompt-cache-ttl.md`](research/context/prompt-cache-ttl.md) records what `ENABLE_PROMPT_CACHING_1H` costs: the 1-hour TTL doubles the price of a cache write, so it pays off across long gaps between turns and loses on rapid ones.
+
+| File                                                          | Description                                                     |
+| ------------------------------------------------------------- | --------------------------------------------------------------- |
+| [`instruction-load.md`](research/context/instruction-load.md) | How many directives a session stacks, and where they contradict |
+| [`skills-context.md`](research/context/skills-context.md)     | Context budget consumed by installed skill breadcrumbs          |
+| [`prompt-cache-ttl.md`](research/context/prompt-cache-ttl.md) | What the 1-hour prompt cache TTL costs, and when it loses       |
+
+### Prompt interface
+
+The `research/interface/` folder covers the prompt line and the terminal around it. [`prompt-autocompletion.md`](research/interface/prompt-autocompletion.md) records how the `@` file picker and the `/` command picker list, rank, and accept entries, why Tab on a folder inserts `@folder/ ` with a trailing space, and which query shapes and settings give shell-style directory descent instead. [`cmux-notifications.md`](research/interface/cmux-notifications.md) explains why Claude Code needs no `cmux notify` hook of its own: the cmux Claude wrapper injects the whole hook set when `claude` starts inside a cmux terminal, so following the published hook guide only produces duplicate notifications, and no hook fires at all in sessions started outside cmux.
+
+| File                                                                      | Description                                                                 |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [`prompt-autocompletion.md`](research/interface/prompt-autocompletion.md) | How the `@` and `/` pickers list, rank, and accept entries                  |
+| [`cmux-notifications.md`](research/interface/cmux-notifications.md)       | Why the Claude Code notification hook is automatic (do not hand-install it) |
+
+### Install channels
+
+The `research/install/` folder holds audits of how a tool reaches the agent. [`plugin-migration.md`](research/install/plugin-migration.md) audits which Claude plugins APM could carry instead, and names the two cases where APM tooling limits forced a plugin to stay on the plugin CLI. For the catalog these audits work against, see `sources/` and `scope/` above.
+
+| File                                                          | Description                                    |
+| ------------------------------------------------------------- | ---------------------------------------------- |
+| [`plugin-migration.md`](research/install/plugin-migration.md) | Which Claude plugins could move to APM (audit) |
 
 To bootstrap a fresh repository so a Claude Code cloud session (web, Android, CI) gets the same environment as a local machine, invoke the `install-bootstrap` skill. It writes a `SessionStart` hook that fetches the bootstrap script in [`templates/web`](../templates/web/).

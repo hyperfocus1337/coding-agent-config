@@ -2,7 +2,7 @@
 
 Every skill, command and agent this machine installs contributes one line to a listing that Claude Code injects at session start: the entry's name plus its frontmatter `description`. This "breadcrumb" is the only part loaded up front. The body of `SKILL.md`, its `references/`, `scripts/`, and any bundled files cost zero tokens until the entry is actually invoked, and scripts Claude runs never enter context at all, only their output does.
 
-This doc measures what that standing cost is. Numbers come from [`scripts/context-budget/measure-context.py`](../../scripts/context-budget/measure-context.py), which walks `~/.claude` plus every installed plugin, reconstructs the listings, and counts characters with tokens estimated at length over four. Snapshot taken 2026-08-22.
+This doc measures what that standing cost is. Numbers come from [`scripts/context-budget/measure-context.py`](../../../scripts/context-budget/measure-context.py), which walks `~/.claude` plus every installed plugin, reconstructs the listings, and counts characters with tokens estimated at length over four. Snapshot taken 2026-08-22.
 
 ## What reaches the model, and what does not
 
@@ -92,7 +92,7 @@ Two costs the script cannot see, measured separately:
 
 Claude Code's own built-in skills (`dataviz`, `claude-api`, `artifact-*`, `update-config`, `code-review`, `simplify`, `loop`, `schedule`, `run`, `init`, `security-review`, `keybindings-help`, `fewer-permission-prompts`) add 15 entries and roughly **6,000 characters**. Two of them dominate: `dataviz` at 1,182 characters and `claude-api` at 1,086. These are not configurable from this repo, but they are the single largest block competing for the same listing budget.
 
-`SessionStart` hooks inject plain text straight into the conversation, which is not a listing, is never truncated, and re-fires on every startup, resume, clear and compact. A hook that injects instruction text is therefore the most expensive shape a directive set can take, and no plugin on this machine has one: the enabled four contribute breadcrumbs only. Anything that would arrive that way is authored here instead, in [`rules/code.md`](../../dot_claude/rules/code.md) at 1,325 characters loaded once per session, and in [`commands/style/caveman.md`](../../dot_claude/commands/style/caveman.md) at 1,292 characters loaded only when `/style:caveman` runs.
+`SessionStart` hooks inject plain text straight into the conversation, which is not a listing, is never truncated, and re-fires on every startup, resume, clear and compact. A hook that injects instruction text is therefore the most expensive shape a directive set can take, and no plugin on this machine has one: the enabled four contribute breadcrumbs only. Anything that would arrive that way is authored here instead, in [`rules/code.md`](../../../dot_claude/rules/code.md) at 1,325 characters loaded once per session, and in [`commands/style/caveman.md`](../../../dot_claude/commands/style/caveman.md) at 1,292 characters loaded only when `/style:caveman` runs.
 
 Before installing a plugin that ships a `SessionStart` hook, measure what it injects and check whether it can be silenced. Feed the hook a payload and count the bytes:
 

@@ -48,7 +48,7 @@ Three keys hold lists that this file does not repeat, because the list changes a
 
 The setting wins on interactive work, where gaps between turns are often longer than 5 minutes and would otherwise expire the entry. It loses on short bursts of back-to-back turns, and in any session that keeps invalidating the front of the prompt, because each invalidation is a fresh write at the higher price.
 
-For the arithmetic, what counts as a write, and what invalidates the prompt prefix, see [`docs/research/prompt-cache-ttl.md`](../docs/research/prompt-cache-ttl.md).
+For the arithmetic, what counts as a write, and what invalidates the prompt prefix, see [`docs/research/context/prompt-cache-ttl.md`](../docs/research/context/prompt-cache-ttl.md).
 
 ## Status line
 
