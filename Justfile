@@ -200,9 +200,19 @@ plugin-catalog:
 plugin-candidates:
     @jq -r '.plugins[] | select(.status | test("candidate")) | "\(.id)|\(.use_when)"' "{{ PLUGIN_CATALOG }}" | column -t -s '|'
 
+# List leftovers in the skills and commands trees after a rename or a move. Exit 1 if any.
+[group('inspect')]
+stale:
+    @"{{ SCRIPTS }}/inspect/stale.sh"
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Cleanup
 # ──────────────────────────────────────────────────────────────────────────────
+
+# Delete the stale paths that `just stale` lists (first two sections), after a confirm prompt.
+[group('cleanup')]
+clean-stale:
+    @"{{ SCRIPTS }}/inspect/stale.sh" --delete
 
 # Remove timestamped settings.json backups
 [group('cleanup')]
