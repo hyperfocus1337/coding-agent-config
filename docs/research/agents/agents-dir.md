@@ -8,7 +8,7 @@ Measured 2026-09-17 with Claude Code 2.1.274, pi 0.85.1, and chezmoi 2.72.1. Bot
 
 Yes. Claude Code resolves symlinks for skills, commands, and rules, at user scope and project scope, for a single symlink per directory. pi reads `.agents/skills/` natively and can be pointed at any other path through its settings. So `.agents/` holds the real content, Claude Code reaches it through three symlinks per scope, and pi reaches it through native discovery plus one settings key.
 
-Two things do not follow this pattern. Instructions need `CLAUDE.md` to be a symlink to `AGENTS.md`, because Claude Code 2.1.274 still does not read `AGENTS.md`, while pi reads either name. Hooks and rules cannot be reached by a symlink, because pi has no shell hook and no rules concept, but one pi extension reproduces both: its lifecycle events map one for one onto Claude's hook events, and it runs the same scripts and injects the same rule text. That extension is now measured, not inferred.
+Two things do not follow this pattern. Instructions needed `CLAUDE.md` to be a symlink to `AGENTS.md`, because Claude Code 2.1.274 did not read `AGENTS.md`, while pi reads either name. Claude Code 2.1.278 reads `AGENTS.md` once `instructionFiles` is set, so at project scope the setting replaces that symlink; see [`codex-compat.md`](codex-compat.md). Hooks and rules cannot be reached by a symlink, because pi has no shell hook and no rules concept, but one pi extension reproduces both: its lifecycle events map one for one onto Claude's hook events, and it runs the same scripts and injects the same rule text. That extension is now measured, not inferred.
 
 One cost is larger than it looked. pi has no command namespace, so every file under `commands/` becomes `/<basename>` and three names in this repo collide.
 
@@ -47,7 +47,7 @@ Each probe put a unique token in a resource, started a headless session with `cl
 | Command through a per-file symlink, `.claude/commands/x.md` → `.agents/commands/x.md` | expanded    |
 | Command through a symlinked directory, `.claude/commands` → `.agents/commands`        | expanded    |
 | Rule through a per-file symlink, `.claude/rules/x.md` → `.agents/rules/x.md`          | loaded      |
-| `AGENTS.md` alone in a project root                                                   | **ignored** |
+| `AGENTS.md` alone in a project root, 2.1.274                                          | **ignored** |
 | `AGENTS.md` with `CLAUDE.md` as a symlink to it                                       | loaded      |
 
 ### User scope
@@ -96,9 +96,9 @@ Each pi probe ran `pi -p` against a fixture repo with a unique token in every re
 
 Three details the table compresses. Project trust is the gate for `.pi/` and for project `.agents/skills/`, but not for `AGENTS.md`: an untrusted project still contributes its instruction files. `.pi/` is read in the current directory only, while `.agents/skills/` walks up to the git root, so the two project paths do not behave alike. And `-p` never prompts for trust, so every non-interactive run needs `--approve` or `defaultProjectTrust: "always"` to see project resources.
 
-### Correction to the Codex doc
+### Codex scope
 
-[`codex-compat.md`](codex-compat.md) states that symlinking `.claude/skills` itself "gets skipped by the scanner" and that only per-skill symlinks resolve. That is no longer true in 2.1.274. Both forms work, at both scopes. The practical effect is large: the shim is three symlinks per scope instead of one per skill, and a new skill needs no new symlink. Fix that line before anyone follows it.
+[`codex-compat.md`](codex-compat.md) carries the same probes for Codex, measured 2026-09-19 against Codex 0.154.0. Codex fits this layout without an adapter: `.agents/skills/` is its native skills path, `AGENTS.md` is its native instruction file, and its hooks take Claude's payload. That page also records the correction this one first reported, that a symlinked skills directory is discovered at both scopes.
 
 ## What each resource type needs
 
