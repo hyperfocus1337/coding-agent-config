@@ -9,7 +9,7 @@ A [pi](https://pi.dev/) session loads the same user-scope configuration a Claude
 | Rules       | an extension that puts unscoped rules in the system prompt and sends a scoped rule on a matching read | [`dot_pi/agent/extensions/claude-rules/`](../../dot_pi/agent/extensions/claude-rules/README.md)       |
 | `CLAUDE.md` | a chezmoi symlink, `~/.pi/agent/AGENTS.md` to `~/.claude/CLAUDE.md`                                   | [`dot_pi/agent/symlink_AGENTS.md`](../../dot_pi/agent/symlink_AGENTS.md)                              |
 
-[`dot_pi/agent/README.md`](../../dot_pi/agent/README.md) documents the settings file and the symlink. Each extension directory holds a README for its behaviour and `docs/implementation.md` for its design; [`dot_pi/agent/extensions/README.md`](../../dot_pi/agent/extensions/README.md) indexes them.
+[`dot_pi/agent/README.md`](../../dot_pi/agent/README.md) documents the settings file and the symlink. Each extension directory holds a README for its behaviour and `docs/implementation.md` for its design; [`dot_pi/agent/extensions/README.md`](../../dot_pi/agent/extensions/README.md) indexes them. A third extension, [`compact-bash`](../../dot_pi/agent/extensions/compact-bash/README.md), sits beside them: it shortens pi's own `bash` output preview and carries no Claude Code behaviour, so it is not part of the table above.
 
 ## Skills
 
