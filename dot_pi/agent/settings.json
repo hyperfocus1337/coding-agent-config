@@ -2,6 +2,15 @@
   "lastChangelogVersion": "0.85.1",
   "theme": "light",
   "defaultProvider": "openrouter",
-  "defaultModel": "moonshotai/kimi-k2.6",
-  "extensions": ["~/.agents/extensions"]
+  "defaultModel": "deepseek/deepseek-v4.1-flash",
+  "extensions": [
+    "~/.agents/extensions"
+  ],
+  "hideThinkingBlock": true,
+  "terminal": {
+    "showTerminalProgress": true
+  },
+  "packages": [
+    "npm:pi-mcp-adapter"
+  ]
 }
