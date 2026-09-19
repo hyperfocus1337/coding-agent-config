@@ -12,5 +12,9 @@
   },
   "packages": [
     "npm:pi-mcp-adapter"
+  ],
+  "skills": [
+    "~/.claude/skills",
+    "!../../.claude/skills/synced/**"
   ]
 }
