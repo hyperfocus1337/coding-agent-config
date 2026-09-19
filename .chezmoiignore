@@ -18,4 +18,9 @@ README.md
 .claude/commands/**/README.md
 .claude/skills/README.md
 .claude/skills/**/README.md
+.pi/agent/README.md
+.pi/agent/extensions/README.md
+.pi/agent/extensions/**/README.md
+.pi/agent/extensions/**/docs/**
+.pi/agent/extensions/**/test/**
 PLAN.md

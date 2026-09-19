@@ -1,7 +1,7 @@
 /**
- * Self-check for dot_agents/extensions/claude-commands.ts.
+ * Self-check for ../index.ts.
  *
- * Run: node scripts/extensions/pi/check-claude-commands.ts
+ * Run: node test/check.ts, from the extension directory, or `just check-extensions`.
  *
  * Node strips the types, so this needs no build step and no dependency. The last
  * group runs against the real ~/.claude/commands, so it also reports whether the
@@ -11,7 +11,7 @@
 import assert from "node:assert/strict";
 import * as os from "node:os";
 import * as path from "node:path";
-import { commandName, discover, expandSpans, parseFile, substituteArgs } from "../../../dot_agents/extensions/claude-commands.ts";
+import { commandName, discover, expandSpans, parseFile, substituteArgs } from "../index.ts";
 
 let checks = 0;
 async function check(what: string, run: () => void | Promise<void>): Promise<void> {

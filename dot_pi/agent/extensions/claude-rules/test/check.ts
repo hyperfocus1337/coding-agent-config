@@ -1,7 +1,7 @@
 /**
- * Self-check for dot_agents/extensions/claude-rules.ts.
+ * Self-check for ../index.ts.
  *
- * Run: node scripts/extensions/pi/check-claude-rules.ts
+ * Run: node test/check.ts, from the extension directory, or `just check-extensions`.
  *
  * The glob group is Claude's own table from https://code.claude.com/docs/en/memory,
  * so a change in `matches` that departs from it fails here first. The last group runs
@@ -18,7 +18,7 @@ import {
   patterns,
   systemPromptBlock,
   type Rule,
-} from "../../../dot_agents/extensions/claude-rules.ts";
+} from "../index.ts";
 
 let checks = 0;
 function check(what: string, run: () => void): void {

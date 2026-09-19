@@ -29,7 +29,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { parseFile } from "./claude-commands.ts";
+import { parseFile } from "../claude-commands/index.ts";
 
 /** `customType` of the persisted message that carries a scoped rule. */
 const CUSTOM_TYPE = "claude-rule";

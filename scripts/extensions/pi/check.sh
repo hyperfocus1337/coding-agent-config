@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Type-check the pi extensions in dot_agents/extensions, then run their self-checks.
+# Type-check the pi extensions in dot_pi/agent/extensions, then run their self-checks.
 #
 # The pi types ship with the installed package, whose path differs per machine, so
 # the tsconfig is generated here from the resolved `pi` binary rather than
@@ -7,7 +7,7 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-EXTENSIONS="${REPO}/dot_agents/extensions"
+EXTENSIONS="${REPO}/dot_pi/agent/extensions"
 
 for tool in node pi tsc; do
   command -v "${tool}" >/dev/null || {
@@ -40,14 +40,14 @@ cat >"${WORK}/tsconfig.json" <<JSON
     "types": [],
     "paths": { "@earendil-works/pi-coding-agent": ["${PI_TYPES}"] }
   },
-  "include": ["${EXTENSIONS}/*.ts"]
+  "include": ["${EXTENSIONS}/*/index.ts"]
 }
 JSON
 
-echo "==> tsc ${EXTENSIONS}/*.ts"
+echo "==> tsc ${EXTENSIONS}/*/index.ts"
 tsc -p "${WORK}/tsconfig.json"
 
-for check in "${REPO}"/scripts/extensions/pi/check-*.ts; do
-  echo "==> ${check##*/}"
+for check in "${EXTENSIONS}"/*/test/check.ts; do
+  echo "==> ${check#"${EXTENSIONS}"/}"
   node "${check}"
 done

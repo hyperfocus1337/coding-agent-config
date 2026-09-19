@@ -137,7 +137,7 @@ update-marketplaces:
 lint:
     find "{{ SCRIPTS }}" "{{ TEMPLATES }}" -name '*.sh' -print0 | xargs -0 shellcheck
 
-# Type-check the pi extensions in dot_agents/extensions and run their self-checks.
+# Type-check the pi extensions in dot_pi/agent/extensions and run their self-checks.
 [group('lint & format')]
 check-extensions:
     "{{ SCRIPTS }}/extensions/pi/check.sh"
