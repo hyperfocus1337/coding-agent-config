@@ -29,6 +29,6 @@ A rule with `paths:` is sent after the `read`, `write`, or `edit` tool succeeds 
 
 ## Checks
 
-`node test/check.ts` from this directory, or `just check-extensions` for the type check as well. The checks cover `paths:` parsing, every row of the glob table, a path outside the project, discovery on a fixture tree, block stability, and the installed tree: `apply.md` is the one scoped rule and fires on a file under `dot_claude/`, and the three unscoped bodies are in the block in full.
+`node test/check.ts` from this directory, or `just pi-check` for the type check as well. The checks cover `paths:` parsing, every row of the glob table, a path outside the project, discovery on a fixture tree, block stability, and the installed tree: `apply.md` is the one scoped rule and fires on a file under `dot_claude/`, and the three unscoped bodies are in the block in full.
 
 For where the two injection points sit in pi's event model and why the globs need no dependency, see [docs/implementation.md](docs/implementation.md).

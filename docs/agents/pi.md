@@ -29,7 +29,7 @@ Rules without `paths:` go into the system prompt at session start, as one block 
 
 ## Checks
 
-`just check-extensions` type-checks both extensions against the installed pi package and runs their self-checks. `/reload` in a running pi picks up an edit.
+`just pi-check` type-checks every extension against the installed pi package and runs their self-checks. `just pi-apply` renders the pi tree alone, and `just pi` does both. `/reload` in a running pi picks up an edit.
 
 ## Settings drift
 

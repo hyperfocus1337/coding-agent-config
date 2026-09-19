@@ -43,6 +43,6 @@ A `` !`cmd` `` span runs `cmd` through `/bin/sh -c` in the session's working dir
 
 ## Checks
 
-`node test/check.ts` from this directory, or `just check-extensions` for the type check as well. The checks cover naming, frontmatter parsing, every placeholder form and escape, span placement and failure, and the installed tree: every name unique, every command described, the colliding basenames all present.
+`node test/check.ts` from this directory, or `just pi-check` for the type check as well. The checks cover naming, frontmatter parsing, every placeholder form and escape, span placement and failure, and the installed tree: every name unique, every command described, the colliding basenames all present.
 
 For why the extension registers commands itself instead of using pi's `prompts` setting, and how the expansion is ordered and parsed, see [docs/implementation.md](docs/implementation.md).

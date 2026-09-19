@@ -1,7 +1,7 @@
 /**
  * Self-check for ../index.ts.
  *
- * Run: node test/check.ts, from the extension directory, or `just check-extensions`.
+ * Run: node test/check.ts, from the extension directory, or `just pi-check`.
  *
  * Node strips the types, so this needs no build step and no dependency. The last
  * group runs against the real ~/.claude/commands, so it also reports whether the

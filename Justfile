@@ -128,6 +128,27 @@ extensions-all:
 update-marketplaces:
     "{{ SCRIPTS }}/extensions/plugins/update.sh"
 
+# --- pi ---
+
+# Type-check the pi extensions in dot_pi/agent/extensions and run their self-checks.
+[group('pi')]
+pi-check:
+    "{{ SCRIPTS }}/extensions/pi/check.sh"
+
+# Apply the pi tree only: extensions, settings, AGENTS.md symlink. Leaves ~/.claude alone.
+[group('pi')]
+pi-apply:
+    chezmoi apply --source "{{ REPO }}" --destination "{{ env('HOME') }}" "{{ env('HOME') }}/.pi"
+
+# Preview what `just pi-apply` would change without writing anything.
+[group('pi')]
+pi-diff:
+    chezmoi diff --source "{{ REPO }}" --destination "{{ env('HOME') }}" "{{ env('HOME') }}/.pi"
+
+# Apply the pi tree, then run the extension checks against what is installed.
+[group('pi')]
+pi: pi-apply pi-check
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Lint & format
 # ──────────────────────────────────────────────────────────────────────────────
@@ -136,11 +157,6 @@ update-marketplaces:
 [group('lint & format')]
 lint:
     find "{{ SCRIPTS }}" "{{ TEMPLATES }}" -name '*.sh' -print0 | xargs -0 shellcheck
-
-# Type-check the pi extensions in dot_pi/agent/extensions and run their self-checks.
-[group('lint & format')]
-check-extensions:
-    "{{ SCRIPTS }}/extensions/pi/check.sh"
 
 # Format scripts in place. shfmt walks the roots recursively (by shebang/.sh).
 [group('lint & format')]

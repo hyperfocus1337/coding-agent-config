@@ -1,7 +1,7 @@
 /**
  * Self-check for ../index.ts.
  *
- * Run: node test/check.ts, from the extension directory, or `just check-extensions`.
+ * Run: node test/check.ts, from the extension directory, or `just pi-check`.
  *
  * The glob group is Claude's own table from https://code.claude.com/docs/en/memory,
  * so a change in `matches` that departs from it fails here first. The last group runs
