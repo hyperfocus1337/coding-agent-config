@@ -137,6 +137,11 @@ update-marketplaces:
 lint:
     find "{{ SCRIPTS }}" "{{ TEMPLATES }}" -name '*.sh' -print0 | xargs -0 shellcheck
 
+# Type-check the pi extensions in dot_agents/extensions and run their self-checks.
+[group('lint & format')]
+check-extensions:
+    "{{ SCRIPTS }}/extensions/pi/check.sh"
+
 # Format scripts in place. shfmt walks the roots recursively (by shebang/.sh).
 [group('lint & format')]
 fmt:
