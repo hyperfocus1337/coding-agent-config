@@ -101,7 +101,7 @@ Both tools now ship a one-time migration. Codex `/import` reads Claude Code sett
 
 ## Recommendation for this repo
 
-Follow the layout in [`agents-dir.md`](agents-dir.md). It was designed for Claude Code and pi, and Codex fits it without change, because `.agents/skills/` is Codex's native skills path and `AGENTS.md` is its native instruction file. Codex needs no adapter extension, unlike pi: hooks are native and the payload already matches.
+This recommendation was written against a shared `.agents/` layout that was later dropped: on 2026-09-19 the content stayed under `dot_claude/` and pi was pointed at `~/.claude` directly, see [`../../agents/pi.md`](../../agents/pi.md). The steps below still assume `.agents/`. Codex fits that layout without change, because `.agents/skills/` is Codex's native skills path and `AGENTS.md` is its native instruction file. Codex needs no adapter extension, unlike pi: hooks are native and the payload already matches.
 
 Order of work, on top of the pi plan:
 

@@ -2,7 +2,7 @@
 
 Which lifecycle points each agent lets you attach code to, what each point can change, and which of the two is more flexible.
 
-Read from source on 2026-09-19: Claude Code 2.1.278 (`~/.local/share/claude/versions/2.1.278`) and pi 0.85.1 (`@earendil-works/pi-coding-agent`, `docs/extensions.md` plus `dist/core/extensions/types.d.ts`). The pi-code column is pi-code 1.0.64, the current npm `latest`. Nothing on this page is measured by execution. For how pi-code compares with this repo's own adapter, see [`pi-code.md`](pi-code.md).
+Read from source on 2026-09-19: Claude Code 2.1.278 (`~/.local/share/claude/versions/2.1.278`) and pi 0.85.1 (`@earendil-works/pi-coding-agent`, `docs/extensions.md` plus `dist/core/extensions/types.d.ts`). The pi-code column is pi-code 1.0.64, the current npm `latest`. Nothing on this page is measured by execution.
 
 ## The two mechanisms are not the same shape
 
@@ -149,6 +149,6 @@ The short rule: to rewrite what reaches the model, use pi. To gate or observe wh
 
 ## What this means here
 
-This repo runs six hook scripts, all `command` hooks, on `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, and `Stop`. All four are in both sets and all four are bridged by pi-code: `PostToolUseFailure` through `tool_result`, `Stop` through `agent_end`. [`claude-compat.ts`](../../../dot_agents/extensions/claude-compat.ts) bridges `PreToolUse` and `PostToolUse` only, so under that adapter `type-check-all-languages` does not fire at all, and the two formatting hooks lose their failed-command pass. None of the differences above blocks the configuration otherwise. They decide what a future hook can do, not what today's six do.
+This repo runs six hook scripts, all `command` hooks, on `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, and `Stop`. All four are in both sets and all four are bridged by pi-code: `PostToolUseFailure` through `tool_result`, `Stop` through `agent_end`. The adapter prototype from 2026-09-17, never committed, bridges `PreToolUse` and `PostToolUse` only, so under that adapter `type-check-all-languages` does not fire at all, and the two formatting hooks lose their failed-command pass. None of the differences above blocks the configuration otherwise. They decide what a future hook can do, not what today's six do.
 
 Two entries are worth noting for that future. A `FileChanged` or `ConfigChange` hook has no pi equivalent, so it would stay Claude-only. A hook that needs to inspect or rewrite the provider request has no Claude Code equivalent, so it would have to be a pi extension rather than a shared hook.
