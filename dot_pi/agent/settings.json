@@ -16,5 +16,10 @@
   "skills": [
     "~/.claude/skills",
     "!../../.claude/skills/synced/**"
+  ],
+  "enabledModels": [
+    "openrouter/deepseek/deepseek-v4.1-flash",
+    "openrouter/deepseek/deepseek-v4-pro",
+    "openrouter/moonshotai/kimi-k3"
   ]
 }
