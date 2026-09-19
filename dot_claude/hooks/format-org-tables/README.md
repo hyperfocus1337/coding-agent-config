@@ -1,6 +1,6 @@
 # format-org-tables
 
-A `PostToolUse` hook that realigns [Org mode](https://orgmode.org/) tables after Claude writes a `.org` file, using Emacs in batch mode. This is the single source of truth for the design notes the hook script only points at; `hook.sh` keeps its inline comments short and references the sections below by name.
+A `PostToolUse` and `PostToolUseFailure` hook that realigns [Org mode](https://orgmode.org/) tables after Claude writes a `.org` file, using Emacs in batch mode. This is the single source of truth for the design notes the hook script only points at; `hook.sh` keeps its inline comments short and references the sections below by name.
 
 ## Why this is a separate hook
 
@@ -21,7 +21,7 @@ Valid Org, unreadable as plain text. Emacs realigns it on the next manual edit, 
 
 ## Triggers
 
-The hook is wired to two matchers in `settings.json`, and tells them apart by whether the tool payload carries `tool_input.file_path`. On both paths, anything that is not an existing `.org` file is a clean skip.
+The hook is wired to three entries in `settings.json`: `Write|Edit|MultiEdit` and `Bash` on `PostToolUse`, and `Bash` again on `PostToolUseFailure`. It tells them apart by whether the tool payload carries `tool_input.file_path`. On both paths, anything that is not an existing `.org` file is a clean skip.
 
 ### Write / Edit / MultiEdit (single file)
 
@@ -34,6 +34,16 @@ A Bash call carries no `file_path`, but a shell command (a heredoc, `sed`, a red
 So on the Bash matcher the hook takes every `.org` path the command text names, absolute or relative to the session cwd, and aligns those. It asks git nothing, unlike the markdown sweep in [`format-all-languages`](../format-all-languages/README.md), because a command that writes an Org file names the file. A command that rewrites one without naming it (a script it calls, a `find -exec`) is still missed, and that file stays misaligned until the next `Edit` touches it.
 
 Relative paths resolve against the session cwd, so a `cd` elsewhere in the command can resolve one wrong. The `-f` check makes that a silent miss, or at worst a no-op pass over an already aligned file of the same name.
+
+#### A Bash command that writes a file and then fails
+
+`PostToolUse` fires only after a tool call **succeeds**. A shell command that exits non-zero raises `PostToolUseFailure` instead, which is a separate event with its own wiring. That misses the write-then-verify pattern, which is most of what a shell command does: `cat > notes.md <<'EOF' ... EOF && just fmt-check` writes the file, fails the check, and the alignment pass never ran.
+
+Measured on 2026-09-19 with two Bash calls writing the same unaligned table, differing only in the exit code: the exit 0 file came back realigned, the exit 1 file was untouched. So the Bash matcher is wired to both events, and the hook code is identical on each: the payload carries `tool_input.command` either way.
+
+One detail the code does care about. The amend hint below reports through `hookSpecificOutput`, whose `hookEventName` is the discriminant of a per-event schema. A `PostToolUse` literal sent from a `PostToolUseFailure` run does not match that schema, so the hook reads `.hook_event_name` off the payload and echoes it back rather than hardcoding it.
+
+`PostToolUseFailure` also carries `is_interrupt`, so the sweep runs after you interrupt a shell command as well. That is wanted: an interrupted command can leave a half-written file, and org-table-align is safe to run on one.
 
 #### Write and commit in one command
 
@@ -79,7 +89,7 @@ Before starting Emacs at all, the hook greps the file for a line beginning with 
 
 ## `--no-init-file` is required
 
-Without it, Emacs loads the user's full init (Doom, in this setup) on every hook run, and the hook goes from ~1.4s to far past its timeout. With it, only bundled Org loads. The ~1.4s is almost entirely Emacs startup; the alignment work itself is negligible, which is why the `settings.json` timeouts are 5s on the edit matcher and 10s on the Bash matcher, where the file list can be longer.
+Without it, Emacs loads the user's full init (Doom, in this setup) on every hook run, and the hook goes from ~1.4s to far past its timeout. With it, only bundled Org loads. The ~1.4s is almost entirely Emacs startup; the alignment work itself is negligible, which is why the `settings.json` timeouts are 5s on the edit matcher and 10s on each Bash matcher, where the file list can be longer.
 
 ## Never blocks Claude
 

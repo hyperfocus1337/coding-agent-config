@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # ~/.claude/hooks/format-org-tables/hook.sh
 #
-# PostToolUse hook: realign Org tables after Claude writes a .org file.
+# PostToolUse and PostToolUseFailure hook: realign Org tables after Claude
+# writes a .org file. A Bash command that writes a file and then exits non-zero
+# raises the failure event, not PostToolUse, so both are wired.
 # Prettier has no Org parser, so format-all-languages skips .org entirely;
 # alignment is org-table-align, an Emacs function. Full design notes live in
 # README.md next to this script. Never blocks Claude: always exits 0.
@@ -13,6 +15,12 @@ command -v emacs >/dev/null 2>&1 || exit 0
 
 # --- Read payload ---
 payload=$(cat)
+
+# The hook is wired to PostToolUse and to PostToolUseFailure, and the amend hint
+# below has to name the event that fired: hookEventName is the discriminant of a
+# per-event schema, so the wrong literal makes the whole output invalid.
+# README "A Bash command that writes a file and then fails".
+event=$(jq -r '.hook_event_name // "PostToolUse"' <<<"$payload")
 
 # --- Collect targets ---
 # Branches on the matcher. README "Triggers".
@@ -83,9 +91,9 @@ if [[ -n "${committed:-}" ]]; then
     [[ $status -eq 1 ]] && dirty+=("$f")
   done
   if [[ ${#dirty[@]} -gt 0 ]]; then
-    jq -nc --arg files "${dirty[*]}" '{
+    jq -nc --arg files "${dirty[*]}" --arg event "$event" '{
       hookSpecificOutput: {
-        hookEventName: "PostToolUse",
+        hookEventName: $event,
         additionalContext: ("Emacs realigned Org tables after your commit, so the commit holds the unaligned version and the working tree is now dirty: " + $files + ". Fold the alignment into that commit (amend, or a fixup commit if it is already pushed).")
       }
     }'

@@ -130,17 +130,20 @@ An extension is a TypeScript module in `~/.pi/agent/extensions/` or `.pi/extensi
 | `PostToolUse`  | `tool_result`   | return `{ content, details, isError }` as a partial patch             |
 | `SessionStart` | `session_start` | no return value needed                                                |
 
+Two events the hooks use have no row, because the adapter does not wire them. `Stop` maps to pi's `agent_end`, which pi-code already drives, so adding it is a third `pi.on` call rather than a new mechanism; until then `type-check-all-languages` is Claude-only. `PostToolUseFailure` shares pi's `tool_result` with `PostToolUse` and is told apart by the result's error flag, so the two formatting hooks run under the adapter but miss a shell command that writes a file and then exits non-zero.
+
 `tool_call` fires before the tool runs and `tool_result` fires after it finishes, which is exactly where Claude fires its two hooks. Both chain in extension load order, and each handler sees the previous handler's changes, so several hooks on one event behave as they do in Claude.
 
-The payload translation is small, because the six hooks here read only three fields from Claude's JSON:
+The payload translation is small, because the five tool hooks here read only four fields from Claude's JSON:
 
 | Claude field           | pi source                                     |
 | ---------------------- | --------------------------------------------- |
 | `tool_input.command`   | `event.input.command` on the `bash` tool      |
 | `tool_input.file_path` | `event.input.path` on `read`, `write`, `edit` |
 | `cwd`                  | `ctx.cwd`                                     |
+| `hook_event_name`      | the event the adapter is bridging             |
 
-The `file_path` row is a rename, not a pass-through, and the adapter must do it: pi's `read`, `write`, and `edit` tools take `path`, and `format-all-languages`, `format-org-tables`, `lint-all-languages`, and `type-check-all-languages` all read `.tool_input.file_path`. A pass-through leaves that field empty and every file hook exits quietly. pi also gives the model-supplied path, which can be relative, so the adapter resolves it against `ctx.cwd` before it writes the payload. Measured tool schemas: `bash` takes `command` and `timeout`, `read` takes `path`, `offset`, `limit`, `write` takes `path` and `content`, `edit` takes `path` and `edits`.
+The `file_path` row is a rename, not a pass-through, and the adapter must do it: pi's `read`, `write`, and `edit` tools take `path`, and `format-all-languages`, `format-org-tables`, and `lint-all-languages` all read `.tool_input.file_path`. A pass-through leaves that field empty and every file hook exits quietly. pi also gives the model-supplied path, which can be relative, so the adapter resolves it against `ctx.cwd` before it writes the payload. Measured tool schemas: `bash` takes `command` and `timeout`, `read` takes `path`, `offset`, `limit`, `write` takes `path` and `content`, `edit` takes `path` and `edits`.
 
 Tool names differ only in case: `Bash` and `bash`, `Read` and `read`, `Write` and `write`, `Edit` and `edit`. `MultiEdit` has no pi counterpart, because pi's `edit` already takes an `edits` array, so one pi tool covers what the Claude matcher `Write|Edit|MultiEdit` covers.
 

@@ -180,6 +180,20 @@ else
   echo "FAIL no amend hint after a commit sweep"; fail=1
 fi
 
+# The same sweep on the failure event: a command that writes, commits, and then
+# exits non-zero fires PostToolUseFailure rather than PostToolUse, and the hint
+# has to name the event that fired. hookEventName is the discriminant of a
+# per-event schema, so a hardcoded "PostToolUse" there is invalid output.
+unaligned "$committed/F.md"
+git -C "$committed" add -A && git -C "$committed" commit -qm more
+out=$(jq -nc --arg cwd "$committed" '{hook_event_name:"PostToolUseFailure",cwd:$cwd,tool_input:{command:"git add -A && git commit -m more && just fmt-check"},error:"exit 1"}' | hook)
+formatted "file committed by a command that then failed" "$committed/F.md"
+if [[ "$(jq -r '.hookSpecificOutput.hookEventName // empty' <<<"$out")" == PostToolUseFailure ]]; then
+  echo "ok   report amend hint names the event that fired"
+else
+  echo "FAIL amend hint did not echo hook_event_name"; fail=1
+fi
+
 # The same sweep on a command that did not commit must stay silent, so an
 # ordinary shell call never gets an amend hint.
 unaligned "$committed/D.md"

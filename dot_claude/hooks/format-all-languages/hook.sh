@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # ~/.claude/hooks/format-all-languages/hook.sh
 #
-# PostToolUse hook: format files with Prettier after Claude changes them.
+# PostToolUse and PostToolUseFailure hook: format files with Prettier after
+# Claude changes them. A Bash command that writes a file and then exits non-zero
+# raises the failure event, not PostToolUse, so both are wired.
 # Full design notes live in README.md next to this script; the comments
 # below just name which section explains each step. Never blocks Claude:
 # always exits 0. See README "Never blocks Claude".
@@ -13,6 +15,12 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 # --- Read payload ---
 payload=$(cat)
+
+# The hook is wired to PostToolUse and to PostToolUseFailure, and the amend hint
+# below has to name the event that fired: hookEventName is the discriminant of a
+# per-event schema, so the wrong literal makes the whole output invalid.
+# README "A Bash command that writes a file and then fails".
+event=$(jq -r '.hook_event_name // "PostToolUse"' <<<"$payload")
 
 # --- Collect targets ---
 # Which files, which extensions. Branches on the matcher. README "Triggers".
@@ -130,9 +138,9 @@ if [[ -n "$before" ]]; then
     [[ -n $(git -C "${f%/*}" diff --name-only HEAD~1 HEAD -- "$f" 2>/dev/null) ]] && dirty+=("$f")
   done < <(comm -13 <(sort <<<"$before") <(cksum "${md_targets[@]}" | sort) | cut -d' ' -f3-)
   if [[ ${#dirty[@]} -gt 0 ]]; then
-    jq -nc --arg files "${dirty[*]}" '{
+    jq -nc --arg files "${dirty[*]}" --arg event "$event" '{
       hookSpecificOutput: {
-        hookEventName: "PostToolUse",
+        hookEventName: $event,
         additionalContext: ("Prettier reformatted markdown after your commit, so the commit holds the unformatted version and the working tree is now dirty: " + $files + ". Fold the formatting into that commit (amend, or a fixup commit if it is already pushed).")
       }
     }'

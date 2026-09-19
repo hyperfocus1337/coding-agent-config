@@ -78,6 +78,23 @@
           }
         ]
       }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/format-all-languages/hook.sh\"",
+            "timeout": 20
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/format-org-tables/hook.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   },
   "statusLine": {

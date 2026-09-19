@@ -48,6 +48,16 @@ Note the side effect: any repo whose absolute path appears in a shell command ge
 
 Git failures (not a repo, no commits so no `HEAD`) are swallowed with `stderr` silenced, so "not a git repository" never leaks as hook noise; the sweep just finds nothing and exits clean.
 
+#### A Bash command that writes a file and then fails
+
+`PostToolUse` fires only after a tool call **succeeds**. A shell command that exits non-zero raises `PostToolUseFailure` instead, which is a separate event with its own wiring. That misses the write-then-verify pattern, which is most of what a shell command does: `cat > notes.md <<'EOF' ... EOF && just fmt-check` writes the file, fails the check, and the format pass never ran.
+
+Measured on 2026-09-19 with two Bash calls writing the same unaligned table, differing only in the exit code: the exit 0 file came back column-aligned, the exit 1 file was untouched. So the Bash matcher is wired to both events, and the hook code is identical on each: the payload carries `tool_input.command` either way.
+
+One detail the code does care about. The amend hint below reports through `hookSpecificOutput`, whose `hookEventName` is the discriminant of a per-event schema. A `PostToolUse` literal sent from a `PostToolUseFailure` run does not match that schema, so the hook reads `.hook_event_name` off the payload and echoes it back rather than hardcoding it.
+
+`PostToolUseFailure` also carries `is_interrupt`, so the sweep runs after you interrupt a shell command as well. That is wanted: an interrupted command can leave a half-written file, and Prettier is safe to run on one.
+
 #### Write and commit in one command
 
 A single Bash call can write a file, commit it, and push it (`cat > README.md <<'EOF' ... && git commit -am docs && git push`). By the time the hook runs the tree is clean, so the working-tree sweep finds zero candidates and exits, and the unformatted table is already in the pushed commit.
@@ -88,7 +98,7 @@ Ceiling: tables wider than 1000 columns still collapse. Bump the number if that 
 
 ## Never blocks Claude
 
-Unlike `lint-all-languages`, this hook always exits `0`. A missing Prettier (the `command -v prettier` check bails cleanly), a parse error, or any other failure is swallowed, leaving the file untouched. A formatter should reshape working code, not reject an edit. If `jq` is missing the hook self-disables the same way. The `timeout` values in `settings.json` (10s on the edit matcher, 20s on the Bash matcher, which may format several files) cap runtime.
+Unlike `lint-all-languages`, this hook always exits `0`. A missing Prettier (the `command -v prettier` check bails cleanly), a parse error, or any other failure is swallowed, leaving the file untouched. A formatter should reshape working code, not reject an edit. If `jq` is missing the hook self-disables the same way. The `timeout` values in `settings.json` (10s on the edit matcher, 20s on each Bash matcher, which may format several files) cap runtime.
 
 ## Installing Prettier
 
