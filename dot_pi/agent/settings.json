@@ -1,20 +1,15 @@
 {
   "lastChangelogVersion": "0.85.1",
-  "theme": "light",
+  "theme": "dark",
   "defaultProvider": "openrouter",
   "defaultModel": "deepseek/deepseek-v4.1-flash",
   "hideThinkingBlock": true,
+  "tuiMode": "fullscreen",
   "terminal": {
     "showTerminalProgress": true
   },
-  "packages": [
-    "npm:pi-mcp-adapter",
-    "npm:pi-web-access"
-  ],
-  "skills": [
-    "~/.claude/skills",
-    "!../../.claude/skills/synced/**"
-  ],
+  "packages": ["npm:pi-mcp-adapter", "npm:pi-web-access"],
+  "skills": ["~/.claude/skills", "!../../.claude/skills/synced/**"],
   "enabledModels": [
     "openrouter/deepseek/deepseek-v4.1-flash",
     "openrouter/deepseek/deepseek-v4-pro",
