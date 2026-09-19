@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 # ~/.claude/hooks/lint-all-languages/hook.sh
 #
-# PostToolUse hook: lints files after Claude edits/writes them.
-# Claude pipes tool event JSON to stdin; we extract the file path and
-# run the matching linter. Exit 2 = block tool result and surface stderr
-# back to Claude so it can fix the issue.
+# PostToolUse and PostToolUseFailure hook: lints files after Claude changes
+# them. Claude pipes tool event JSON to stdin. On Write/Edit the payload names
+# the file. On Bash it names none, so the hook lints the paths the command text
+# holds, and only the ones the command just wrote. Exit 2 = block the tool
+# result and surface stderr back to Claude so it can fix the issue.
+# See README "Bash (the paths the command just wrote)".
+
+# --- Preflight ---
+# No jq: self-disable, rather than erroring on every tool call.
+set -u
+command -v jq >/dev/null 2>&1 || exit 0
 
 # --- Bundled linter configs ---
 # Directory of this script; holds the config/ the linters run against on every
@@ -13,31 +20,68 @@
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 CFG="$HERE/config"
 
-# --- Resolve target file ---
-# Read tool_input.file_path from stdin JSON. Empty if not a file-editing tool.
-F=$(jq -r '.tool_input.file_path // empty')
+# --- Read payload ---
+payload=$(cat)
+edited_file=$(jq -r '.tool_input.file_path // empty' <<<"$payload")
 
-# No path or file doesn't exist → nothing to lint, exit clean.
-[[ -f "$F" ]] || exit 0
+candidates=()
+if [[ -n "$edited_file" ]]; then
+  # Write/Edit: the one file named.
+  candidates+=("$edited_file")
+else
+  # Bash: no file named, so read the paths out of the command text instead,
+  # the way format-org-tables does. README "Bash (the paths the command just
+  # wrote)".
+  cwd=$(jq -r '.cwd // empty' <<<"$payload")
+  [[ -n "$cwd" ]] || cwd=$PWD
+  cmd=$(jq -r '.tool_input.command // empty' <<<"$payload")
 
-# --- Skip throwaway files ---
-# Scratchpad/temp files aren't project code, so lint errors there shouldn't
-# block a tool result.
-[[ "$F" == /tmp/* || "$F" == /var/tmp/* || "$F" == "${TMPDIR:-/nonexistent}"* ]] && exit 0
+  # A named path the command only read must not be linted: blocking `cat
+  # app.py` on an error that was already there helps nobody. A file the command
+  # wrote carries a fresh mtime, so that is the test.
+  # ponytail: a command that writes early and then runs for minutes falls
+  # outside the window and is missed. The upgrade is a PreToolUse hook that
+  # stamps the start time for the matching call to compare against.
+  now=$(date +%s)
+  while IFS= read -r path; do
+    [[ "$path" == /* ]] || path=$cwd/$path
+    [[ -f "$path" ]] || continue
+    mtime=$(stat -c %Y "$path" 2>/dev/null || stat -f %m "$path" 2>/dev/null)
+    [[ -n "$mtime" ]] || continue
+    [[ $((now - mtime)) -le 120 ]] && candidates+=("$path")
+  done < <(grep -oE '[^[:space:]:;|&"'"'"'`()<>=]+\.(py|jsx?|tsx?|mjs|cjs|sh|bash|ya?ml|tfvars|tf)\b' <<<"$cmd")
+fi
+
+# --- Filter ---
+# Keep what exists, drop duplicates (one command names the same file twice
+# often enough), and skip throwaway files: scratchpad and temp files are not
+# project code, so lint errors there should not block a tool result.
+targets=()
+for f in "${candidates[@]-}"; do
+  [[ -f "$f" ]] || continue
+  [[ "$f" == /tmp/* || "$f" == /var/tmp/* || "$f" == "${TMPDIR:-/nonexistent}"* ]] && continue
+  [[ " ${targets[*]-} " == *" $f "* ]] && continue
+  targets+=("$f")
+done
+[[ ${#targets[@]} -gt 0 ]] || exit 0
 
 # --- Per-language off switch ---
 # CLAUDE_LINT_DISABLE = space/comma list of keys to skip (py js sh yaml tf),
 # or "all" to disable the hook entirely. To *tune* rather than disable YAML,
 # edit the bundled configs in config/; both YAML linters run with -c against
 # them, so a repo's own .yamllint / .ansible-lint is never read.
-DISABLE=" ${CLAUDE_LINT_DISABLE//,/ } "
+# set -u and an unset variable do not mix, and the default must be applied
+# before the pattern substitution, not inside it.
+lint_disable=${CLAUDE_LINT_DISABLE:-}
+DISABLE=" ${lint_disable//,/ } "
 disabled() { [[ "$DISABLE" == *" all "* || "$DISABLE" == *" $1 "* ]]; }
 
 # --- Linter helper ---
-# Run linter with args. If binary missing, skip silently (exit 0).
-# If linter fails, send its output to stderr (1>&2) and exit 2 to signal
-# Claude that the edit produced lint errors.
-lint() { command -v "$1" >/dev/null || exit 0; "$@" 1>&2 || exit 2; }
+# Run linter with args. If binary missing, skip silently. If the linter fails,
+# send its output to stderr (1>&2) and record it. Every target is linted, so
+# one Bash call reports every file it wrote instead of stopping at the first.
+FAILED=0
+lint() { command -v "$1" >/dev/null || return 0; "$@" 1>&2 || FAILED=2; }
 
 # --- Ansible detection ---
 # ansible-lint should only touch Ansible YAML, not every .yml. Match by path
@@ -50,11 +94,15 @@ is_ansible() {
 
 # --- Dispatch by extension ---
 # Dispatch on file extension (${F##*.} = suffix after last dot).
-case "${F##*.}" in
-  py)                    disabled py   || lint ruff check --quiet "$F" ;;
-  js|jsx|ts|tsx|mjs|cjs) disabled js   || lint oxlint "$F" ;;
-  sh|bash)               disabled sh   || lint shellcheck -S warning "$F" ;;
-  yml|yaml)              disabled yaml && exit 0
-                         if is_ansible; then lint ansible-lint -c "$CFG/.ansible-lint" -q "$F"; else lint yamllint -c "$CFG/.yamllint" "$F"; fi ;;
-  tf|tfvars)             disabled tf   || lint terraform fmt -check -diff "$F" ;;
-esac
+for F in "${targets[@]}"; do
+  case "${F##*.}" in
+    py)                    disabled py   || lint ruff check --quiet "$F" ;;
+    js|jsx|ts|tsx|mjs|cjs) disabled js   || lint oxlint "$F" ;;
+    sh|bash)               disabled sh   || lint shellcheck -S warning "$F" ;;
+    yml|yaml)              disabled yaml && continue
+                           if is_ansible; then lint ansible-lint -c "$CFG/.ansible-lint" -q "$F"; else lint yamllint -c "$CFG/.yamllint" "$F"; fi ;;
+    tf|tfvars)             disabled tf   || lint terraform fmt -check -diff "$F" ;;
+  esac
+done
+
+exit "$FAILED"

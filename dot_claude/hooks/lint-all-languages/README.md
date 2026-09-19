@@ -1,10 +1,10 @@
 # lint-all-languages
 
-A `PostToolUse` hook that lints each file Claude writes, dispatching by extension.
+A `PostToolUse` and `PostToolUseFailure` hook that lints each file Claude writes, dispatching by extension.
 
 ## How it works
 
-Wired to `Write`, `Edit`, and `MultiEdit` in `settings.json`. It dispatches on the edited file's extension to the matching linter:
+Wired to four entries in `settings.json`: `Write|Edit|MultiEdit` and `Bash` on `PostToolUse`, and `Bash` again on `PostToolUseFailure`. It dispatches on each file's extension to the matching linter:
 
 | Extension                               | Linter                                                  | Invocation                                | Documentation                                              |
 | --------------------------------------- | ------------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------- |
@@ -15,7 +15,21 @@ Wired to `Write`, `Edit`, and `MultiEdit` in `settings.json`. It dispatches on t
 | `.yml` `.yaml` (Ansible)                | [ansible-lint](https://github.com/ansible/ansible-lint) | `ansible-lint -c config/.ansible-lint -q` | https://ansible.readthedocs.io/projects/lint/              |
 | `.tf` `.tfvars`                         | [terraform fmt](https://github.com/hashicorp/terraform) | `terraform fmt -check -diff`              | https://developer.hashicorp.com/terraform/cli/commands/fmt |
 
-YAML routes to one of two linters (see [YAML routing](#yaml-routing) below). A missing linter is a silent skip (the `command -v` check bails cleanly), so anything you do not install is a no-op. A lint failure exits 2, so Claude sees the errors and can fix them. The 5s timeout in `settings.json` caps runtime.
+YAML routes to one of two linters (see [YAML routing](#yaml-routing) below). A missing linter is a silent skip (the `command -v` check bails cleanly), so anything you do not install is a no-op. A lint failure exits 2, so Claude sees the errors and can fix them. The timeouts in `settings.json` (10s on the edit matcher, 15s on each Bash matcher, which may lint several files) cap runtime.
+
+## Bash (the paths the command just wrote)
+
+A `Write` or `Edit` payload names the file in `tool_input.file_path`. A Bash payload names none, so a file a shell command wrote (`cat > setup.py <<'EOF'`, a `sed -i`, a redirect) reached no linter at all, and the error surfaced only when a later `Edit` happened to touch the same file.
+
+So on the Bash matchers the hook reads the paths out of `tool_input.command`, the way [`format-org-tables`](../format-org-tables/README.md) does, and keeps the ones with a supported extension. A relative path resolves against the session cwd.
+
+Naming a path is not the same as writing to it. `cat app.py` names it too, and blocking a read on an error that was already in the file helps nobody. So a named file is linted only when its mtime is within 120 seconds of the hook run, which is what separates a file the command wrote from a file it read. A command that writes early and then runs for minutes falls outside that window and is missed; the file is linted again on the next edit. The trade-off is marked with a `ponytail:` comment in `hook.sh`.
+
+`PostToolUse` fires only after a tool call succeeds. A shell command that exits non-zero raises `PostToolUseFailure` instead, which is the write-then-verify pattern (`cat > setup.py <<'EOF' ... EOF && python setup.py`): the file is written, the command fails, and the write still needs linting. So the Bash matcher is wired to both events. [format-all-languages](../format-all-languages/docs/implementation.md#why-posttoolusefailure-is-wired-too) holds the measurement behind that.
+
+Every target is linted before the hook exits, so one command reports every file it wrote instead of stopping at the first failure. Files under `/tmp`, `/var/tmp`, or `$TMPDIR` are skipped on both matchers: a scratchpad file is not project code, so a lint error there should not block a tool result.
+
+`test/test.sh` covers both matchers: the block, the clean pass, the off switch, a path the command only read, a path named twice, two failing files in one command, and the temp-file skip.
 
 ## Turning linters off or tuning them
 
