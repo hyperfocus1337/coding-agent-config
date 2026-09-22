@@ -18,7 +18,9 @@ hook() { timeout 30 bash "$HOOK"; }
 # the process cwd: run from elsewhere and a .gitignore rule never applies.
 hook_in() { (cd "$1" && timeout 30 bash "$HOOK"); }
 
-tmp=$(mktemp -d)
+# Not mktemp's default: the hook skips /tmp and $TMPDIR on purpose, so a fixture
+# there would be skipped along with them.
+tmp=$(mktemp -d "${HOME}/.format-hook-test.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
 fail=0
 
@@ -232,6 +234,14 @@ edit "$outer/edited.ts"
 printf '| a | bbbb |\n' > "$outer/notes.org"
 edit "$outer/notes.org"
 unchanged "edit path leaves .org" "$outer/notes.org" '| a | bbbb |'
+
+# A markdown file in a temp directory is not project code: the scratchpad Claude
+# writes to lives there, and formatting it is an edit of a file it throws away.
+scratch=${TMPDIR:-/tmp}/format-hook-scratch.md
+unaligned "$scratch"
+edit "$scratch"
+unchanged "edit path leaves a temp file" "$scratch" "$(printf '| a | bbbbbbbbbbbb |\n| --- | --- |\n| ccccccccccccccc | d |')"
+rm -f "$scratch"
 
 printf 'x  =  1\n' > "$outer/script.py"
 edit "$outer/script.py"

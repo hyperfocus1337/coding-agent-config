@@ -13,7 +13,9 @@ done
 # `timeout` turns a hung Emacs into a reported failure instead of a hung run.
 hook() { timeout 60 bash "$HOOK"; }
 
-tmp=$(mktemp -d)
+# Not mktemp's default: the hook skips /tmp and $TMPDIR on purpose, so a fixture
+# there would be skipped along with them.
+tmp=$(mktemp -d "${HOME}/.org-hook-test.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
 fail=0
 
@@ -55,6 +57,14 @@ else echo "FAIL align  a second pass changed the file"; fail=1; fi
 # make-backup-files is off, so no file.org~ litter is left behind.
 if [[ -z "$(find "$tmp" -name '*.org~')" ]]; then echo "ok   clean  no backup files left behind"
 else echo "FAIL clean  a backup file was left behind"; fail=1; fi
+
+# A file in a temp directory is not project prose: the scratchpad Claude writes
+# to lives there, and an align is an edit of a file it is about to throw away.
+scratch=${TMPDIR:-/tmp}/org-hook-scratch.org
+unaligned "$scratch"
+edit_payload "$scratch" | hook >/dev/null
+untouched "a file in a temp directory" "$scratch"
+rm -f "$scratch"
 
 # A | line inside a block is not a table, which org-at-table-p is what decides.
 printf '#+begin_example\n| a | bbbbbbbbbbbb |\n| ccccccccccccccc | d |\n#+end_example\n' > "$tmp/block.org"

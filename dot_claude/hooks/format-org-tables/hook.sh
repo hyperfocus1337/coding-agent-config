@@ -52,10 +52,19 @@ fi
 # The grep is what keeps Emacs out of the common case. README "Files without
 # tables". A command names the same file twice often enough to be worth the
 # membership scan; the list is single digits long.
+# A scratchpad or temp file is not project prose, and an align there is an edit
+# of a file Claude is about to throw away. macOS resolves /tmp to /private/tmp
+# and $TMPDIR to /private/var/folders/..., and the scratchpad path Claude
+# writes to carries that /private prefix, so both sides of the comparison drop
+# it.
+tmpdir=${TMPDIR:-/nonexistent}
+tmpdir=${tmpdir#/private}
 targets=()
-for f in "${candidates[@]}"; do
+for f in "${candidates[@]-}"; do
   [[ "$f" == *.org && -f "$f" ]] || continue
-  [[ " ${targets[*]} " == *" $f "* ]] && continue
+  p=${f#/private}
+  [[ "$p" == /tmp/* || "$p" == /var/tmp/* || "$p" == "$tmpdir"* ]] && continue
+  [[ " ${targets[*]-} " == *" $f "* ]] && continue
   grep -qE '^[[:space:]]*\|' "$f" || continue
   targets+=("$f")
 done

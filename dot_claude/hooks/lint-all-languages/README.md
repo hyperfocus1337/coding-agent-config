@@ -27,9 +27,9 @@ Naming a path is not the same as writing to it. `cat app.py` names it too, and b
 
 `PostToolUse` fires only after a tool call succeeds. A shell command that exits non-zero raises `PostToolUseFailure` instead, which is the write-then-verify pattern (`cat > setup.py <<'EOF' ... EOF && python setup.py`): the file is written, the command fails, and the write still needs linting. So the Bash matcher is wired to both events. [format-all-languages](../format-all-languages/docs/implementation.md#why-posttoolusefailure-is-wired-too) holds the measurement behind that.
 
-Every target is linted before the hook exits, so one command reports every file it wrote instead of stopping at the first failure. Files under `/tmp`, `/var/tmp`, or `$TMPDIR` are skipped on both matchers: a scratchpad file is not project code, so a lint error there should not block a tool result.
+Every target is linted before the hook exits, so one command reports every file it wrote instead of stopping at the first failure. Files under `/tmp`, `/var/tmp`, or `$TMPDIR` are skipped on both matchers: a scratchpad file is not project code, so a lint error there should not block a tool result. macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/...`, and the path a payload carries holds that prefix while `$TMPDIR` does not, so both sides of the comparison drop a leading `/private`. Without that, a scratchpad script blocked the tool result on lint errors nobody had to fix.
 
-`test/test.sh` covers both matchers: the block, the clean pass, the off switch, a path the command only read, a path named twice, two failing files in one command, and the temp-file skip.
+`test/test.sh` covers both matchers: the block, the clean pass, the off switch, a path the command only read, a path named twice, two failing files in one command, and the temp-file skip in its three forms, `/tmp`, `/private/tmp` and `/private$TMPDIR`.
 
 ## Turning linters off or tuning them
 

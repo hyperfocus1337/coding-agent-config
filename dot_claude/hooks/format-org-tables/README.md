@@ -87,6 +87,10 @@ The pass is idempotent. An already-aligned file comes out byte-identical.
 
 Before starting Emacs at all, the hook greps the file for a line beginning with `|`. No match means no table, so there is nothing to align and the hook exits: 0.02s instead of 1.4s. Most Org files are prose, so this is the common case. The grep is deliberately loose (a `|` inside an `#+begin_example` block is enough to pass it); it only decides whether starting Emacs is worthwhile, and `org-at-table-p` makes the real per-table decision.
 
+## Throwaway files
+
+A path under `/tmp`, `/var/tmp` or `$TMPDIR` is skipped: Claude's scratchpad lives there, and a file it is about to throw away is not project prose. macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/...`, and the path a payload carries holds that prefix while `$TMPDIR` does not, so both sides of the comparison drop a leading `/private`.
+
 ## `--no-init-file` is required
 
 Without it, Emacs loads the user's full init (Doom, in this setup) on every hook run, and the hook goes from ~1.4s to far past its timeout. With it, only bundled Org loads. The ~1.4s is almost entirely Emacs startup; the alignment work itself is negligible, which is why the `settings.json` timeouts are 5s on the edit matcher and 10s on each Bash matcher, where the file list can be longer.

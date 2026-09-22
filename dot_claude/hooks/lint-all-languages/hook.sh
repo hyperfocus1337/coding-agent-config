@@ -56,10 +56,16 @@ fi
 # Keep what exists, drop duplicates (one command names the same file twice
 # often enough), and skip throwaway files: scratchpad and temp files are not
 # project code, so lint errors there should not block a tool result.
+# macOS resolves /tmp to /private/tmp and $TMPDIR to /private/var/folders/...,
+# and the scratchpad path Claude writes to carries that /private prefix, so
+# both sides of the comparison drop it.
+tmpdir=${TMPDIR:-/nonexistent}
+tmpdir=${tmpdir#/private}
 targets=()
 for f in "${candidates[@]-}"; do
   [[ -f "$f" ]] || continue
-  [[ "$f" == /tmp/* || "$f" == /var/tmp/* || "$f" == "${TMPDIR:-/nonexistent}"* ]] && continue
+  p=${f#/private}
+  [[ "$p" == /tmp/* || "$p" == /var/tmp/* || "$p" == "$tmpdir"* ]] && continue
   [[ " ${targets[*]-} " == *" $f "* ]] && continue
   targets+=("$f")
 done

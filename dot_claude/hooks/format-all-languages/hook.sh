@@ -92,9 +92,18 @@ fi
 
 # --- Filter to supported files ---
 # Keep what still exists and Prettier parses. README "Supported extensions".
+# A scratchpad or temp file is not project code, and formatting one is an edit
+# of a file Claude is about to throw away. macOS resolves /tmp to /private/tmp
+# and $TMPDIR to /private/var/folders/..., and the scratchpad path Claude
+# writes to carries that /private prefix, so both sides of the comparison drop
+# it.
+tmpdir=${TMPDIR:-/nonexistent}
+tmpdir=${tmpdir#/private}
 targets=()
-for f in "${candidates[@]}"; do
+for f in "${candidates[@]-}"; do
   [[ -f "$f" ]] || continue
+  p=${f#/private}
+  [[ "$p" == /tmp/* || "$p" == /var/tmp/* || "$p" == "$tmpdir"* ]] && continue
   [[ "${f##*.}" =~ ^(${ext_filter})$ ]] && targets+=("$f")
 done
 

@@ -91,4 +91,22 @@ run "$(bash_payload "cat > /tmp/lint-hook-test-throwaway.sh <<'EOF' ... EOF")"
 check "a throwaway file under /tmp is skipped" 0 ''
 rm -f /tmp/lint-hook-test-throwaway.sh
 
+# macOS resolves /tmp to /private/tmp and $TMPDIR to /private/var/folders/...,
+# and the scratchpad path Claude names carries that prefix, so the skip has to
+# see through it. On a system without /private the paths below do not exist and
+# the hook skips them for that reason, which is why the group is guarded.
+if [[ -d /private/tmp ]]; then
+  bad "/tmp/lint-hook-test-private.sh"
+  run "$(edit_payload /private/tmp/lint-hook-test-private.sh)"
+  check "a throwaway file under /private/tmp is skipped" 0 ''
+  rm -f /tmp/lint-hook-test-private.sh
+
+  scratch=${TMPDIR:-/tmp}
+  scratch=${scratch%/}
+  bad "$scratch/lint-hook-test-scratch.sh"
+  run "$(edit_payload "/private$scratch/lint-hook-test-scratch.sh")"
+  check "a scratchpad file under /private\$TMPDIR is skipped" 0 ''
+  rm -f "$scratch/lint-hook-test-scratch.sh"
+fi
+
 exit "$fail"

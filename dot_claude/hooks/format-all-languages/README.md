@@ -82,6 +82,10 @@ Formatting those files fixes the file, not the commit: the commit still holds th
 
 Any other extension is a clean skip, so the hook never invokes Prettier for files it does not cover. `.org` is covered by a separate hook, [`format-org-tables`](../format-org-tables/README.md), because Prettier has no Org parser. On the Bash sweep the filter is narrowed further to `.md`/`.markdown` only, per the reasoning above.
 
+## Throwaway files
+
+A path under `/tmp`, `/var/tmp` or `$TMPDIR` is skipped on both matchers: Claude's scratchpad lives there, and a file it is about to throw away is not project code. macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/...`, and the path a payload carries holds that prefix while `$TMPDIR` does not, so both sides of the comparison drop a leading `/private`. [`lint-all-languages`](../lint-all-languages/README.md) and [`format-org-tables`](../format-org-tables/README.md) skip the same paths.
+
 ## Prose wrapping
 
 Everything is formatted with `--prose-wrap never`, so prose stays on a single line and relies on the editor's soft wrap (this matches the repo's "do not hard-wrap prose" rule). It affects markdown/MDX paragraphs and YAML block scalars (`>` and `|`); it has no effect on JSON, JS, TS, or CSS.
