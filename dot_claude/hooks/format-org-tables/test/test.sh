@@ -117,6 +117,13 @@ else
   echo "FAIL report no amend notice: $notice"; fail=1
 fi
 
+# A path the command only read must stay as it is: `sed -n` writes another file,
+# and the old mtime of this one is what says the command never wrote it.
+unaligned "$repo/read-only.org"
+touch -t 202001010000 "$repo/read-only.org"
+bash_payload "$repo" "sed -n '1,2p' $repo/read-only.org > $repo/copy.org" | hook >/dev/null
+untouched "a path the command only read" "$repo/read-only.org"
+
 # No `git commit` in the command text, so no notice, whatever the tree looks like.
 unaligned "$repo/quiet.org"
 notice=$(bash_payload "$repo" "cat > $repo/quiet.org <<'EOF'

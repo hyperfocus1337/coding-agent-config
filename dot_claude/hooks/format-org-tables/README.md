@@ -35,6 +35,8 @@ So on the Bash matcher the hook takes every `.org` path the command text names, 
 
 Relative paths resolve against the session cwd, so a `cd` elsewhere in the command can resolve one wrong. The `-f` check makes that a silent miss, or at worst a no-op pass over an already aligned file of the same name.
 
+A command names a file it only reads as often as one it writes, and aligning a file the command read is an edit nobody asked for: `sed -n '1,20p' config.org > copy.org` names the live configuration and writes a copy. So a named path counts only when its mtime is inside a 120 s window, the test [`lint-all-languages`](../lint-all-languages/README.md) applies for the same reason. A command that writes early and then runs for minutes falls outside the window and is missed; the upgrade is a `PreToolUse` hook that stamps the start time of the matching call.
+
 #### A Bash command that writes a file and then fails
 
 `PostToolUse` fires only after a tool call **succeeds**. A shell command that exits non-zero raises `PostToolUseFailure` instead, which is a separate event with its own wiring. That misses the write-then-verify pattern, which is most of what a shell command does: `cat > notes.md <<'EOF' ... EOF && just fmt-check` writes the file, fails the check, and the alignment pass never ran.

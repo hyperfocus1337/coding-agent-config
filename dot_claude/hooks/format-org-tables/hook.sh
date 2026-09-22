@@ -42,9 +42,21 @@ else
   committed=''
   [[ "$cmd" == *"git commit"* ]] && committed=1
 
+  # A named path the command only read must not be realigned and saved: `sed
+  # -n ... config.org > copy.org` names the live file, writes another one, and
+  # an align of the live file would be an edit nobody asked for. A file the
+  # command wrote carries a fresh mtime, so that is the test, the same one
+  # lint-all-languages applies.
+  # ponytail: a command that writes early and then runs for minutes falls
+  # outside the window and is missed. The upgrade is a PreToolUse hook that
+  # stamps the start time for the matching call to compare against.
+  now=$(date +%s)
   while IFS= read -r path; do
     [[ "$path" == /* ]] || path=$cwd/$path
-    candidates+=("$path")
+    [[ -f "$path" ]] || continue
+    mtime=$(stat -c %Y "$path" 2>/dev/null || stat -f %m "$path" 2>/dev/null)
+    [[ -n "$mtime" ]] || continue
+    [[ $((now - mtime)) -le 120 ]] && candidates+=("$path")
   done < <(grep -oE '[^[:space:]:;|&"'"'"'`()<>=]+\.org\b' <<<"$cmd")
 fi
 
