@@ -124,6 +124,17 @@ touch -t 202001010000 "$repo/read-only.org"
 bash_payload "$repo" "sed -n '1,2p' $repo/read-only.org > $repo/copy.org" | hook >/dev/null
 untouched "a path the command only read" "$repo/read-only.org"
 
+# Another session's edit to a file the commit holds leaves the tree dirty while
+# Emacs realigned nothing, so there is nothing to amend. The notice names what
+# Emacs changed, not what git calls dirty.
+unaligned "$repo/settled.org"
+edit_payload "$repo/settled.org" | hook >/dev/null
+git -C "$repo" add settled.org && git -C "$repo" commit -qm settled
+printf 'a line another session wrote\n' >> "$repo/settled.org"
+notice=$(bash_payload "$repo" "git add $repo/settled.org && git commit -m settled" | hook)
+if [[ -z "$notice" ]]; then echo "ok   report no notice for a file Emacs left alone"
+else echo "FAIL report notice for a file Emacs left alone: $notice"; fail=1; fi
+
 # No `git commit` in the command text, so no notice, whatever the tree looks like.
 unaligned "$repo/quiet.org"
 notice=$(bash_payload "$repo" "cat > $repo/quiet.org <<'EOF'

@@ -83,6 +83,11 @@ done
 
 [[ ${#targets[@]} -gt 0 ]] || exit 0
 
+# The amend hint may name only files Emacs itself realigned, so record them
+# before the run. README "Write and commit in one command".
+before=''
+[[ -n "${committed:-}" ]] && before=$(cksum "${targets[@]}")
+
 # --- Align ---
 # One Emacs for the whole list: the ~1.4s is startup, so N files cost one
 # startup and not N. README "One Emacs run for every file".
@@ -103,14 +108,17 @@ ORG_TABLE_FILES=$(printf '%s\n' "${targets[@]}") \
 # --- Report a commit that needs amending ---
 # Aligning a file the command already committed fixes the file, not the commit.
 # Say so, because only Claude can amend. README "Write and commit in one command".
-if [[ -n "${committed:-}" ]]; then
+if [[ -n "$before" ]]; then
   dirty=()
-  for f in "${targets[@]}"; do
-    # Status 1 is "the file differs"; 128 is "no repo here", which is not dirty.
-    status=0
-    git -C "${f%/*}" diff --quiet -- "$f" 2>/dev/null || status=$?
-    [[ $status -eq 1 ]] && dirty+=("$f")
-  done
+  # Realigned by the run above, and held by the commit the command just made.
+  # A file that was already dirty for its own reasons, another session's work
+  # among them, is not something amending fixes, and naming it sends Claude to
+  # rewrite an unrelated commit.
+  # diff-tree and not `diff HEAD~1 HEAD`: the first commit of a repo has no
+  # HEAD~1, and --root is what lists its files.
+  while IFS= read -r f; do
+    [[ -n $(git -C "${f%/*}" diff-tree --no-commit-id --name-only -r --root HEAD -- "$f" 2>/dev/null) ]] && dirty+=("$f")
+  done < <(comm -13 <(sort <<<"$before") <(cksum "${targets[@]}" | sort) | cut -d' ' -f3-)
   if [[ ${#dirty[@]} -gt 0 ]]; then
     jq -nc --arg files "${dirty[*]}" --arg event "$event" '{
       hookSpecificOutput: {

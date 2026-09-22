@@ -49,7 +49,11 @@ One detail the code does care about. The amend hint below reports through `hookS
 
 #### Write and commit in one command
 
-A single Bash call can write a file, commit it, and push it. Aligning the file afterwards fixes the file, not the commit: the commit still holds the unaligned version, and the working tree is now dirty. Only Claude can amend, so the hook says so, through `hookSpecificOutput.additionalContext` naming the files it changed. The hint is emitted only when the command text contains `git commit` and a file the hook aligned is now dirty. `git diff --quiet` exits 1 for "the file differs" and 128 for "no repo here", so a file outside a repo does not report.
+A single Bash call can write a file, commit it, and push it. Aligning the file afterwards fixes the file, not the commit: the commit still holds the unaligned version, and the working tree is now dirty. Only Claude can amend, so the hook says so, through `hookSpecificOutput.additionalContext` naming the files it changed.
+
+Two conditions gate the hint, and both are needed. The file has to be one Emacs itself rewrote, which is a `cksum` of every target before the run against the same list after it. And the file has to be one the last commit holds, which is `git diff-tree --no-commit-id --name-only -r --root HEAD`; `--root` is what makes the first commit of a repo answer, since it has no `HEAD~1`. A file outside a repo answers nothing and does not report.
+
+The first condition replaced a `git diff --quiet` test on the working tree, which could not tell the hook's own alignment from a change that was already there. A second session editing the same file, or an unrelated edit of the same file earlier in the session, made the hook report a commit that held nothing to amend, and following the hint would have folded another author's work into Claude's commit.
 
 ## One Emacs run for every file
 
@@ -115,7 +119,7 @@ Tested against GNU Emacs 30.2. Without Emacs installed the hook is a no-op.
 
 ## Tests
 
-`test/test.sh` runs the hook against both matchers with a temporary fixture: the file an edit names, a file that is not `.org`, a path that does not exist, a second pass over an aligned file, the backup litter, a `|` line inside a block, a `#+TBLFM` formula, a relative and two absolute paths in a command, a command that names no `.org` file, and the amend notice after a commit. It needs `jq`, `emacs`, and `git`, and skips loudly without them.
+`test/test.sh` runs the hook against both matchers with a fixture under `$HOME`, not under `$TMPDIR`, where the hook would skip it: the file an edit names, a file that is not `.org`, a path that does not exist, a second pass over an aligned file, the backup litter, a file in a temp directory, a `|` line inside a block, a `#+TBLFM` formula, a relative and two absolute paths in a command, a command that names no `.org` file, a path the command only read, the amend notice after a commit, and no notice for a file the run left alone. It needs `jq`, `emacs`, and `git`, and skips loudly without them.
 
 ```sh
 bash test/test.sh
