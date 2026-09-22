@@ -148,15 +148,6 @@ The `comments/` commands are thin wrappers over the `organize-with-comments` ski
 
 The command passes `--source <root>` when the working directory is in a git repository whose root holds a `.chezmoi*` or `dot_*` entry. Otherwise it omits `--source`, and chezmoi uses its configured source directory, `~/.local/share/chezmoi` by default. The destination stays at the chezmoi default, `$HOME`. It carries `disable-model-invocation: true`, so it runs only when typed. The apply rule runs `just chezmoi` instead.
 
-## doom/ — Doom Emacs maintenance
-
-| Command         | Description                                                                                                                                 |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/doom:sync`    | Update `~/.emacs.d` to the latest master, then run `doom sync`.                                                                             |
-| `/doom:restart` | Tangle `config.org` in the `doom` daemon, run the `/doom:sync` steps, then restart the daemon with `emacsclient` and `emacs --daemon=doom`. |
-
-`restart` carries `disable-model-invocation: true`: it closes every attached frame, so it runs only when typed. `sync` does not, so a rule can run it after an edit under `dot_doom.d/`. The commands run at expansion time through `!` blocks, so `/doom:restart` repeats the sync sequence instead of invoking `/doom:sync`.
-
 ## code/ — code utilities
 
 | Command         | Description                          |
