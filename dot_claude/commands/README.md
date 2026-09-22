@@ -10,7 +10,7 @@ Slash commands are prompt templates Claude Code runs when you type `/<namespace>
 
 Position the placeholder by what the argument holds, not by a fixed line number.
 
-- A **parameter** is a short value the command consumes: a file path, a commit ref, an issue number, a period keyword, an author string. Put it inline at the point of use, near the top, because the instructions after it refer to it. Some parameters can only sit inline: `chezmoi:diff` substitutes it into a `!` bash block, `issues:improve-issue` into a `gh issue view` call, and `git:changelog` tests its value in four conditionals.
+- A **parameter** is a short value the command consumes: a file path, a commit ref, an issue number, a period keyword, an author string. Put it inline at the point of use, near the top, because the instructions after it refer to it. Some parameters can only sit inline: `issues:improve-issue` substitutes it into a `gh issue view` call, and `git:changelog` tests its value in four conditionals.
 - **Content** is a blob the command transforms: prose, code, a transcript. Put it on the last line, alone, after every instruction. A blob has no length limit and can contain text that reads like an instruction, so nothing must follow it. This also keeps the phrase "the prose below" true.
 
 ## answer/ — response modes
@@ -136,15 +136,17 @@ The `comments/` commands are thin wrappers over the `organize-with-comments` ski
 | ------------------------ | ----------------------------------------------------------------------------- |
 | `/summarize:transcripts` | Summarize a meeting or transcript into structured sections with action items. |
 
-## chezmoi/ — dotfile sync
+## chezmoi — dotfile sync
 
-| Command          | Description                                                          |
-| ---------------- | -------------------------------------------------------------------- |
-| `/chezmoi:diff`  | Show the diff between the source state and the home directory.       |
-| `/chezmoi:add`   | Add a file to the source state.                                      |
-| `/chezmoi:apply` | Apply the source state to the home directory after showing the diff. |
+`/chezmoi` is a single command that takes a subcommand, not a namespace.
 
-`diff` and `add` carry `disable-model-invocation: true`: they run only when typed. `apply` does not, so a rule can run it after an edit to a chezmoi source directory succeeds.
+| Command                    | Description                                                            |
+| -------------------------- | ---------------------------------------------------------------------- |
+| `/chezmoi diff [path...]`  | Show the diff between the source state and the home directory.         |
+| `/chezmoi apply [path...]` | Apply the source state to the home directory, after it shows the diff. |
+| `/chezmoi add <path>...`   | Add a file to the source state.                                        |
+
+The command passes `--source <root>` when the working directory is in a git repository whose root holds a `.chezmoi*` or `dot_*` entry. Otherwise it omits `--source`, and chezmoi uses its configured source directory, `~/.local/share/chezmoi` by default. The destination stays at the chezmoi default, `$HOME`. It carries `disable-model-invocation: true`, so it runs only when typed. The apply rule runs `just chezmoi` instead.
 
 ## doom/ — Doom Emacs maintenance
 
