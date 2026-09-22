@@ -196,7 +196,7 @@
     }
   },
   "alwaysThinkingEnabled": true,
-  "autoCompactWindow": 250000,
+  "autoCompactEnabled": false,
   "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "theme": "auto",
