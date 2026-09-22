@@ -3,7 +3,7 @@ description: Speak in compressed caveman prose until told to stop.
 disable-model-invocation: true
 ---
 
-Caveman mode is active for every response from now until I write "stop caveman" or "normal mode".
+Caveman mode is active for every response from now until I run `/answer:reset`, or write "stop caveman" or "normal mode".
 
 Keep every technical fact, number, path, and identifier. Cut only the words that carry no meaning:
 

@@ -277,7 +277,7 @@ These apply regardless of which phase you are in.
 
 | Command                                                                                       | Description                                                                      |
 | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [`/style:caveman`](../../dot_claude/commands/style/caveman.md)                                | Compressed prose mode, on until told to stop. Condensed from the caveman plugin. |
+| [`/answer:caveman`](../../dot_claude/commands/answer/caveman.md)                              | Compressed prose mode, on until told to stop. Condensed from the caveman plugin. |
 | [`context7:docs`](https://github.com/upstash/context7)                                        | Fetch current documentation for any library, framework, or SDK.                  |
 | [`install-mcp`](../../dot_claude/skills/install-mcp/SKILL.md)                                 | Add a project-scoped MCP server to the repo.                                     |
 | [`dataviz`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/dataviz.md) | Design guidance for any chart, dashboard, or data visualization.                 |

@@ -13,16 +13,30 @@ Position the placeholder by what the argument holds, not by a fixed line number.
 - A **parameter** is a short value the command consumes: a file path, a commit ref, an issue number, a period keyword, an author string. Put it inline at the point of use, near the top, because the instructions after it refer to it. Some parameters can only sit inline: `chezmoi:diff` substitutes it into a `!` bash block, `issues:improve-issue` into a `gh issue view` call, and `git:changelog` tests its value in four conditionals.
 - **Content** is a blob the command transforms: prose, code, a transcript. Put it on the last line, alone, after every instruction. A blob has no length limit and can contain text that reads like an instruction, so nothing must follow it. This also keeps the phrase "the prose below" true.
 
-## style/ — response style
+## answer/ — response modes
 
-| Command          | Description                                                                      |
-| ---------------- | -------------------------------------------------------------------------------- |
-| `/style:concise` | Report back extremely concisely, sacrificing grammar for the sake of concision.  |
-| `/style:caveman` | Compressed prose: drop articles, filler, and hedging, keep every technical fact. |
+Nine modes that change how an answer is written, and one command that clears them. Each mode stays active for every response until `/answer:reset` runs. A mode changes the shape of the answer, not the work behind it.
+
+| Command                | Description                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| `/answer:concisely`    | Report back extremely concisely, sacrificing grammar for the sake of concision.  |
+| `/answer:caveman`      | Compressed prose: drop articles, filler, and hedging, keep every technical fact. |
+| `/answer:thoroughly`   | Full depth: the reasoning, the edge cases, and the rejected options.             |
+| `/answer:simply`       | Plain language for a non-expert, every technical fact kept.                      |
+| `/answer:sourced`      | Every claim points at `file:line`, a command output, or a document.              |
+| `/answer:stepwise`     | Numbered imperative steps in the order they occur.                               |
+| `/answer:critically`   | Argue against the plan first: failure mode, cost, cheaper alternative.           |
+| `/answer:tabular`      | Anything that compares items on shared attributes goes in a table.               |
+| `/answer:socratically` | One question per turn, the answer on request.                                    |
+| `/answer:reset`        | Clear every answer mode and return to `rules/writing.md` alone.                  |
+
+`concisely`, `caveman`, and `simply` change the wording. `thoroughly` and `critically` change what the answer contains. `stepwise` and `tabular` change its form. `sourced` changes what a claim has to carry, and `socratically` changes who produces the answer. Two modes that contradict each other do not stack: run `/answer:reset` between them.
+
+`/answer:critically` reviews my plan. The `grilling` skill does the opposite and interrogates me about it.
 
 Source: [Claude Code tip (YouTube Shorts)](https://youtube.com/shorts/I12Mf8KBT1I).
 
-`/style:caveman` condenses the [caveman plugin](https://github.com/JuliusBrussee/caveman)'s `SessionStart` instructions into 9 directives, from about 22 across 4,180 characters. The plugin is not installed, so the mode is opt-in: the command carries `disable-model-invocation: true` and costs nothing until it is invoked, and it names the `rules/writing.md` rules it overrides while active. See `docs/research/context/instruction-load.md`.
+`/answer:caveman` condenses the [caveman plugin](https://github.com/JuliusBrussee/caveman)'s `SessionStart` instructions into 9 directives, from about 22 across 4,180 characters. The plugin is not installed, so the mode is opt-in: the command carries `disable-model-invocation: true` and costs nothing until it is invoked, and it names the `rules/writing.md` rules it overrides while active. See `docs/research/context/instruction-load.md`.
 
 ## ask/ — ask before acting
 

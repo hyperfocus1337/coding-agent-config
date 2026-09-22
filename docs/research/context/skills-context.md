@@ -59,7 +59,7 @@ The four `install-*` executors carry the flag because `install-agent-resources` 
 | `git:commit:push`     |    38 | listed, declared here                                  |
 | 24 others             |     0 | `disable-model-invocation: true`, reachable as `/name` |
 
-`/style:caveman` carries the flag, so its 70-character breadcrumb stays out of the listing and the 1,292 characters of the file itself cost nothing until it is invoked.
+`/answer:caveman` carries the flag, so its 72-character breadcrumb stays out of the listing and the 1,316 characters of the file itself cost nothing until it is invoked.
 
 **Agents, 2 entries, 489 characters.** `thermo-nuclear-code-quality-review` 301 and `ci-watcher` 186, both deployed by the `cursor-team-kit` APM entry. `apm.yml` notes there is no `agents:` subset key, so taking that kit's one skill means taking both agents. `codex` contributes a third, `codex-rescue`.
 
@@ -79,10 +79,10 @@ Every command in `dot_claude/commands/` except the five `git:commit:*` variants 
 | `issues:*` (3)                                                      |             368 | each needs an issue number as an argument, so the request always arrives as a slash command                                           |
 | `git:rewrite:author`, `git:rewrite:date`, `git:rewrite:shift-dates` |             291 | history surgery, never something to auto-select                                                                                       |
 | `git:branches:cleanup`, `git:changelog`, `git:worktrees:*` (2)      |             558 | deliberate maintenance runs, invoked by hand at a moment of the user's choosing                                                       |
-| `style:caveman`, `style:concise`, `docs:current-state`              |             206 | mode switches the user types explicitly                                                                                               |
+| 10 × `answer:*`, `docs:current-state`                               |             847 | mode switches the user types explicitly                                                                                               |
 | `summarize:transcripts`                                             |             102 | a standalone prompt for the same task as the flagged `meeting-summarizer` skill                                                       |
 | `simple:explain`, `simple:proofread`                                |              88 | within default competence; the breadcrumb buys nothing the model cannot already do                                                    |
-| **Total**                                                           |       **2,585** |                                                                                                                                       |
+| **Total**                                                           |       **3,226** |                                                                                                                                       |
 
 `dot_claude/commands/README.md` and `dot_claude/commands/git/README.md` carry the same flag, and `.chezmoiignore` keeps both out of `~/.claude`. Either guard alone is enough; both are documentation, not commands.
 
@@ -92,7 +92,7 @@ Two costs the script cannot see, measured separately:
 
 Claude Code's own built-in skills (`dataviz`, `claude-api`, `artifact-*`, `update-config`, `code-review`, `simplify`, `loop`, `schedule`, `run`, `init`, `security-review`, `keybindings-help`, `fewer-permission-prompts`) add 15 entries and roughly **6,000 characters**. Two of them dominate: `dataviz` at 1,182 characters and `claude-api` at 1,086. These are not configurable from this repo, but they are the single largest block competing for the same listing budget.
 
-`SessionStart` hooks inject plain text straight into the conversation, which is not a listing, is never truncated, and re-fires on every startup, resume, clear and compact. A hook that injects instruction text is therefore the most expensive shape a directive set can take, and no plugin on this machine has one: the enabled four contribute breadcrumbs only. Anything that would arrive that way is authored here instead, in [`rules/code.md`](../../../dot_claude/rules/code.md) at 1,325 characters loaded once per session, and in [`commands/style/caveman.md`](../../../dot_claude/commands/style/caveman.md) at 1,292 characters loaded only when `/style:caveman` runs.
+`SessionStart` hooks inject plain text straight into the conversation, which is not a listing, is never truncated, and re-fires on every startup, resume, clear and compact. A hook that injects instruction text is therefore the most expensive shape a directive set can take, and no plugin on this machine has one: the enabled four contribute breadcrumbs only. Anything that would arrive that way is authored here instead, in [`rules/code.md`](../../../dot_claude/rules/code.md) at 1,325 characters loaded once per session, and in [`commands/answer/caveman.md`](../../../dot_claude/commands/answer/caveman.md) at 1,316 characters loaded only when `/answer:caveman` runs.
 
 Before installing a plugin that ships a `SessionStart` hook, measure what it injects and check whether it can be silenced. Feed the hook a payload and count the bytes:
 
