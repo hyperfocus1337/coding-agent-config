@@ -1,14 +1,14 @@
 ---
-description: Reorder a markdown document's sections, asking first whether the prose may be rewritten.
-argument-hint: <file-path-or-glob>
+description: Add headings to a markdown file, or to the lines given.
+argument-hint: <file-path>[:<start>-<end>]
 disable-model-invocation: true
 ---
 
-Restructure the markdown at $ARGUMENTS. Sections move as whole blocks.
+Add headings to $ARGUMENTS. If the path carries line numbers, change only those lines and leave the rest of the file as it is.
 
-1. **Outline.** Read all of it. Record every heading, its level, and the lines it owns up to the next heading of its level or higher.
-2. **Plan.** Fix skipped levels, nest subtopics, group related sections, order them by what a reader needs first. Then list the defects no reorder can fix, for example: duplicate headings, empty sections, a stale table of contents.
-3. **Ask** with `AskUserQuestion`, before you touch the file. Show the before and after outline, then ask two things: may you rewrite sentences, or must every word survive; and how to repair the step 2 defects.
-4. **Apply.** Write back to the same path. Repair the anchors you moved. Rewrite prose only if step 3 allowed it.
+1. **Read** the target range. Mark each point where the topic changes.
+2. **Draft** one heading per block. Match the heading levels already in the file, and skip no level.
+3. **Ask** with `AskUserQuestion`. Show the outline before and after, then wait for the answer.
+4. **Apply.** Insert the headings into the same file. A new heading often repeats the topic sentence below it. Cut that sentence, or rewrite the paragraph so it opens with new information.
 
-Change nothing when the order is already right, and say so. Report the new outline and one line per move.
+Move no section. Say so and change nothing when the text already has the headings it needs.
