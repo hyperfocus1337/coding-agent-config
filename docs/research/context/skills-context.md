@@ -81,7 +81,7 @@ Every command in `dot_claude/commands/` except the five `git:commit:*` variants 
 | `git:branches:cleanup`, `git:changelog`, `git:worktrees:*` (2)      |             558 | deliberate maintenance runs, invoked by hand at a moment of the user's choosing                                                       |
 | 10 × `answer:*`, `docs:current-state`                               |             847 | mode switches the user types explicitly                                                                                               |
 | `summarize:transcripts`                                             |             102 | a standalone prompt for the same task as the flagged `meeting-summarizer` skill                                                       |
-| `simple:explain`, `simple:proofread`                                |              88 | within default competence; the breadcrumb buys nothing the model cannot already do                                                    |
+| `code:explain`, `text:proofread`                                    |              88 | within default competence; the breadcrumb buys nothing the model cannot already do                                                    |
 | **Total**                                                           |       **3,226** |                                                                                                                                       |
 
 `dot_claude/commands/README.md` and `dot_claude/commands/git/README.md` carry the same flag, and `.chezmoiignore` keeps both out of `~/.claude`. Either guard alone is enough; both are documentation, not commands.

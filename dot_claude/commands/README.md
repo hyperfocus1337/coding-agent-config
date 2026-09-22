@@ -157,11 +157,16 @@ The command passes `--source <root>` when the working directory is in a git repo
 
 `restart` carries `disable-model-invocation: true`: it closes every attached frame, so it runs only when typed. `sync` does not, so a rule can run it after an edit under `dot_doom.d/`. The commands run at expansion time through `!` blocks, so `/doom:restart` repeats the sync sequence instead of invoking `/doom:sync`.
 
-## simple/ — everyday utilities
+## code/ — code utilities
 
-| Command             | Description                                      |
-| ------------------- | ------------------------------------------------ |
-| `/simple:explain`   | Explain a code snippet step-by-step.             |
-| `/simple:proofread` | Proofread text (spelling, grammar, readability). |
+| Command         | Description                          |
+| --------------- | ------------------------------------ |
+| `/code:explain` | Explain a code snippet step-by-step. |
 
-File conversion moved out of this namespace: it is the [`markitdown`](../skills/markitdown/) skill now, which the `rules/tools.md` rule reaches for on its own before reading a binary document.
+## text/ — text utilities
+
+| Command           | Description                                      |
+| ----------------- | ------------------------------------------------ |
+| `/text:proofread` | Proofread text (spelling, grammar, readability). |
+
+File conversion is not a command: it is the [`markitdown`](../skills/markitdown/) skill now, which the `rules/tools.md` rule reaches for on its own before reading a binary document.

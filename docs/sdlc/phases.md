@@ -95,11 +95,11 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 ### Code intelligence and search
 
-| Command                                                          | Description                                                            |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| [`ast-grep:ast-grep`](https://github.com/ast-grep/agent-skill)   | Structural code search and rewrite across the codebase by AST pattern. |
-| [`context7:docs`](https://github.com/upstash/context7)           | Look up exact API syntax and config while writing code.                |
-| [`/simple:explain`](../../dot_claude/commands/simple/explain.md) | Explain a code snippet step by step.                                   |
+| Command                                                        | Description                                                            |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [`ast-grep:ast-grep`](https://github.com/ast-grep/agent-skill) | Structural code search and rewrite across the codebase by AST pattern. |
+| [`context7:docs`](https://github.com/upstash/context7)         | Look up exact API syntax and config while writing code.                |
+| [`/code:explain`](../../dot_claude/commands/code/explain.md)   | Explain a code snippet step by step.                                   |
 
 ### Python tooling
 
@@ -263,7 +263,7 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | [`markitdown`](../../dot_claude/skills/markitdown/SKILL.md)                                                                | Convert a PDF, Office, image, audio, or HTML file to Markdown.                |
 | [`technical-writing`](../../dot_claude/skills/technical-writing/SKILL.md)                                                  | Write or edit technical English against Google developer documentation style. |
-| [`/simple:proofread`](../../dot_claude/commands/simple/proofread.md)                                                       | Proofread text for spelling, grammar, and readability.                        |
+| [`/text:proofread`](../../dot_claude/commands/text/proofread.md)                                                           | Proofread text for spelling, grammar, and readability.                        |
 | [`meeting-summarizer`](../../dot_claude/skills/meeting-summarizer/SKILL.md)                                                | Turn a meeting or interview transcript into structured English notes.         |
 | [`/summarize:transcripts`](../../dot_claude/commands/summarize/transcripts.md)                                             | Summarize a meeting or transcript into sections with action items.            |
 | [`teach`](https://github.com/mattpocock/skills/blob/main/skills/productivity/teach/SKILL.md)                               | Explain a concept or codebase area for onboarding.                            |
