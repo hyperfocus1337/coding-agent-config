@@ -3,6 +3,7 @@
   "theme": "dark",
   "defaultProvider": "openrouter",
   "defaultModel": "deepseek/deepseek-v4.1-flash",
+  "quietStartup": true,
   "hideThinkingBlock": true,
   "tuiMode": "fullscreen",
   "terminal": {
