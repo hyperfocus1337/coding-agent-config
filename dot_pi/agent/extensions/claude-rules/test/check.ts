@@ -148,31 +148,12 @@ fs.rmSync(fixture, { recursive: true });
 const root = path.join(os.homedir(), ".claude", "rules");
 const found = discover(root);
 
-check("apply.md is the one scoped rule and carries three globs", () => {
-  const scoped = found.filter((candidate) => candidate.paths.length > 0);
+check("every installed rule is unscoped", () => {
   assert.deepEqual(
-    scoped.map((candidate) => candidate.name),
-    ["apply.md"],
+    found.filter((candidate) => candidate.paths.length > 0),
+    [],
   );
-  assert.deepEqual(scoped[0]?.paths, [
-    "dot_claude/**",
-    "dot_config/**",
-    "dot_doom.d/**",
-  ]);
 });
-
-check(
-  "apply.md fires on a read inside dot_claude and not on one outside",
-  () => {
-    const apply = found.find((candidate) => candidate.name === "apply.md");
-    assert.ok(apply);
-    assert.equal(
-      matches(apply, path.join("dot_claude", "rules", "code.md")),
-      true,
-    );
-    assert.equal(matches(apply, "README.md"), false);
-  },
-);
 
 check("the three unscoped rules are in the block, in full", () => {
   const block = systemPromptBlock(found);
