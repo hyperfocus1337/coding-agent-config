@@ -22,20 +22,33 @@ IN=$(cat)
 # --- Resolve the changed files ---
 # Stop carries no file path, so ask git what changed: tracked edits against HEAD
 # plus untracked files. Outside a work tree there is nothing to compare, so skip.
+# The session's working directory can be a subdirectory. Run from the repository
+# root, so the checkers see the same scope as the changed-file list, and git diff
+# and ls-files both print root-relative paths. --diff-filter=d drops deleted
+# files, which cannot need a check.
 # ponytail: a git diff also covers work from before the session. The upgrade is
 # to read the edited paths out of the transcript at .transcript_path.
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
-CHANGED=$({ git diff --name-only HEAD; git ls-files --others --exclude-standard; } 2>/dev/null)
+cd "$(git rev-parse --show-toplevel)" || exit 0
+CHANGED=$({ git diff --name-only --diff-filter=d HEAD; git ls-files --others --exclude-standard; } 2>/dev/null)
 
 # --- Checker helper ---
 # Run checker. If binary missing, skip silently. If it reports errors, send its
 # output to stderr (1>&2) and record the failure. Both checkers run, so one turn
-# reports every language instead of stopping at the first.
+# reports every language instead of stopping at the first. pyrefly exits 1 when
+# its config matches no files; that is nothing to check, not a type error.
 FAILED=0
-check() { command -v "$1" >/dev/null || return 0; "$@" 1>&2 || FAILED=2; }
+check() {
+  command -v "$1" >/dev/null || return 0
+  local out
+  out=$("$@" 2>&1) && return 0
+  grep -q 'No Python files matched' <<<"$out" && return 0
+  printf '%s\n' "$out" 1>&2
+  FAILED=2
+}
 
-# Pick checkers by the extensions present. They run project-wide from the current
-# dir, so the file list only decides which checker starts.
+# Pick checkers by the extensions present. They run project-wide from the root,
+# so the file list only decides which checker starts.
 grep -q '\.py$' <<<"$CHANGED" && check pyrefly check
 # tsc with no tsconfig.json prints its whole help text and exits 1, so require one.
 grep -qE '\.(ts|tsx|mts|cts)$' <<<"$CHANGED" && [[ -f tsconfig.json ]] && check tsc --noEmit

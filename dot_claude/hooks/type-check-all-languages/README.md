@@ -4,16 +4,16 @@ A `Stop` hook that type-checks the whole project once, after Claude finishes res
 
 ## How it works
 
-Wired to `Stop` in `settings.json`, with no matcher, because `Stop` takes none. `Stop` carries no file path, so the hook asks git what changed: `git diff --name-only HEAD` plus untracked files. It dispatches on the extensions in that list:
+Wired to `Stop` in `settings.json`, with no matcher, because `Stop` takes none. `Stop` carries no file path, so the hook asks git what changed: `git diff --name-only HEAD` plus untracked files, without deleted files. The hook first moves to the repository root, because Claude Code runs it in the session's current directory, which can be a subdirectory. From a subdirectory, the changed-file list covers the whole repository but the checkers see only that subdirectory. It dispatches on the extensions in that list:
 
 | Extension                  | Checker                         | Also needs      |
 | -------------------------- | ------------------------------- | --------------- |
 | `.py`                      | [pyrefly](https://pyrefly.org/) |                 |
 | `.ts` `.tsx` `.mts` `.cts` | `tsc --noEmit`                  | `tsconfig.json` |
 
-Both checkers run when both languages changed, so one turn reports every language. They run at the project root, not on single files, because type checkers need whole-project context. The changed-file list only decides which checker starts. A missing checker is a silent skip, and so is a directory that is not a git work tree. Errors go to stderr with exit 2, which blocks the stop and hands the output to Claude to fix. The 60s timeout in `settings.json` caps runtime.
+Both checkers run when both languages changed, so one turn reports every language. They run at the project root, not on single files, because type checkers need whole-project context. The changed-file list only decides which checker starts. A missing checker is a silent skip, and so is a directory that is not a git work tree. pyrefly exits 1 with `No Python files matched` when its config matches no files; the hook treats that as a pass, not a type error. Errors go to stderr with exit 2, which blocks the stop and hands the output to Claude to fix. The 60s timeout in `settings.json` caps runtime.
 
-`tsc` needs a `tsconfig.json` at the root. Without one it prints its whole help text and exits 1, which would block every stop with 100 lines of noise, so the hook skips it instead.
+`tsc` needs a `tsconfig.json` at the repository root. Without one it prints its whole help text and exits 1, which would block every stop with 100 lines of noise, so the hook skips it instead.
 
 ## Why `Stop` and not `PostToolUse`
 
