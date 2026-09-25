@@ -148,6 +148,17 @@ pi-apply:
 pi-diff:
     chezmoi diff --source "{{ REPO }}" --destination "{{ env('HOME') }}" "{{ env('HOME') }}/.pi"
 
+# Write the installed pi version to lastChangelogVersion in dot_pi/agent/settings.json.
+# perl, not jq: jq would reformat the one-line arrays in the file. Not sed: BSD and GNU `sed -i` differ.
+[group('pi')]
+pi-version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    version=$(pi --version)
+    [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Unexpected pi version: $version" >&2; exit 1; }
+    perl -pi -e "s/(\"lastChangelogVersion\": \")[^\"]*\"/\${1}$version\"/" "{{ REPO }}/dot_pi/agent/settings.json"
+    echo "lastChangelogVersion: $version"
+
 # Apply the pi tree, then run the extension checks against what is installed.
 [group('pi')]
 pi: pi-apply pi-check
