@@ -46,9 +46,12 @@ pull:
 # --- chezmoi ---
 
 # Apply this repo to $HOME with chezmoi. Repo root is the chezmoi source dir.
+# --safe=false: in the devcontainer, ~/.claude and ~/.pi are separate volumes on one
+# btrfs device. chezmoi caches one temp dir per device ID, so an atomic rename from
+# ~/.claude into ~/.pi fails with "invalid cross-device link".
 [group('chezmoi')]
 chezmoi:
-    chezmoi apply --source "{{ REPO }}" --destination "{{ env('HOME') }}"
+    chezmoi apply --safe=false --source "{{ REPO }}" --destination "{{ env('HOME') }}"
 
 # Run `just chezmoi` inside the devcontainer.
 [group('chezmoi')]
