@@ -18,4 +18,4 @@ Split the changes into one commit per logical unit.
 3. **Commit.** Per unit, stage only its paths, or its hunks with `git add -p`. Never `git add -A`, `git add .`, `git add -u`, or `git commit -a`. Check `git diff --cached --name-only` against the unit, unstage anything extra with `git restore --staged <path>`, then commit with Conventional Commits.
 4. **Repeat.** Continue until `git status` is clean.
 
-Print one line per commit: `<short sha> <subject>`. No other text.
+Print one line per commit as inline code: `<short sha> <subject>`. No other text.

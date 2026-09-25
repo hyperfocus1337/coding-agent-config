@@ -22,4 +22,4 @@ The conversation is the boundary: every task the user asked for, fixes you made 
 
 If you cannot decide whether a hunk is yours, leave it out.
 
-Do not edit files. Print one line per commit: `<short sha> <subject>`, plus `left: <count> paths` when anything stayed uncommitted. No other text.
+Do not edit files. Print one line per commit as inline code: `<short sha> <subject>`, plus `left: <count> paths` when anything stayed uncommitted. No other text.

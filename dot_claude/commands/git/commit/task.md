@@ -28,4 +28,4 @@ A conversation is not a scope. Out of scope by default:
 3. **Verify.** Compare `git diff --cached --name-only` against the include list. Unstage anything extra with `git restore --staged <path>` and repeat until they match.
 4. **Commit.** Use Conventional Commits with a concise subject, body only when the subject does not carry the reason. Describe the scope and nothing else. If the body needs "also", unstage the extra change and return to step 2.
 
-Do not edit files. Print one line: `<short sha> <subject>`, plus `left: <count> paths` when anything stayed uncommitted. No other text.
+Do not edit files. Print one line as inline code: `<short sha> <subject>`, plus `left: <count> paths` when anything stayed uncommitted. No other text.

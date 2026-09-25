@@ -24,4 +24,4 @@ Rules:
 - Do not rewrite a pushed commit unless the user confirms the force-push.
 - If the changes belong to no existing commit, say so and make a normal commit instead.
 
-Print one line: `<short sha> <subject>` and how you folded it (amend or fixup). No other text.
+Print one line as inline code: `<short sha> <subject>` and how you folded it (amend or fixup). No other text.
