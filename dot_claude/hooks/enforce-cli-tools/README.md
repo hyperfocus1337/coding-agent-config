@@ -33,7 +33,7 @@ cat package-lock.json
 npmrc-check
 ```
 
-Two gaps remain, both failing open. Heredoc bodies are still split naively, so a separator on a line of heredoc text can start a bogus segment; the overrides below clear that one. And blanking quoted spans means a banned tool hidden inside one is invisible, so `sh -c 'npm i'` passes. Neither is worth a real shell-word parser yet, which is the upgrade path for both.
+A heredoc with a quoted delimiter (`<<'EOF'`, `<<"EOF"`, `<<\EOF`) runs nothing, so its body is dropped before the split: `cat > rules.md <<'EOF'` with a backticked banned name in the text passes. Two gaps remain. An unquoted heredoc body is still split naively, because it can run `$(...)`, so a separator on a line of its text can start a bogus segment and block; the overrides below clear that one. And blanking quoted spans means a banned tool hidden inside one is invisible, so `sh -c 'npm i'` passes. Neither is worth a real shell-word parser yet, which is the upgrade path for both.
 
 Only the **first** violation is reported. One clear message beats a list, and fixing it re-runs the hook anyway.
 

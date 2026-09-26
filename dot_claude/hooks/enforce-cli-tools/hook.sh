@@ -27,6 +27,28 @@ allowlist=()
 # $1 = banned tool name; 0 if this repo/session may still use it.
 is_allowed() { [[ " ${allowlist[*]-} " == *" $1 "* ]]; }
 
+# --- Heredoc bodies ---
+# strip_quoted_heredocs <command line> -> the line without the body of any
+# heredoc whose delimiter is quoted (<<'EOF', <<"EOF", <<\EOF). The shell runs
+# nothing in such a body, so a banned name there is text, like `cat > rules.md`
+# writing "never npm". ponytail: one heredoc per line; a second one on the same
+# line keeps its body, which can only over-block.
+strip_quoted_heredocs() {
+  local l out='' delim='' dash='' stripped
+  local opener="<<(-?)[[:space:]]*['\"\\\\]+([A-Za-z_][A-Za-z0-9_]*)"
+  while IFS= read -r l || [ -n "$l" ]; do
+    if [ -n "$delim" ]; then
+      stripped=$l
+      [ -n "$dash" ] && stripped=${l#"${l%%[!$'\t']*}"} # <<- also strips leading tabs
+      [ "$stripped" = "$delim" ] && delim=
+      continue
+    fi
+    out+=$l$'\n'
+    [[ $l =~ $opener ]] && dash=${BASH_REMATCH[1]} delim=${BASH_REMATCH[2]}
+  done <<< "$1"
+  printf '%s' "$out"
+}
+
 # --- Command-position tokeniser ---
 # commands_run <command line> -> the command each segment actually runs, one per
 # line. Only these positions are checked, so `rg npm` and `git commit -m "drop
@@ -36,8 +58,12 @@ commands_run() {
   # ${line//[...]/} ends the expansion early and the rest of the line goes live.
   local line=$1 quoted_span="('[^']*'|\"[^\"]*\")" separators='[&|;(){}`]'
   local segment words word wrapped
+  # Drop quoted-delimiter heredoc bodies before the quote pass: an apostrophe
+  # in the text would otherwise pair with a quote lines away.
+  line=$(strip_quoted_heredocs "$line")
   # Blank quoted spans first, so a separator inside a string is not mistaken for
-  # one between commands. ponytail: heredoc bodies are still split naively.
+  # one between commands. ponytail: an unquoted heredoc body is still split
+  # naively; it can run $(...), so dropping it would let a real call through.
   while [[ $line =~ $quoted_span ]]; do line=${line/"${BASH_REMATCH[1]}"/q}; done
   # Split on the separators plus newline. Brackets count: whatever runs inside
   # $(...), backticks or { ...; } is its own command wherever it sits.

@@ -44,6 +44,14 @@ allowed "npmrc-check"
 allowed "git commit -m 'fix; npm bump'"
 allowed 'echo "a && npm i"'
 
+# a quoted-delimiter heredoc body is text; an unquoted one can run $(...)
+allowed "$(printf "cat > f <<'EOF'\nnever \`npm\` or \`yarn\`, it's slow\nEOF")"
+allowed "$(printf 'cat > f <<"EOF"\n`npm i`\nEOF')"
+allowed "$(printf 'cat > f <<\\EOF\n`npm i`\nEOF')"
+allowed "$(printf "cat > f <<-'EOF'\n\t\`npm i\`\n\tEOF")"
+blocked "$(printf "cat > f <<'EOF'\ntext\nEOF\nnpm i")" # the command after the body
+blocked "$(printf 'cat > f <<EOF\n$(npm bin)\nEOF')"   # unquoted: the body runs
+
 # the replacement comes back with the banned name, multi-word replacements intact
 maps "npm pnpm" "npm i"
 rule_tool+=(npx) && rule_replacement+=("pnpm dlx")
