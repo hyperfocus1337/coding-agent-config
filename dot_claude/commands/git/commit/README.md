@@ -50,4 +50,4 @@ Write every patch and file version outside the repository.
 
 ## Permissions
 
-`allowed-tools` lists every git subcommand a method needs: `apply`, `show`, `hash-object`, `update-index`, `ls-files`. A missing entry causes a permission prompt on each call, or the model falls back to `git add` on the whole file.
+`allowed-tools` lists every git subcommand a method needs: `apply`, `show`, `hash-object`, `update-index`, `ls-files`. A missing entry causes a permission prompt on each call, or the model falls back to `git add` on the whole file. It also lists every command of the Context block: outside bypass and auto mode, a context command that no rule allows stops the invocation with `Shell command permission check failed`.
