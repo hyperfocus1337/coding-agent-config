@@ -251,6 +251,21 @@ stale:
 clean-stale:
     @"{{ SCRIPTS }}/inspect/stale.sh" --delete
 
+# Run `just clean-stale` inside the devcontainer.
+[group('cleanup')]
+clean-stale-devcontainer:
+    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just clean-stale
+
+# `-` on the local run: clean-stale exits 1 on abort or when only catalog rows remain,
+# and the devcontainer has its own stale paths and its own prompt.
+# Run `just clean-stale` both locally and inside the devcontainer.
+[group('cleanup')]
+clean-stale-all:
+    @echo "==> clean-stale: local"
+    -@just clean-stale
+    @echo "==> clean-stale: devcontainer"
+    @just clean-stale-devcontainer
+
 # Remove timestamped settings.json backups
 [group('cleanup')]
 clean-backups:
@@ -265,3 +280,16 @@ clean-backups:
     printf 'Will remove:\n'; printf '  %s\n' "${files[@]}"
     read -r -p "Proceed? [y/N] " ans
     if [[ "$ans" == "y" || "$ans" == "Y" ]]; then rm -f "${files[@]}" && echo "Removed."; else echo "Aborted."; fi
+
+# Run `just clean-backups` inside the devcontainer.
+[group('cleanup')]
+clean-backups-devcontainer:
+    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just clean-backups
+
+# Run `just clean-backups` both locally and inside the devcontainer.
+[group('cleanup')]
+clean-backups-all:
+    @echo "==> clean-backups: local"
+    @just clean-backups
+    @echo "==> clean-backups: devcontainer"
+    @just clean-backups-devcontainer

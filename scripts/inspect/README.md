@@ -44,3 +44,5 @@ just clean-stale
 ```
 
 This runs the same report, then asks once before it removes every path from the first two sections with `rm -rf`. It exits 0 after the removal and 1 on abort. Read the report before you answer `y`: a file you added by hand under `~/.claude/` and never tracked in the repo also shows up in the first check. The third section (catalog rows) is never deleted; edit `skills.json` by hand.
+
+On the host, `just clean-stale-all` runs `clean-stale` locally, then inside the devcontainer with its own report and prompt. The devcontainer run starts even when the local run exits 1.
