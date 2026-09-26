@@ -53,10 +53,12 @@ pull:
 chezmoi:
     chezmoi apply --safe=false --source "{{ REPO }}" --destination "{{ env('HOME') }}"
 
+# *-devcontainer recipes: `-i $([ -t 0 ] && echo -t)` adds -t only when stdin is a terminal.
+# Agent shells have no TTY, and `docker exec -t` fails there with "the input device is not a TTY".
 # Run `just chezmoi` inside the devcontainer.
 [group('chezmoi')]
 chezmoi-devcontainer:
-    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -it {{ CONTAINER }} just chezmoi
+    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just chezmoi
 
 # Run `just chezmoi` both locally and inside the devcontainer.
 [group('chezmoi')]
@@ -74,7 +76,7 @@ chezmoi-diff:
 # Run `just chezmoi-diff` inside the devcontainer.
 [group('chezmoi')]
 chezmoi-diff-devcontainer:
-    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -it {{ CONTAINER }} just chezmoi-diff
+    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just chezmoi-diff
 
 # Track a $HOME file in this repo: `just chezmoi-add ~/.config/foo`.
 [group('chezmoi')]
@@ -91,7 +93,7 @@ apm:
 # Run `just apm` inside the devcontainer.
 [group('apm')]
 apm-devcontainer:
-    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -it {{ CONTAINER }} just apm
+    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just apm
 
 # Run `just apm` both locally and inside the devcontainer.
 [group('apm')]
@@ -116,7 +118,7 @@ extensions:
 # Run `just extensions` inside the devcontainer.
 [group('extensions')]
 extensions-devcontainer:
-    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -it {{ CONTAINER }} just extensions
+    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just extensions
 
 # Run `just extensions` both locally and inside the devcontainer.
 [group('extensions')]
