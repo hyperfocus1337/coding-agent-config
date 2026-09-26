@@ -6,7 +6,7 @@
 | [`tools.md`](tools.md)     | Which tool to reach for: `rg`/`fd` over Grep/Glob, LSP for navigation, ast-grep for structure, Context7 for docs, `pnpm`.  |
 | [`code.md`](code.md)       | How much to build: a seven-rung ladder from "does this need to exist" to "write the minimum code that works".              |
 
-All three are unscoped, so they load at session start. Together with `CLAUDE.md` they are about 715 words, which is the budget the principles below defend. A scoped rule costs nothing until Claude reads a file that matches one of its globs, so scope any rule that only a few directories need.
+All three are unscoped, so they load at session start. Together with `CLAUDE.md` they are about 690 words, which is the budget the principles below defend. A scoped rule costs nothing until Claude reads a file that matches one of its globs, so scope any rule that only a few directories need.
 
 Claude Code discovers every `*.md` file in this directory on its own. Do not import them from `CLAUDE.md` with `@`. An `@` import loads the file unconditionally and bypasses its `paths:` frontmatter, which defeats the scoping.
 
@@ -21,7 +21,7 @@ The frontmatter decides when a rule loads:
 
 **Rules vs skills**: Rules load automatically. Use them for standing instructions that always apply: tool preferences, coding conventions, naming rules. For a multi-step procedure that does not need to sit in context, write a skill instead. A skill loads when you invoke it or when Claude judges it relevant to the prompt.
 
-**Keep CLAUDE.md thin**: Target the root file at under 200 lines. Longer files consume more context and reduce adherence. `CLAUDE.md` is an index. The standing instructions live in this directory.
+**Keep CLAUDE.md thin**: `CLAUDE.md` holds its heading and only an instruction that fits no rule topic, such as who the user is or how to answer. A topic instruction goes in a rule file. `CLAUDE.md` does not list or link to the rules: Claude Code and pi load them on their own, and Codex gets them inlined below `CLAUDE.md` in `~/.codex/AGENTS.md`, so a link only makes a model read a rule a second time.
 
 **What to scope**: Path scoping fits a rule about how to edit a file type. A TypeScript style guide has no reason to load when you edit a shell script.
 
