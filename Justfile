@@ -246,6 +246,13 @@ stale:
 # Cleanup
 # ──────────────────────────────────────────────────────────────────────────────
 
+# `-` on clean-stale-all: its devcontainer run exits 1 on abort, and the backups are unrelated.
+# Run `just clean-stale-all`, then `just clean-backups-all`.
+[group('cleanup')]
+clean:
+    -@just clean-stale-all
+    @just clean-backups-all
+
 # Delete the stale paths that `just stale` lists (first two sections), after a confirm prompt.
 [group('cleanup')]
 clean-stale:
