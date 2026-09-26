@@ -31,7 +31,7 @@ await check("a nested file is named by its path", () => {
 });
 
 await check("a root file keeps its basename", () => {
-	assert.equal(commandName("dead-code.md"), "dead-code");
+	assert.equal(commandName("chezmoi.md"), "chezmoi");
 });
 
 await check("the two cleanup.md files get distinct names", () => {
@@ -203,7 +203,7 @@ await check("every command carries a description, from frontmatter or the first 
 });
 
 await check("a file with no frontmatter falls back to its heading", () => {
-	assert.equal(found.find((command) => command.name === "dead-code")?.description, "Refactor Clean");
+	assert.equal(found.find((command) => command.name === "code:cleanup:dead-code")?.description, "Refactor Clean");
 });
 
 console.log(`${checks} checks, ${found.length} commands discovered under ${root}`);

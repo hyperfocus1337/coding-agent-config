@@ -149,9 +149,10 @@ The command passes `--source <root>` when the working directory is in a git repo
 
 ## code/ — code utilities
 
-| Command         | Description                          |
-| --------------- | ------------------------------------ |
-| `/code:explain` | Explain a code snippet step-by-step. |
+| Command                   | Description                                                 |
+| ------------------------- | ----------------------------------------------------------- |
+| `/code:explain`           | Explain a code snippet step-by-step.                        |
+| `/code:cleanup:dead-code` | Find and remove dead code, with tests run before and after. |
 
 ## text/ — text utilities
 

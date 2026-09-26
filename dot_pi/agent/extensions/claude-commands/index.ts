@@ -124,7 +124,7 @@ export function commandName(relativePath: string, declared?: string): string {
 
 /**
  * The first line of a body as a description, for a file with no `description:`.
- * Claude falls back this way too: `dead-code.md` has no frontmatter and Claude
+ * Claude falls back this way too: `code/cleanup/dead-code.md` has no frontmatter and Claude
  * lists it by its `# Refactor Clean` heading.
  */
 function firstLine(body: string): string | undefined {

@@ -11,7 +11,7 @@ Directories become `:` segments, so the name matches what Claude Code registers:
 | `git/commit/single.md`     | `/git:commit:single`     |
 | `git/branches/cleanup.md`  | `/git:branches:cleanup`  |
 | `git/worktrees/cleanup.md` | `/git:worktrees:cleanup` |
-| `dead-code.md`             | `/dead-code`             |
+| `chezmoi.md`               | `/chezmoi`               |
 
 A `name:` in frontmatter replaces the leaf only, not the path. `README.md` at any level is documentation, not a command. The command list shows `description:` from frontmatter, or the first line of the body when there is none, followed by `argument-hint:` in parentheses.
 
