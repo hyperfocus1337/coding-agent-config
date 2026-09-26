@@ -105,6 +105,17 @@ violation() {
   return 1
 }
 
+# suggest <command line> <tool> <replacement> -> the line with the first
+# whole-word <tool> swapped, so the model can retry in one turn. A plain
+# substring swap turned `pnpm` into `ppnpm`. Empty for a multi-line command:
+# the model already has it, and a script-long hint only costs context.
+suggest() {
+  [[ $1 == *$'\n'* ]] && return 0
+  local edge='[^[:alnum:]_.-]'
+  [[ $1 =~ (^|$edge)"$2"($edge|$) ]] || return 0
+  printf '%s\n' "${1/"${BASH_REMATCH[0]}"/${BASH_REMATCH[1]}$3${BASH_REMATCH[2]}}"
+}
+
 # Sourced by test.sh? Stop before the body reads stdin. Placed after the
 # functions so sourcing loads them without blocking on `read`.
 [[ "${BASH_SOURCE[0]}" == "${0}" ]] || return 0
@@ -157,14 +168,13 @@ fi
 violated=$(violation "$command_line") || allow
 read -r tool replacement <<< "$violated"
 
-# Best-effort hint: swap the first occurrence so the model can retry in one turn.
-suggested=${command_line/$tool/$replacement}
+suggested=$(suggest "$command_line" "$tool" "$replacement")
 
 # --- Block and report ---
 # stderr: Claude Code feeds this back to the model as the block reason (exit 2).
 {
   echo "Blocked: \`$tool\` is not allowed here, use \`$replacement\` instead."
-  echo "  suggested: $suggested"
+  [ -n "$suggested" ] && echo "  suggested: $suggested"
   echo
   echo "Allow it anyway with one of:"
   echo "  * add \"$tool\" to $root/.claude-allow-cli-tools (persistent, per-repo)"

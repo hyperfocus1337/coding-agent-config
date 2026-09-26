@@ -73,7 +73,7 @@ npm	pnpm
 yarn pnpm
 ```
 
-Add a line to enforce another tool and nothing in `hook.sh` changes. The replacement takes the rest of the line, so multi-word replacements work: `npx	pnpm dlx` blocks `npx create-vite app` and suggests `pnpm dlx create-vite app`. The replacement is used for two things: the "use `X` instead" message, and a suggested command built by swapping the first occurrence of the banned word, so the model can retry in one turn instead of reconstructing the line.
+Add a line to enforce another tool and nothing in `hook.sh` changes. The replacement takes the rest of the line, so multi-word replacements work: `npx	pnpm dlx` blocks `npx create-vite app` and suggests `pnpm dlx create-vite app`. The replacement is used for two things: the "use `X` instead" message, and a suggested command built by swapping the first whole-word occurrence of the banned word, so the model can retry in one turn instead of reconstructing the line. A multi-line command gets no suggestion: the model already has it, and a heredoc would make the hint as long as the script.
 
 If the rules file is missing or empty the hook allows everything, so a half-deployed config never blocks work.
 

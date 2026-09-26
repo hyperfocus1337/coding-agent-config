@@ -52,6 +52,13 @@ allowed "$(printf "cat > f <<-'EOF'\n\t\`npm i\`\n\tEOF")"
 blocked "$(printf "cat > f <<'EOF'\ntext\nEOF\nnpm i")" # the command after the body
 blocked "$(printf 'cat > f <<EOF\n$(npm bin)\nEOF')"   # unquoted: the body runs
 
+# the suggestion swaps a whole word only, and skips multi-line commands
+suggests() { if [ "$(suggest "$1" npm pnpm)" = "$2" ]; then echo "ok   suggest $1"; else echo "FAIL suggest $1 -> '$(suggest "$1" npm pnpm)'"; fail=1; fi; }
+suggests "npm i" "pnpm i"
+suggests "pnpm i && npm ci" "pnpm i && pnpm ci"
+suggests "/usr/local/bin/npm i" "/usr/local/bin/pnpm i"
+suggests "$(printf 'cd x\nnpm i')" ""
+
 # the replacement comes back with the banned name, multi-word replacements intact
 maps "npm pnpm" "npm i"
 rule_tool+=(npx) && rule_replacement+=("pnpm dlx")
