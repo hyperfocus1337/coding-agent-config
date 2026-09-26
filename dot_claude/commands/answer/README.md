@@ -14,7 +14,7 @@ Seven modes that change how an answer is written, and one command that clears th
 | `/answer:simply`     | register | Plain language for a non-expert, every technical fact kept.                      |
 | `/answer:stepwise`   | form     | Prerequisites, numbered steps in the order they occur, and a check at the end.   |
 | `/answer:tabular`    | form     | Anything that compares items on shared attributes goes in a table.               |
-| `/answer:sourced`    | evidence | Every claim points at `file:line`, a command output, or a document.              |
+| `/answer:sourced`    | evidence | Check each factual claim and tag it with its source.                             |
 | `/answer:reset`      | -        | Clear every answer mode and return to `rules/writing.md` alone.                  |
 
 ## Scope
@@ -72,7 +72,7 @@ The two form modes do not conflict. `stepwise` writes a comparison as prose, and
 ### `/answer:sourced`
 
 - You will act on the answer without checking it yourself: an incident, an audit, a security review.
-- You suspect that earlier answers were guesses.
+- You suspect that the previous answer was a guess. Run `/answer:sourced` without an argument to check it claim by claim.
 
 ### `/answer:reset`
 

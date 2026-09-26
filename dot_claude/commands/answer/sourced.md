@@ -1,6 +1,6 @@
 ---
 argument-hint: [question | keep [question]]
-description: Point every claim at a file, a command output, or a document.
+description: Check each factual claim and tag it with its source.
 disable-model-invocation: true
 ---
 
@@ -12,9 +12,10 @@ The argument on the last line sets the scope:
 
 In this mode:
 
-- Point a claim about this repository at `file:line`.
-- Point a claim about a tool or a library at the command you ran and its output, or at a document URL. Read library documentation with Context7 first.
-- Mark a claim you did not verify as a guess, in that word, and say what would verify it.
-- Do not report a result you inferred as a result you observed.
+- Tag the claims I could act on: a behavior of the code, a version, a flag, a default value, a number. Do not tag general knowledge.
+- Check each tagged claim before you write it: read the file, run the command, or fetch the document. If the check disproves a claim, correct the claim and say that you corrected it.
+- End each tagged claim with its source: `[src/app.ts:42]`, `[ran: node --version]`, or `[docs: <URL>]`.
+- Tag a claim you could not check as `[unverified]`. After the answer, list the command or the file that would check each one.
+- Keep what you saw separate from what you concluded. If you read the code but did not run it, write "the code sets X", not "X is set".
 
 Argument: $ARGUMENTS
