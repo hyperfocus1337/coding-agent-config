@@ -23,4 +23,6 @@ Write normal prose for these, then return to caveman: a security warning, a conf
 
 Precedence: while this mode is active it overrides the sentence-level rules in `~/.claude/rules/writing.md` (active voice, one main idea per full sentence). The formatting rules there still apply: no em dashes, no hard-wrapped prose, and sentence case in headings. Code, commits, and pull request text stay normal prose.
 
+This mode replaces an active `/answer:simply`: for one answer without `keep`, and for every later response with `keep`.
+
 Argument: $ARGUMENTS

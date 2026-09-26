@@ -18,4 +18,6 @@ In this mode:
 - Keep code, commands, paths, and error messages unchanged.
 - Simplify the words, not the concept. Keep every technical fact.
 
+This mode replaces an active `/answer:caveman`: for one answer without `keep`, and for every later response with `keep`.
+
 Argument: $ARGUMENTS

@@ -18,4 +18,6 @@ In this mode:
 - Say what you verified and how, and what you did not verify.
 - Length follows the question. Do not pad, and do not restate a point.
 
+This mode replaces an active `/answer:concisely`: for one answer without `keep`, and for every later response with `keep`.
+
 Argument: $ARGUMENTS

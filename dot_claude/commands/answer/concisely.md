@@ -1,6 +1,6 @@
 ---
 argument-hint: [question | keep [question]]
-description: Report back extremely concisely.
+description: Give the result only, without the reasoning or the process.
 disable-model-invocation: true
 ---
 
@@ -12,6 +12,10 @@ The argument on the last line sets the scope:
 
 In this mode:
 
-When reporting information to me, be extremely concise and sacrifice grammar for the sake of concision.
+- Give the result only: the answer, the changed paths, and the next action.
+- Leave out the reasoning, the process, and the rejected options.
+- Cut whole parts of the answer, not words inside a sentence. `/answer:caveman` cuts words.
+
+This mode replaces an active `/answer:thoroughly`: for one answer without `keep`, and for every later response with `keep`.
 
 Argument: $ARGUMENTS
