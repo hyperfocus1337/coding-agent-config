@@ -15,8 +15,6 @@ In this mode:
 - Give the answer first, then the reasoning that produced it.
 - Name the edge cases, and the input or the condition that breaks the answer.
 - Name the options you rejected, and the reason for each one.
-- Say what you verified and how, and what you did not verify.
-- Length follows the question. Do not pad, and do not restate a point.
 
 This mode replaces an active `/answer:concisely`: for one answer without `keep`, and for every later response with `keep`.
 
