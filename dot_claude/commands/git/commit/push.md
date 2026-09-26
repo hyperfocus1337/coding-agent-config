@@ -7,6 +7,7 @@ description: Commit and push
 
 - Status: !`git status -sb`
 - Diff: !`git diff HEAD`
+- Recent commits: !`git log --oneline -5`
 
 ## Your task
 
