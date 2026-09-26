@@ -6,7 +6,7 @@
 | [`tools.md`](tools.md)     | Which tool to reach for: `rg`/`fd` over Grep/Glob, LSP for navigation, ast-grep for structure, Context7 for docs, `pnpm`.  |
 | [`code.md`](code.md)       | How much to build: a seven-rung ladder from "does this need to exist" to "write the minimum code that works".              |
 
-All three are unscoped, so they load at session start. Together with `CLAUDE.md` they are about 690 words, which is the budget the principles below defend. A scoped rule costs nothing until Claude reads a file that matches one of its globs, so scope any rule that only a few directories need.
+All three are unscoped, so they load at session start. Together with `CLAUDE.md` they are about 600 words, which is the budget the principles below defend. A scoped rule costs nothing until Claude reads a file that matches one of its globs, so scope any rule that only a few directories need.
 
 Claude Code discovers every `*.md` file in this directory on its own. Do not import them from `CLAUDE.md` with `@`. An `@` import loads the file unconditionally and bypasses its `paths:` frontmatter, which defeats the scoping.
 

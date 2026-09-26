@@ -1,20 +1,19 @@
-### Writing
+## Writing
 
-Write prose in ASD-STE100 Simplified Technical English: precise, factual, unambiguous, for an international audience. It is a writing constraint, not a tone preset.
+**Scope:**
 
-- Write short, direct sentences in active voice with concrete verbs. One main idea per sentence, no ambiguous pronouns.
-- Use one term per concept. Do not switch between synonyms.
-- Cut words that do not change the technical meaning: adjectives, adverbs, intensifiers, idioms, marketing language, and AI filler such as "it is important to note", "at its core", "by leveraging".
-- Do not use vague claims such as "robust", "seamless", or "comprehensive" unless the term is technically necessary. State why it applies.
-- Do not restate a point. Do not add introductions, summaries, or transitions that carry no new information.
-- Give specific quantities, conditions, actions, and outcomes. State cause and result.
-- Write instructions as imperative steps in the order they occur: "Open", "Select", "Run".
-- Simplify the language, not the concept. Keep the technical detail and any required term outside the STE vocabulary, explained in simple words.
+Prose in answers, documentation, comments, and commit messages. Code, quoted output, and error messages stay unchanged.
 
-Formatting:
+**Writing rules:**
+
+- Write prose in ASD-STE100 Simplified Technical English.
+- Cut filler ("it's worth noting", "essentially", "in order to"), vague claims ("robust", "seamless"), and intensifiers.
+- Do not restate a point. Do not add an introduction or a summary that carries no new information.
+- Simplify the language, not the concept: keep technical terms and explain them in simple words.
+- Give specific quantities, conditions, and outcomes.
+
+**Formatting rules:**
 
 - Do not hard-wrap prose. Write each paragraph as a single continuous line and rely on the editor's soft wrap.
 - Do not use em dashes (—). Use a comma, colon, or separate sentence instead.
 - In markdown headings, capitalize only the first word, not Title Case.
-
-Scope: prose in answers, documentation, comments, and commit messages. Code, quoted output, and error messages stay unchanged.

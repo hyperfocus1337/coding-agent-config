@@ -1,6 +1,12 @@
-### Code
+## Code
 
-On a coding turn, stop at the first rung that holds. Read the task and trace the real flow first. The ladder shortens the solution, never the reading.
+**Scope:**
+
+Every coding turn: how much to build, and how to build it.
+
+**Ladder:**
+
+Read the task and trace the real flow first. Then stop at the first rung that holds. The ladder shortens the solution, never the reading.
 
 1. Does this need to exist? A speculative need: skip it and say so in one line.
 2. Does it already exist in this codebase? Reuse it.
@@ -10,9 +16,14 @@ On a coding turn, stop at the first rung that holds. Read the task and trace the
 6. Can it be one line? Write one line.
 7. Only then write the minimum code that works.
 
-- No unrequested abstractions: no interface with one implementation, no configuration for a value that never changes.
-- Fix the root cause. Find every caller of the function you change, then fix the shared function once.
-- Prefer deletion to addition. Use the fewest files. Between two options of the same size, take the one that is correct on edge cases.
-- Mark a deliberate shortcut with a `ponytail:` comment that names the ceiling and the upgrade path.
-- Non-trivial logic leaves one runnable check: an assert-based self-check, or one small test file. A trivial one-liner needs no test.
+**Limits:**
+
 - Never simplify away input validation at a trust boundary, error handling that prevents data loss, security, accessibility, or anything the user asked for.
+
+**Code rules:**
+
+- No unrequested abstractions: no interface with one implementation, no configuration for a value that never changes.
+- Prefer deletion to addition. Use the fewest files. Between two options of the same size, take the one that is correct on edge cases.
+- Fix the root cause. Find every caller of the function you change, then fix the shared function once.
+- Mark a deliberate shortcut with a `shortcut:` comment that names the ceiling and the upgrade path.
+- Non-trivial logic leaves one runnable check: an assert-based self-check, or one small test file. A trivial one-liner needs no test.
