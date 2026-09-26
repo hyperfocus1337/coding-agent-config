@@ -14,6 +14,8 @@ Prose in answers, documentation, comments, and commit messages. Code, quoted out
 
 **Formatting rules:**
 
-- Do not hard-wrap prose. Write each paragraph as a single continuous line and rely on the editor's soft wrap.
+- In Markdown, Org, and HTML files, put each sentence on its own line. Do not hard-wrap within a sentence.
+- Give each paragraph one topic and at most 6 sentences. Use a list or table for sets of items.
+- Wrap commit message bodies at 72 characters. Wrap code comments to the file's existing line length.
 - Do not use em dashes (—). Use a comma, colon, or separate sentence instead.
 - In markdown headings, capitalize only the first word, not Title Case.

@@ -59,7 +59,7 @@ These are projections from the benchmark model, not measurements of this setup. 
 
 `p^N` assumes the directives are independent. Contradictory directives break that assumption, because satisfying one guarantees failing the other, so every rule that overrides another states what it overrides and where the override stops.
 
-One override is live. `commands/answer/caveman.md` suspends the sentence-level rules in `writing.md`, active voice and one main idea per full sentence, and says so in the file. The formatting rules keep applying while it runs: no em dashes, no hard-wrapped prose, sentence case in headings. Code, commits, and pull request text stay normal prose. The precedence sits in the file that takes the exception, so it arrives with the exception rather than loading in the index for every session that never uses it.
+One override is live. `commands/answer/caveman.md` suspends the sentence-level rules in `writing.md`, active voice and one main idea per full sentence, and says so in the file. The formatting rules keep applying while it runs: no em dashes, line and paragraph limits, sentence case in headings. Code, commits, and pull request text stay normal prose. The precedence sits in the file that takes the exception, so it arrives with the exception rather than loading in the index for every session that never uses it.
 
 One competition is live and worth knowing: `tools.md:5` says to use `rg` and `fd` **instead of** the Grep and Glob tools, while the Claude Code system prompt says to prefer the dedicated file and search tools over shell commands. The repo rule is the more specific one and normally wins, but it competes rather than composes.
 
