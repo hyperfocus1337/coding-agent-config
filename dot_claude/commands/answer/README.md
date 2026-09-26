@@ -21,11 +21,12 @@ Seven modes that change how an answer is written, and one command that clears th
 
 The argument sets how long a mode applies. `simply` stands for any mode.
 
-| Call                        | Scope                                                        |
-| --------------------------- | ------------------------------------------------------------ |
-| `/answer:simply`            | Rewrite the previous answer in the mode, once.               |
-| `/answer:simply <question>` | Answer the question in the mode, once.                       |
-| `/answer:simply keep`       | Apply the mode to every response until `/answer:reset` runs. |
+| Call                             | Scope                                                                     |
+| -------------------------------- | ------------------------------------------------------------------------- |
+| `/answer:simply`                 | Rewrite the previous answer in the mode, once.                            |
+| `/answer:simply <question>`      | Answer the question in the mode, once.                                    |
+| `/answer:simply keep`            | Apply the mode to every response until `/answer:reset` runs.              |
+| `/answer:simply keep <question>` | Answer the question in the mode, and apply it to every response after it. |
 
 ## When to use
 

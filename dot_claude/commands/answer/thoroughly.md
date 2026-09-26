@@ -1,13 +1,13 @@
 ---
-argument-hint: [question | keep]
+argument-hint: [question | keep [question]]
 description: Answer in full depth, with the reasoning, the edge cases, and the rejected options.
 disable-model-invocation: true
 ---
 
 The argument on the last line sets the scope:
 
-- `keep`: apply this mode to every response until I run `/answer:reset`.
-- A question or a task: answer it in this mode, then stop using the mode.
+- `keep`, alone or before a question: apply this mode to every response until I run `/answer:reset`. Answer the question in this mode if there is one.
+- Any other text: answer it in this mode, then stop using the mode.
 - Empty: rewrite your previous answer in this mode, then stop using the mode.
 
 In this mode:
