@@ -7,7 +7,7 @@ description: Commit one task's changes
 ## Context
 
 - Status: !`git status -sb`
-- Diff: !`git diff HEAD`
+- Change size per file: !`git diff HEAD --stat`
 - Recent commits: !`git log --oneline -5`
 
 ## Your task
