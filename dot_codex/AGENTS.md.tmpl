@@ -1,0 +1,11 @@
+{{- /* ~/.codex/AGENTS.md: CLAUDE.md, then every rule in dot_claude/rules/.
+Codex has no rules directory, so the rules are inlined. A rule with frontmatter
+is skipped: its paths: scope has no Codex counterpart, and inlining it would
+apply it to every file. See dot_codex/docs/implementation.md. */ -}}
+{{ include "dot_claude/CLAUDE.md" }}
+{{- range (joinPath .chezmoi.sourceDir "dot_claude/rules/*.md" | glob) }}
+{{- $rule := include . }}
+{{- if and (ne (base .) "README.md") (not (hasPrefix "---" $rule)) }}
+{{ $rule }}
+{{- end }}
+{{- end }}
