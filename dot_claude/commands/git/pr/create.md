@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git checkout --branch:*), Bash(git add:*), Bash(git status:*), Bash(git push:*), Bash(git commit:*), Bash(gh pr create:*)
+allowed-tools: Bash(git switch -c:*), Bash(git add:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git push:*), Bash(git commit:*), Bash(gh pr create:*)
 description: Commit, push, and open a PR
 ---
 
@@ -13,7 +13,7 @@ description: Commit, push, and open a PR
 
 Based on the above changes:
 
-1. Create a new branch if on main
+1. Create a new branch with `git switch -c` if on main
 2. Create a single commit with an appropriate message
 3. Push the branch to origin
 4. Create a pull request using `gh pr create`
