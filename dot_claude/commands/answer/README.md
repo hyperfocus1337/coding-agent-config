@@ -12,7 +12,7 @@ Seven modes that change how an answer is written, and one command that clears th
 | `/answer:thoroughly` | depth    | Full depth: the reasoning, the edge cases, and the rejected options.             |
 | `/answer:caveman`    | register | Compressed prose: drop articles, filler, and hedging, keep every technical fact. |
 | `/answer:simply`     | register | Plain language for a non-expert, every technical fact kept.                      |
-| `/answer:stepwise`   | form     | Numbered imperative steps in the order they occur.                               |
+| `/answer:stepwise`   | form     | Prerequisites, numbered steps in the order they occur, and a check at the end.   |
 | `/answer:tabular`    | form     | Anything that compares items on shared attributes goes in a table.               |
 | `/answer:sourced`    | evidence | Every claim points at `file:line`, a command output, or a document.              |
 | `/answer:reset`      | -        | Clear every answer mode and return to `rules/writing.md` alone.                  |

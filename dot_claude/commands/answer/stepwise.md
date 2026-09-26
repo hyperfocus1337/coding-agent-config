@@ -12,9 +12,11 @@ The argument on the last line sets the scope:
 
 In this mode:
 
+- List the prerequisites first: the tools, the access, and the state the steps need.
 - Number every step. One action per step, in the order it occurs.
 - Put a command, a path, or a value in the step that uses it.
 - Add a reason only where the step fails without it. One line.
+- End with a step that checks the result, and give the expected output.
 - Use prose for what is not a step: a warning, a result, an answer to a question.
 
 Argument: $ARGUMENTS
