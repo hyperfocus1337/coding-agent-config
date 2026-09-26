@@ -32,11 +32,12 @@ The `scope/` folder answers "does this resource belong in every session, or in o
 
 ## Other agents
 
-The `agents/` folder covers running this repository's Claude Code configuration in another coding agent. [`pi.md`](agents/pi.md) documents how pi loads `~/.claude/skills`, `commands`, `rules`, and `CLAUDE.md` through the extensions, settings, and symlink in [`dot_pi/agent/`](../dot_pi/agent/README.md), and what to do when pi rewrites its own settings file.
+The `agents/` folder covers running this repository's Claude Code configuration in another coding agent. [`pi.md`](agents/pi.md) documents how pi loads `~/.claude/skills`, `commands`, `rules`, and `CLAUDE.md` through the extensions, settings, and symlink in [`dot_pi/agent/`](../dot_pi/agent/README.md), and what to do when pi rewrites its own settings file. [`codex.md`](agents/codex.md) documents how Codex loads `~/.claude/skills`, `CLAUDE.md` with the rules, and the hooks in `~/.claude/hooks` through the symlink in [`dot_agents/`](../dot_agents/symlink_skills) and the files in [`dot_codex/`](../dot_codex/README.md), and that commands do not reach Codex.
 
-| File                    | Description                                              |
-| ----------------------- | -------------------------------------------------------- |
-| [`pi.md`](agents/pi.md) | Claude Code skills, commands, rules, and CLAUDE.md in pi |
+| File                          | Description                                              |
+| ----------------------------- | -------------------------------------------------------- |
+| [`pi.md`](agents/pi.md)       | Claude Code skills, commands, rules, and CLAUDE.md in pi |
+| [`codex.md`](agents/codex.md) | Claude Code skills, CLAUDE.md, rules, and hooks in Codex |
 
 ## MCP servers
 
@@ -56,7 +57,7 @@ The `research/` folder holds investigations into the agent environment and sessi
 
 ### Other agents
 
-The `research/agents/` folder holds the source reading and probes behind [`agents/pi.md`](agents/pi.md) and Codex support. One finding per page:
+The `research/agents/` folder holds the source reading and probes behind [`agents/pi.md`](agents/pi.md) and [`agents/codex.md`](agents/codex.md). One finding per page:
 
 - [`hook-events.md`](research/agents/hook-events.md) lists every lifecycle event a hook can attach to on each side, 33 for Claude Code and 36 for pi. The two are flexible in opposite directions: pi reaches deeper per event, into the message list and the provider request, while Claude Code fires at more of the points a guardrail cares about and can answer in five ways, three of which need no code.
 - [`codex-compat.md`](research/agents/codex-compat.md) measures what Claude Code 2.1.278 and Codex 0.154.0 already share: Codex runs Claude's hook payload and loads Claude-format plugins, Claude reads `AGENTS.md` once `instructionFiles` is set, and one `.agents/skills/` tree serves both through a symlink.

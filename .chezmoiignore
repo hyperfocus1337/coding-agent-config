@@ -19,6 +19,8 @@ AGENTS.md
 .claude/commands/**/README.md
 .claude/skills/README.md
 .claude/skills/**/README.md
+.codex/README.md
+.codex/docs/**
 .codex/hooks/test/**
 .pi/agent/README.md
 .pi/agent/extensions/README.md

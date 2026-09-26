@@ -41,6 +41,8 @@ Claude probes put a unique token in a resource and asked `claude -p --model haik
 
 `instructionFiles` takes `claude-md`, `claude-md-or-agents-md`, `claude-md-and-agents-md`, and `managed-only`. The binary carries `claude-md-or-agents-md` as its default, but the probe with no setting did not load `AGENTS.md`, so set the value explicitly instead of relying on the default. An older `projectInstructions` key is still read and logs a message that asks you to move to `instructionFiles`. The scanned names are `AGENTS.md` and `.claude/AGENTS.md`, walking up from cwd.
 
+Correction, measured 2026-09-26 on Claude Code 2.1.283 with tools disabled: `instructionFiles` is an option of the built-in `agents-md@builtin` plugin, set as `pluginConfigs."agents-md@builtin".options.instructionFiles`. A top-level `instructionFiles` key has no effect. With no option, a project without `CLAUDE.md` loads its `AGENTS.md`, as the default `claude-md-or-agents-md` says. With the option set to `claude-md`, it does not.
+
 There is still no setting that adds a skills directory. `skillsPath` and `skillsPaths` exist only inside a plugin manifest. [#18621](https://github.com/anthropics/claude-code/issues/18621) is still closed `not planned`. The filesystem is still the only lever, but it now costs one symlink per directory, not one per skill.
 
 ### Codex
@@ -84,8 +86,8 @@ Codex hook events: `PreToolUse`, `PermissionRequest`, `PostToolUse`, `PreCompact
 
 **Hooks.** Share the scripts, duplicate the wiring. Claude keeps its `hooks` block in `settings.json`; Codex needs the same events in `hooks.json` or a `[hooks]` table. Two gaps to plan for:
 
-- File hooks do not fire usefully. Codex edits through `apply_patch` and puts the patch text in `tool_input.command`, so `format-all-languages`, `format-org-tables`, and `lint-all-languages` read an empty `.tool_input.file_path` and exit quietly. `type-check-all-languages` is unaffected: it runs on `Stop`, which Codex has, and reads its file list from git. Codex also has no `PostToolUseFailure`, so under Codex the two formatting hooks lose their pass over a command that writes a file and then exits non-zero. A wrapper that parses `*** Add File:` and `*** Update File:` lines out of the patch and re-emits a Claude-shaped payload per file closes this.
-- Hooks need trust. A hook stays inert until it is enabled and its hash is persisted in `hooks.state`. The TUI does this. Automation needs `--dangerously-bypass-hook-trust`.
+- File hooks fire only partly. Codex edits through `apply_patch` and puts the patch text in `tool_input.command`, with no `file_path`. `format-all-languages`, `format-org-tables`, and `lint-all-languages` then take their Bash branch: lint reads the paths out of the patch text, but format-all-languages formats markdown only. [`dot_codex/hooks/apply-patch.sh`](../../../dot_codex/hooks/apply-patch.sh) closes this. It parses the `*** Add File:`, `*** Update File:`, and `*** Move to:` lines and runs the hook once per file with a Write payload. Measured 2026-09-26 with one `codex exec` turn: the `apply_patch` matcher fires, prettier rewrote the file, and the exit-2 yamllint error reached the model. `type-check-all-languages` is unaffected: it runs on `Stop`, which Codex has with `stop_hook_active`, and reads its file list from git. Codex also has no `PostToolUseFailure`, so under Codex the two formatting hooks lose their pass over a command that writes a file and then exits non-zero.
+- Hooks need trust. A hook stays inert until it is enabled and its hash is persisted in `hooks.state`. The TUI does this. Automation needs `--dangerously-bypass-hook-trust`. The hash covers the `hooks.json` entry, not the script: `hooks/list` on `codex app-server` returned the same `currentHash` after both scripts were edited. A script edit needs no new trust; a change to the command string, matcher, or timeout does.
 
 `block-secret-commits` and `enforce-cli-tools` need neither change: they match on `Bash`, which is the name Codex sends, and they read `tool_input.command`.
 
@@ -105,9 +107,8 @@ This recommendation was written against a shared `.agents/` layout that was late
 
 Order of work, on top of the pi plan:
 
-1. Set `instructionFiles: "claude-md-and-agents-md"` in `dot_claude/settings.json`. This is now the cheapest half of the sharing problem.
-2. Link `~/.codex/AGENTS.md` to `~/.agents/AGENTS.md` when the user-scope instructions move.
-3. Write `~/.codex/hooks.json` with `block-secret-commits` and `enforce-cli-tools` pointing at the same scripts `settings.json` names, then trust them once in the TUI.
-4. Write the `apply_patch` shim before porting the four file hooks. Each hook gets a run that proves it fired.
+1. Set `pluginConfigs."agents-md@builtin".options.instructionFiles` to `claude-md-and-agents-md` in `dot_claude/settings.json`. This is now the cheapest half of the sharing problem.
+2. Done differently: [`dot_codex/AGENTS.md.tmpl`](../../../dot_codex/AGENTS.md.tmpl) renders `~/.codex/AGENTS.md` from `CLAUDE.md` and the rules, because a link to `CLAUDE.md` alone gives Codex no rules.
+3. Done: [`dot_codex/hooks.json`](../../../dot_codex/hooks.json) wires every hook to the scripts in `~/.claude/hooks/`, the file hooks on `apply_patch` through the shim. Trust them once in the TUI.
 
 The old recommendation, "lean on the codex plugin and stay in one harness", no longer matches the repo: `codex@openai-codex` is set to `false` in `dot_claude/settings.json`, and Codex is installed as a peer CLI. Treat the plugin as a delegation convenience, not as the answer to sharing.
