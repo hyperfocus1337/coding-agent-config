@@ -2,7 +2,6 @@
 allowed-tools: Bash(chezmoi diff:*), Bash(chezmoi apply:*), Bash(chezmoi add:*), Bash(chezmoi managed:*), Bash(git ls-tree:*), Bash(git rev-parse:*), Bash(grep:*)
 argument-hint: diff | apply | add <path> [path...]
 description: Diff, apply, or add chezmoi files, with the current repository as the source when it is a chezmoi source
-disable-model-invocation: true
 ---
 
 ## Context

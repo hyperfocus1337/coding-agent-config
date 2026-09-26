@@ -51,7 +51,7 @@ One command that summarizes a meeting or transcript. See [summarize/README.md](s
 | `/chezmoi apply [path...]` | Apply the source state to the home directory, after it shows the diff. |
 | `/chezmoi add <path>...`   | Add a file to the source state.                                        |
 
-The command passes `--source <root>` when the working directory is in a git repository whose root holds a `.chezmoi*` or `dot_*` entry. Otherwise it omits `--source`, and chezmoi uses its configured source directory, `~/.local/share/chezmoi` by default. The destination stays at the chezmoi default, `$HOME`. It carries `disable-model-invocation: true`, so it runs only when typed. The apply rule runs `just chezmoi` instead.
+The command passes `--source <root>` when the working directory is in a git repository whose root holds a `.chezmoi*` or `dot_*` entry. Otherwise it omits `--source`, and chezmoi uses its configured source directory, `~/.local/share/chezmoi` by default. The destination stays at the chezmoi default, `$HOME`. The apply rule runs `just chezmoi` instead.
 
 ## code/ — code utilities
 
