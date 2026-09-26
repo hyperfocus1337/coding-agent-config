@@ -17,6 +17,16 @@ Seven modes that change how an answer is written, and one command that clears th
 | `/answer:tabular`    | form    | Anything that compares items on shared attributes goes in a table.               |
 | `/answer:reset`      | -       | Clear every answer mode and return to `rules/writing.md` alone.                  |
 
+## Scope
+
+The argument sets how long a mode applies. `simply` stands for any mode.
+
+| Call                        | Scope                                                        |
+| --------------------------- | ------------------------------------------------------------ |
+| `/answer:simply`            | Rewrite the previous answer in the mode, once.               |
+| `/answer:simply <question>` | Answer the question in the mode, once.                       |
+| `/answer:simply keep`       | Apply the mode to every response until `/answer:reset` runs. |
+
 ## When to use
 
 ### `/answer:concisely`
@@ -53,12 +63,12 @@ Seven modes that change how an answer is written, and one command that clears th
 ### `/answer:tabular`
 
 - A session that is mostly comparisons: libraries, a setting across environments, CLI flags.
-- For one answer, write "in a table" in the prompt instead. For text you already have, use `/docs:table`.
+- For one answer, run `/answer:tabular <question>`. For text you already have, use `/docs:table`.
 
 ### `/answer:reset`
 
+- A mode you started with `keep` no longer fits. A one-off call needs no reset.
 - Before you start a mode that contradicts the active one, for example `thoroughly` after `concisely`. Two such modes do not stack.
-- The task changed and the active mode no longer fits.
 
 ## Background
 
