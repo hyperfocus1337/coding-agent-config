@@ -88,19 +88,9 @@ A path under `/tmp`, `/var/tmp` or `$TMPDIR` is skipped on both matchers: Claude
 
 ## Prose wrapping
 
-Everything is formatted with `--prose-wrap never`, so prose stays on a single line and relies on the editor's soft wrap (this matches the repo's "do not hard-wrap prose" rule). It affects markdown/MDX paragraphs and YAML block scalars (`>` and `|`); it has no effect on JSON, JS, TS, or CSS.
+Everything is formatted with `--prose-wrap preserve`, so Prettier keeps the line breaks the author wrote. This supports the rule in `writing.md`: one sentence per line in documentation files. It affects markdown/MDX paragraphs and YAML block scalars (`>` and `|`); it has no effect on JSON, JS, TS, or CSS.
 
-## Markdown gets its own pass (wide-table alignment)
-
-Markdown is formatted in a **separate Prettier invocation** from the other languages, with `--print-width 1000`. This is the non-obvious part, and the reason the code splits `targets` into `md_targets` and `other_targets`.
-
-Prettier normally pads table columns to equal width, which is what makes tables human-readable. But under `--prose-wrap never` it stops padding any table wider than `printWidth` (default `80`) and collapses it to the compact `| --- |` form instead, because padding it would produce lines longer than the width it was told never to wrap. The result: narrow tables aligned, wide tables not.
-
-`printWidth` does **not** re-wrap prose when `--prose-wrap never` is set (prose stays one line regardless of width), so raising it only changes the table-compaction threshold. Formatting markdown at `--print-width 1000` therefore keeps wide tables column-aligned while leaving prose single-line.
-
-`printWidth` is a global Prettier option, so it cannot be raised for markdown without also raising it for code, where an 80 column limit is wanted. Hence the split: markdown runs at `--print-width 1000`, every other language runs at Prettier's default `80`.
-
-Ceiling: tables wider than 1000 columns still collapse. Bump the number if that ever bites; it is marked with a `ponytail:` comment in `hook.sh`. It bit once at 400: a 430-column function table in `chezmoi/dot_config/fish/README.md` compacted, which is what raised the number to 1000.
+`--prose-wrap never` would join the lines of each paragraph into one line. It also stops Prettier from padding a table wider than `printWidth` (default `80`): the table collapses to the compact `| --- |` form. Under `preserve`, Prettier pads every table, so markdown and code run in one pass at the default width.
 
 ## Never blocks Claude
 
@@ -114,7 +104,7 @@ The hook calls the `prettier` binary directly (like `lint-all-languages` calls i
 pnpm install -g prettier
 ```
 
-A per-project `.prettierrc` in the file's directory tree is picked up automatically, so project style wins over Prettier defaults. Note that a `printWidth` set in a project `.prettierrc` overrides the `--print-width 1000` above for markdown in that project.
+A per-project `.prettierrc` in the file's directory tree is picked up automatically, so project style wins over Prettier defaults. Note that a `proseWrap` set in a project `.prettierrc` does not override the `--prose-wrap preserve` above, because a command-line option wins.
 
 ## Prettier's own ignore rules
 

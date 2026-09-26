@@ -12,7 +12,7 @@ Read from the Claude Code 2.1.278 binary and from the hook itself on 2026-09-19.
 
 **It has to run per edit, not per turn.** Claude reads a file back after it writes it. If formatting waits until the turn ends, Claude works all turn against content that does not match what lands on disk, and the table alignment it wants while editing a table never happens while it is editing the table.
 
-One argument does favour deferring: formatting a file directly after a Write makes Claude's cached view of that file stale, which produces a "changed on disk" notice and can make a following `Edit` miss on `old_string`. Under `--prose-wrap never` the rewrites are small, so a miss needs Claude to target the exact line Prettier touched. Seeing formatted content while working is worth more than avoiding that.
+One argument does favour deferring: formatting a file directly after a Write makes Claude's cached view of that file stale, which produces a "changed on disk" notice and can make a following `Edit` miss on `old_string`. Under `--prose-wrap preserve` the rewrites are small, so a miss needs Claude to target the exact line Prettier touched. Seeing formatted content while working is worth more than avoiding that.
 
 ## Wiring it to Stop as-is does nothing
 

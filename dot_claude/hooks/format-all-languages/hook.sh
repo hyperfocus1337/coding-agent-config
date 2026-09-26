@@ -110,30 +110,24 @@ done
 [[ ${#targets[@]} -gt 0 ]] || exit 0
 
 # --- Format ---
-# Two passes, because printWidth is global. README "Markdown gets its own pass".
+# Only markdown can be named in the amend hint below.
 md_targets=()
-other_targets=()
 for f in "${targets[@]}"; do
-  case "${f##*.}" in
-    md|markdown) md_targets+=("$f") ;;
-    *) other_targets+=("$f") ;;
-  esac
+  case "${f##*.}" in md|markdown) md_targets+=("$f") ;; esac
 done
 
 command -v prettier >/dev/null 2>&1 || exit 0
 # --ignore-path drops .gitignore from Prettier's default ignore list, which would
 # otherwise skip an ignored file silently. README "Prettier's own ignore rules".
-prettier_cmd=(prettier --write --prose-wrap never --ignore-path .prettierignore)
+# --prose-wrap preserve keeps one sentence per line. README "Prose wrapping".
+prettier_cmd=(prettier --write --prose-wrap preserve --ignore-path .prettierignore)
 
 # The amend hint may name only files Prettier itself rewrote, so record them
 # before the pass. README "Write and commit in one command".
 before=''
 [[ -n "${committed:-}" && ${#md_targets[@]} -gt 0 ]] && before=$(cksum "${md_targets[@]}")
 
-# Markdown: wide width keeps tables column-aligned. Code: Prettier's default 80.
-# ponytail: tables wider than 1000 cols still compact; bump if that bites.
-[[ ${#md_targets[@]} -gt 0 ]] && "${prettier_cmd[@]}" --print-width 1000 "${md_targets[@]}" >/dev/null 2>&1
-[[ ${#other_targets[@]} -gt 0 ]] && "${prettier_cmd[@]}" "${other_targets[@]}" >/dev/null 2>&1
+"${prettier_cmd[@]}" "${targets[@]}" >/dev/null 2>&1
 
 # --- Report a commit that needs amending ---
 # Formatting a file the command already committed fixes the file, not the commit.

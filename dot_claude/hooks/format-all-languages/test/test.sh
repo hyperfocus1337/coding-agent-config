@@ -60,15 +60,15 @@ printf 'vendor/\n' > "$outer/.gitignore"
 unaligned "$outer/vendor/V.md"
 ln -s . "$outer/self"
 
-# A table whose *padded* width passes 80 columns, plus a hard-wrapped paragraph.
-# Prettier pads to the widest cell, so the cells have to be long: at the default
-# print width this table collapses to the compact `| --- |` form, and without
-# --prose-wrap never the paragraph keeps its line breaks.
+# A table whose *padded* width passes 80 columns, plus one sentence per line.
+# Prettier pads to the widest cell, so the cells have to be long: under
+# --prose-wrap never this table collapses to the compact `| --- |` form, and the
+# sentences join onto one line.
 { printf '| %s | %s | %s |\n' first-column-heading-here second-column-heading-x third-column-heading-yz
   printf '| --- | --- | --- |\n'
   printf '| %s | %s | %s |\n' first-column-cell-value second-column-cell-value third-column-cell-value
   printf '\n'
-  printf 'A paragraph the author hard-wrapped\nacross three short lines that the\nformatter has to join into one.\n'
+  printf 'The first sentence stays on its own line.\nThe second sentence also stays on its own line.\n'
 } > "$outer/WIDE.md"
 
 # Sweep with a command that names no path, so only the queue can find the roots.
@@ -99,17 +99,17 @@ unchanged "sweep leaves .ts"    "$outer/code.ts"      'const a  =  1'
 unchanged "sweep leaves .json"  "$outer/data.json"    '{"a":1,   "b":2}'
 unchanged "gitignored markdown" "$outer/vendor/V.md"  "$(printf '| a | bbbbbbbbbbbb |\n| --- | --- |\n| ccccccccccccccc | d |')"
 
-# The wide table proves the markdown --print-width: at Prettier's default 80 it would
-# collapse to the compact `| --- |` form instead of staying padded.
+# The wide table and the sentence lines prove --prose-wrap preserve: under
+# never, the table would compact and the sentences would join onto one line.
 if grep -q '^| --------' "$outer/WIDE.md"; then
   echo "ok   format wide table stays padded"
 else
-  echo "FAIL wide table compacted (print-width regression)"; fail=1
+  echo "FAIL wide table compacted (--prose-wrap regression)"; fail=1
 fi
-if grep -q '^A paragraph the author hard-wrapped across three short lines that the formatter has to join into one\.$' "$outer/WIDE.md"; then
-  echo "ok   format prose joined onto one line"
+if grep -qx 'The second sentence also stays on its own line.' "$outer/WIDE.md"; then
+  echo "ok   format sentence lines kept"
 else
-  echo "FAIL prose left hard-wrapped (--prose-wrap regression)"; fail=1
+  echo "FAIL sentence lines joined (--prose-wrap regression)"; fail=1
 fi
 
 # A repo with no commits has no HEAD, so `git diff HEAD` fails. Untracked
