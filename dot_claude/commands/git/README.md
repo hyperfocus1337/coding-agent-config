@@ -52,6 +52,8 @@ Its argument is a free-text hint. It passes the hint on when it routes to `commi
 
 Routing works because every command in the table above stays model-invocable. Adding `disable-model-invocation: true` to one of them removes it as a target, and `commit:any` loses that route without reporting an error. `commit:any` itself carries the flag: it runs only when typed, so nothing commits by routing on its own.
 
+See [`commit/README.md`](commit/README.md) for how the commit commands stage part of a file, check a commit, and load context.
+
 ## Push and pull requests
 
 Send commits to a remote and open pull requests.
