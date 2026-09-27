@@ -1,161 +1,324 @@
 # Session-start context budget
 
-Every skill, command and agent this machine installs contributes one line to a listing that Claude Code injects at session start: the entry's name plus its frontmatter `description`. This "breadcrumb" is the only part loaded up front. The body of `SKILL.md`, its `references/`, `scripts/`, and any bundled files cost zero tokens until the entry is actually invoked, and scripts Claude runs never enter context at all, only their output does.
+Every skill, command and agent that this machine installs adds one line to a listing that Claude Code injects at session start.
+The line holds the entry name plus its frontmatter `description`, and this "breadcrumb" is the only part that loads at the start.
+The body of `SKILL.md`, its `references/`, `scripts/`, and other bundled files cost zero tokens until the entry is invoked.
+Scripts that Claude runs never enter context, only their output does.
 
-This doc measures what that standing cost is. Numbers come from [`scripts/context-budget/measure-context.py`](../../../scripts/context-budget/measure-context.py), which walks `~/.claude` plus every installed plugin, reconstructs the listings, and counts characters with tokens estimated at length over four. Snapshot taken 2026-08-22.
+This page measures that standing cost.
+The numbers come from [`scripts/context-budget/measure-context.py`](../../../scripts/context-budget/measure-context.py).
+The script walks `~/.claude`, the claude.ai skills synced into `~/.claude/skills/synced/`, and every installed plugin.
+It skips `~/.claude/skills/.trash/`, which holds skills that do not load.
+It reconstructs the listings and counts characters, with tokens estimated as length divided by four.
+
+Snapshot taken 2026-09-27 on Claude Code 2.1.283.
+The script total, 29 entries, matches the skill listing that a live session received on that date.
 
 ## What reaches the model, and what does not
 
-A `SKILL.md`, command, or agent file on disk is not automatically a breadcrumb. Three filters apply. They were found by diffing the on-disk files against the listing a live session actually received.
+A `SKILL.md`, command, or agent file on disk does not always become a breadcrumb.
+The filters below were found by comparing the files on disk with the listing that a live session received.
 
-A plugin manifest's `skills` array, when present, gates which on-disk skills register at all. `mattpocock-skills` ships 35 `SKILL.md` files but declares only 25 in `.claude-plugin/plugin.json`, so the other 10 (everything under `skills/in-progress/` and `skills/misc/`) are inert files.
+A plugin manifest's `skills` array, when present, controls which skills on disk register.
+`mattpocock-skills` ships 35 `SKILL.md` files but declares only 25 in `.claude-plugin/plugin.json`.
+The other 10, 6 under `skills/in-progress/` and 4 under `skills/misc/`, do not load.
 
-`disable-model-invocation: true` keeps an entry out of the model-facing listing. It stays reachable as an explicit `/slash-command`, but Claude cannot auto-select it and never sees its description. Of `mattpocock-skills`' 25 declared skills, 14 carry this flag, so only 11 appear. The same mechanism trims `codex` from 7 commands to 2, and hides the local `thermo-nuclear-code-quality-review` skill (its twin in the agents listing is what shows up instead).
+`disable-model-invocation: true` keeps an entry out of the model-facing listing.
+The entry stays available as an explicit `/slash-command`, but Claude cannot select it automatically and never sees its description.
+Of the 25 skills that `mattpocock-skills` declares, 14 carry this flag, so only 11 appear.
+The same flag hides the local `thermo-nuclear-code-quality-review` skill; only its twin in the agents listing appears.
 
-An entry with no `description` never reaches the listing, with one exception. A user-level command file with no frontmatter at all is still listed, using its H1 as the description. `.chezmoiignore` keeps every `commands/**/README.md` out of `~/.claude` for that reason, and the repo copies carry `disable-model-invocation: true` as a second guard. Plugin command files in exactly the same shape (prompt bodies with an H1 and no frontmatter) were not observed in the listing, so the fallback appears to be user-level only. The measurement script encodes it that way and says so in a comment; if a future session shows plugin equivalents listed, that assumption is what to revisit.
+A user-level skill is listed under its directory name, not its frontmatter `name`.
+`~/.claude/skills/organize/` has `name: organize-with-comments`, and the listing shows `organize`.
 
-Skills and commands share one listing block, so a command in `~/.claude/commands/` costs exactly what a skill of the same verbosity costs. Agents are a separate listing. Of this repo's 30 user-level commands, 24 carry the flag above and cost nothing; the other six are a real slice of the skills budget.
+A user-level command file with no `description` is listed with its H1 as the description.
+`.chezmoiignore` keeps every `commands/**/README.md` out of `~/.claude` for this reason, and the repo copies also carry `disable-model-invocation: true`.
+A live listing showed no plugin command file of the same shape, so the script applies the H1 fallback to user-level files only.
+No enabled plugin has such a file.
 
-## Current cost
+When `syncClaudeAiSkills` is on, skills from the claude.ai account are listed as `anthropic-skills:<name>`.
+Claude Code keeps one bucket per organization under `~/.claude/skills/synced/`, and one name can occur in two buckets.
+The live listing held each name once.
+`meeting-summarizer` is flagged in the older bucket and not flagged in the newer one, and the listing showed it.
+The script therefore takes each name from the most recently updated bucket.
+
+Skills and commands share one listing block, so a command in `~/.claude/commands/` costs the same as a skill with the same description length.
+Agents are a separate listing.
+
+## Cost per source
 
 ### Enabled (loaded every session)
 
-| Source                            | Skills |  Cmds | Agents |     Chars |    ~Tokens |
-| --------------------------------- | -----: | ----: | -----: | --------: | ---------: |
-| `~/.claude` (see breakdown below) |      5 |     6 |      2 |     3,503 |        876 |
-| `mattpocock-skills@mattpocock`    |     11 |     0 |      0 |     2,645 |        661 |
-| `codex@openai-codex`              |      3 |     2 |      1 |       838 |        210 |
-| `astral@astral-sh`                |      3 |     0 |      0 |       473 |        118 |
-| `ast-grep@ast-grep-marketplace`   |      1 |     0 |      0 |       447 |        112 |
-| **Total from disk**               | **23** | **8** |  **3** | **7,906** | **~1,976** |
+| Source                                 | Skills |  Cmds | Agents |     Chars |    ~Tokens |
+| -------------------------------------- | -----: | ----: | -----: | --------: | ---------: |
+| `~/.claude` (see breakdown below)      |      5 |     9 |      2 |     3,694 |        924 |
+| `mattpocock-skills@mattpocock`         |     11 |     0 |      0 |     2,645 |        661 |
+| `astral@astral-sh`                     |      3 |     0 |      0 |       473 |        118 |
+| `ast-grep@ast-grep-marketplace`        |      1 |     0 |      0 |       447 |        112 |
+| claude.ai synced (`anthropic-skills:`) |      0 |     0 |      0 |         0 |          0 |
+| **Total from disk**                    | **20** | **9** |  **2** | **7,259** | **~1,815** |
 
-The skill and command listing alone is 31 entries and 7,185 characters; the agents listing adds 721.
+The skill and command listing alone is 29 entries and 6,770 characters.
+The agents listing adds 489.
 
-Four plugins load in every session. The other rows in the plugin catalog carry project or local scope, so they cost nothing here and reach a repo through the `install-plugins` and `install-skills` skills.
+Five plugins are enabled.
+`pyright-lsp` and `typescript-lsp` add language servers and no breadcrumbs, so they have no row.
+`codex@openai-codex` is installed but set to `false` in `enabledPlugins`, so its 838 characters are on disk only.
+The other plugins in the catalog have project or local scope, so they cost nothing here.
+The `install-plugins` and `install-skills` skills add them to the repos that need them.
+
+### The claude.ai synced row
+
+`dot_claude/settings.json` sets `syncClaudeAiSkills: false`.
+With this setting, Claude Code does not load the claude.ai account skills and moves the files from `~/.claude/skills/synced/` to `~/.claude/skills/.trash/`.
+The session of 2026-09-27 listed no `anthropic-skills:` entry.
+When the setting is `false`, the script counts no entries for this row.
+
+Claude Code downloads the skills enabled for the claude.ai account into `~/.claude/skills/synced/` when a terminal session signs in with that account.
+Anthropic's `pdf` and `xlsx` always sync; the other skills sync when they are turned on in the claude.ai skill settings.
+This repo does not declare these skills, and chezmoi does not manage the folder.
+
+With the sync on, this account syncs 16 skills with 11,773 characters, measured on 2026-09-26.
+That is more than the 6,770 characters of all other listed entries together.
+
+| Skill                          | Chars | Use in a terminal session                                     |
+| ------------------------------ | ----: | ------------------------------------------------------------- |
+| `docs`                         | 1,004 | needs the claude.ai docs connector                            |
+| `pptx`                         |   985 | file format skill                                             |
+| `google-workspace`             |   982 | needs Google connectors                                       |
+| `xlsx`                         |   975 | file format skill                                             |
+| `computer-use`                 |   969 | needs the desktop app's `computer-use` tools                  |
+| `docx`                         |   959 | file format skill                                             |
+| `built-in-browser`             |   856 | needs the desktop app's browser pane                          |
+| `chrome-browser`               |   786 | needs the Claude in Chrome extension tools                    |
+| `meeting-summarizer`           |   738 | same task as the local `meeting-summarizer`, which is flagged |
+| `deep-research`                |   604 | research across sources with subagents                        |
+| `pdf`                          |   461 | file format skill                                             |
+| `morning`                      |   367 | morning brief artifact                                        |
+| `skill-creator`                |   353 | skill authoring and evals                                     |
+| `import-memory`                |   173 | memory import from another assistant                          |
+| 2 organization-specific skills | 1,545 | organization variants of `docx` and `pptx`                    |
+
+A terminal session on this machine has none of the tools that `computer-use`, `built-in-browser`, `chrome-browser`, `google-workspace` and `docs` need.
+`disableClaudeAiConnectors` is also `true`.
+With the sync on, those five skills cost 4,597 characters in every session and cannot run here.
 
 ### What is in the `~/.claude` row
 
-That row is the only source this repo controls directly, so it is worth expanding. Per-entry figures below are the rendered breadcrumb (`- name: description`) without its trailing newline, which is why the group sums come out one character per entry below the table totals.
+This row holds the local sources that this repo controls.
+The figures per entry are the rendered breadcrumb (`- name: description`) without its trailing newline.
+For this reason, each group sum is one character per entry lower than the table total.
 
-**Skills, 5 listed entries, 2,656 characters.** Eleven skill directories sit in `~/.claude/skills/`; six carry `disable-model-invocation: true` and cost nothing:
+**Skills: 5 listed entries, 2,642 characters.**
+Twelve skill directories sit in `~/.claude/skills/`, not counting `.trash/`.
+Seven carry `disable-model-invocation: true` and cost nothing:
 
-| Channel                                     | Listed | Chars | Detail                                                                                                                                                      |
-| ------------------------------------------- | -----: | ----: | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Local, authored here (`dot_claude/skills/`) |      4 | 2,412 | `install-agent-resources` 862, `organize-with-comments` 610, `technical-writing` 528, `markitdown` 412                                                      |
-| APM, `antonbabenko/terraform-skill`         |      1 |   239 | `terraform-skill`                                                                                                                                           |
-| Flagged, not listed                         |      6 |     0 | `meeting-summarizer` 721, `install-bootstrap` 573, `install-skills` 423, `install-mcp` 372, `install-plugins` 359, `thermo-nuclear-code-quality-review` 291 |
+| Channel                                     | Listed | Chars | Detail                                                                                                                                                                          |
+| ------------------------------------------- | -----: | ----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Local, authored here (`dot_claude/skills/`) |      4 | 2,398 | `install-agent-resources` 862, `organize` 596, `technical-writing` 528, `markitdown` 412                                                                                        |
+| APM, `antonbabenko/terraform-skill`         |      1 |   239 | `terraform-skill`                                                                                                                                                               |
+| Flagged, not listed                         |      7 |     0 | `meeting-summarizer` 721, `install-bootstrap` 573, `install-skills` 423, `install-mcp` 372, `install-plugins` 359, `thermo-nuclear-code-quality-review` 291, `explain-diff` 122 |
 
-The four `install-*` executors carry the flag because `install-agent-resources` is the single entry point that routes to them; only the router needs a breadcrumb. `thermo-nuclear-code-quality-review` comes from the `cursor/plugins/cursor-team-kit` APM entry, which also deploys the kit's two agents, the whole of the agents column for this row.
+The four `install-*` executors carry the flag because `install-agent-resources` is the single entry point that routes to them.
+Only the router needs a breadcrumb.
+`thermo-nuclear-code-quality-review` comes from the `cursor/plugins/cursor-team-kit` APM entry, which also deploys the kit's two agents.
 
-**Commands, 6 listed entries, 358 characters, every one of them declared here.** Thirty command files sit in `~/.claude/commands/`, exactly what `dot_claude/commands/` declares, and 24 carry the flag. An earlier snapshot found ten extra files under `~/.claude/commands/git/` that the repo no longer declared: chezmoi writes what the source declares and deletes nothing else, so a renamed or deleted command persists in `$HOME` and keeps charging the listing. Those are gone, but the failure mode returns on the next rename, so it is worth re-running the script after one.
+**Commands: 9 listed entries, 563 characters, all declared here.**
+Fifty-nine command files sit in `~/.claude/commands/`, the same set that `dot_claude/commands/` declares without its README files.
+Fifty carry the flag.
+Chezmoi writes what the source declares and deletes nothing else.
+A renamed or deleted command therefore stays in `$HOME` and still costs listing space, so run the script again after a rename.
 
-| Entry                 | Chars | Note                                                   |
-| --------------------- | ----: | ------------------------------------------------------ |
-| `git:commit:session`  |    77 | listed, declared here                                  |
-| `git:commit:extend`   |    75 | listed, declared here                                  |
-| `git:commit:multiple` |    71 | listed, declared here                                  |
-| `git:commit:single`   |    47 | listed, declared here                                  |
-| `git:pr:create`       |    44 | listed, declared here                                  |
-| `git:commit:push`     |    38 | listed, declared here                                  |
-| 24 others             |     0 | `disable-model-invocation: true`, reachable as `/name` |
+| Entry                     | Chars | Note                                                   |
+| ------------------------- | ----: | ------------------------------------------------------ |
+| `chezmoi`                 |   115 | listed                                                 |
+| `git:commit:conversation` |    79 | listed                                                 |
+| `git:push`                |    77 | listed                                                 |
+| `git:commit:extend`       |    57 | listed                                                 |
+| `git:commit:multiple`     |    57 | listed                                                 |
+| `git:commit:single`       |    47 | listed                                                 |
+| `git:commit:task`         |    44 | listed                                                 |
+| `git:pr:create`           |    44 | listed                                                 |
+| `git:commit:push`         |    34 | listed                                                 |
+| 50 others                 |     0 | `disable-model-invocation: true`, available as `/name` |
 
-`/answer:caveman` carries the flag, so its 72-character breadcrumb stays out of the listing and the 1,316 characters of the file itself cost nothing until it is invoked.
+`/answer:caveman` carries the flag.
+Its 52-character breadcrumb stays out of the listing, and the 1,769 characters of the file cost nothing until the command runs.
 
-**Agents, 2 entries, 489 characters.** `thermo-nuclear-code-quality-review` 301 and `ci-watcher` 186, both deployed by the `cursor-team-kit` APM entry. `apm.yml` notes there is no `agents:` subset key, so taking that kit's one skill means taking both agents. `codex` contributes a third, `codex-rescue`.
+**Agents: 2 entries, 489 characters.**
+`thermo-nuclear-code-quality-review` 301 and `ci-watcher` 186, both deployed by the `cursor-team-kit` APM entry.
+`apm.yml` notes that there is no `agents:` subset key, so the kit's one skill comes with both agents.
+With `codex` disabled, its `codex-rescue` agent is not listed.
 
-### What a command breadcrumb actually buys
+### What a command breadcrumb buys
 
-Worth being precise, because it decides how aggressively to trim. A command in the listing is callable by the model through the Skill tool, not just by a human typing `/name`. That is verifiable from a live session: `- git:commit:single: Create a single git commit` appears in the skill listing, and the Skill tool's contract accepts only names from that listing. The negative case confirms the mechanism, `codex`'s flagged commands and `mattpocock-skills`' flagged skills are absent from the same listing.
+A command in the listing is callable by the model through the Skill tool, not only by a human who types `/name`.
+A live session shows this: `- git:commit:single: Create a single git commit` is in the skill listing, and the Skill tool accepts only names from that listing.
+The flagged `mattpocock-skills` skills are not in the same listing, which confirms the mechanism.
 
-But callable is not the same as chosen. Asked to commit, Claude generally commits directly rather than routing through `/git:commit:single`, because the task is within its default competence. The breadcrumb only earns its cost when the command encodes a procedure Claude would otherwise improvise differently, and when the request arrives in prose rather than as an explicit slash command. By that test most commands here are hand-invoked tools whose descriptions are dead weight in the auto-invocation listing, and only a few (`git:commit:single`, `git:commit:multiple`, `git:pr:create`, which pin this repo's commit and PR conventions) have a real claim to auto-selection.
+Callable does not mean chosen.
+When asked to commit, Claude usually commits directly and does not route through `/git:commit:single`, because the task is within its default competence.
+A breadcrumb is worth its cost only when two conditions are true:
+
+- The command encodes a procedure that Claude would otherwise do differently.
+- The request arrives in prose, not as an explicit slash command.
+
+The listed `git:*` commands pin this repo's commit, push and PR conventions, so they meet both conditions.
 
 ### Which commands carry the flag
 
-Every command in `dot_claude/commands/` except the five `git:commit:*` variants and `git:pr:create` carries `disable-model-invocation: true`, which keeps its breadcrumb out of the listing while leaving `/name` working. The six exceptions pin this repo's commit and PR conventions, which is exactly the case where auto-selection beats improvising:
+Every command in `dot_claude/commands/` except the nine above carries `disable-model-invocation: true`.
+The flag keeps the breadcrumb out of the listing, and `/name` still works.
 
-| Flagged                                                             | Chars if listed | Reason                                                                                                                                |
-| ------------------------------------------------------------------- | --------------: | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 8 × `organize:*`                                                    |             972 | thin wrappers over the `organize-with-comments` skill, which already prompts for a style; the skill is the correct auto-invoke target |
-| `issues:*` (3)                                                      |             368 | each needs an issue number as an argument, so the request always arrives as a slash command                                           |
-| `git:rewrite:author`, `git:rewrite:date`, `git:rewrite:shift-dates` |             291 | history surgery, never something to auto-select                                                                                       |
-| `git:branches:cleanup`, `git:changelog`, `git:worktrees:*` (2)      |             558 | deliberate maintenance runs, invoked by hand at a moment of the user's choosing                                                       |
-| 10 × `answer:*`, `docs:current-state`                               |             847 | mode switches the user types explicitly                                                                                               |
-| `summarize:transcripts`                                             |             102 | a standalone prompt for the same task as the flagged `meeting-summarizer` skill                                                       |
-| `code:explain`, `text:proofread`                                    |              88 | within default competence; the breadcrumb buys nothing the model cannot already do                                                    |
-| **Total**                                                           |       **3,226** |                                                                                                                                       |
+| Flagged                                                             | Chars if listed | Reason                                                                                                                   |
+| ------------------------------------------------------------------- | --------------: | ------------------------------------------------------------------------------------------------------------------------ |
+| 9 × `organize:*`                                                    |           1,055 | thin wrappers over the `organize` skill, which asks for a style; the skill is the correct target for automatic selection |
+| 8 × `docs:*`                                                        |             782 | rewrite modes that take pasted prose or paths as the argument                                                            |
+| 8 × `answer:*`, 2 × `ask:*`                                         |             788 | mode switches that the user types explicitly                                                                             |
+| `git:branches:cleanup`, `git:changelog`, `git:worktrees:*` (2)      |             593 | maintenance runs, invoked by hand at a time the user chooses                                                             |
+| `code:cleanup:dead-code`                                            |              85 | a cleanup run that deletes code, started by hand                                                                         |
+| 5 × `code:review:*`, 2 × `code:security:*`                          |             393 | focused reviews, started by hand                                                                                         |
+| `git:rewrite:author`, `git:rewrite:date`, `git:rewrite:shift-dates` |             291 | history changes, never something to select automatically                                                                 |
+| `issues:*` (2)                                                      |             270 | each needs an issue number as an argument, so the request always arrives as a slash command                              |
+| `git:commit:any`, `git:commit:split`, `git:revert`                  |             187 | `any` routes to the listed commit commands; `split` and `revert` change commits already made                             |
+| `summarize:transcripts`                                             |             101 | a standalone prompt for the same task as the flagged `meeting-summarizer` skill                                          |
+| `code:explain`, `text:proofread`                                    |              84 | within default competence; the breadcrumb adds nothing that the model cannot already do                                  |
+| **Total**                                                           |       **4,629** |                                                                                                                          |
 
-`dot_claude/commands/README.md` and `dot_claude/commands/git/README.md` carry the same flag, and `.chezmoiignore` keeps both out of `~/.claude`. Either guard alone is enough; both are documentation, not commands.
+`dot_claude/commands/README.md` and the README in each namespace folder carry the same flag, and `.chezmoiignore` keeps them out of `~/.claude`.
+Either guard alone is sufficient; the README files are documentation, not commands.
 
 ### Not on disk, still charged
 
-Two costs the script cannot see, measured separately:
+The script does not see the costs below, so they were measured separately.
 
-Claude Code's own built-in skills (`dataviz`, `claude-api`, `artifact-*`, `update-config`, `code-review`, `simplify`, `loop`, `schedule`, `run`, `init`, `security-review`, `keybindings-help`, `fewer-permission-prompts`) add 15 entries and roughly **6,000 characters**. Two of them dominate: `dataviz` at 1,182 characters and `claude-api` at 1,086. These are not configurable from this repo, but they are the single largest block competing for the same listing budget.
+Claude Code's bundled skills cost nothing.
+`disableBundledSkills: true` in `dot_claude/settings.json` removes them, and the session of 2026-09-27 listed no bundled skill.
+Without that setting, they add 15 entries and about 6,000 characters, with `dataviz` at 1,182 and `claude-api` at 1,086.
+[`disabled-tools.md`](disabled-tools.md) lists what the setting removes.
 
-`SessionStart` hooks inject plain text straight into the conversation, which is not a listing, is never truncated, and re-fires on every startup, resume, clear and compact. A hook that injects instruction text is therefore the most expensive shape a directive set can take, and no plugin on this machine has one: the enabled four contribute breadcrumbs only. Anything that would arrive that way is authored here instead, in [`rules/code.md`](../../../dot_claude/rules/code.md) at 1,325 characters loaded once per session, and in [`commands/answer/caveman.md`](../../../dot_claude/commands/answer/caveman.md) at 1,316 characters loaded only when `/answer:caveman` runs.
+`SessionStart` hooks inject plain text directly into the conversation.
+That text is not a listing, is never truncated, and fires again on every startup, resume, clear and compaction.
+A hook that injects instruction text is therefore the most expensive form a directive set can take.
+No enabled plugin on this machine has a `SessionStart` hook.
+The disabled `codex` plugin declares `SessionStart`, `SessionEnd` and `Stop` hooks, so measure its injection before you enable it.
+This repo authors its instruction text as files: [`rules/code.md`](../../../dot_claude/rules/code.md) is 1,427 characters loaded once per session, and [`commands/answer/caveman.md`](../../../dot_claude/commands/answer/caveman.md) is 1,769 characters loaded only when `/answer:caveman` runs.
 
-Before installing a plugin that ships a `SessionStart` hook, measure what it injects and check whether it can be silenced. Feed the hook a payload and count the bytes:
+Before you install a plugin that ships a `SessionStart` hook, measure what it injects and check whether it can be silenced.
+Give the hook a payload and count the bytes:
 
 ```sh
 echo '{"session_id":"t","hook_event_name":"SessionStart","source":"startup"}' \
   | CLAUDE_PLUGIN_ROOT="$P" node "$P/hooks/<activate>.js" | wc -c
 ```
 
-Some hooks read an environment variable that suppresses the injection, which keeps the plugin's skills reachable while dropping the text to a couple of bytes. Many do not, and for those the only lever is not installing the plugin. A hook that injects on `SubagentStart` as well charges the same text per subagent spawned.
+Some hooks read an environment variable that stops the injection.
+This keeps the plugin's skills available and reduces the text to a few bytes.
+Many hooks do not, and for those the only option is to not install the plugin.
+A hook that also injects on `SubagentStart` charges the same text for each subagent.
 
-`CLAUDE.md` plus its three `rules/` files total 4,409 characters, which is the whole standing instruction load on this machine.
+`CLAUDE.md` plus its three `rules/` files total 3,971 characters, the full standing instruction load in every repo.
+In this repo, the project rule `.claude/rules/apply.md` adds 959 characters.
 
 ### Consistency check
 
-Three views of the plugin set agree: the catalog holds four `scope: "user"` rows, `settings.json` holds four `enabledPlugins` entries, all `true`, the machine has four plugins installed, and every marketplace in `extraKnownMarketplaces` backs a catalog row. The measurement script warns when a plugin is enabled but missing from `installed_plugins.json`, which is how a mismatch surfaces.
+The views of the plugin set agree:
 
-context7 reaches Claude through exactly one channel, the user-scoped MCP server that APM installs from `apm.yml`. A session shows one instruction block and one tool set, `mcp__context7__*`.
+- The catalog in `install-plugins/references/plugins.json` holds six `scope: "user"` rows.
+- `settings.json` holds six `enabledPlugins` entries: five `true`, and `codex@openai-codex` `false`.
+- `installed_plugins.json` holds the same six plugins.
+- Each of the 12 marketplaces in `extraKnownMarketplaces` backs a catalog row.
 
-## The real constraint is truncation, not tokens
+The measurement script warns when a plugin is enabled but not in `installed_plugins.json`, which is how a mismatch shows.
 
-Token cost is small and linear. Roughly 2,000 tokens of listings from disk plus ~1,500 for the built-ins is well under 1% of a 1M context window.
+context7 reaches Claude through one channel: the user-scoped MCP server that APM installs from `apm.yml`.
+A session shows one instruction block and one tool set, `mcp__context7__*`.
 
-The constraint is the character budget on the listing itself. Claude Code scales that at roughly 1% of the model's context window: about 2,000 characters at 200k, about 10,000 at 1M. The listing always contains every name, but when the descriptions overflow, Claude Code shortens them to fit, dropping description text starting with the entries invoked least so the ones used most keep their keywords.
+## The listing fits its budget
 
-This machine's skill and command listing is **7,185 characters from disk plus ~6,000 from built-ins**, so about 13,200 against a 10,000-character budget on the 1M-context Opus this machine runs, roughly 1.32x over. Truncation is not a future risk, it is happening: rarely-used entries lose their descriptions in the auto-invocation listing, stay callable as `/name`, and cannot be matched to a request in prose.
+The token cost is small and linear.
+About 1,800 tokens of listings from disk is below 0.2% of a 1M context window.
 
-Closing the ~3,200-character gap cannot come from the local side alone. The built-ins are 6,000 of the 13,200 and are not configurable. What sits on disk is four plugins and 13 `~/.claude` entries, and the heaviest single source is `mattpocock-skills` (2,645 across eleven entries), of which the eleven listed skills are a subset of 25 declared.
+The listing also has a size budget.
+The [Claude Code skills docs](https://code.claude.com/docs/en/skills#skill-descriptions-are-cut-short) set it at 1% of the model's context window, through `skillListingBudgetFraction` (default `0.01`).
+The listing always contains every name.
+When the descriptions overflow the budget, Claude Code removes descriptions, starting with the least-invoked skills.
+A skill without a description is still available as `/name`, but Claude cannot match it to a request in prose.
+Each description is also cut at 1,536 characters (`skillListingMaxDescChars`); the longest breadcrumb here, `install-agent-resources`, is 862 characters.
+
+The docs do not give the unit of the budget.
+A session with the claude.ai skills synced received all 46 descriptions in full, at 18,584 characters, on the 1M-context Opus model that this machine runs.
+Thus the budget on that model is more than 18,584 characters.
+This agrees with a budget in tokens: 1% of 1M is 10,000 tokens, about 40,000 characters at four characters per token.
+
+Read as characters, the budget on a 200k-context model is about 8,000 characters, and the listing of 6,770 characters fits it.
+To see the size after the budget, run `/context`: in Claude Code 2.1.196 and later, its Skills row reports what the model receives.
 
 ## What to do about it
 
-**Keep instruction text out of `SessionStart` hooks.** A hook injection is untruncatable and re-fires on every session start and every compaction, so it is the one cost that scales with session length rather than being paid once. An installed plugin that injects 5,000 characters of behavioural rules outweighs its own breadcrumbs several times over. Where such a rule set is wanted, author it here: a condensed version runs 20 to 30 percent of the injected size, and `disable-model-invocation: true` keeps the opt-in half out of the listing as well. [`instruction-load.md`](instruction-load.md) covers what a directive set costs in adherence and how to condense one without dropping a condition that makes a directive actionable.
+**Keep instruction text out of `SessionStart` hooks.**
+A hook injection cannot be truncated and fires again on every session start and every compaction.
+It is the one cost that increases with session length, not paid once.
+An installed plugin that injects 5,000 characters of behavioral rules costs more than its own breadcrumbs several times over.
+If such a rule set is necessary, author it here: a condensed version is 20 to 30 percent of the injected size, and `disable-model-invocation: true` keeps the opt-in half out of the listing.
+[`instruction-load.md`](instruction-load.md) covers what a directive set costs in adherence and how to condense one.
 
-**Cut the heaviest breadcrumbs.** The top of the list:
+**Keep the synced claude.ai skills off.**
+`syncClaudeAiSkills: false` keeps 16 entries and 11,773 characters out of the listing, including `pdf`, `xlsx`, `docx` and `pptx`.
+If one of these skills is necessary, turn the sync on and use a narrower lever:
 
-| Entry                               | Chars | Source           |
-| ----------------------------------- | ----: | ---------------- |
-| `install-agent-resources`           |   862 | local, this repo |
-| `organize-with-comments`            |   610 | local, this repo |
-| `technical-writing`                 |   528 | local, this repo |
-| `mattpocock-skills:code-review`     |   451 | plugin           |
-| `ast-grep:ast-grep`                 |   446 | plugin           |
-| `markitdown`                        |   412 | local, this repo |
-| `mattpocock-skills:wizard`          |   341 | plugin           |
-| `mattpocock-skills:codebase-design` |   302 | plugin           |
-| `mattpocock-skills:research`        |   268 | plugin           |
-| `mattpocock-skills:domain-modeling` |   253 | plugin           |
+1. Turn the other skills off in the claude.ai skill settings. The next sync removes them from `~/.claude/skills/synced/`. This also removes them from Cowork and cloud sessions.
+2. Set the other skills to `"name-only"` or `"off"` in `skillOverrides` in `dot_claude/settings.json`. The docs exclude only plugin skills from `skillOverrides`, so this should apply to synced skills; check it with `/skills`.
 
-The four heaviest entries this repo can edit are `install-agent-resources` 862, `organize-with-comments` 610, `technical-writing` 528 and `markitdown` 412: 2,412 characters across four entries, and the cheapest win available. Trim their trigger lists to distinctive keywords. `meeting-summarizer` carries the flag, so its 721 characters stay out of the listing and it is reached by name. `/summarize:transcripts` covers the same task with its own prompt and is flagged too.
+**Cut the heaviest breadcrumbs.**
+The ten heaviest entries:
 
-**Use `disable-model-invocation: true` deliberately.** It is the precise tool for this problem: an entry you always invoke by hand does not need a description in the auto-invocation listing at all, and the flag removes the breadcrumb while keeping the slash command working. It covers 24 command entries and the four `install-*` executor skills, which route through `install-agent-resources` and never need matching on their own. It is the only lever that reduces the listing without removing function.
+| Entry                               | Chars | Source                          |
+| ----------------------------------- | ----: | ------------------------------- |
+| `install-agent-resources`           |   862 | local, this repo                |
+| `organize`                          |   596 | local, this repo                |
+| `technical-writing`                 |   528 | local, this repo                |
+| `mattpocock-skills:code-review`     |   451 | `mattpocock-skills@mattpocock`  |
+| `ast-grep:ast-grep`                 |   446 | `ast-grep@ast-grep-marketplace` |
+| `markitdown`                        |   412 | local, this repo                |
+| `mattpocock-skills:wizard`          |   341 | `mattpocock-skills@mattpocock`  |
+| `mattpocock-skills:codebase-design` |   302 | `mattpocock-skills@mattpocock`  |
+| `mattpocock-skills:research`        |   268 | `mattpocock-skills@mattpocock`  |
+| `mattpocock-skills:domain-modeling` |   253 | `mattpocock-skills@mattpocock`  |
 
-**Remove rather than disable.** Disabling and not installing cost the same at session start, but a disabled plugin holds reserve on disk plus a `false` entry to keep in step with the catalog. A plugin wanted occasionally belongs at project or local scope, where it loads only in the repo that needs it.
+The four heaviest entries that this repo can edit are `install-agent-resources` 862, `organize` 596, `technical-writing` 528 and `markitdown` 412: 2,398 characters in total, 35% of the listing.
+Trim their trigger lists to keywords that no other entry uses.
+With the sync off, the flag on the local `meeting-summarizer` keeps its 721 characters out of the listing.
 
-**Prefer project-scoped entries.** A skill in a repo's `.claude/skills/` loads only in that repo. Eight plugins and two skill bundles sit in the catalogs at project or local scope for that reason, and the `install-plugins` and `install-skills` skills put them into the repos that need them. For anything new, the question is which repos need it, not whether to enable it.
+**Use `disable-model-invocation: true` deliberately.**
+An entry that you always invoke by hand does not need a description in the listing.
+The flag removes the breadcrumb and keeps the slash command.
+It covers 50 command entries, the four `install-*` executor skills, `explain-diff` and `meeting-summarizer`.
+For entries whose files you do not edit, `skillOverrides` with `"user-invocable-only"` has the same effect.
 
-**Remember the body is free.** Splitting a skill into a lean breadcrumb plus a fat `SKILL.md` costs nothing until invocation, so descriptions are the only part worth cutting for context reasons. Once invoked, the rendered `SKILL.md` stays in context for the rest of the session and is not re-read on later turns.
+**Remove rather than disable.**
+A disabled plugin and a plugin that is not installed cost the same at session start.
+But a disabled plugin stays on disk and keeps a `false` entry that must stay in step with the catalog.
+`codex` is in this state.
+A plugin that is necessary only sometimes belongs at project or local scope, where it loads only in the repo that needs it.
+
+**Prefer project-scoped entries.**
+A skill in a repo's `.claude/skills/` loads only in that repo.
+Eight plugins and five skill entries sit in the catalogs at project or local scope for that reason.
+For each entry that you add, the question is which repos need it, not whether to enable it.
+
+**Remember that the body is free.**
+A skill split into a short breadcrumb plus a long `SKILL.md` costs nothing more until it is invoked, so descriptions are the only part to cut for context.
+After invocation, the rendered `SKILL.md` stays in context for the rest of the session and is not read again on later turns.
 
 ## Reproducing these numbers
 
-```
+```sh
 python3 scripts/context-budget/measure-context.py
 ```
 
-Re-run whenever the enabled set changes. The figures here are a snapshot and drift as plugins are toggled and bundles re-resolve to latest on install. The script does not measure built-in skills or hook injections; those were measured by hand as described above.
+Run it again when the enabled set changes.
+The figures drift when plugins are toggled, when bundles resolve to the latest version on install, and when the claude.ai account syncs.
+The script does not measure bundled skills or hook injections; those were measured by hand as described above.
 
-Sources: [Claude Code skills docs](https://code.claude.com/docs/en/skills), [Agent Skills overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview).
+Sources: [Claude Code skills docs](https://code.claude.com/docs/en/skills), [Claude Code settings reference](https://code.claude.com/docs/en/settings-reference), [Agent Skills overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview).
