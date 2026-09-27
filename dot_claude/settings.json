@@ -30,6 +30,7 @@
       "DesignSync",
       "NotebookEdit",
       "SendMessage",
+      "SendFeedback",
       "PushNotification",
       "RemoteTrigger",
       "ReportFindings",

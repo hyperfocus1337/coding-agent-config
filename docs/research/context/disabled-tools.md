@@ -24,6 +24,7 @@ A deny rule in any settings source wins over an allow rule, so a project cannot 
 | `ScheduleWakeup`                       | `/loop` without an interval (self-paced mode)               |
 | `ReportFindings`                       | The typed findings list that `/code-review` renders         |
 | `SendMessage`                          | Messages to running subagents, teammates, and sessions      |
+| `SendFeedback`                         | Feedback drafts that the model queues for your approval     |
 | `PushNotification`                     | Push notifications to the phone or desktop app              |
 | `RemoteTrigger`                        | Triggers for remote and cloud sessions                      |
 | `DesignSync`                           | Design sync                                                 |
