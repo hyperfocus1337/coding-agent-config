@@ -27,7 +27,7 @@ Two mode switches that stay on for the session, and six one-shot edits that act 
 
 ## git/ — version control helpers
 
-Eighteen commands for the everyday flow, branch hygiene, and history rewriting. See [git/README.md](git/README.md).
+Nineteen commands for the everyday flow, branch hygiene, and history rewriting. See [git/README.md](git/README.md).
 
 ## organize/ — reorder a file into labeled sections
 

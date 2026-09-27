@@ -21,6 +21,7 @@ Stage and commit working directory changes.
 | `commit:split`        | Split the previous commit into separate commits         |
 | `commit:push`         | Commit and push                                         |
 | `commit:plan`         | Plan the commits a commit command would make            |
+| `commit:only`         | Commit only the given files and folders                 |
 
 ### Choosing a commit command
 
@@ -49,7 +50,7 @@ It decides the same two axes, then adds two checks the table does not cover.
 3. Scope: a changed path it cannot tie to this conversation means foreign changes are present, so it picks a conversation command, which excludes them. When the session started at the command it has no history to tie paths to, so it picks a working directory command.
 4. Count: one logical unit picks the one-commit command, two or more pick the many-commits command.
 
-Its argument is a free-text hint. It passes the hint on when it routes to `commit:task`, which is the only target that takes one.
+Its argument is a free-text hint. When the hint is a list of existing paths, it routes to `commit:only` with those paths before step 2. Otherwise it passes the hint on when it routes to `commit:task`.
 
 Routing works because every command in the table above stays model-invocable. Adding `disable-model-invocation: true` to one of them removes it as a target, and `commit:any` loses that route without reporting an error. `commit:any` itself carries the flag: it runs only when typed, so nothing commits by routing on its own.
 

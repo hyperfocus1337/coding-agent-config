@@ -41,6 +41,12 @@ Write every patch and file version outside the repository.
 | One hunk that mixes two units | Build the unit's version of the file from `git show :<path>`. Run `git hash-object -w <file>`, then `git update-index --cacheinfo <mode>,<sha>,<path>`, with `<mode>` from `git ls-files -s <path>`. | The working tree does not change, and the file keeps its mode.                                           |
 | Part of a new file            | Run `git add -N <path>`, then use the patch method.                                                                                                                                                  | `git diff` does not show untracked files until they are in the index.                                    |
 
+## Committing given paths
+
+`only` stages no file content. It runs `git commit --only -- <paths>`, which commits the working tree version of the paths and keeps other staged changes staged.
+Before that, it runs `git add -N -- <paths>` once: without an index entry, `git commit` rejects a new file with `pathspec '<path>' did not match any file(s) known to git`.
+`--only` takes whole files, so `only` does not split a file across commits. The hunk methods above write the index, and that would change the other staged changes.
+
 ## Checks
 
 - Before each commit, the model reads `git diff --cached -- <path>` for every partly staged file. This catches a hunk in the wrong place. The commands do not run tests, because the test command differs per project and a test run slows every commit.
