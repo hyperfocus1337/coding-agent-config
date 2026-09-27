@@ -13,7 +13,7 @@ disable-model-invocation: true
 
 ## Your task
 
-Pick the commit command that fits the changes above and invoke it. Commit nothing yourself. `$ARGUMENTS`, when set, is a hint about which changes the user means: use it in step 3 and pass it on in step 5.
+Pick the commit command that fits the changes above and invoke it. Commit nothing yourself. `$ARGUMENTS`, when set, is a hint about which changes the user means: use it in step 3 and pass it on in step 5. If `/git:commit:plan` made a plan in this conversation, route to the command it names and skip steps 2 to 4.
 
 1. **Nothing to commit.** No changed paths: say the tree is clean and stop.
 2. **Fixup.** Route to `/git:commit:extend` when all three hold: the changes touch only paths the most recent commit touched, they correct or complete that commit, and that commit is unpushed (`ahead` is 1 or more).

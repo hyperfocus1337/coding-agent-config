@@ -20,6 +20,7 @@ Stage and commit working directory changes.
 | `commit:extend`       | Fold changes into an existing commit                    |
 | `commit:split`        | Split the previous commit into separate commits         |
 | `commit:push`         | Commit and push                                         |
+| `commit:plan`         | Plan the commits a commit command would make            |
 
 ### Choosing a commit command
 
@@ -51,6 +52,15 @@ It decides the same two axes, then adds two checks the table does not cover.
 Its argument is a free-text hint. It passes the hint on when it routes to `commit:task`, which is the only target that takes one.
 
 Routing works because every command in the table above stays model-invocable. Adding `disable-model-invocation: true` to one of them removes it as a target, and `commit:any` loses that route without reporting an error. `commit:any` itself carries the flag: it runs only when typed, so nothing commits by routing on its own.
+
+### Planning commits
+
+Run `commit:plan` to see the commits before they exist.
+Its argument names the target: `conversation`, `multiple`, or `task` with an optional scope.
+Without a valid target, it lists the three targets and stops.
+It reads the target command file and applies its rules up to the first staging step, so the plan uses the same boundary and grouping as the target.
+It prints each commit as a subject with its paths, and lists every path it leaves out with a reason.
+Ask for changes to the plan, for example "merge 1 and 2", then run the target command or `commit:any`: both follow the plan with your changes.
 
 See [`commit/README.md`](commit/README.md) for how the commit commands stage part of a file, check a commit, and load context.
 

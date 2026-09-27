@@ -14,6 +14,8 @@ Why the commit commands stage, check, and load context the way they do. For whic
 
 Change all four together.
 
+`plan` holds no copy of these steps: it reads the target command file at run time. `conversation`, `multiple`, `task`, and `any` hold the same sentence that makes them follow a plan from `plan`.
+
 ## Staging part of a file
 
 When one file holds changes of two units, each commit must stage only its own part, and the obvious methods fail without a terminal or place hunks in the wrong spot, so `conversation`, `multiple`, `split`, and `task` name the methods to avoid and the methods to use.

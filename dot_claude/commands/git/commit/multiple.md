@@ -13,6 +13,8 @@ description: Split changes into several commits
 
 Split the changes into one commit per logical unit.
 
+If `/git:commit:plan` made a plan for this command in this conversation, use its units and order, with every change the user asked for since. Still run each step below to check it.
+
 1. **Group.** Group by concern, not by file: feature vs. fix vs. refactor vs. docs vs. test vs. chore. One file can hold two units. One unit can span several files.
 2. **Order.** Order the units so foundational changes (renames, new helpers, refactors) come before what builds on them.
 3. **Commit.** Per unit:

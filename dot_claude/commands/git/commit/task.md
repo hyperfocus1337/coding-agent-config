@@ -23,6 +23,8 @@ A conversation is not a scope. Out of scope by default:
 
 "I touched this file" is not a reason to commit it. If you cannot tie a path to the scope, leave it out.
 
+If `/git:commit:plan` made a plan for this command in this conversation, use its include list and subject, with every change the user asked for since. Still run each step below to check it.
+
 1. **List.** Build the include list: the paths you changed for this scope, each tied to the request that caused it. Keep the list in your reasoning, do not print it.
 2. **Stage.** Stage only those paths, naming each one. Never `git add -A`, `git add .`, `git add -u`, or `git commit -a`.
    - A whole file: `git add <path>`.
