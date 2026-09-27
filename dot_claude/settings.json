@@ -44,6 +44,7 @@
   "disableRemoteControl": true,
   "disableClaudeAiConnectors": true,
   "disableArtifact": true,
+  "syncClaudeAiSkills": false,
   "model": "opus",
   "hooks": {
     "PreToolUse": [
