@@ -1,4 +1,7 @@
-# Refactor Clean
+---
+description: Find and remove dead code, with tests run before and after.
+disable-model-invocation: true
+---
 
 Safely identify and remove dead code with test verification:
 
