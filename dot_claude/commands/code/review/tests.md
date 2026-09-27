@@ -1,5 +1,6 @@
 ---
 description: Review tests for gaps.
+argument-hint: [<file-path>[:<start>-<end>] | <tests>]
 disable-model-invocation: true
 ---
 

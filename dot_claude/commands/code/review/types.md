@@ -1,5 +1,6 @@
 ---
 description: Review code for type safety.
+argument-hint: [<file-path>[:<start>-<end>] | <code>]
 disable-model-invocation: true
 ---
 

@@ -1,5 +1,6 @@
 ---
 description: Review code for bugs.
+argument-hint: [<file-path>[:<start>-<end>] | <code>]
 disable-model-invocation: true
 ---
 

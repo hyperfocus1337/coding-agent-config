@@ -1,5 +1,6 @@
 ---
 description: Review dependencies for supply chain risks.
+argument-hint: [<file-path>[:<start>-<end>] | <code>]
 disable-model-invocation: true
 ---
 
