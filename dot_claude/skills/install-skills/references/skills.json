@@ -58,9 +58,7 @@
       "id": "playwright-cli",
       "channel": "vendor-cli",
       "command": "playwright-cli install --skills",
-      "requires": [
-        "playwright-cli"
-      ],
+      "requires": ["playwright-cli"],
       "scope": "project",
       "status": "project-candidate",
       "why": "the CLI installs into the workspace by default, so project scope is its native mode. It also downloads a ~195 MB browser into the shared /ms-playwright cache on first run.",
@@ -72,9 +70,7 @@
       "id": "orbit",
       "channel": "vendor-cli",
       "command": "glab skills install orbit",
-      "requires": [
-        "glab"
-      ],
+      "requires": ["glab"],
       "scope": "project",
       "status": "project-candidate",
       "why": "glab writes .agents/skills, which Claude does not read, so both arg sets carry --path to land in the harness skills directory.",
@@ -105,6 +101,14 @@
       "status": "project-candidate",
       "why": "441 resident tokens across 3 skills, useful only where the database is Neon.",
       "use_when": "repo that connects to Neon or Lakebase Postgres"
+    },
+    {
+      "id": "vale-cli/agent-tools",
+      "channel": "apm",
+      "scope": "project",
+      "status": "project-candidate",
+      "why": "274 resident tokens across 5 skills (setup, fix, triage, vocab, ci), useful only where Vale lints the prose. apm deploys them without the vale: plugin prefix, so the generic names fix, setup and ci can collide with other skills. The package also deploys a PostToolUse hook that runs vale-edit.sh after each Edit or Write, and the vale-cms HTTP MCP server, which returns 401 without a Vale CMS subscription.",
+      "use_when": "repo with a .vale.ini, or one that is about to add Vale prose linting"
     },
     {
       "id": "manaflow-ai/cmux/skills/<name>",
