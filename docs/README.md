@@ -69,14 +69,15 @@ The `research/agents/` folder holds the source reading and probes behind [`agent
 
 ### Context budget
 
-The `research/context/` folder answers what a session carries before it does any work, and what that costs. [`instruction-load.md`](research/context/instruction-load.md) counts the separate directives one session asks the model to obey and finds where they contradict each other. [`skills-context.md`](research/context/skills-context.md) estimates the session-start context cost of every installed skill's listing breadcrumb, and explains why the real constraint is description truncation rather than token count. [`prompt-cache-ttl.md`](research/context/prompt-cache-ttl.md) records what `ENABLE_PROMPT_CACHING_1H` costs: the 1-hour TTL doubles the price of a cache write, so it pays off across long gaps between turns and loses on rapid ones. [`disabled-tools.md`](research/context/disabled-tools.md) lists the built-in tools and features that `settings.json` turns off to cut that load, and how to turn each one back on.
+The `research/context/` folder answers what a session carries before it does any work, and what that costs. [`instruction-load.md`](research/context/instruction-load.md) counts the separate directives one session asks the model to obey and finds where they contradict each other. [`skills-context.md`](research/context/skills-context.md) estimates the session-start context cost of every installed skill's listing breadcrumb, and explains why the real constraint is description truncation rather than token count. [`prompt-cache-ttl.md`](research/context/prompt-cache-ttl.md) records what `ENABLE_PROMPT_CACHING_1H` costs: the 1-hour TTL doubles the price of a cache write, so it pays off across long gaps between turns and loses on rapid ones. [`disabled-tools.md`](research/context/disabled-tools.md) lists the built-in tools and features that `settings.json` turns off to cut that load, and how to turn each one back on. [`alternative-settings.md`](research/context/alternative-settings.md) compares the ways to start a session with other settings than `~/.claude/settings.json`.
 
-| File                                                          | Description                                                     |
-| ------------------------------------------------------------- | --------------------------------------------------------------- |
-| [`instruction-load.md`](research/context/instruction-load.md) | How many directives a session stacks, and where they contradict |
-| [`skills-context.md`](research/context/skills-context.md)     | Context budget consumed by installed skill breadcrumbs          |
-| [`prompt-cache-ttl.md`](research/context/prompt-cache-ttl.md) | What the 1-hour prompt cache TTL costs, and when it loses       |
-| [`disabled-tools.md`](research/context/disabled-tools.md)     | Built-in tools and features turned off, and how to turn them on |
+| File                                                                  | Description                                                     |
+| --------------------------------------------------------------------- | --------------------------------------------------------------- |
+| [`instruction-load.md`](research/context/instruction-load.md)         | How many directives a session stacks, and where they contradict |
+| [`skills-context.md`](research/context/skills-context.md)             | Context budget consumed by installed skill breadcrumbs          |
+| [`prompt-cache-ttl.md`](research/context/prompt-cache-ttl.md)         | What the 1-hour prompt cache TTL costs, and when it loses       |
+| [`disabled-tools.md`](research/context/disabled-tools.md)             | Built-in tools and features turned off, and how to turn them on |
+| [`alternative-settings.md`](research/context/alternative-settings.md) | Start a session with other settings, or a separate profile      |
 
 ### Prompt interface
 
