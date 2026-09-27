@@ -12,6 +12,8 @@ Gating rules, derived by diffing on-disk files against a real session's listing:
   * an entry with no `description` never reaches the listing
   * skills and commands share ONE listing block; agents get their own
 
+claude.ai account skills under skills/synced/ get their own row, see synced().
+
 Not covered: Claude Code's built-in skills (dataviz, claude-api, ...) and
 SessionStart hook injections, which are not on disk in a parseable form.
 
@@ -69,13 +71,16 @@ def collect(root: Path, prefix: str, allow: set[Path] | None) -> dict[str, list]
     found: dict[str, list] = {k: [] for k in KINDS}
 
     for path in sorted((root / "skills").rglob("SKILL.md")):
+        # synced/ is counted by synced(); .trash/ holds skills that no longer load
+        if {"synced", ".trash"} & set(path.relative_to(root).parts):
+            continue
         if allow is not None and path.parent.resolve() not in allow:
             continue
         fm = frontmatter(path)
         if not hidden(fm):
-            found["skills"].append(
-                (prefix + (fm.get("name") or path.parent.name), fm["description"])
-            )
+            # the directory names a skill, not its `name` frontmatter (observed:
+            # organize/ with `name: organize-with-comments` is listed as `organize`)
+            found["skills"].append((prefix + path.parent.name, fm["description"]))
 
     for kind in ("commands", "agents"):
         base = root / kind
@@ -97,6 +102,30 @@ def collect(root: Path, prefix: str, allow: set[Path] | None) -> dict[str, list]
     return found
 
 
+def synced() -> list:
+    """claude.ai account skills, which Claude Code syncs into skills/synced/<bucket>/.
+
+    Listed as `anthropic-skills:<name>`. A bucket exists per organization, and one name
+    can sit in two buckets. The live listing held each name once, and a skill flagged in
+    the older bucket stayed listed from the newer one, so the newest bucket wins per name.
+    """
+    settings = json.loads((HOME / "settings.json").read_text())
+    if settings.get("syncClaudeAiSkills") is False:
+        return []  # Claude Code stops loading them and moves them to skills/.trash/
+    buckets = sorted(
+        (HOME / "skills" / "synced").glob("*/manifest.json"),
+        key=lambda m: -json.loads(m.read_text()).get("lastUpdated", 0),
+    )
+    seen: dict[str, str | None] = {}
+    for manifest in buckets:
+        for path in sorted(manifest.parent.glob("*/SKILL.md")):
+            fm = frontmatter(path)
+            name = path.parent.name
+            if name not in seen:
+                seen[name] = None if hidden(fm) else fm["description"]
+    return [("anthropic-skills:" + n, d) for n, d in seen.items() if d is not None]
+
+
 def cost(entries: list) -> int:
     return sum(len(f"- {name}: {desc}") + 1 for name, desc in entries)
 
@@ -108,7 +137,16 @@ def sources() -> list[dict]:
         "plugins"
     ]
 
-    rows = [{"label": "~/.claude (user-level)", "on": True, **collect(HOME, "", None)}]
+    rows = [
+        {"label": "~/.claude (user-level)", "on": True, **collect(HOME, "", None)},
+        {
+            "label": "claude.ai synced (anthropic-skills)",
+            "on": True,
+            "skills": synced(),
+            "commands": [],
+            "agents": [],
+        },
+    ]
     for key, records in installed.items():
         root = Path(records[0]["installPath"])
         allow = None
