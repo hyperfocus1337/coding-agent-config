@@ -35,8 +35,8 @@ Codex sends Claude's hook payload with Claude's tool name `Bash`, so the scripts
 | Event         | Matcher       | Hooks                                                                               |
 | ------------- | ------------- | ----------------------------------------------------------------------------------- |
 | `PreToolUse`  | `Bash`        | `block-secret-commits`, `enforce-cli-tools`                                         |
-| `PostToolUse` | `Bash`        | `format-all-languages`, `format-org-tables`, `lint-all-languages`                   |
-| `PostToolUse` | `apply_patch` | the same three, through `apply-patch.sh`                                            |
+| `PostToolUse` | `Bash`        | `format-all-languages`, `format-org-tables`, `lint-all-languages`, `lint-prose`     |
+| `PostToolUse` | `apply_patch` | the same four, through `apply-patch.sh`                                             |
 | `Stop`        |               | `type-check-all-languages`; Codex sends `stop_hook_active`, so the loop guard works |
 
 Codex has no `PostToolUseFailure` event. Under Codex, the file hooks do not run after a Bash command that writes a file and then exits non-zero.

@@ -1,0 +1,10 @@
+# writing.md: one topic per paragraph, at most 6 sentences. A list item and a
+# blockquote count as paragraphs. Vale skips frontmatter, headings, code spans,
+# and code blocks, so a period there does not end a sentence; the lookbehind
+# keeps abbreviations such as "e.g." from ending one either.
+extends: occurrence
+message: "Paragraph over 6 sentences. Split it at its topic changes, and turn a sequence into a list."
+level: error
+scope: [paragraph, list, blockquote]
+max: 6
+token: '(?<!\b(?:e\.g|i\.e|etc|vs|cf|al|approx|incl|No|Fig))[.!?](?:\s|$)'
