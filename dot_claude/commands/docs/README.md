@@ -4,7 +4,7 @@ disable-model-invocation: true
 
 # docs slash commands
 
-Two mode switches that stay on for the session, and six one-shot edits that act on the text pasted after the command.
+Two mode switches that stay on for the session, and six one-shot edits. Every command accepts pasted text or file paths, as its argument hint shows.
 
 | Command               | Description                                                                                                 |
 | --------------------- | ----------------------------------------------------------------------------------------------------------- |
