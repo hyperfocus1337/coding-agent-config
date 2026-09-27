@@ -6,6 +6,7 @@ Each listed skill puts its name and description in the skill listing of every se
 
 The source is the video [Claude Code's system tools are SO BLOATED](https://www.youtube.com/shorts/oLx4yCbeklQ) by Matt Pocock.
 The article [How To Kill The Bloat In Claude Code's System Prompt](https://www.aihero.dev/how-to-kill-the-bloat-in-claude-codes-system-prompt) gives the same settings, and shows how to measure the tool tokens per request with a logging proxy set in `ANTHROPIC_BASE_URL`.
+The [`/context-payload`](../../../dot_claude/skills/README.md#context-payload) skill records the same request without a proxy, through the official `OTEL_LOG_RAW_API_BODIES` setting.
 
 Set 2026-09-26.
 All five `disable*` keys were checked against the published [settings schema](https://www.schemastore.org/claude-code-settings.json) on that date.

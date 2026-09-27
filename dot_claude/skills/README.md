@@ -25,8 +25,45 @@ The four channel skills carry `disable-model-invocation: true`. Start from `inst
 | [`meeting-summarizer`](meeting-summarizer/) | Turns a meeting or call transcript into a structured English summary with decisions and an action-items table.  |
 | [`organize`](organize/)                     | Reorganizes a config or code file into labeled, comment-delimited sections, prompting for a header style first. |
 | [`explain-diff`](explain-diff/)             | Builds a self-contained HTML explainer of a code change: background, intuition, diagrams, and a quiz.           |
+| [`context-payload`](context-payload/)       | Captures the first API request of a new session, and ranks what it costs.                                       |
 
 `markitdown` backs the rule in `rules/tools.md` that a binary document is converted before it is read. `organize` declares the skill name `organize-with-comments` and pairs with the `/organize:*` commands, which pick a header style without the prompt.
+
+## Context payload
+
+`/context-payload` runs [`capture-request.py`](context-payload/scripts/capture-request.py) and puts its report in the prompt.
+The script records what Claude Code sends, instead of what the files on disk predict.
+It starts an interactive `claude` session in a pseudo-terminal, sends one short prompt, and stops the session after the first response.
+The official `OTEL_LOG_RAW_API_BODIES=file:<dir>` setting writes the full request body to disk, so no logging proxy is necessary.
+A run takes about 6 seconds and sends one request: 17,825 input tokens in this repo, most of them cache reads.
+
+The report ranks tool schemas, system prompt blocks, memory files, and the skill and agent listings.
+The total input tokens come from the response usage and are exact.
+The per-part tokens split that total by character share.
+The skill then names the five largest items you can remove, and the setting that removes each one.
+It edits no file.
+
+Arguments after `--` go to `claude`, so you can measure a settings change before you make it:
+
+```
+/context-payload -- --settings '{"disableWorkflows":true}'
+```
+
+The script also runs outside a session:
+
+```
+python3 ~/.claude/skills/context-payload/scripts/capture-request.py
+python3 ~/.claude/skills/context-payload/scripts/capture-request.py --dir /tmp/claude-request-abc123
+```
+
+Limits:
+
+- The session runs in the current directory, because project settings and rules change the payload. The directory must be trusted, or the session waits at the trust prompt until the timeout.
+- MCP servers connect in the background. The script types the prompt after each server has connected or failed, or after 60 seconds. The `MCP servers:` line shows the state of each server. A failed or pending server has no tools in the report.
+- `--print` sends a different system prompt and fewer tools, so the script uses the interactive session. On Claude Code 2.1.283 that session left no transcript, so it does not show in `/resume`.
+- The capture directory holds your instructions and account details. The skill deletes it. When you run the script directly, delete it yourself.
+
+For the static view of what is on disk, including disabled skills, see [`scripts/context-budget/`](../../scripts/context-budget/README.md).
 
 Third-party skills do not live here. They arrive through APM or a plugin, and every channel is mapped in [`docs/sources/channels.md`](../../docs/sources/channels.md).
 
