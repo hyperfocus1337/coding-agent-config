@@ -3,6 +3,8 @@
 Fill in this skeleton. Drop any metadata line whose value is not present in the transcript. Use sentence case for all headings. No bullet points in the body. No em dashes.
 
 ```markdown
+# <meeting subject, or the main topic in three to eight words>
+
 Meeting: <title or subject>
 Date: <date>
 Participants: <names and roles>
@@ -24,12 +26,13 @@ Source language: <only if translation was needed>
 ## Action items
 
 | Owner    | Task   | Deadline   |
-|----------|--------|------------|
+| -------- | ------ | ---------- |
 | <person> | <task> | <deadline> |
 | <person> | <task> | <deadline> |
 ```
 
 Notes:
+
 - Use two to six themed sections, not a fixed number.
 - Use "Not specified" inside table cells when a value is genuinely absent.
 - If there are no action items, replace the table with: "No action items were identified."

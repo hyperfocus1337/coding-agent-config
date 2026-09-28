@@ -61,9 +61,13 @@ Scan the transcript for its language. If any portion is not in English, translat
 
 Produce the summary in the structure below. Headings use sentence case (capitalize only the first word). Section names should describe the actual content, not generic labels, so prefer "Budget approval for Q3" over "Topic 1".
 
+### Title heading
+
+Start the reply with a level-one heading that names the meeting, for example `# Q3 launch date review`. Use the subject if the transcript states one. Otherwise, name the main topic discussed in three to eight words. Do not use a generic title such as "Meeting summary". Write nothing before this heading, so the chat title can pick up the meeting subject.
+
 ### Metadata header
 
-Open with a short block of facts that are present in the transcript. Omit any line whose information is not available rather than guessing.
+Below the heading, give a short block of facts that are present in the transcript. Omit any line whose information is not available rather than guessing.
 
 ```
 Meeting: <title or subject, if stated>

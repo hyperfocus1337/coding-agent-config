@@ -16,6 +16,8 @@ A short, fictional transcript and the summary it should produce. Note the Dutch 
 ## Expected output
 
 ```markdown
+# Q3 launch date review
+
 Meeting: Q3 launch date review
 Participants: Sarah (Product Manager), Tom (Engineering), Priya (Design)
 Duration: 00:06
@@ -36,7 +38,7 @@ A soft launch was set for June 20, with the public launch gated on a successful,
 ## Action items
 
 | Owner | Task                                              | Deadline |
-|-------|---------------------------------------------------|----------|
+| ----- | ------------------------------------------------- | -------- |
 | Tom   | Fix the migration script failure on large tenants | Friday   |
 | Priya | Send the onboarding flow specs                    | Same day |
 ```
