@@ -74,10 +74,21 @@ def main_entry(out: Path) -> dict | None:
         return None
     for line in index.read_text().splitlines():
         entry = json.loads(line)
-        response = entry.get("response_file")
-        if entry.get("query_source") == MAIN and response and (out / response).exists():
+        if entry.get("query_source") == MAIN and "usage" in response_body(out, entry):
             return entry
     return None
+
+
+def response_body(out: Path, entry: dict) -> dict:
+    """The parsed response, or {} while the file is missing or partly written.
+
+    The file exists, empty, from the first streamed chunk. Stopping the session
+    then leaves it empty.
+    """
+    try:
+        return json.loads((out / entry["response_file"]).read_text())
+    except (KeyError, TypeError, OSError, json.JSONDecodeError):
+        return {}
 
 
 def debug_log(out: Path) -> str:
@@ -147,10 +158,17 @@ def capture(out: Path, claude_args: list[str], timeout: int) -> None:
                 os.write(master, b"\r")
                 sent = True
     finally:
+        # Close the master first. On SIGTERM, claude restores the terminal mode,
+        # and tcsetattr waits for the pty output to drain. With no reader on the
+        # master, that wait and proc.wait() never end.
+        os.close(master)
         if proc.poll() is None:
             os.killpg(proc.pid, signal.SIGTERM)
-        proc.wait()
-        os.close(master)
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            os.killpg(proc.pid, signal.SIGKILL)
+            proc.wait()
 
 
 def size(obj) -> int:
@@ -207,7 +225,7 @@ def report(out: Path) -> None:
     if not entry:
         sys.exit(f"No {MAIN} request with a response in {out}")
     request = json.loads((out / entry["request_file"]).read_text())
-    usage = json.loads((out / entry["response_file"]).read_text())["usage"]
+    usage = response_body(out, entry)["usage"]
     total = sum(
         usage.get(k, 0)
         for k in (
@@ -219,7 +237,6 @@ def report(out: Path) -> None:
     parts = {k: request.get(k, []) for k in ("system", "tools", "messages")}
     scale = total / sum(size(v) for v in parts.values())
 
-    print(f"Capture: {out}")
     print(f"Model: {entry['model']}  Input tokens (exact): {total:,}")
     servers = mcp_servers(debug_log(out)) or {}
     print(
@@ -282,6 +299,14 @@ def self_check() -> None:
         'MCP server "b": Transient ECONNREFUSED on initial connect — retry 1/3\n'
         'MCP server "c": Starting connection\nMCP server "c": Connection failed after 9ms\n'
     ) == {"a": "connected", "b": "pending", "c": "failed"}
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        entry = {"query_source": MAIN, "request_file": "q", "response_file": "r"}
+        (out / "index.jsonl").write_text(json.dumps(entry))
+        (out / "r").write_text("")
+        assert main_entry(out) is None, "an empty response is still streaming"
+        (out / "r").write_text('{"usage": {}}')
+        assert main_entry(out) == entry
 
 
 if __name__ == "__main__":
@@ -304,6 +329,9 @@ if __name__ == "__main__":
     out = args.dir
     if out is None:
         out = Path(tempfile.mkdtemp(prefix="claude-request-"))
+    # First and flushed, so a run that hangs or fails still names its directory.
+    print(f"Capture: {out}", flush=True)
+    if args.dir is None:
         capture(out, args.claude_args, args.timeout)
         if not main_entry(out):
             sys.exit(
