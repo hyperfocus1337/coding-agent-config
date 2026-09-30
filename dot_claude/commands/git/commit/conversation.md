@@ -24,7 +24,7 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
       - A whole file: `git add <path>`.
       - Part of a file: write `git diff -U3 -- <path>` to a patch outside the repository, keep only this unit's hunks, and run `git apply --cached <patch>`.
       - One hunk that mixes two units: write this unit's version of the file to a file outside the repository, starting from `git show :<path>`. Then run `git hash-object -w <file>` and `git update-index --cacheinfo <mode>,<sha>,<path>`, with `<mode>` from `git ls-files -s <path>`.
-   2. Check the stage. Compare `git diff --cached --name-only` against the unit and unstage anything extra with `git restore --staged <path>`. For each partly staged file, read `git diff --cached -- <path>` and confirm every hunk sits where it belongs.
+   2. Check the stage. Compare `git diff --cached --name-only` against the unit and unstage anything extra with `git restore --staged <path>`. For each staged file, read `git diff --cached -- <path>` and confirm every hunk is yours and sits where it belongs.
    3. Commit with Conventional Commits. If the body needs "also", split the unit.
 4. **Verify.** Run `git status`. Every include path must be committed, every uncommitted path must be an exclude path. Return to step 3 for anything missed.
 
