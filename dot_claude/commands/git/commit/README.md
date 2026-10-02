@@ -73,6 +73,25 @@ The method has these limits:
 
 `commit:any` never routes to `parallel`: it cannot detect other sessions.
 
+## Auditing commits
+
+`audit` checks the commits of the other commands after they exist. It holds a list of rules per command: which commands treat a hunk of another session as an error. Change that list when a command changes which changes it takes.
+
+The evidence comes from the session transcripts, one `<session-id>.jsonl` file per session in `~/.claude/projects/<project>/`. Each file edit is a `tool_use` entry named `Edit` or `Write`.
+
+| Problem                                                    | Method in `audit`                                                                                | Why it works                                                                                                       |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| The command must find the project directory of the repo.   | `fd -t f '${CLAUDE_SESSION_ID}.jsonl' ~/.claude/projects`.                                       | Claude Code replaces `${CLAUDE_SESSION_ID}` in the command text. The directory of that file is the project folder. |
+| Its own transcript matches every search for its own edits. | `rg --glob '!${CLAUDE_SESSION_ID}*'`.                                                            | The glob also excludes the session folder, which holds its subagent transcripts and large tool results.            |
+| A transcript can be several MB.                            | Search with `rg -l -F` for the path, then for one line of the hunk. Never read a whole file.     | `-l` prints only the names of the matching transcripts.                                                            |
+| An audit in a new session has no conversation to read.     | `rg -l -F '<short sha>'` finds the transcript that printed the commit, and its `<command-name>`. | Every commit command prints `<short sha> <subject>` per commit.                                                    |
+
+The method has these limits:
+
+- Transcripts store text JSON-escaped. A line with a quote or a backslash does not match `rg -F`, so the command searches with a line of 20 or more characters that has neither.
+- The host and the devcontainer each keep their transcripts in their own home directory. An audit on the host cannot see the sessions in the devcontainer, and the reverse. Their hunks show as `unknown`.
+- A hunk that a formatter or lint hook wrote is not in any `Edit` entry. The command ties it to the session that edited the file last.
+
 ## Checks
 
 - Before each commit, the model reads `git diff --cached -- <path>` for every partly staged file. This catches a hunk in the wrong place. The commands do not run tests, because the test command differs per project and a test run slows every commit.

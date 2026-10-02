@@ -23,6 +23,7 @@ Stage and commit working directory changes.
 | `commit:push`         | Commit and push                                         |
 | `commit:plan`         | Plan the commits a commit command would make            |
 | `commit:only`         | Commit only the given files and folders                 |
+| `commit:audit`        | Check the changes in the commits of a commit command    |
 
 ### Choosing a commit command
 
@@ -65,6 +66,14 @@ Without a valid target, it lists the three targets and stops.
 It reads the target command file and applies its rules up to the first staging step, so the plan uses the same boundary and grouping as the target.
 It prints each commit as a subject with its paths, and lists every path it leaves out with a reason.
 Ask for changes to the plan, for example "merge 1 and 2", then run the target command or `commit:any`: both follow the plan with your changes.
+
+### Auditing commits
+
+Run `commit:audit` after a commit command to check its work. Without an argument, it checks every commit that a commit command printed in this conversation. With SHAs or a range, it finds the session that printed each commit in the transcripts under `~/.claude/projects/`, so a new session can audit too. It ties every added and removed line to an edit of the owner session. When it cannot, it searches the transcripts of the other sessions in the repository and names the session that made the line.
+
+Each commit gets one verdict: `ok`, `foreign`, `reverts`, `incomplete`, `mixed`, or `unknown`. For each verdict that is not `ok`, it names the command that fixes it. It commits nothing and edits no files. A hunk of another session is an error for `parallel`, `conversation`, and `task`, and is expected for `multiple`, `single`, and `push`, which take the whole working directory.
+
+The report has up to four tables. `Identified commits` holds one verdict per commit and always prints. `History` lists each commit that a later command rewrote, with the SHA the commit command printed. `Findings` holds one row per hunk that fails a check, and `Potential fixes` lists the commands to run, in order. The audit leaves out a table that has no rows, so a clean run prints only the commits table and two status lines.
 
 See [`commit/README.md`](commit/README.md) for how the commit commands stage part of a file, check a commit, and load context.
 
