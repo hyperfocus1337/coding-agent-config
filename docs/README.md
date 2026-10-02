@@ -53,7 +53,7 @@ The `mcp/` folder covers configuring MCP (Model Context Protocol) servers on eac
 
 ## Research
 
-The `research/` folder holds investigations into the agent environment and session. These record what was true when measured and can go stale. One subfolder per subject: `agents/` for other coding agents, `context/` for what a session loads and what that costs, `interface/` for the prompt and the terminal around it, and `install/` for how a tool reaches the agent.
+The `research/` folder holds investigations into the agent environment and session. These record what was true when measured and can go stale. One subfolder per subject: `agents/` for other coding agents, `commands/` for the git methods behind the slash commands, `context/` for what a session loads and what that costs, `interface/` for the prompt and the terminal around it, and `install/` for how a tool reaches the agent.
 
 ### Other agents
 
@@ -66,6 +66,14 @@ The `research/agents/` folder holds the source reading and probes behind [`agent
 | ---------------------------------------------------- | ------------------------------------------------------------------- |
 | [`hook-events.md`](research/agents/hook-events.md)   | Hook lifecycle events in Claude Code and pi, compared (from source) |
 | [`codex-compat.md`](research/agents/codex-compat.md) | Sharing skills, instructions, and hooks with Codex (measured)       |
+
+### Commands
+
+The `research/commands/` folder holds the investigations behind the slash commands in `dot_claude/commands/`. [`parallel-commits.md`](research/commands/parallel-commits.md) compares seven git methods that let two sessions commit on one branch in one checkout, and explains why only a private index with `commit-tree` and a compare-and-swap `update-ref` is safe when both sessions commit at the same moment.
+
+| File                                                           | Description                                    |
+| -------------------------------------------------------------- | ---------------------------------------------- |
+| [`parallel-commits.md`](research/commands/parallel-commits.md) | Git methods for parallel commits on one branch |
 
 ### Context budget
 
