@@ -14,6 +14,8 @@ Why the commit commands stage, check, and load context the way they do. For whic
 
 Change all four together.
 
+`parallel` holds the same **Lists** and **Group** steps as `conversation`. Its **Commit** step uses the same three methods, but against a private index and `<base>` instead of the shared index. Change it when you change those steps or methods.
+
 `plan` holds no copy of these steps: it reads the target command file at run time. `conversation`, `multiple`, `task`, and `any` hold the same sentence that makes them follow a plan from `plan`.
 
 ## Staging part of a file
@@ -46,6 +48,30 @@ Write every patch and file version outside the repository.
 `only` stages no file content. It runs `git commit --only -- <paths>`, which commits the working tree version of the paths and keeps other staged changes staged.
 Before that, it runs `git add -N -- <paths>` once: without an index entry, `git commit` rejects a new file with `pathspec '<path>' did not match any file(s) known to git`.
 `--only` takes whole files, so `only` does not split a file across commits. The hunk methods above write the index, and that would change the other staged changes.
+
+## Parallel sessions
+
+`parallel` lets two or more sessions commit on the same branch in one checkout. The other commands share one `.git/index`, so a `git commit` in one session takes the hunks that another session staged a moment earlier.
+
+| Problem                                                                                | Method in `parallel`                                                                                                                           | Why it works                                                                                                                                                                                                                                                                                                                                |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The shared index holds the stage of other sessions.                                    | Build each commit in `GIT_INDEX_FILE=<dir>/index`, started with `git read-tree <base>`, then `git write-tree` and `git commit-tree -p <base>`. | `git add`, `git apply --cached`, and `git update-index` write only the file that `GIT_INDEX_FILE` names.                                                                                                                                                                                                                                    |
+| Two sessions commit at the same moment.                                                | `git update-ref HEAD <commit> <base>`.                                                                                                         | `update-ref` moves the branch only if it still points to `<base>`. Otherwise it fails with `is at <sha> but expected <base>`, and the session builds the unit again on the new `HEAD`.                                                                                                                                                      |
+| A commit built on an old base reverts the commit of another session.                   | Every patch, file version, and the private index start from the same literal `<base>`, and `update-ref` checks that same `<base>`.             | A tree from an old base can never become the branch tip.                                                                                                                                                                                                                                                                                    |
+| After the commit, the shared index still holds the old content of the committed paths. | `git reset -q -- <unit paths>`.                                                                                                                | It sets only those paths to the new `HEAD`. Without it, `git status` in the other sessions shows the committed hunks as staged reversals, and a later `git commit` from the shared index reverts them. It is the only write to the shared index, so when another session holds `.git/index.lock`, the session runs it again, up to 3 times. |
+
+`git commit` with a private index is not enough. It checks that `HEAD` does not move during the commit, but not since `read-tree`. If another session commits in that interval, the commit silently reverts that work.
+
+The method has these limits:
+
+- `git commit-tree` runs no hooks: no `pre-commit`, no `commit-msg`, and no [`format-staged-files`](../../../hooks/format-staged-files/README.md). The `PostToolUse` formatters already ran when the session edited the files, and `parallel` writes no files.
+- `git commit-tree` ignores `commit.gpgSign`. To sign, add `-S` to the `commit-tree` step.
+- `git reset -q -- <paths>` also unstages changes that you staged yourself in those paths. The changes stay in the working tree.
+- The safety holds only while every session that commits uses `parallel`. A session that stages in the shared index can still put the hunks of another session in its commit.
+- Git cannot split a hunk that two sessions both edited. `parallel` leaves such a hunk uncommitted.
+- `allowed-tools` uses rules such as `Bash(GIT_INDEX_FILE=* git apply *)`. Claude Code does not match an allow rule past the assignment of a variable that is not on its list of known-safe variables, so the rules name the assignment. The command uses literal SHAs in separate calls, not shell variables, so that each call is one simple command.
+
+`commit:any` never routes to `parallel`: it cannot detect other sessions.
 
 ## Checks
 
