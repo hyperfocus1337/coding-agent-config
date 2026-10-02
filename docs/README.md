@@ -69,11 +69,12 @@ The `research/agents/` folder holds the source reading and probes behind [`agent
 
 ### Commands
 
-The `research/commands/` folder holds the investigations behind the slash commands in `dot_claude/commands/`. [`parallel-commits.md`](research/commands/parallel-commits.md) compares seven git methods that let two sessions commit on one branch in one checkout, and explains why only a private index with `commit-tree` and a compare-and-swap `update-ref` is safe when both sessions commit at the same moment.
+The `research/commands/` folder holds the investigations behind the slash commands in `dot_claude/commands/`. [`parallel-commits.md`](research/commands/parallel-commits.md) compares seven git methods that let two sessions commit on one branch in one checkout, and explains why only a private index with `commit-tree` and a compare-and-swap `update-ref` is safe when both sessions commit at the same moment. [`parallel-commits-walkthrough.md`](research/commands/parallel-commits-walkthrough.md) follows one run of `/git:commit:parallel` command by command, with real output and the state of the working tree, both indexes, and `HEAD` after each step.
 
-| File                                                           | Description                                    |
-| -------------------------------------------------------------- | ---------------------------------------------- |
-| [`parallel-commits.md`](research/commands/parallel-commits.md) | Git methods for parallel commits on one branch |
+| File                                                                                   | Description                                     |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| [`parallel-commits.md`](research/commands/parallel-commits.md)                         | Git methods for parallel commits on one branch  |
+| [`parallel-commits-walkthrough.md`](research/commands/parallel-commits-walkthrough.md) | One run of `/git:commit:parallel`, step by step |
 
 ### Context budget
 

@@ -1,6 +1,6 @@
 # Parallel commits: two sessions, one branch
 
-Which git method lets two or more Claude Code sessions commit on the same branch in one checkout without committing the work of each other. The result is [`/git:commit:parallel`](../../../dot_claude/commands/git/commit/parallel.md). For the method as built and its limits, see [parallel sessions](../../../dot_claude/commands/git/commit/README.md#parallel-sessions).
+Which git method lets two or more Claude Code sessions commit on the same branch in one checkout without committing the work of each other. The result is [`/git:commit:parallel`](../../../dot_claude/commands/git/commit/parallel.md). For the method as built and its limits, see [parallel sessions](../../../dot_claude/commands/git/commit/README.md#parallel-sessions). For one run traced command by command, see the [walkthrough](parallel-commits-walkthrough.md).
 
 Tested on 2026-10-02 with git 2.55.0 in scratch repositories that simulate two sessions. Permission rule matching comes from the [Claude Code permissions page](https://code.claude.com/docs/en/permissions) on the same date.
 
