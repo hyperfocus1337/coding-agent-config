@@ -10,7 +10,6 @@
     "showTerminalProgress": true
   },
   "packages": [
-    "npm:pi-mcp-adapter",
     "npm:pi-web-access",
     "npm:@juicesharp/rpiv-ask-user-question"
   ],
