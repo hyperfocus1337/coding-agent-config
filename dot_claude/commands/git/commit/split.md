@@ -21,9 +21,9 @@ Split `HEAD` into one commit per logical unit. The reason for the split: $ARGUME
 4. **Commit.** Per unit:
    1. Stage the unit. Never `git add -A`, `git add .`, `git add -u`, or `git commit -a`.
       - A whole file: `git add <path>`.
-      - Part of a file: write `git diff -U3 -- <path>` to a patch outside the repository, keep only this unit's hunks, and run `git apply --cached <patch>`.
+      - Part of a file: write `git diff -U3 -- <path>` to a patch outside the repository, copy this unit's hunks to a new, unused patch file, and run `git apply --cached <new patch>`.
       - One hunk that mixes two units: write this unit's version of the file to a file outside the repository, starting from `git show :<path>`. Then run `git hash-object -w <file>` and `git update-index --cacheinfo <mode>,<sha>,<path>`, with `<mode>` from `git ls-files -s <path>`.
-   2. Check the stage. Compare `git diff --cached --name-only` against the unit and unstage anything extra with `git restore --staged <path>`. For each partly staged file, read `git diff --cached -- <path>` and confirm every hunk sits where it belongs.
+   2. Check the stage. Compare `git diff --cached --name-only` against the unit and unstage anything extra with `git restore --staged <path>`. For each partly staged file, read `git diff --cached -- <path>` and confirm every hunk is in this unit and sits where it belongs.
    3. Commit with Conventional Commits. Reuse the original subject for the unit it describes.
 5. **Repeat.** Continue until `git status` is clean and `git diff <original sha>` is empty.
 

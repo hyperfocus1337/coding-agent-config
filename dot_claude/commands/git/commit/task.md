@@ -28,9 +28,9 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
 1. **List.** Build the include list: the paths you changed for this scope, each tied to the request that caused it. Keep the list in your reasoning, do not print it.
 2. **Stage.** Stage only those paths, naming each one. Never `git add -A`, `git add .`, `git add -u`, or `git commit -a`.
    - A whole file: `git add <path>`.
-   - Part of a file: write `git diff -U3 -- <path>` to a patch outside the repository, keep only the in-scope hunks, and run `git apply --cached <patch>`.
+   - Part of a file: write `git diff -U3 -- <path>` to a patch outside the repository, copy the in-scope hunks to a new, unused patch file, and run `git apply --cached <new patch>`.
    - One hunk that mixes in-scope and out-of-scope changes: write the in-scope version of the file to a file outside the repository, starting from `git show :<path>`. Then run `git hash-object -w <file>` and `git update-index --cacheinfo <mode>,<sha>,<path>`, with `<mode>` from `git ls-files -s <path>`.
-3. **Verify.** Compare `git diff --cached --name-only` against the include list. Unstage anything extra with `git restore --staged <path>` and repeat until they match. Read `git diff --cached -- <path>` for each partly staged file to confirm every hunk sits where it belongs.
+3. **Verify.** Compare `git diff --cached --name-only` against the include list. Unstage anything extra with `git restore --staged <path>` and repeat until they match. Read `git diff --cached -- <path>` for each partly staged file to confirm every hunk is in scope and sits where it belongs.
 4. **Commit.** Use Conventional Commits with a concise subject, body only when the subject does not carry the reason. Describe the scope and nothing else. If the body needs "also", unstage the extra change and return to step 2.
 
 If a git command fails, stop and report the error. Do not run the next step.
