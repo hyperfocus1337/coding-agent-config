@@ -205,14 +205,14 @@ index 8b7b003..9b39204 100755
  }
 ```
 
-The second hunk is yours, from before the conversation. The model deletes it from the patch file and applies the rest to the index. `README.md` holds only the feature, so the whole file goes in:
+The second hunk is yours, from before the conversation. The model copies the file header and the first hunk to a new file, `lib-wave.patch`, and applies that file to the index. If the copy fails, `lib-wave.patch` does not exist and `git apply` stops with an error, so it cannot stage the full diff in `lib.patch`. `README.md` holds only the feature, so the whole file goes in:
 
 ```console
-$ git apply --cached /tmp/tmp.lIRiVVoWiu/lib.patch
+$ git apply --cached /tmp/tmp.lIRiVVoWiu/lib-wave.patch
 $ git add README.md
 ```
 
-`git apply` finds the hunk by its 3 context lines, so the deleted hunk does not move it.
+`git apply` finds the hunk by its 3 context lines, so the skipped hunk does not move it.
 
 ### 8. Unit 2: check and commit (steps 3.2 and 3.3)
 
@@ -283,15 +283,15 @@ $ git status -s
 
 The first two units are the same as in steps 4 to 8. The check of unit 1 also unstages `notes.txt`, because the file is not part of that unit. After unit 2, the remaining files each hold one unit, so `git add lib.sh` and `git add notes.txt` stage them whole.
 
-| Step   | `conversation`                                                                                               | `multiple`                                                 |
-| ------ | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| Lists  | Builds an include list and an exclude list from the conversation.                                            | No lists. Every change is in scope.                        |
-| Group  | Groups the include list by concern, foundational changes first. A fix on its own initiative is its own unit. | Groups all changes by concern, foundational changes first. |
-| Stage  | Same three methods.                                                                                          | Same three methods.                                        |
-| Check  | Reads `git diff --cached` for every staged file. Every hunk must be yours.                                   | Reads `git diff --cached` only for partly staged files.    |
-| Commit | Conventional Commits. A body that needs "also" means the unit must split.                                    | Conventional Commits.                                      |
-| End    | `git status` shows only exclude paths.                                                                       | `git status` is clean.                                     |
-| Output | One line per commit, plus `left: <count> paths`.                                                             | One line per commit.                                       |
+| Step   | `conversation`                                                                                               | `multiple`                                                                              |
+| ------ | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| Lists  | Builds an include list and an exclude list from the conversation.                                            | No lists. Every change is in scope.                                                     |
+| Group  | Groups the include list by concern, foundational changes first. A fix on its own initiative is its own unit. | Groups all changes by concern, foundational changes first.                              |
+| Stage  | Same three methods.                                                                                          | Same three methods.                                                                     |
+| Check  | Reads `git diff --cached` for every staged file. Every hunk must be yours.                                   | Reads `git diff --cached` only for partly staged files. Every hunk must be in the unit. |
+| Commit | Conventional Commits. A body that needs "also" means the unit must split.                                    | Conventional Commits.                                                                   |
+| End    | `git status` shows only exclude paths.                                                                       | `git status` is clean.                                                                  |
+| Output | One line per commit, plus `left: <count> paths`.                                                             | One line per commit.                                                                    |
 
 ## Problems the run shows
 

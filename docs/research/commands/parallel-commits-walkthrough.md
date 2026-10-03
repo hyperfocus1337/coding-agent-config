@@ -133,13 +133,13 @@ index 7035b66..6568856 100755
  }
 ```
 
-The second hunk belongs to session B. Session A deletes that hunk from the patch file and applies the rest to the private index:
+The second hunk belongs to session B. Session A copies the file header and the first hunk to a new file, `lib-greet.patch`, and applies that file to the private index:
 
 ```console
-$ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git apply --cached /tmp/tmp.HBASKNyFcc/lib.patch
+$ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git apply --cached /tmp/tmp.HBASKNyFcc/lib-greet.patch
 ```
 
-`git apply` finds the hunk by its 3 context lines, so the deleted hunk does not move it.
+`git apply` finds the hunk by its 3 context lines, so the skipped hunk does not move it.
 
 | Place         | `README.md` | `lib.sh` | `test.sh`   |
 | ------------- | ----------- | -------- | ----------- |
@@ -224,7 +224,7 @@ $ git rev-parse HEAD
 $ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git read-tree 8fb2b41
 $ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git add -- README.md
 $ git diff -U3 8fb2b41 -- lib.sh > /tmp/tmp.HBASKNyFcc/lib.patch
-$ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git apply --cached /tmp/tmp.HBASKNyFcc/lib.patch
+$ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git apply --cached /tmp/tmp.HBASKNyFcc/lib-greet-2.patch
 $ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git diff --cached --name-only 8fb2b41
 README.md
 lib.sh
@@ -235,7 +235,7 @@ a323dfe97102b59a684ea2e330d7aa8b9c73dec6
 $ git update-ref -m "commit: feat: greet takes a name" HEAD a323dfe 8fb2b41
 ```
 
-`read-tree` replaces the whole private index, so nothing from the first attempt stays. Session A deletes the `shout` hunk from the new patch again. This time `main` still points to the base, so `update-ref` moves it to `a323dfe` and prints nothing. The new tree holds `test.sh` from session B, because it starts from `8fb2b41`.
+`read-tree` replaces the whole private index, so nothing from the first attempt stays. Session A copies the `greet` hunk from the new patch to `lib-greet-2.patch`. It does not reuse `lib-greet.patch` from the first attempt: if the copy fails, the new name does not exist and `git apply` stops with an error instead of applying the old patch. This time `main` still points to the base, so `update-ref` moves it to `a323dfe` and prints nothing. The new tree holds `test.sh` from session B, because it starts from `8fb2b41`.
 
 ### 10. The shared index is stale
 
