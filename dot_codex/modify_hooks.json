@@ -7,9 +7,11 @@
 # exists, so the devcontainer gets none.
 set -eu
 
+# ── cmux handlers ─────────────────────────────────────────────────────────────
 keep_cmux=false
 [ -d "$HOME/.cmux/hooks" ] && keep_cmux=true
 
+# ── Hooks this repo owns ──────────────────────────────────────────────────────
 ours=$(cat <<'EOF'
 {
   "hooks": {
@@ -98,6 +100,7 @@ ours=$(cat <<'EOF'
 EOF
 )
 
+# ── Merge over the current file ───────────────────────────────────────────────
 # Empty stdin (no ~/.codex/hooks.json yet) reads as {}. A group is cmux's when
 # every handler in it runs a script from ~/.cmux/hooks.
 jq -n --argjson ours "$ours" --argjson keep_cmux "$keep_cmux" '

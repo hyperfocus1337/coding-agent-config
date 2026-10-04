@@ -6,6 +6,7 @@
 # arrays from $ours replace the current ones.
 set -eu
 
+# ── Settings this repo owns ───────────────────────────────────────────────────
 ours=$(
 	cat <<'EOF'
 {
@@ -36,5 +37,6 @@ ours=$(
 EOF
 )
 
+# ── Merge over the current file ───────────────────────────────────────────────
 # Empty stdin (no ~/.pi/agent/settings.json yet) reads as {}.
 jq -n --argjson ours "$ours" '((try input catch {}) // {}) * $ours'
