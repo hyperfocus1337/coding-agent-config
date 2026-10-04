@@ -17,16 +17,16 @@ check() { # name, jq expression that must be true
 # A current file as pi writes it after a /model change in the TUI.
 printf '%s' '{
   "lastChangelogVersion": "9.9.9",
-  "defaultProvider": "openai",
-  "defaultModel": "gpt-6-sol",
+  "defaultProvider": "local",
+  "defaultModel": "drift-model",
   "terminal": {"showTerminalProgress": false, "extra": 1},
-  "enabledModels": ["openai/gpt-6-sol"],
+  "enabledModels": ["local/drift-model"],
   "deviceId": "abc"
 }' | sh "$SCRIPT" >"$out"
 check "keeps deviceId" '.deviceId == "abc"'
 check "keeps lastChangelogVersion" '.lastChangelogVersion == "9.9.9"'
-check "repo model wins" '.defaultProvider == "openrouter" and (.defaultModel | startswith("deepseek/"))'
-check "repo array replaces current" '.enabledModels | index("openai/gpt-6-sol") == null'
+check "repo model wins" '.defaultProvider == "openai" and .defaultModel == "gpt-6-sol"'
+check "repo array replaces current" '.enabledModels | index("local/drift-model") == null'
 check "objects merge key by key" '.terminal == {"showTerminalProgress": true, "extra": 1}'
 
 sh "$SCRIPT" </dev/null >"$out"

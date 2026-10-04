@@ -15,9 +15,9 @@ The symlink target is relative to the link, not to the home directory: chezmoi w
 
 | Setting                         | Value                                                     | Effect                                                                                              |
 | ------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `defaultProvider`               | `openrouter`                                              | Provider for a new session.                                                                         |
-| `defaultModel`                  | `deepseek/deepseek-v4.1-flash`                            | Model for a new session.                                                                            |
-| `enabledModels`                 | three OpenRouter models                                   | The models offered in the picker. pi writes this key itself, see [Settings drift](#settings-drift). |
+| `defaultProvider`               | `openai`                                                  | Provider for a new session.                                                                         |
+| `defaultModel`                  | `gpt-6-sol`                                               | Model for a new session.                                                                            |
+| `enabledModels`                 | three OpenRouter models and `openai/gpt-6-sol`            | The models offered in the picker. pi writes this key itself, see [Settings drift](#settings-drift). |
 | `theme`                         | `light`                                                   |                                                                                                     |
 | `hideThinkingBlock`             | `true`                                                    | Thinking is not rendered in the transcript.                                                         |
 | `terminal.showTerminalProgress` | `true`                                                    | Progress in the terminal title.                                                                     |

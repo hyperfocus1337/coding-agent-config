@@ -9,8 +9,8 @@ set -eu
 ours=$(cat <<'EOF'
 {
   "theme": "dark",
-  "defaultProvider": "openrouter",
-  "defaultModel": "deepseek/deepseek-v4.1-flash",
+  "defaultProvider": "openai",
+  "defaultModel": "gpt-6-sol",
   "quietStartup": true,
   "hideThinkingBlock": true,
   "tuiMode": "fullscreen",
@@ -28,7 +28,8 @@ ours=$(cat <<'EOF'
   "enabledModels": [
     "openrouter/deepseek/deepseek-v4.1-flash",
     "openrouter/deepseek/deepseek-v4-pro",
-    "openrouter/moonshotai/kimi-k3"
+    "openrouter/moonshotai/kimi-k3",
+    "openai/gpt-6-sol"
   ]
 }
 EOF
