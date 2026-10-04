@@ -1,0 +1,53 @@
+#!/usr/bin/env -S uv run --quiet --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["tomlkit"]
+# ///
+# chezmoi modify script for ~/.codex/config.toml: chezmoi sends the current file
+# on stdin and writes stdout back. The keys in OURS win; keys Codex and cmux
+# write stay. tomlkit edits in place, so comments, order, and the cmux markers
+# stay. private_ keeps the file at 0600, because it holds the Context7 API key.
+import os
+import re
+import sys
+import tomllib
+import tomlkit
+from pathlib import Path
+
+# ── Settings this repo owns ───────────────────────────────────────────────────
+OURS = tomllib.loads("""
+
+model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]
+
+[features]
+memories = true
+
+""")
+
+# ── Context7 API key ──────────────────────────────────────────────────────────
+# Codex passes only HOME, PATH, and a few more variables to a stdio MCP server,
+# so the key from the repo's .envrc goes into the file, as apm does for Claude.
+# Without a key, a key from an earlier apply stays.
+envrc = Path(os.environ["CHEZMOI_SOURCE_DIR"], ".envrc")
+text = envrc.read_text() if envrc.exists() else ""
+if match := re.search(r"^export CONTEXT7_API_KEY=[\"']?([^\"'\s]+)", text, re.M):
+    OURS["mcp_servers"]["context7"]["env"] = {"CONTEXT7_API_KEY": match[1]}
+
+# ── Merge over the current file ───────────────────────────────────────────────
+def merge(current, ours):
+    for key, value in ours.items():
+        if isinstance(value, dict) and key in current:
+            merge(current[key], value)
+        # Equal values stay untouched, so their formatting stays too.
+        elif current.get(key) != value:
+            current[key] = value
+
+# Empty stdin (no ~/.codex/config.toml yet) parses to an empty document.
+doc = tomlkit.parse(sys.stdin.read())
+merge(doc, OURS)
+sys.stdout.write(tomlkit.dumps(doc))

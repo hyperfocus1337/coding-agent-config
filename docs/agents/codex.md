@@ -68,6 +68,14 @@ Codex runs a hook only after you trust it. Open the Codex TUI once on the host a
 
 In the devcontainer, Codex's default `workspace-write` sandbox cannot write files: `apply_patch` fails with `Failed to write file`. `-s danger-full-access` works.
 
+## Settings
+
+`dot_codex/modify_private_config.toml` is a chezmoi modify script for `~/.codex/config.toml`. It sets `model`, `model_reasoning_effort`, `features.memories`, and the Context7 MCP server in `mcp_servers.context7`. Codex and cmux write to the same file: a trust prompt adds a `projects` entry, hook trust adds a `hooks.state` entry, the TUI adds `tui` keys, and cmux adds hook trust entries between `# cmux-… begin` and `# cmux-… end` marker comments. The script merges the repository keys over the current file: a repository key wins, and a key the repository leaves out stays. Tables merge key by key, and a repository array replaces the current one. To keep a `/model` change, add it to the script; the next apply resets it otherwise.
+
+The script is Python with [tomlkit](https://github.com/python-poetry/tomlkit), run through `uv run --script`, so it needs `uv` on `PATH` on the host and in the devcontainer. tomlkit edits the file in place: comments, the cmux markers, key and table order, and string quoting stay, and a value already equal to the repository value is not rewritten. A parser that serializes the whole file again, such as `yq`, drops the cmux end marker and moves `[tui]` behind the cmux tables. The `private_` attribute keeps the file at mode 0600, as Codex writes it. If the script fails, `chezmoi apply` stops and does not change the file.
+
+The script also writes `CONTEXT7_API_KEY` into `[mcp_servers.context7.env]`. Codex passes only a fixed set of variables, such as `HOME` and `PATH`, to a stdio MCP server, so the key must be in the file, as `apm` writes it for Claude. The script takes the key from the `export CONTEXT7_API_KEY=` line in `.envrc` at the repository root, which chezmoi gives as `CHEZMOI_SOURCE_DIR`. `.envrc` is in `.gitignore` and `.chezmoiignore`, so the key reaches only `~/.codex/config.toml`, at mode 0600. Without a key, the script keeps the key from an earlier apply. `chezmoi diff` prints the key when it changes.
+
 ## Out of scope
 
-MCP servers, subagents, and plugins.
+Other MCP servers, subagents, and plugins.

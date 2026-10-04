@@ -22,6 +22,7 @@ AGENTS.md
 .codex/README.md
 .codex/docs/**
 .codex/hooks/test/**
+.codex/test/**
 .pi/agent/README.md
 .pi/agent/extensions/README.md
 .pi/agent/extensions/**/README.md
