@@ -6,11 +6,12 @@
 # arrays from $ours replace the current ones.
 set -eu
 
-ours=$(cat <<'EOF'
+ours=$(
+	cat <<'EOF'
 {
   "theme": "dark",
   "defaultProvider": "openai",
-  "defaultModel": "gpt-6-sol",
+  "defaultModel": "gpt-6.1-sol",
   "quietStartup": true,
   "hideThinkingBlock": true,
   "tuiMode": "fullscreen",
@@ -29,7 +30,7 @@ ours=$(cat <<'EOF'
     "openrouter/deepseek/deepseek-v4.1-flash",
     "openrouter/deepseek/deepseek-v4-pro",
     "openrouter/moonshotai/kimi-k3",
-    "openai/gpt-6-sol"
+    "openai/gpt-6.1-sol"
   ]
 }
 EOF
