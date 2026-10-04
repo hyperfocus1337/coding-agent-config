@@ -4,7 +4,7 @@ A [pi](https://pi.dev/) session loads the same user-scope configuration a Claude
 
 | Resource    | How pi loads it                                                                                       | Where                                                                                                 |
 | ----------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Skills      | pi's own `skills` setting                                                                             | [`dot_pi/agent/settings.json`](../../dot_pi/agent/settings.json)                                      |
+| Skills      | pi's own `skills` setting                                                                             | [`dot_pi/agent/modify_settings.json`](../../dot_pi/agent/modify_settings.json)                        |
 | Commands    | an extension that registers every command file under its namespaced name, `/git:commit:single`        | [`dot_pi/agent/extensions/claude-commands/`](../../dot_pi/agent/extensions/claude-commands/README.md) |
 | Rules       | an extension that puts unscoped rules in the system prompt and sends a scoped rule on a matching read | [`dot_pi/agent/extensions/claude-rules/`](../../dot_pi/agent/extensions/claude-rules/README.md)       |
 | `CLAUDE.md` | a chezmoi symlink, `~/.pi/agent/AGENTS.md` to `~/.claude/CLAUDE.md`                                   | [`dot_pi/agent/symlink_AGENTS.md`](../../dot_pi/agent/symlink_AGENTS.md)                              |
@@ -33,7 +33,7 @@ Rules without `paths:` go into the system prompt at session start, as one block 
 
 ## Settings drift
 
-pi writes model choices into `~/.pi/agent/settings.json` itself, after which `chezmoi apply` stops to ask and fails without a TTY. Fold the change into `dot_pi/agent/settings.json`, or run `just chezmoi` from a terminal and answer the prompt. [`dot_pi/agent/README.md`](../../dot_pi/agent/README.md#settings-drift) has the one-file `--force` form.
+pi writes model choices, `deviceId`, and `lastChangelogVersion` into `~/.pi/agent/settings.json` itself. `dot_pi/agent/modify_settings.json` is a chezmoi modify script: each apply sets the repository keys and keeps the keys the repository leaves out, with no prompt. A model change in the TUI lasts until the next apply, unless you add it to the script. [`dot_pi/agent/README.md`](../../dot_pi/agent/README.md#settings-drift) has the merge rules.
 
 ## Out of scope
 

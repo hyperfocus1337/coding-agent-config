@@ -2,11 +2,12 @@
 
 chezmoi renders this directory to `~/.pi/agent`, pi's user-scope configuration directory. It holds the settings file, the symlink that gives pi the Claude Code instructions, and the extensions that give it the Claude Code commands and rules. [`docs/agents/pi.md`](../../docs/agents/pi.md) is the overview.
 
-| Path                                  | What lives there                                                                                                                               |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`settings.json`](#settings)          | Provider and model, theme, the `skills` and `packages` arrays, and the model list pi writes itself.                                            |
-| `symlink_AGENTS.md`                   | Holds `../../.claude/CLAUDE.md`, so `~/.pi/agent/AGENTS.md` is the Claude Code instruction file. pi loads it in every project, trusted or not. |
-| [`extensions/`](extensions/README.md) | One directory per extension, each with `index.ts`, a README, and implementation notes.                                                         |
+| Path                                                           | What lives there                                                                                                                                   |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`modify_settings.json`](#settings)                            | chezmoi modify script for `~/.pi/agent/settings.json`. Sets the provider and model, theme, the `skills` and `packages` arrays, and the model list. |
+| [`test/modify-settings-json.sh`](test/modify-settings-json.sh) | Test for `modify_settings.json`. Run: `bash test/modify-settings-json.sh`.                                                                         |
+| `symlink_AGENTS.md`                                            | Holds `../../.claude/CLAUDE.md`, so `~/.pi/agent/AGENTS.md` is the Claude Code instruction file. pi loads it in every project, trusted or not.     |
+| [`extensions/`](extensions/README.md)                          | One directory per extension, each with `index.ts`, a README, and implementation notes.                                                             |
 
 The symlink target is relative to the link, not to the home directory: chezmoi writes the file's content as the target verbatim, so `../../.claude/CLAUDE.md` resolves from `~/.pi/agent/` and a path written from `~` would dangle.
 
@@ -35,6 +36,6 @@ The pattern is written relative to `~/.pi/agent`, not with `~`. pi expands `~` i
 
 ### Settings drift
 
-pi writes to `~/.pi/agent/settings.json` itself: a model change in the TUI updates `enabledModels` there. `chezmoi apply` then stops to ask whether to overwrite, and fails without a TTY. Fold the change into `settings.json` here, then apply that one file with `chezmoi apply --source <repo> --destination "$HOME" --force ~/.pi/agent/settings.json`, or run `just chezmoi` from a terminal and answer the prompt.
+pi writes to `~/.pi/agent/settings.json` itself: a model change in the TUI updates `defaultModel` and `enabledModels`, and pi adds `deviceId` and `lastChangelogVersion`. `modify_settings.json` is a chezmoi modify script, so `chezmoi apply` does not stop to ask. It merges the repository keys over the current file with `jq`: a repository key wins, and a key the repository leaves out, such as `deviceId`, stays. Objects merge key by key, and a repository array replaces the current one. To keep a model change, add it to `modify_settings.json`; the next apply resets it otherwise.
 
 `chezmoi apply` adds and updates but does not remove. A file deleted from this directory, or from `dot_claude/`, stays installed until it is removed from `$HOME` by hand.

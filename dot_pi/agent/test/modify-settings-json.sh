@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Test for modify_settings.json: runs the chezmoi modify script with a current
+# settings.json on stdin. Run: bash modify-settings-json.sh
+set -u
+
+SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/modify_settings.json"
+command -v jq >/dev/null 2>&1 || { echo "SKIP no jq on PATH"; exit 0; }
+
+out=$(mktemp)
+trap 'rm -f "$out"' EXIT
+fail=0
+
+check() { # name, jq expression that must be true
+  if jq -e "$2" "$out" >/dev/null; then echo "ok   $1"; else echo "FAIL $1"; fail=1; fi
+}
+
+# A current file as pi writes it after a /model change in the TUI.
+printf '%s' '{
+  "lastChangelogVersion": "9.9.9",
+  "defaultProvider": "openai",
+  "defaultModel": "gpt-6-sol",
+  "terminal": {"showTerminalProgress": false, "extra": 1},
+  "enabledModels": ["openai/gpt-6-sol"],
+  "deviceId": "abc"
+}' | sh "$SCRIPT" >"$out"
+check "keeps deviceId" '.deviceId == "abc"'
+check "keeps lastChangelogVersion" '.lastChangelogVersion == "9.9.9"'
+check "repo model wins" '.defaultProvider == "openrouter" and (.defaultModel | startswith("deepseek/"))'
+check "repo array replaces current" '.enabledModels | index("openai/gpt-6-sol") == null'
+check "objects merge key by key" '.terminal == {"showTerminalProgress": true, "extra": 1}'
+
+sh "$SCRIPT" </dev/null >"$out"
+check "empty stdin gives repo keys only" 'has("deviceId") | not'
+
+exit "$fail"

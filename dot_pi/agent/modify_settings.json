@@ -1,5 +1,13 @@
+#!/bin/sh
+# chezmoi modify script for ~/.pi/agent/settings.json: chezmoi sends the current
+# file on stdin and writes stdout back. This repo owns the keys in $ours and
+# they win. Keys pi writes itself and the repo leaves out (deviceId,
+# lastChangelogVersion) stay from the current file. Objects merge key by key;
+# arrays from $ours replace the current ones.
+set -eu
+
+ours=$(cat <<'EOF'
 {
-  "lastChangelogVersion": "1.0.1",
   "theme": "dark",
   "defaultProvider": "openrouter",
   "defaultModel": "deepseek/deepseek-v4.1-flash",
@@ -23,3 +31,8 @@
     "openrouter/moonshotai/kimi-k3"
   ]
 }
+EOF
+)
+
+# Empty stdin (no ~/.pi/agent/settings.json yet) reads as {}.
+jq -n --argjson ours "$ours" '((try input catch {}) // {}) * $ours'

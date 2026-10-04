@@ -27,4 +27,5 @@ AGENTS.md
 .pi/agent/extensions/**/README.md
 .pi/agent/extensions/**/docs/**
 .pi/agent/extensions/**/test/**
+.pi/agent/test/**
 PLAN.md
