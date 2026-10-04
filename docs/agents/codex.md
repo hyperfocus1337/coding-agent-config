@@ -5,7 +5,7 @@ A [Codex CLI](https://developers.openai.com/codex/cli) session loads the user-sc
 | Resource                         | How Codex loads it                                                                           | Where                                                                    |
 | -------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | Skills                           | its native user skills directory, a chezmoi symlink `~/.agents/skills` to `~/.claude/skills` | [`dot_agents/symlink_skills`](../../dot_agents/symlink_skills)           |
-| Hooks                            | `~/.codex/hooks.json`, which calls the scripts in `~/.claude/hooks/`                         | [`dot_codex/hooks.json`](../../dot_codex/hooks.json)                     |
+| Hooks                            | `~/.codex/hooks.json`, which calls the scripts in `~/.claude/hooks/`                         | [`dot_codex/modify_hooks.json`](../../dot_codex/modify_hooks.json)       |
 | File hooks on `apply_patch`      | a wrapper that runs a file hook once per patched file                                        | [`dot_codex/hooks/apply-patch.sh`](../../dot_codex/hooks/apply-patch.sh) |
 | `CLAUDE.md` and rules            | `~/.codex/AGENTS.md`, rendered from `CLAUDE.md` and every rule                               | [`dot_codex/AGENTS.md.tmpl`](../../dot_codex/AGENTS.md.tmpl)             |
 | Project rules of this repository | `AGENTS.md` at the repository root, a symlink to `.claude/rules/apply.md`                    | [`AGENTS.md`](../../AGENTS.md)                                           |
@@ -40,6 +40,12 @@ Codex sends Claude's hook payload with Claude's tool name `Bash`, so the scripts
 | `Stop`        |               | `type-check-all-languages`; Codex sends `stop_hook_active`, so the loop guard works |
 
 Codex has no `PostToolUseFailure` event. Under Codex, the file hooks do not run after a Bash command that writes a file and then exits non-zero.
+
+### cmux handlers
+
+`dot_codex/modify_hooks.json` is a chezmoi modify script, not a plain file. `cmux hooks codex install` adds its own handlers to `~/.codex/hooks.json`. Each one runs a script in `~/.cmux/hooks/` whose name holds a content hash, and the hash changes when a cmux release changes the script. The repository does not track these handlers.
+
+On each apply, the script writes the entries above and keeps every group from the current file whose handlers all run a `~/.cmux/hooks/cmux-codex-hook-*` script. It keeps them only where `~/.cmux/hooks` exists, so the devcontainer gets no cmux handlers. cmux finds its own handlers by an absolute path, so do not change these paths to `$HOME`.
 
 ### `apply_patch`
 

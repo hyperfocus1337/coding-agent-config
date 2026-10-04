@@ -1,0 +1,112 @@
+#!/bin/sh
+# chezmoi modify script for ~/.codex/hooks.json: chezmoi sends the current file
+# on stdin and writes stdout back. This repo owns the hooks in $ours.
+# `cmux hooks codex install` owns the cmux handlers: their script names carry a
+# content hash that changes with cmux releases, so they are kept from the
+# current file, not tracked here. They are kept only where ~/.cmux/hooks
+# exists, so the devcontainer gets none.
+set -eu
+
+keep_cmux=false
+[ -d "$HOME/.cmux/hooks" ] && keep_cmux=true
+
+ours=$(cat <<'EOF'
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/.claude/hooks/format-all-languages/hook.sh\"",
+            "timeout": 20,
+            "type": "command"
+          },
+          {
+            "command": "bash \"$HOME/.claude/hooks/format-org-tables/hook.sh\"",
+            "timeout": 10,
+            "type": "command"
+          },
+          {
+            "command": "bash \"$HOME/.claude/hooks/lint-all-languages/hook.sh\"",
+            "timeout": 15,
+            "type": "command"
+          },
+          {
+            "command": "bash \"$HOME/.claude/hooks/lint-prose/hook.sh\"",
+            "timeout": 15,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/.codex/hooks/apply-patch.sh\" \"$HOME/.claude/hooks/format-all-languages/hook.sh\"",
+            "timeout": 20,
+            "type": "command"
+          },
+          {
+            "command": "bash \"$HOME/.codex/hooks/apply-patch.sh\" \"$HOME/.claude/hooks/format-org-tables/hook.sh\"",
+            "timeout": 10,
+            "type": "command"
+          },
+          {
+            "command": "bash \"$HOME/.codex/hooks/apply-patch.sh\" \"$HOME/.claude/hooks/lint-all-languages/hook.sh\"",
+            "timeout": 15,
+            "type": "command"
+          },
+          {
+            "command": "bash \"$HOME/.codex/hooks/apply-patch.sh\" \"$HOME/.claude/hooks/lint-prose/hook.sh\"",
+            "timeout": 15,
+            "type": "command"
+          }
+        ],
+        "matcher": "apply_patch"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/.claude/hooks/block-secret-commits/hook.sh\"",
+            "timeout": 10,
+            "type": "command"
+          },
+          {
+            "command": "bash \"$HOME/.claude/hooks/enforce-cli-tools/hook.sh\"",
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$HOME/.claude/hooks/type-check-all-languages/hook.sh\"",
+            "timeout": 60,
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  }
+}
+EOF
+)
+
+# Empty stdin (no ~/.codex/hooks.json yet) reads as {}. A group is cmux's when
+# every handler in it runs a script from ~/.cmux/hooks.
+jq -n --argjson ours "$ours" --argjson keep_cmux "$keep_cmux" '
+  def cmux_group:
+    .hooks | length > 0 and all((.command // "") | test("/\\.cmux/hooks/cmux-codex-hook-"));
+  ((try input catch {}) // {} | .hooks // {}) as $current
+  | if $keep_cmux then
+      reduce ($current | to_entries[]) as $event ($ours;
+        ($event.value | map(select(cmux_group))) as $groups
+        | if $groups == [] then . else .hooks[$event.key] += $groups end)
+    else $ours end
+'
