@@ -21,9 +21,9 @@ All rules live in [`vale/styles/Writing/`](../vale/styles/Writing/), one YAML fi
 
 | Rule                                                            | Level   | Checks                                                                        |
 | --------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------- |
-| [`ParagraphLength`](../vale/styles/Writing/ParagraphLength.yml) | `error` | A paragraph, list item, or blockquote has at most 6 sentences (`writing.md`). |
+| [`ParagraphLength`](../vale/styles/Writing/ParagraphLength.yml) | `error` | A paragraph, list item, or blockquote has at most 5 sentences (`writing.md`). |
 
-`ParagraphLength` is a Vale `occurrence` check with `max: 6`. It counts sentence ends: a `.`, `!`, or `?` before white space or the end of the text. A lookbehind keeps abbreviations such as "e.g.", "i.e.", "etc.", and "vs." from ending a sentence.
+`ParagraphLength` is a Vale `occurrence` check with `max: 5`. It counts sentence ends: a `.`, `!`, or `?` before white space or the end of the text. A lookbehind keeps abbreviations such as "e.g.", "i.e.", "etc.", and "vs." from ending a sentence.
 
 To add a rule, add a YAML file to `vale/styles/Writing/`, add a row to the table above, and add a pass case and a fail case to `test/test.sh`. Vale exits 1 only on an `error` alert, so a rule at `warning` or `suggestion` never blocks and Claude never sees it. See [Why it blocks](#why-it-blocks).
 
@@ -37,7 +37,7 @@ Vale parses each format and applies the rule to its prose scopes only. Text outs
 | Org      | Paragraphs, list items, `#+begin_quote` blocks                | `#+` keyword lines, headings, `#+begin_src` blocks |
 | HTML     | Text in `<p>`, `<li>`, `<div>`, `<blockquote>`, and `<title>` | Tags and attributes, `<script>`, `<pre>`           |
 
-A `<title>` counts as a paragraph. A title with 7 sentences is not a real case, so no exclusion is configured for it.
+A `<title>` counts as a paragraph. A title with 6 sentences is not a real case, so no exclusion is configured for it.
 
 ## Frontmatter
 

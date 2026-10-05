@@ -25,7 +25,7 @@ check() { # name, expected status, expected substring in output ('' for none)
   echo "ok   $1"
 }
 
-long='One. Two. Three. Four. Five. Six. Seven, the last sentence here.'
+long='One. Two. Three. Four. Five. Six, the last sentence here.'
 export GIT_AUTHOR_NAME=test GIT_AUTHOR_EMAIL=test@example.com
 export GIT_COMMITTER_NAME=test GIT_COMMITTER_EMAIL=test@example.com
 git init -q "$tmp/repo"

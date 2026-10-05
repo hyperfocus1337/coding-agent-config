@@ -24,7 +24,7 @@ Do this check before you give the text to the user. If a line fails, correct the
 
 ## Structure
 
-- [ ] Each paragraph has six sentences or less.
+- [ ] Each paragraph has five sentences or less.
 - [ ] Each paragraph has one topic.
 - [ ] Each step has one instruction.
 - [ ] Each condition comes before its action.

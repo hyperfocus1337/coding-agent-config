@@ -6,8 +6,8 @@ disable-model-invocation: true
 
 Input: $ARGUMENTS
 
-- Prose: split the paragraphs over 6 sentences, and return the result.
-- File paths: split the paragraphs over 6 sentences in those files. Do not commit.
+- Prose: split the paragraphs over 5 sentences, and return the result.
+- File paths: split the paragraphs over 5 sentences in those files. Do not commit.
 
 How to split:
 

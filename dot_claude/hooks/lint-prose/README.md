@@ -4,7 +4,7 @@ A `PostToolUse` and `PostToolUseFailure` hook that lints the prose in each Markd
 
 ## What it checks
 
-One rule for now: a paragraph, list item, or blockquote has at most 6 sentences, the limit in `writing.md`. Vale reads only the prose: it skips frontmatter, Org keyword lines, headings, code, `<script>`, and `<pre>`. [`docs/implementation.md`](docs/implementation.md) lists what each format counts, and how to add a rule.
+One rule for now: a paragraph, list item, or blockquote has at most 5 sentences, the limit in `writing.md`. Vale reads only the prose: it skips frontmatter, Org keyword lines, headings, code, `<script>`, and `<pre>`. [`docs/implementation.md`](docs/implementation.md) lists what each format counts, and how to add a rule.
 
 | Extension         | Vale reads                               |
 | ----------------- | ---------------------------------------- |

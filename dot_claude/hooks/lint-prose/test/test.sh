@@ -34,13 +34,13 @@ edit_payload() { jq -nc --arg f "$1" '{hook_event_name:"PostToolUse",tool_input:
 patch_payload() { jq -nc --arg f "$1" --arg s "$2" '{hook_event_name:"PostToolUse",tool_input:{file_path:$f,new_string:$s}}'; }
 bash_payload() { jq -nc --arg cwd "$tmp" --arg c "$1" '{hook_event_name:"PostToolUse",cwd:$cwd,tool_input:{command:$c}}'; }
 
-long='One. Two. Three. Four. Five. Six. Seven, the last sentence here.'
+long='One. Two. Three. Four. Five. Six, the last sentence here.'
 
 # --- Markdown ---
-printf '# Title\n\n%s\n\nOne. Two. Three. Four. Five. Six.\n' "$long" > "$tmp/long.md"
+printf '# Title\n\n%s\n\nOne. Two. Three. Four. Five.\n' "$long" > "$tmp/long.md"
 run "$(edit_payload "$tmp/long.md")"
-check "Write blocks a paragraph over 6 sentences" 2 'long.md:3:'
-[[ "$out" == *'long.md:5:'* ]] && { echo "FAIL 6 sentences are allowed"; fail=1; } || echo "ok   6 sentences are allowed"
+check "Write blocks a paragraph over 5 sentences" 2 'long.md:3:'
+[[ "$out" == *'long.md:5:'* ]] && { echo "FAIL 5 sentences are allowed"; fail=1; } || echo "ok   5 sentences are allowed"
 
 run "$(patch_payload "$tmp/long.md" 'A short paragraph that an edit wrote.')"
 check "an Edit is not blocked by an old long paragraph elsewhere" 0 ''
@@ -50,7 +50,7 @@ check "an Edit that writes a long paragraph is blocked" 2 'ParagraphLength'
 
 printf -- '- %s\n- Short item.\n' "$long" > "$tmp/item.md"
 run "$(edit_payload "$tmp/item.md")"
-check "a list item over 6 sentences is blocked" 2 'item.md:1:'
+check "a list item over 5 sentences is blocked" 2 'item.md:1:'
 
 printf -- '---\nargument-hint: [a | b]\ndescription: %s\n---\n\n```\n%s\n```\n\nUse `a.b. c.d. e.f. g.h.` here, e.g. this. Or i.e. that. Three. Four. Five.\n' "$long" "$long" > "$tmp/skip.md"
 run "$(edit_payload "$tmp/skip.md")"
