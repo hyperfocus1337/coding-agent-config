@@ -107,7 +107,7 @@ for f in "${targets[@]}"; do
 	if lines=$(changed_lines "$f"); then
 		# An alert names the first line of its paragraph. The paragraph runs to the
 		# next blank line, so a changed line anywhere in that span keeps the alert.
-		# ponytail: a tight list is one span, so a change to one item keeps the
+		# shortcut: a tight list is one span, so a change to one item keeps the
 		# alerts of every long item in that list. The upgrade is item boundaries.
 		alerts=$(awk -v pre="$f:" '
       FILENAME == ARGV[1] { changed[$1]; next }

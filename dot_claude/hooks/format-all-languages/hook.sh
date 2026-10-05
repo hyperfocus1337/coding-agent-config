@@ -53,7 +53,7 @@ else
 
   # Roots = cwd + absolute paths in the command; a `cd` there never moves the
   # hook's own cwd. README "Cross-repo Bash edits".
-  # ponytail: absolute paths only; relative ones are ambiguous after a cd.
+  # shortcut: absolute paths only; relative ones are ambiguous after a cd.
   repo_roots=$(
     { printf '%s\n' "$cwd"
       grep -oE '/[^[:space:]:;|&"'"'"'`()<>]+' <<<"$cmd"
@@ -75,7 +75,7 @@ else
       [[ -n "$rel_path" ]] || continue
       if [[ -d "$root/$rel_path" ]]; then
         nested=$(git -C "$root/$rel_path" rev-parse --show-toplevel 2>/dev/null) || continue
-        # ponytail: membership scan; roots per sweep stay single digits.
+        # shortcut: membership scan; roots per sweep stay single digits.
         [[ " ${queue[*]} " == *" $nested "* ]] || queue+=("$nested")
       else
         candidates+=("$root/$rel_path")

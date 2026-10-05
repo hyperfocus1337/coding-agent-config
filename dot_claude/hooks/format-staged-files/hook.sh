@@ -24,7 +24,7 @@ cd "$root" || exit 0
 # --- Format and restage ---
 # --cached reads $GIT_INDEX_FILE, so `commit -a` and `commit <path>`, which
 # build a temporary index, get the files they are about to commit.
-# ponytail: one formatter run per file, ~0.4s each for Prettier. The upgrade is
+# shortcut: one formatter run per file, ~0.4s each for Prettier. The upgrade is
 # a list mode in format-all-languages, so one Prettier run takes every file.
 while IFS= read -r -d '' rel; do
   f=$root/$rel

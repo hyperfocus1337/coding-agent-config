@@ -31,7 +31,7 @@ is_allowed() { [[ " ${allowlist[*]-} " == *" $1 "* ]]; }
 # strip_quoted_heredocs <command line> -> the line without the body of any
 # heredoc whose delimiter is quoted (<<'EOF', <<"EOF", <<\EOF). The shell runs
 # nothing in such a body, so a banned name there is text, like `cat > rules.md`
-# writing "never npm". ponytail: one heredoc per line; a second one on the same
+# writing "never npm". shortcut: one heredoc per line; a second one on the same
 # line keeps its body, which can only over-block.
 strip_quoted_heredocs() {
   local l out='' delim='' dash='' stripped
@@ -62,7 +62,7 @@ commands_run() {
   # in the text would otherwise pair with a quote lines away.
   line=$(strip_quoted_heredocs "$line")
   # Blank quoted spans first, so a separator inside a string is not mistaken for
-  # one between commands. ponytail: an unquoted heredoc body is still split
+  # one between commands. shortcut: an unquoted heredoc body is still split
   # naively; it can run $(...), so dropping it would let a real call through.
   while [[ $line =~ $quoted_span ]]; do line=${line/"${BASH_REMATCH[1]}"/q}; done
   # Split on the separators plus newline. Brackets count: whatever runs inside

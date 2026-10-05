@@ -39,7 +39,7 @@ else
   # A named path the command only read must not be linted: blocking `cat
   # app.py` on an error that was already there helps nobody. A file the command
   # wrote carries a fresh mtime, so that is the test.
-  # ponytail: a command that writes early and then runs for minutes falls
+  # shortcut: a command that writes early and then runs for minutes falls
   # outside the window and is missed. The upgrade is a PreToolUse hook that
   # stamps the start time for the matching call to compare against.
   now=$(date +%s)

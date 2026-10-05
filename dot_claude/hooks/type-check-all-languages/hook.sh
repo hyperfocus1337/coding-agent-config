@@ -26,7 +26,7 @@ IN=$(cat)
 # root, so the checkers see the same scope as the changed-file list, and git diff
 # and ls-files both print root-relative paths. --diff-filter=d drops deleted
 # files, which cannot need a check.
-# ponytail: a git diff also covers work from before the session. The upgrade is
+# shortcut: a git diff also covers work from before the session. The upgrade is
 # to read the edited paths out of the transcript at .transcript_path.
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
 cd "$(git rev-parse --show-toplevel)" || exit 0

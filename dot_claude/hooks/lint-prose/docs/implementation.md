@@ -62,7 +62,7 @@ The filter reads `git diff -U0` for the file and collects the changed line numbe
 | A Bash command that also ran `git commit`    | `HEAD~1`             |
 | Outside git, an untracked file, first commit | Nothing: every alert |
 
-The diff against `HEAD` also holds changes from before the session. Those are uncommitted work, so their alerts are still useful. A tight list with no blank lines is one span, so a change to one item keeps the alerts of every long item in that list. The upgrade is to find item boundaries, and the trade-off has a `ponytail:` comment in `hook.sh`.
+The diff against `HEAD` also holds changes from before the session. Those are uncommitted work, so their alerts are still useful. A tight list with no blank lines is one span, so a change to one item keeps the alerts of every long item in that list. The upgrade is to find item boundaries, and the trade-off has a `shortcut:` comment in `hook.sh`.
 
 The hook has no switch to report the whole file. For a session that cleans up old paragraphs, use the [`prose-cleanup`](../../../skills/prose-cleanup/SKILL.md) skill, which runs `check.sh` without the filter.
 

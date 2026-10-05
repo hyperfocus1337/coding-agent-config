@@ -29,4 +29,4 @@ Hooks are shell commands Claude Code runs on session lifecycle events, for examp
 
 **Per-repo escape hatches.** `block-secret-commits` reads `.claude-allow-secrets` and `.betterleaksignore`; `enforce-cli-tools` reads `.claude-allow-cli-tools`. Both also accept an environment variable for a one-off override. See the hook README for the exact names.
 
-**Deliberate shortcuts** carry a `ponytail:` comment naming the ceiling and the upgrade path, matching the marker `rules/code.md` defines.
+**Deliberate shortcuts** carry a `shortcut:` comment naming the ceiling and the upgrade path, matching the marker `rules/code.md` defines.
