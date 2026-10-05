@@ -10,6 +10,10 @@ pi has two native ways to load prompt files: the `prompts` array in `settings.js
 
 The handler reads the file at invocation, not at load, so an edit to a command file takes effect on the next call without `/reload`.
 
+## Argument hints
+
+pi shows an argument hint for built-in commands and prompt templates as `<hint> — <description>` in the `/` dropdown. `registerCommand` has no `argumentHint` field, and the interactive mode drops the field for extension commands when it builds the dropdown (checked in pi 1.0.3). So `describe` writes the hint into the description in the same form. The dropdown truncates the description to the terminal width, so the hint must come first to stay visible. pi has no ghost text after `/name `, as Claude Code shows. A replacement editor through `setEditorComponent` could draw it, but only one extension can own the editor, so the extension does not do this.
+
 ## Expansion order
 
 Arguments are substituted first, then spans run. Three command files put `$ARGUMENTS` inside a `!` span (`gh issue view $ARGUMENTS`), which only works in this order. It is also the order Claude Code's `expandCommand` uses.
