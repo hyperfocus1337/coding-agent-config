@@ -57,4 +57,4 @@ The limit of this shortcut: an edit that adds one sentence to an existing 6-sent
 
 An `error` alert makes Vale exit 1, and the hook then exits 2. A `PostToolUse` hook reaches the model only when it exits 2. On exit 0 its output goes to the transcript, and Claude never sees it. [`lint-all-languages`](../../lint-all-languages/README.md#why-it-blocks) gives the full reason.
 
-Blocking means each new rule must have few false positives. Test a rule against this repository's docs with `/docs:paragraphs` or `check.sh` before you set it to `error`.
+Blocking means each new rule must have few false positives. Test a rule against this repository's docs with `/prose-cleanup` or `check.sh` before you set it to `error`.

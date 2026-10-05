@@ -18,7 +18,7 @@ Wired to four entries in `settings.json`: `Write|Edit|MultiEdit` and `Bash` on `
 
 A `Write` or a Bash command checks the whole file. An `Edit` checks only the text it wrote, so an old long paragraph elsewhere in the file does not block an unrelated edit.
 
-[`check.sh`](check.sh) runs Vale with the bundled [`vale/vale.ini`](vale/vale.ini), so a repository's own Vale config is never read. It is also the scanner behind `/docs:paragraphs`:
+[`check.sh`](check.sh) runs Vale with the bundled [`vale/vale.ini`](vale/vale.ini), so a repository's own Vale config is never read. It is also the scanner behind the `prose-cleanup` skill:
 
 ```sh
 bash ~/.claude/hooks/lint-prose/check.sh README.md docs/*.md
