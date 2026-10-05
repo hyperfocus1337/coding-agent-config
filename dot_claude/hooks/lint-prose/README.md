@@ -1,20 +1,21 @@
 # lint-prose
 
-A `PostToolUse` and `PostToolUseFailure` hook that lints the prose in each Markdown, Org, or HTML file Claude writes, through [Vale](https://vale.sh/). It blocks the tool result on an alert, so Claude sees it and fixes the text.
+A `PostToolUse` and `PostToolUseFailure` hook that lints the prose in each Markdown, Org, HTML, or plain-text file Claude writes, through [Vale](https://vale.sh/). It blocks the tool result on an alert, so Claude sees it and fixes the text.
 
 ## What it checks
 
 One rule for now: a paragraph, list item, or blockquote has at most 5 sentences, the limit in `writing.md`. Vale reads only the prose: it skips frontmatter, Org keyword lines, headings, code, `<script>`, and `<pre>`. [`docs/implementation.md`](docs/implementation.md) lists what each format counts, and how to add a rule.
 
-| Extension         | Vale reads                               |
-| ----------------- | ---------------------------------------- |
-| `.md` `.markdown` | Paragraphs, list items, blockquotes      |
-| `.org`            | Paragraphs, list items, `#+begin_quote`  |
-| `.html` `.htm`    | The text inside elements, not the markup |
+| Extension         | Vale reads                                                      |
+| ----------------- | --------------------------------------------------------------- |
+| `.md` `.markdown` | Paragraphs, list items, blockquotes                             |
+| `.org`            | Paragraphs, list items, `#+begin_quote`                         |
+| `.html` `.htm`    | The text inside elements, not the markup                        |
+| `.txt`            | Blocks of text between blank lines. On `Write` and `Edit` only. |
 
 ## How it works
 
-Wired to four entries in `settings.json`: `Write|Edit|MultiEdit` and `Bash` on `PostToolUse`, and `Bash` again on `PostToolUseFailure`. It finds the files the same way [`lint-all-languages`](../lint-all-languages/README.md#bash-the-paths-the-command-just-wrote) does: the named file on `Write` and `Edit`, and on Bash the paths in the command text that the command just wrote. Files under `/tmp`, `/var/tmp`, and `$TMPDIR` are skipped.
+Wired to four entries in `settings.json`: `Write|Edit|MultiEdit` and `Bash` on `PostToolUse`, and `Bash` again on `PostToolUseFailure`. It finds the files the same way [`lint-all-languages`](../lint-all-languages/README.md#bash-the-paths-the-command-just-wrote) does: the named file on `Write` and `Edit`, and on Bash the paths in the command text that the command just wrote. Files under `/tmp`, `/var/tmp`, and `$TMPDIR` are skipped. On Bash, `.txt` paths are skipped too: a command such as `make test > out.txt` writes a log, and a log with one sentence per line reads as one long paragraph.
 
 A `Write` or a Bash command checks the whole file. An `Edit` checks only the text it wrote, so an old long paragraph elsewhere in the file does not block an unrelated edit.
 

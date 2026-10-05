@@ -2,10 +2,10 @@
 # ~/.claude/hooks/lint-prose/hook.sh
 #
 # PostToolUse and PostToolUseFailure hook: lints the prose in Markdown, Org,
-# and HTML files after Claude changes them, through check.sh and Vale. On
-# Write/Edit the payload names the file. On Bash it names none, so the hook
-# checks the paths the command text holds, and only the ones the command just
-# wrote. Exit 2 = block the tool result and surface stderr back to Claude.
+# HTML, and plain-text files after Claude changes them, through check.sh and
+# Vale. On Write/Edit the payload names the file. On Bash it names none, so the
+# hook checks the paths the command text holds, and only the ones the command
+# just wrote. Exit 2 = block the tool result and surface stderr back to Claude.
 # Design notes and the rules: docs/implementation.md.
 
 # --- Preflight ---
@@ -19,6 +19,10 @@ lint_disable=" ${CLAUDE_LINT_DISABLE:-} "
 lint_disable=${lint_disable//,/ }
 [[ "$lint_disable" == *" all "* || "$lint_disable" == *" prose "* ]] && exit 0
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# The prose extensions. .txt is added on Write/Edit only: a .txt path in a Bash
+# command is often a log the command wrote, and a log with one sentence per line
+# reads as one long paragraph.
+exts='md|markdown|org|html?'
 
 # --- Read payload ---
 payload=$(cat)
@@ -51,7 +55,7 @@ else
     mtime=$(stat -c %Y "$path" 2>/dev/null || stat -f %m "$path" 2>/dev/null)
     [[ -n "$mtime" ]] || continue
     [[ $((now - mtime)) -le 120 ]] && candidates+=("$path")
-  done < <(grep -oE '[^[:space:]:;|&"'"'"'`()<>=]+\.(md|markdown|org|html?)\b' <<<"$cmd")
+  done < <(grep -oE '[^[:space:]:;|&"'"'"'`()<>=]+\.('"$exts"')\b' <<<"$cmd")
 fi
 
 # --- Filter ---
@@ -62,7 +66,7 @@ tmpdir=${TMPDIR:-/nonexistent}
 tmpdir=${tmpdir#/private}
 targets=()
 for f in "${candidates[@]-}"; do
-  [[ -f "$f" && "$f" =~ \.(md|markdown|org|html?)$ ]] || continue
+  [[ -f "$f" && "$f" =~ \.($exts|txt)$ ]] || continue
   p=${f#/private}
   [[ "$p" == /tmp/* || "$p" == /var/tmp/* || "$p" == "$tmpdir"* ]] && continue
   [[ " ${targets[*]-} " == *" $f "* ]] && continue

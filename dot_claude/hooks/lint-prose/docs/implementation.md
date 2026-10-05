@@ -2,7 +2,7 @@
 
 Why the hook is built the way it is, and what each rule counts in each format. [README.md](../README.md) describes the behavior for a user of the hook. This file is for a person who changes it or adds a rule.
 
-The format behavior below was run on Vale 3.23.0 on 2026-09-27, not reasoned about.
+The format behavior below was run on Vale 3.23.0, not reasoned about: Markdown, Org, and HTML on 2026-09-27, and plain text on 2026-10-04.
 
 ## Why a separate hook
 
@@ -17,7 +17,7 @@ The cost is a third copy of the code that finds the files: the payload read, the
 
 ## Rules
 
-All rules live in [`vale/styles/Writing/`](../vale/styles/Writing/), one YAML file per rule. [`vale/vale.ini`](../vale/vale.ini) applies the `Writing` style to `.md`, `.markdown`, `.org`, `.html`, and `.htm`. `check.sh` runs Vale with `--no-global --config`, so a repository's own `.vale.ini` and the user's global Vale config are never read.
+All rules live in [`vale/styles/Writing/`](../vale/styles/Writing/), one YAML file per rule. [`vale/vale.ini`](../vale/vale.ini) applies the `Writing` style to `.md`, `.markdown`, `.org`, `.html`, `.htm`, and `.txt`. `check.sh` runs Vale with `--no-global --config`, so a repository's own `.vale.ini` and the user's global Vale config are never read.
 
 | Rule                                                            | Level   | Checks                                                                        |
 | --------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------- |
@@ -36,8 +36,13 @@ Vale parses each format and applies the rule to its prose scopes only. Text outs
 | Markdown | Paragraphs, list items, blockquotes                           | Frontmatter, headings, code spans, code blocks     |
 | Org      | Paragraphs, list items, `#+begin_quote` blocks                | `#+` keyword lines, headings, `#+begin_src` blocks |
 | HTML     | Text in `<p>`, `<li>`, `<div>`, `<blockquote>`, and `<title>` | Tags and attributes, `<script>`, `<pre>`           |
+| Text     | Each block of lines between blank lines                       | Nothing                                            |
 
 A `<title>` counts as a paragraph. A title with 6 sentences is not a real case, so no exclusion is configured for it.
+
+Vale 3.23.0 hands AsciiDoc and reStructuredText to an external tool (`asciidoctor`, `rst2html`) and stops with exit 2 when that tool is missing, so the hook does not take `.adoc` or `.rst` files.
+
+Plain text has no markup, so Vale cannot tell prose from a log. A log with one sentence per line gives an alert for the whole block. The Bash matcher therefore does not take `.txt` paths, because a command that names a `.txt` file often redirects output into it. A `.txt` file that Claude writes with `Write` or `Edit` is checked.
 
 ## Frontmatter
 

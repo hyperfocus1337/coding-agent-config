@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Smoke test for hook.sh: the paragraph rule in Markdown, Org, and HTML, the
+# Smoke test for hook.sh: the paragraph rule in each format, the
 # Edit-only check, the Bash matcher, a Vale failure, and the skips.
 # Run: bash test.sh
 # Needs jq and vale on PATH; without either the hook self-disables and the test
@@ -76,6 +76,14 @@ check "HTML: script and pre are not counted" 0 ''
 run "$(patch_payload "$tmp/ok.html" "<p>$long</p>")"
 check "HTML: an Edit that writes a long paragraph is blocked" 2 'ParagraphLength'
 
+# --- Plain text ---
+printf '%s\n\nShort.\n' "$long" > "$tmp/notes.txt"
+run "$(edit_payload "$tmp/notes.txt")"
+check "plain text: a long paragraph is blocked" 2 'notes.txt:1:'
+
+run "$(bash_payload "make test > $tmp/notes.txt")"
+check "plain text: a .txt file a Bash command wrote is left alone" 0 ''
+
 # --- Bash matcher ---
 run "$(bash_payload "cat > $tmp/long.md <<'EOF' ... EOF")"
 check "Bash matcher checks a file the command just wrote" 2 'long.md:3:'
@@ -95,9 +103,9 @@ HOOK=$tmp/broken/hook.sh run "$(patch_payload "$tmp/long.md" "$long")"
 check "Edit: a broken rule is reported to the user, not blocked" 1 'Vale failed'
 
 # --- Skips ---
-printf '%s\n' "$long" > "$tmp/notes.txt"
-run "$(edit_payload "$tmp/notes.txt")"
-check "a file that is not Markdown, Org, or HTML is skipped" 0 ''
+printf '%s\n' "$long" > "$tmp/notes.log"
+run "$(edit_payload "$tmp/notes.log")"
+check "a file that is not prose is skipped" 0 ''
 
 CLAUDE_LINT_DISABLE=prose run "$(edit_payload "$tmp/long.md")"
 check "CLAUDE_LINT_DISABLE=prose turns the hook off" 0 ''
