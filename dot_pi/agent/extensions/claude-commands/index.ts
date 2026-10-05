@@ -124,8 +124,8 @@ export function commandName(relativePath: string, declared?: string): string {
 
 /**
  * The first line of a body as a description, for a file with no `description:`.
- * Claude falls back this way too: `code/cleanup/dead-code.md` has no frontmatter and Claude
- * lists it by its `# Refactor Clean` heading.
+ * Claude falls back this way too: a file that opens with `# Refactor Clean` and has
+ * no frontmatter is listed as "Refactor Clean".
  */
 function firstLine(body: string): string | undefined {
 	const line = body.split("\n").find((candidate) => candidate.trim().length > 0);

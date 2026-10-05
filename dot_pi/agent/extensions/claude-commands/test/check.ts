@@ -9,6 +9,7 @@
  */
 
 import assert from "node:assert/strict";
+import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { commandName, discover, expandSpans, parseFile, substituteArgs } from "../index.ts";
@@ -54,6 +55,16 @@ await check("frontmatter keys and body are split", () => {
 await check("a file with no frontmatter is all body", () => {
 	assert.equal(parseFile("Just prose.\n").body, "Just prose.\n");
 	assert.deepEqual(parseFile("Just prose.\n").frontmatter, {});
+});
+
+await check("a file with no frontmatter falls back to its heading", () => {
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), "claude-commands-"));
+	try {
+		fs.writeFileSync(path.join(dir, "clean.md"), "# Refactor Clean\n\nBody.\n");
+		assert.equal(discover(dir)[0]?.description, "Refactor Clean");
+	} finally {
+		fs.rmSync(dir, { recursive: true });
+	}
 });
 
 await check("a --- inside the body does not end the frontmatter early", () => {
@@ -200,10 +211,6 @@ await check("the previously colliding commands all survive", () => {
 await check("every command carries a description, from frontmatter or the first heading", () => {
 	const missing = found.filter((command) => !command.description).map((command) => command.name);
 	assert.deepEqual(missing, [], `no description: ${missing.join(", ")}`);
-});
-
-await check("a file with no frontmatter falls back to its heading", () => {
-	assert.equal(found.find((command) => command.name === "code:cleanup:dead-code")?.description, "Refactor Clean");
 });
 
 console.log(`${checks} checks, ${found.length} commands discovered under ${root}`);
