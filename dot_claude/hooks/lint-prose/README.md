@@ -17,7 +17,7 @@ One rule for now: a paragraph, list item, or blockquote has at most 5 sentences,
 
 Wired to four entries in `settings.json`: `Write|Edit|MultiEdit` and `Bash` on `PostToolUse`, and `Bash` again on `PostToolUseFailure`. It finds the files the same way [`lint-all-languages`](../lint-all-languages/README.md#bash-the-paths-the-command-just-wrote) does: the named file on `Write` and `Edit`, and on Bash the paths in the command text that the command just wrote. Files under `/tmp`, `/var/tmp`, and `$TMPDIR` are skipped. On Bash, `.txt` paths are skipped too: a command such as `make test > out.txt` writes a log, and a log with one sentence per line reads as one long paragraph.
 
-A `Write` or a Bash command checks the whole file. An `Edit` checks only the text it wrote, so an old long paragraph elsewhere in the file does not block an unrelated edit.
+The hook checks the whole file, then reports only the alerts on paragraphs that hold a line git reports as changed against `HEAD`. When the Bash command also ran `git commit`, the hook compares against `HEAD~1`. When there is nothing to compare against, the hook reports every alert in the file: this occurs outside git, for an untracked file, and in the first commit. In all other cases, an old long paragraph elsewhere in the file does not block an unrelated change.
 
 [`check.sh`](check.sh) runs Vale with the bundled [`vale/vale.ini`](vale/vale.ini), so a repository's own Vale config is never read. It is also the scanner behind the `prose-cleanup` skill:
 
@@ -25,23 +25,25 @@ A `Write` or a Bash command checks the whole file. An `Edit` checks only the tex
 bash ~/.claude/hooks/lint-prose/check.sh README.md docs/*.md
 ```
 
-## Turning it off
+## Settings
 
-Set `CLAUDE_LINT_DISABLE` to a list that holds `prose`, or `all`. `all` also turns off `lint-all-languages`.
+`CLAUDE_LINT_DISABLE` turns the hook off when its list holds `prose` or `all`. `all` also turns off `lint-all-languages`. The hook reads it at run time, so export it in your shell, or set it in `env` in `settings.json`.
 
 ```sh
 export CLAUDE_LINT_DISABLE="prose"
 ```
+
+To find and fix the old alerts that the hook does not report, run `/prose-cleanup`.
 
 ## Installing Vale
 
 The hook exits 0 and checks nothing when `vale` is not on `PATH`, or when `vale --version` fails. The second case covers a mise shim with no Vale version set for the current directory. When Vale runs but fails, for example on a broken rule, the hook shows `lint-prose: Vale failed` to you and does not block Claude.
 
 ```sh
-brew install vale     # macOS
-mise use -g vale      # Linux, or any system with mise
+brew install vale # macOS
+mise use -g vale # Linux, or any system with mise
 ```
 
 ## Testing
 
-`bash test/test.sh` covers the rule in each format, the `Edit`-only check, the Bash matcher, a Vale failure, and the skips. It needs `jq` and `vale`.
+`bash test/test.sh` covers the rule in each format, the Bash matcher, the changed-paragraph filter in a git repository, a Vale failure, and the skips. It needs `jq` and `vale`.

@@ -8,8 +8,8 @@ The format behavior below was run on Vale 3.23.0, not reasoned about: Markdown, 
 
 The paragraph check started as a `.md` branch in [`lint-all-languages`](../../lint-all-languages/README.md). It moved here for these reasons:
 
-1. **Prose and code need different input.** A code linter needs the whole file, because a part of a Python file does not parse. A prose rule can check only the text an `Edit` wrote. In `lint-all-languages` that logic was prose-only state in a hook that is about code.
-2. **Less complexity in each hook.** `lint-all-languages` keeps one linter per extension and no `Edit` logic. This hook has one input path per case and one linter.
+1. **Prose and code need different scopes.** A code linter reports on the whole file. A prose rule reports only on the paragraphs a git diff marks as changed. In `lint-all-languages` that logic was prose-only state in a hook that is about code.
+2. **Less complexity in each hook.** `lint-all-languages` keeps one linter per extension and no diff logic. This hook has one input path per case and one linter.
 3. **Room to grow.** More Vale rules come from [`technical-linting-rules.md`](../../../../docs/research/hooks/linting/technical-linting-rules.md). Vale can also lint comments in code files, and a `.py` file in `lint-all-languages` would then need two linters in one branch.
 4. **Precedent.** [`format-org-tables`](../../format-org-tables/README.md) is a separate hook for one concern, next to `format-all-languages`.
 
@@ -50,13 +50,21 @@ Vale stops with an error on Markdown frontmatter that is not valid YAML, such as
 
 Org needs no such step. Vale read `#+title: A [b] {c}` without an error. The blanking only acts on a file whose first line is `---`, so it does not change Org or HTML files.
 
-## Edit checks only the text it wrote
+## Only the changed paragraphs
 
-A `Write` or a Bash command checks the whole file, because it wrote the whole file. An `Edit` or `MultiEdit` checks only its `new_string` values, sent to Vale on stdin with `--ext` set to the file's extension. Without this, an old long paragraph elsewhere in the file blocks every edit to the file, including the edit that starts to fix it.
+A `Write`, `Edit`, or Bash command that changes one paragraph of a file sends the whole file to Vale. An `Edit` does not send only its `new_string`, because then an edit that adds a 6th sentence to an existing paragraph would pass. Before this filter, every old long paragraph in the file blocked each write again. The model read the same alerts on each write, about text it did not write. On a real `dot_doom.d/config.org` with uncommitted changes, the whole-file check gave 14 alerts, and the filter gave 0, because no change was in a long paragraph.
 
-The hook joins the `new_string` values of a `MultiEdit` with a blank line, so two edits do not join into one paragraph. The blank line separates paragraphs in all three formats: two bare-text parts with 3 and 4 sentences, sent as `.html`, gave no alert.
+The filter reads `git diff -U0` for the file and collects the changed line numbers from the `+start,count` part of each hunk header. A hunk with a count of 0 is a deletion, and it marks the line before it, so a paragraph that lost a sentence still counts as changed. Vale reports a paragraph alert at the first line of the paragraph. The hook keeps an alert when a changed line falls between that line and the next blank line.
 
-The limit of this shortcut: an edit that adds one sentence to an existing 6-sentence paragraph is checked without the rest of that paragraph, so it passes. The next `Write` of the file catches it. The upgrade is to run Vale on the whole file and keep only the alerts on the lines the edit changed. The trade-off has a `shortcut:` comment in `hook.sh`.
+| Case                                         | Compared against     |
+| -------------------------------------------- | -------------------- |
+| A tracked file                               | `HEAD`               |
+| A Bash command that also ran `git commit`    | `HEAD~1`             |
+| Outside git, an untracked file, first commit | Nothing: every alert |
+
+The diff against `HEAD` also holds changes from before the session. Those are uncommitted work, so their alerts are still useful. A tight list with no blank lines is one span, so a change to one item keeps the alerts of every long item in that list. The upgrade is to find item boundaries, and the trade-off has a `ponytail:` comment in `hook.sh`.
+
+The hook has no switch to report the whole file. For a session that cleans up old paragraphs, use the [`prose-cleanup`](../../../skills/prose-cleanup/SKILL.md) skill, which runs `check.sh` without the filter.
 
 ## Why it blocks
 

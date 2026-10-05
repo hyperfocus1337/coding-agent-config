@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Smoke test for hook.sh: the paragraph rule in each format, the
-# Edit-only check, the Bash matcher, a Vale failure, and the skips.
-# Run: bash test.sh
+# Smoke test for hook.sh: the paragraph rule in each format, the Bash matcher,
+# the changed-paragraph filter, a Vale failure, and the skips. Run: bash test.sh
 # Needs jq and vale on PATH; without either the hook self-disables and the test
 # would pass vacuously, so it skips loudly.
 set -u
@@ -31,8 +30,6 @@ check() { # name, expected status, expected substring in output ('' for none)
 }
 
 edit_payload() { jq -nc --arg f "$1" '{hook_event_name:"PostToolUse",tool_input:{file_path:$f}}'; }
-# An Edit: the file plus the text the edit wrote.
-patch_payload() { jq -nc --arg f "$1" --arg s "$2" '{hook_event_name:"PostToolUse",tool_input:{file_path:$f,new_string:$s}}'; }
 bash_payload() { jq -nc --arg cwd "$tmp" --arg c "$1" '{hook_event_name:"PostToolUse",cwd:$cwd,tool_input:{command:$c}}'; }
 
 long='One. Two. Three. Four. Five. Six, the last sentence here.'
@@ -42,12 +39,6 @@ printf '# Title\n\n%s\n\nOne. Two. Three. Four. Five.\n' "$long" > "$tmp/long.md
 run "$(edit_payload "$tmp/long.md")"
 check "Write blocks a paragraph over 5 sentences" 2 'long.md:3:'
 [[ "$out" == *'long.md:5:'* ]] && { echo "FAIL 5 sentences are allowed"; fail=1; } || echo "ok   5 sentences are allowed"
-
-run "$(patch_payload "$tmp/long.md" 'A short paragraph that an edit wrote.')"
-check "an Edit is not blocked by an old long paragraph elsewhere" 0 ''
-
-run "$(patch_payload "$tmp/long.md" "$long")"
-check "an Edit that writes a long paragraph is blocked" 2 'ParagraphLength'
 
 printf -- '- %s\n- Short item.\n' "$long" > "$tmp/item.md"
 run "$(edit_payload "$tmp/item.md")"
@@ -65,16 +56,10 @@ check "Org: a long paragraph is blocked" 2 'long.org:5:'
   && echo "ok   Org: keywords, headings, and src blocks are not counted" \
   || { echo "FAIL Org: counted text outside the paragraph"; fail=1; }
 
-run "$(patch_payload "$tmp/long.org" "- $long")"
-check "Org: an Edit that writes a long list item is blocked" 2 'ParagraphLength'
-
 # --- HTML ---
 printf '<html><head><script>a. b. c. d. e. f. g.</script></head>\n<body><pre>%s</pre>\n<p>Short.</p></body></html>\n' "$long" > "$tmp/ok.html"
 run "$(edit_payload "$tmp/ok.html")"
 check "HTML: script and pre are not counted" 0 ''
-
-run "$(patch_payload "$tmp/ok.html" "<p>$long</p>")"
-check "HTML: an Edit that writes a long paragraph is blocked" 2 'ParagraphLength'
 
 # --- Plain text ---
 printf '%s\n\nShort.\n' "$long" > "$tmp/notes.txt"
@@ -92,15 +77,44 @@ touch -t 202001010000 "$tmp/item.md"
 run "$(bash_payload "cat $tmp/item.md")"
 check "a path the command only read is left alone" 0 ''
 
+# --- Only the changed paragraphs (a git repo) ---
+repo=$tmp/repo
+git init -q "$repo"
+export GIT_AUTHOR_NAME=test GIT_AUTHOR_EMAIL=test@example.com
+export GIT_COMMITTER_NAME=test GIT_COMMITTER_EMAIL=test@example.com
+# An old long paragraph over two lines, then a short one.
+printf '%s\nStill the old paragraph.\n\nShort.\n' "$long" > "$repo/old.md"
+git -C "$repo" add old.md && git -C "$repo" commit -q -m old
+
+printf '%s\nStill the old paragraph.\n\nShort, and changed.\n' "$long" > "$repo/old.md"
+run "$(edit_payload "$repo/old.md")"
+check "an old long paragraph that did not change is not reported" 0 ''
+
+printf '%s\nThe old paragraph, changed on its second line.\n\nShort.\n' "$long" > "$repo/old.md"
+run "$(edit_payload "$repo/old.md")"
+check "a change on a later line of a long paragraph reports it" 2 'old.md:1:'
+
+git -C "$repo" checkout -q -- old.md
+printf 'One. Two. Three. Four. Five.\n' > "$repo/five.md"
+git -C "$repo" add five.md && git -C "$repo" commit -q -m five
+printf 'One. Two. Three. Four. Five. Six.\n' > "$repo/five.md"
+run "$(jq -nc --arg f "$repo/five.md" '{hook_event_name:"PostToolUse",tool_input:{file_path:$f,old_string:"Five.",new_string:"Five. Six."}}')"
+check "an Edit that adds a 6th sentence to a paragraph is blocked" 2 'five.md:1:'
+
+printf '%s\n' "$long" > "$repo/new.md"
+run "$(bash_payload "cat > $repo/new.md <<'EOF' ... EOF")"
+check "an untracked file is checked whole" 2 'new.md:1:'
+
+git -C "$repo" add new.md && git -C "$repo" commit -q -m new
+run "$(bash_payload "cat > $repo/new.md <<'EOF' ... EOF && git commit -am new")"
+check "a write and commit in one command is compared to HEAD~1" 2 'new.md:1:'
+
 # --- A Vale failure does not block ---
 # A copy of the hook with a rule Vale cannot load.
 cp -R "${HOOK%/*}" "$tmp/broken"
 echo 'extends: nonsense' > "$tmp/broken/vale/styles/Writing/ParagraphLength.yml"
 HOOK=$tmp/broken/hook.sh run "$(edit_payload "$tmp/long.md")"
-check "Write: a broken rule is reported to the user, not blocked" 1 'Vale failed'
-
-HOOK=$tmp/broken/hook.sh run "$(patch_payload "$tmp/long.md" "$long")"
-check "Edit: a broken rule is reported to the user, not blocked" 1 'Vale failed'
+check "a broken rule is reported to the user, not blocked" 1 'Vale failed'
 
 # --- Skips ---
 printf '%s\n' "$long" > "$tmp/notes.log"
