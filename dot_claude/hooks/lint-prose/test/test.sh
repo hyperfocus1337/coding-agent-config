@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Smoke test for hook.sh: the paragraph rule in Markdown, Org, and HTML, the
-# Edit-only check, the Bash matcher, and the skips. Run: bash test.sh
+# Edit-only check, the Bash matcher, a Vale failure, and the skips.
+# Run: bash test.sh
 # Needs jq and vale on PATH; without either the hook self-disables and the test
 # would pass vacuously, so it skips loudly.
 set -u
@@ -83,6 +84,16 @@ touch -t 202001010000 "$tmp/item.md"
 run "$(bash_payload "cat $tmp/item.md")"
 check "a path the command only read is left alone" 0 ''
 
+# --- A Vale failure does not block ---
+# A copy of the hook with a rule Vale cannot load.
+cp -R "${HOOK%/*}" "$tmp/broken"
+echo 'extends: nonsense' > "$tmp/broken/vale/styles/Writing/ParagraphLength.yml"
+HOOK=$tmp/broken/hook.sh run "$(edit_payload "$tmp/long.md")"
+check "Write: a broken rule is reported to the user, not blocked" 1 'Vale failed'
+
+HOOK=$tmp/broken/hook.sh run "$(patch_payload "$tmp/long.md" "$long")"
+check "Edit: a broken rule is reported to the user, not blocked" 1 'Vale failed'
+
 # --- Skips ---
 printf '%s\n' "$long" > "$tmp/notes.txt"
 run "$(edit_payload "$tmp/notes.txt")"
@@ -93,6 +104,13 @@ check "CLAUDE_LINT_DISABLE=prose turns the hook off" 0 ''
 
 CLAUDE_LINT_DISABLE=yaml,all run "$(edit_payload "$tmp/long.md")"
 check "CLAUDE_LINT_DISABLE=all turns the hook off" 0 ''
+
+# A mise shim with no version set: on PATH, but it fails when run.
+mkdir -p "$tmp/bin"
+printf '#!/bin/sh\necho "mise ERROR No version is set for shim: vale" >&2\nexit 1\n' > "$tmp/bin/vale"
+chmod +x "$tmp/bin/vale"
+PATH="$tmp/bin:$PATH" run "$(edit_payload "$tmp/long.md")"
+check "a vale shim that cannot run is skipped" 0 ''
 
 printf '%s\n' "$long" > /tmp/lint-prose-test-throwaway.md
 run "$(edit_payload /tmp/lint-prose-test-throwaway.md)"

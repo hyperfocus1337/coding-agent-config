@@ -34,7 +34,7 @@ export CLAUDE_LINT_DISABLE="prose"
 
 ## Installing Vale
 
-The hook exits 0 and checks nothing when `vale` is not on `PATH`.
+The hook exits 0 and checks nothing when `vale` is not on `PATH`, or when `vale --version` fails. The second case covers a mise shim with no Vale version set for the current directory. When Vale runs but fails, for example on a broken rule, the hook shows `lint-prose: Vale failed` to you and does not block Claude.
 
 ```sh
 brew install vale     # macOS
@@ -43,4 +43,4 @@ mise use -g vale      # Linux, or any system with mise
 
 ## Testing
 
-`bash test/test.sh` covers the rule in each format, the `Edit`-only check, the Bash matcher, and the skips. It needs `jq` and `vale`.
+`bash test/test.sh` covers the rule in each format, the `Edit`-only check, the Bash matcher, a Vale failure, and the skips. It needs `jq` and `vale`.

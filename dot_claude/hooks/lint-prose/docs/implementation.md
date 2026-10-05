@@ -57,4 +57,8 @@ The limit of this shortcut: an edit that adds one sentence to an existing 6-sent
 
 An `error` alert makes Vale exit 1, and the hook then exits 2. A `PostToolUse` hook reaches the model only when it exits 2. On exit 0 its output goes to the transcript, and Claude never sees it. [`lint-all-languages`](../../lint-all-languages/README.md#why-it-blocks) gives the full reason.
 
+Vale exits 2 when it fails, for example on a rule it cannot load or on input it cannot parse. `check.sh` passes that code through, and the hook then exits 1 with `lint-prose: Vale failed` and Vale's error. Exit 1 shows the message to the user and does not block. The error is not in the prose, so a block would tell Claude to fix text that is correct.
+
+Before this change, a failure on `Write` or Bash exited 0 with no output, the same as a clean pass, and a failure on `Edit` blocked as an alert. The Vale team's [`vale-edit.sh`](https://github.com/vale-cli/agent-tools/blob/main/hooks/vale-edit.sh) has the same split between alerts and a failed run.
+
 Blocking means each new rule must have few false positives. Test a rule against this repository's docs with `/prose-cleanup` or `check.sh` before you set it to `error`.

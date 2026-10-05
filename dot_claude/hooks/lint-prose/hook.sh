@@ -11,7 +11,9 @@
 # --- Preflight ---
 set -u
 command -v jq >/dev/null 2>&1 || exit 0
-command -v vale >/dev/null 2>&1 || exit 0
+# Run it, not `command -v`: a mise shim with no version set for this directory
+# is on PATH but fails, and its error would block as if it were an alert.
+vale --version >/dev/null 2>&1 || exit 0
 # The same off switch as lint-all-languages: "prose" or "all" turns this off.
 lint_disable=" ${CLAUDE_LINT_DISABLE:-} "
 lint_disable=${lint_disable//,/ }
@@ -69,9 +71,25 @@ done
 [[ ${#targets[@]} -gt 0 ]] || exit 0
 
 # --- Check ---
+# check.sh exits 1 on alerts and 2 when Vale fails, such as on a broken rule. A
+# failure is not the prose's fault: blocking on it tells Claude to fix text that
+# is fine, and dropping it reads as a clean pass. So it goes to the user on exit
+# 1, which does not block. docs/implementation.md "Why it blocks".
+report=''
+failed=''
+lint() { # check.sh arguments. Sets $alerts. Returns 1 on alerts, else 0.
+  alerts=$(bash "$HERE/check.sh" "$@" 2>&1) && return 0
+  [[ $? -eq 1 ]] && return 1
+  failed+="lint-prose: Vale failed, so the prose was not checked:"$'\n'"$alerts"$'\n'
+  alerts=''
+  return 0
+}
+
 if [[ -n "$touched" ]]; then
-  bash "$HERE/check.sh" --ext=".${targets[0]##*.}" <<<"$touched" 1>&2 || exit 2
+  lint --ext=".${targets[0]##*.}" <<<"$touched" || report=$alerts$'\n'
 else
-  bash "$HERE/check.sh" "${targets[@]}" 1>&2 || exit 2
+  lint "${targets[@]}" || report=$alerts$'\n'
 fi
+[[ -n "$report" ]] && { printf '%s' "$report$failed" 1>&2; exit 2; }
+[[ -n "$failed" ]] && { printf '%s' "$failed" 1>&2; exit 1; }
 exit 0
