@@ -49,9 +49,10 @@ pull:
 # --safe=false: in the devcontainer, ~/.claude and ~/.pi are separate volumes on one
 # btrfs device. chezmoi caches one temp dir per device ID, so an atomic rename from
 # ~/.claude into ~/.pi fails with "invalid cross-device link".
+# Paths limit it to those targets: `just chezmoi ~/.claude/rules`.
 [group('chezmoi')]
-chezmoi:
-    chezmoi apply --safe=false --source "{{ REPO }}" --destination "{{ env('HOME') }}"
+chezmoi *PATHS:
+    chezmoi apply --safe=false --source "{{ REPO }}" --destination "{{ env('HOME') }}" {{ PATHS }}
 
 # *-devcontainer recipes: `-i $([ -t 0 ] && echo -t)` adds -t only when stdin is a terminal.
 # Agent shells have no TTY, and `docker exec -t` fails there with "the input device is not a TTY".
@@ -69,9 +70,10 @@ chezmoi-all:
     @just chezmoi-devcontainer
 
 # Preview what `just chezmoi` would change without writing anything.
+# Paths limit it to those targets.
 [group('chezmoi')]
-chezmoi-diff:
-    chezmoi diff --source "{{ REPO }}" --destination "{{ env('HOME') }}"
+chezmoi-diff *PATHS:
+    chezmoi diff --source "{{ REPO }}" --destination "{{ env('HOME') }}" {{ PATHS }}
 
 # Run `just chezmoi-diff` inside the devcontainer.
 [group('chezmoi')]
