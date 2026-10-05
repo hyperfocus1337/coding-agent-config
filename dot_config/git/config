@@ -1,0 +1,6 @@
+# Claude Code agent sessions: format staged files before each commit.
+# The hook exits at once outside Claude Code (CLAUDECODE unset).
+# Source: coding-agent-config, dot_claude/hooks/format-staged-files/
+[hook "claude-format-staged"]
+	event = pre-commit
+	command = bash \"$HOME/.claude/hooks/format-staged-files/hook.sh\"
