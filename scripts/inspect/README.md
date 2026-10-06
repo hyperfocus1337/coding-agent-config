@@ -1,13 +1,13 @@
 # stale
 
-Reports leftover files in the skills and commands trees after a rename or a move. [`stale.sh`](stale.sh) reads only, unless you pass `--delete`.
+Reports leftover files after a rename or a move in each directory that chezmoi manages directly under `~/.claude/` (`commands`, `hooks`, `rules`, `skills`). The script reads that list from `chezmoi managed`, so a new top-level directory in `dot_claude/` is scanned without an edit. [`stale.sh`](stale.sh) reads only, unless you pass `--delete`.
 
 ## What counts as stale
 
 | Check                                                                                                         | Why the path is left behind                                                                                                                                       |
 | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A path under `~/.claude/skills/` or `~/.claude/commands/` that `chezmoi unmanaged` lists                      | `chezmoi apply` writes the new path but never deletes the old one, so a rename in `dot_claude/` deploys twice. A path that `.chezmoiignore` covers is not listed. |
-| An empty directory in `dot_claude/skills`, `dot_claude/commands`, or the deployed copy                        | The files moved out, the directory stayed.                                                                                                                        |
+| A path in one of those directories that `chezmoi unmanaged` lists                                             | `chezmoi apply` writes the new path but never deletes the old one, so a rename in `dot_claude/` deploys twice. A path that `.chezmoiignore` covers is not listed. |
+| An empty directory in one of those directories, in `dot_claude/` or in the deployed copy                      | The files moved out, the directory stayed.                                                                                                                        |
 | A `dir` in [`skills.json`](../../dot_claude/skills/install-skills/references/skills.json) that does not exist | The catalog row still points at the directory's old path.                                                                                                         |
 
 The first check skips the paths that a channel other than chezmoi owns, so they are not reported as stale:

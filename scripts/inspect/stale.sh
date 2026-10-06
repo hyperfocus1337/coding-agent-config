@@ -2,8 +2,9 @@
 
 set -euo pipefail
 
-# Report leftovers from file and directory movements in the skills and commands
-# trees. Three symptoms of a move that was not finished:
+# Report leftovers from file and directory movements in the directories that
+# chezmoi manages directly under ~/.claude (skills, commands, hooks, rules, ...).
+# Three symptoms of a move that was not finished:
 #   1. A deployed path under ~/.claude that chezmoi no longer manages (chezmoi
 #      unmanaged). chezmoi apply never deletes, so the old path stays after a
 #      rename in the repo. Paths that .chezmoiignore covers are not listed.
@@ -29,9 +30,18 @@ section() {
   fi
 }
 
-# Trees to scan, in the repo (chezmoi source) and in the deployed copy.
-src_dirs=("$REPO/dot_claude/skills" "$REPO/dot_claude/commands")
-out_dirs=("$CLAUDE_HOME/skills" "$CLAUDE_HOME/commands")
+chez=(--source "$REPO" --destination "$HOME")
+
+# Trees to scan: each directory chezmoi manages directly under ~/.claude, in
+# the deployed copy and in the repo (chezmoi source). A while-read loop, not
+# mapfile, because macOS ships bash 3.2.
+out_dirs=()
+while IFS= read -r dir; do out_dirs+=("$dir"); done < <(
+  chezmoi managed "${chez[@]}" --include dirs --path-style absolute "$CLAUDE_HOME" |
+    awk -v p="$CLAUDE_HOME/" 'index($0, p) == 1 && index(substr($0, length(p) + 1), "/") == 0'
+)
+src_dirs=()
+while IFS= read -r dir; do src_dirs+=("$dir"); done < <(chezmoi source-path "${chez[@]}" "${out_dirs[@]}")
 
 # Paths under ~/.claude/skills that another channel owns, so an unmanaged path
 # there is expected, not stale: APM installs from apm.yml, and Claude Code's own
@@ -50,7 +60,7 @@ for dir in "${out_dirs[@]}"; do [[ -d "$dir" ]] && exists+=("$dir"); done
 # prints the top unmanaged entry and does not descend into it.
 orphans=""
 if ((${#exists[@]} > 0)); then
-  orphans="$(chezmoi unmanaged --source "$REPO" --destination "$HOME" --path-style absolute "${exists[@]}" |
+  orphans="$(chezmoi unmanaged "${chez[@]}" --path-style absolute "${exists[@]}" |
     grep -vxF -f <(echo "$own") || true)"
 fi
 section "Deployed, no longer in the repo (chezmoi apply leaves these behind):" "$orphans"
@@ -66,7 +76,7 @@ section "Skill catalog row points at a missing directory ($CATALOG):" \
     while read -r dir; do [[ -e "$REPO/$dir" ]] || echo "$dir"; done)"
 
 if ((findings == 0)); then
-  echo "No stale files in the skills and commands trees."
+  echo "No stale files in $CLAUDE_HOME/{$(basename -a "${out_dirs[@]}" | paste -sd, -)}."
   exit 0
 fi
 printf '\n%d stale path(s).\n' "$findings"
