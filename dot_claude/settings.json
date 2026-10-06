@@ -47,6 +47,11 @@
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/enforce-cli-tools/hook.sh\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/block-commit-attribution/hook.sh\"",
+            "timeout": 5
           }
         ]
       }

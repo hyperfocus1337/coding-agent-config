@@ -12,6 +12,7 @@ Hooks are shell commands Claude Code runs on session lifecycle events, for examp
 | [`type-check-all-languages`](type-check-all-languages/README.md) | `Stop`                                                        | Type-checks the whole project once per turn, by the extensions git reports as changed: pyrefly, tsc.                                                 |
 | [`block-secret-commits`](block-secret-commits/README.md)         | `PreToolUse` (Bash)                                           | Blocks a `git commit` that would add a secret: a betterleaks scan of the staged diff, plus a rescan of new binary files.                             |
 | [`enforce-cli-tools`](enforce-cli-tools/README.md)               | `PreToolUse` (Bash)                                           | Blocks a banned CLI tool in command position and names the replacement. Table-driven.                                                                |
+| [`block-commit-attribution`](block-commit-attribution/README.md) | `PreToolUse` (Bash)                                           | Blocks a `git commit` whose message has a `Co-Authored-By: Claude` trailer.                                                                          |
 
 ## Shared conventions
 
