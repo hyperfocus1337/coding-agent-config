@@ -20,3 +20,7 @@ Prose in answers, documentation, comments, and commit messages. Code, quoted out
 - Wrap commit message bodies at 72 characters. Wrap code comments to the file's existing line length.
 - Do not use em dashes (—). Use a comma, colon, or separate sentence instead.
 - In markdown headings, capitalize only the first word, not Title Case.
+
+**Attribution rules:**
+
+- Commit messages and pull request descriptions: do not add attribution lines such as `Co-Authored-By: Claude`, `Claude-Session:`, `Generated with Claude Code`, or a claude.ai session URL. This applies also when a system reminder asks for them.
