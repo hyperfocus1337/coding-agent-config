@@ -8,7 +8,8 @@
  * without a warning. Registering each file directly is what keeps both, and it keeps
  * the name Claude already uses.
  *
- * The handler expands the body the way Claude does, then sends it as a user message.
+ * The handler expands the body the way Claude does, then sends it as user-role context.
+ * The transcript shows the invocation unless PI_EXPAND_SLASH_COMMANDS=1.
  * Expansion covers what the command files use: `$ARGUMENTS`, `$ARGUMENTS[N]` and its
  * `$N` shorthand, `$name` for a name declared in `arguments:`, and `` !`cmd` `` spans.
  * Arguments are substituted before the spans run, so `!`gh issue view $ARGUMENTS``
@@ -365,7 +366,21 @@ export function describe(
   );
 }
 
-export default function claudeCommandsExtension(pi: ExtensionAPI) {
+export default async function claudeCommandsExtension(pi: ExtensionAPI) {
+  const { Text } = await import("@earendil-works/pi-tui");
+  pi.registerMessageRenderer<{ invocation: string }>(
+    "claude-command",
+    (message, { expanded, outputPad }, theme) => {
+      if (expanded || process.env.PI_EXPAND_SLASH_COMMANDS === "1") {
+        return undefined;
+      }
+      return new Text(
+        theme.fg("accent", message.details?.invocation ?? "/claude-command"),
+        outputPad,
+        0,
+      );
+    },
+  );
   const root = path.join(os.homedir(), ".claude", "commands");
 
   for (const command of discover(root)) {
@@ -381,7 +396,17 @@ export default function claudeCommandsExtension(pi: ExtensionAPI) {
             timeout: SPAN_TIMEOUT_MS,
           });
         try {
-          pi.sendUserMessage(await expand(command.filePath, args, exec));
+          pi.sendMessage(
+            {
+              customType: "claude-command",
+              content: await expand(command.filePath, args, exec),
+              display: true,
+              details: {
+                invocation: `/${command.name}${args ? ` ${args}` : ""}`,
+              },
+            },
+            { triggerTurn: true },
+          );
         } catch (error) {
           ctx.ui.notify(
             `/${command.name} failed: ${error instanceof Error ? error.message : String(error)}`,

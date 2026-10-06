@@ -14,6 +14,12 @@ The handler reads the file at invocation, not at load, so an edit to a command f
 
 pi shows an argument hint for built-in commands and prompt templates as `<hint> — <description>` in the `/` dropdown. `registerCommand` has no `argumentHint` field, and the interactive mode drops the field for extension commands when it builds the dropdown (checked in pi 1.0.3). So `describe` writes the hint into the description in the same form. The dropdown truncates the description to the terminal width, so the hint must come first to stay visible. pi has no ghost text after `/name `, as Claude Code shows. A replacement editor through `setEditorComponent` could draw it, but only one extension can own the editor, so the extension does not do this.
 
+## Transcript display
+
+The handler sends one `claude-command` custom message with the expanded body in `content` and the invocation in `details.invocation`. pi converts custom message content to user-role context for the model and persists the details for session resume. `triggerTurn: true` starts the response when idle and queues steering input when a response is active.
+
+The registered renderer shows the invocation with pi-tui's `Text` component by default. When `PI_EXPAND_SLASH_COMMANDS=1` or the row is expanded with `ctrl+o`, it returns `undefined` so pi renders the full content. This changes only the transcript display, not expansion or model input. The factory imports pi-tui asynchronously so the parser and expansion self-checks can still run in Node without pi's runtime package aliases.
+
 ## Expansion order
 
 Arguments are substituted first, then spans run. Three command files put `$ARGUMENTS` inside a `!` span (`gh issue view $ARGUMENTS`), which only works in this order. It is also the order Claude Code's `expandCommand` uses.

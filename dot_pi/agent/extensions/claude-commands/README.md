@@ -1,6 +1,6 @@
 # claude-commands
 
-Registers every `~/.claude/commands/**/*.md` file as a pi slash command, named by its path, and expands the body the way Claude Code does before it goes to the model as a user message.
+Registers every `~/.claude/commands/**/*.md` file as a pi slash command, named by its path, and expands the body the way Claude Code does before it goes to the model as user-role context.
 
 ## Names
 
@@ -14,6 +14,18 @@ Directories become `:` segments, so the name matches what Claude Code registers:
 | `chezmoi.md`               | `/chezmoi`               |
 
 A `name:` in frontmatter replaces the leaf only, not the path. `README.md` at any level is documentation, not a command. The command list shows `argument-hint:` first, then `description:` from frontmatter, or the first line of the body when there is none. This is the `<hint> — <description>` form pi uses for its own prompt templates. With the hint first, it stays visible when the list truncates a long description.
+
+## Display
+
+By default, the transcript shows only the command and its arguments, such as `/git:commit:single fix typo`. The model still receives the full expanded instructions, including argument substitution and dynamic context.
+
+To show the full prompt, start pi with:
+
+```sh
+PI_EXPAND_SLASH_COMMANDS=1 pi
+```
+
+Unset the variable or set it to `0` for compact display. Only `1` enables full display. `ctrl+o` also reveals the full prompt in compact mode. This toggle applies to commands from `~/.claude/commands`, not pi's built-in commands or native prompt templates. Existing session entries sent before this change keep their original display.
 
 ## Arguments
 
@@ -43,6 +55,6 @@ A `` !`cmd` `` span runs `cmd` through `/bin/sh -c` in the session's working dir
 
 ## Checks
 
-`node test/check.ts` from this directory, or `just pi-check` for the type check as well. The checks cover naming, frontmatter parsing, every placeholder form and escape, span placement and failure, and the installed tree: every name unique, every command described, the colliding basenames all present.
+`node test/check.ts` from this directory, or `just pi-check` for the type check as well. The checks cover naming, frontmatter parsing, every placeholder form and escape, span placement and failure, and the installed tree: every name unique, every command described, the colliding basenames all present. With `PI_PACKAGE` set, the checks also cover compact and full display, identical model input in both modes, and delivery failures. `just pi-check` sets this path.
 
 For why the extension registers commands itself instead of using pi's `prompts` setting, and how the expansion is ordered and parsed, see [docs/implementation.md](docs/implementation.md).

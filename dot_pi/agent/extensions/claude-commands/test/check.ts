@@ -12,10 +12,12 @@ import assert from "node:assert/strict";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import {
+import { createRequire, registerHooks } from "node:module";
+import claudeCommandsExtension, {
   commandName,
   describe,
   discover,
+  expand,
   expandSpans,
   parseFile,
   substituteArgs,
@@ -324,6 +326,81 @@ await check(
     assert.deepEqual(missing, [], `no description: ${missing.join(", ")}`);
   },
 );
+
+// ── Display and delivery against the installed pi-tui ──────────────────────────
+
+if (process.env.PI_PACKAGE) {
+  const require = createRequire(path.join(process.env.PI_PACKAGE, "package.json"));
+  const tuiPath = require.resolve("@earendil-works/pi-tui");
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === "@earendil-works/pi-tui") {
+        return nextResolve(tuiPath, context);
+      }
+      return nextResolve(specifier, context);
+    },
+  });
+  const previous = process.env.PI_EXPAND_SLASH_COMMANDS;
+  try {
+    const commands = new Map();
+    let renderer;
+    const messages = [];
+    const notifications = [];
+    let failExec = false;
+    await claudeCommandsExtension({
+      registerMessageRenderer(type, render) {
+        assert.equal(type, "claude-command");
+        renderer = render;
+      },
+      registerCommand(name, command) { commands.set(name, command); },
+      exec: async () => ({ stdout: "context", stderr: "", code: failExec ? 1 : 0 }),
+      sendMessage(message, options) { messages.push({ message, options }); },
+    });
+    const ctx = { cwd: root, ui: { notify: (...args) => notifications.push(args) } };
+    const command = found[0];
+    const expected = await expand(command.filePath, "42", fakeExec("context"));
+
+    await check("display modes send identical expanded user-role context", async () => {
+      for (const value of [undefined, "0", "1", "true"]) {
+        if (value === undefined) delete process.env.PI_EXPAND_SLASH_COMMANDS;
+        else process.env.PI_EXPAND_SLASH_COMMANDS = value;
+        await commands.get(command.name).handler("42", ctx);
+        const { message, options } = messages.at(-1);
+        assert.equal(message.content, expected);
+        assert.equal(message.details.invocation, `/${command.name} 42`);
+        assert.equal(message.display, true);
+        assert.deepEqual(options, { triggerTurn: true });
+        const component = renderer(message, { expanded: false, outputPad: 1 }, {
+          fg: (_color, text) => text,
+        });
+        if (value === "1") assert.equal(component, undefined);
+        else assert.equal(component.render(80).join("\n").trim(), `/${command.name} 42`);
+        assert.equal(renderer(message, { expanded: true, outputPad: 1 }, {}), undefined);
+      }
+    });
+
+    await check("an invocation without arguments has no trailing space", async () => {
+      await commands.get(command.name).handler("", ctx);
+      assert.equal(messages.at(-1).message.details.invocation, `/${command.name}`);
+    });
+
+    await check("failed dynamic context sends no message", async () => {
+      const dynamic = found.find((file) => /(^|\s)!`/.test(parseFile(fs.readFileSync(file.filePath, "utf-8")).body));
+      assert.ok(dynamic, "no installed command uses dynamic context");
+      const count = messages.length;
+      failExec = true;
+      await commands.get(dynamic.name).handler("42", ctx);
+      assert.equal(messages.length, count);
+      assert.equal(notifications.at(-1)[1], "error");
+    });
+  } finally {
+    hooks.deregister();
+    if (previous === undefined) delete process.env.PI_EXPAND_SLASH_COMMANDS;
+    else process.env.PI_EXPAND_SLASH_COMMANDS = previous;
+  }
+} else {
+  console.log("PI_PACKAGE unset, skipping display and delivery checks");
+}
 
 console.log(
   `${checks} checks, ${found.length} commands discovered under ${root}`,
