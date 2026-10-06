@@ -233,6 +233,11 @@ plugin-candidates:
 stale:
     @"{{ SCRIPTS }}/inspect/stale.sh"
 
+# Run `just stale` inside the devcontainer.
+[group('inspect')]
+stale-devcontainer:
+    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config {{ CONTAINER }} just stale
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Cleanup
 # ──────────────────────────────────────────────────────────────────────────────
