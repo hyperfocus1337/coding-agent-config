@@ -1,0 +1,11 @@
+# Agent homes for stale.sh, one per line, relative to $HOME.
+#
+# Each home holds runtime state that chezmoi does not manage (auth, sessions,
+# databases), so stale.sh never scans a home itself. It scans only the
+# directories that chezmoi manages directly under a home, which hold config
+# alone. Never list $HOME, ~/.config, or another directory that other apps
+# write to: `just clean-stale` deletes what the scan reports.
+.claude
+.codex
+.pi/agent
+.omp/agent

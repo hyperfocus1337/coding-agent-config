@@ -1,0 +1,12 @@
+# Paths for stale.sh that another channel owns, one per line, relative to
+# $HOME. An unmanaged path here, or under a directory here, is expected, so
+# stale.sh does not report it and `just clean-stale` does not delete it. The
+# skills that apm.yml installs are skipped as well; stale.sh reads them from
+# apm.yml, so they are not listed here.
+
+# Claude Code's own cloud sync bucket.
+.claude/skills/synced
+
+# The pi extension that `cmux hooks pi install` writes.
+.pi/agent/extensions/cmux-session.ts
+.pi/agent/extensions/.cmux-session.lock

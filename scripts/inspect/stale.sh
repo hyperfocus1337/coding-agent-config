@@ -19,6 +19,7 @@ set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CLAUDE_HOME="$HOME/.claude" # chezmoi deploys here; set HOME to scan another copy
 CATALOG="$REPO/dot_claude/skills/install-skills/references/skills.json"
+LISTS="$(dirname "${BASH_SOURCE[0]}")" # stale-homes.txt and stale-owned.txt
 
 findings=0
 
@@ -32,15 +33,21 @@ section() {
   fi
 }
 
+# Print the paths in a list file as absolute paths. Skips comments and blank
+# lines.
+list() {
+  grep -v -e '^#' -e '^$' "$LISTS/$1" | sed "s|^|$HOME/|"
+}
+
 chez=(--source "$REPO" --destination "$HOME")
 
-# Agent homes. Each one holds runtime state that chezmoi does not manage (auth,
-# sessions, databases), so the script never scans a home itself, only the
-# directories chezmoi manages directly under it, which hold config alone.
-homes=("$CLAUDE_HOME" "$HOME/.codex" "$HOME/.pi/agent" "$HOME/.omp/agent")
+# Agent homes from stale-homes.txt, which says why a home itself is not
+# scanned. A while-read loop, not mapfile, because macOS ships bash 3.2.
+homes=()
+while IFS= read -r home; do homes+=("$home"); done < <(list stale-homes.txt)
 
-# Trees to scan, in the deployed copy and in the repo (chezmoi source). A
-# while-read loop, not mapfile, because macOS ships bash 3.2.
+# Trees to scan, in the deployed copy and in the repo (chezmoi source): the
+# directories chezmoi manages directly under a home.
 out_dirs=()
 while IFS= read -r dir; do out_dirs+=("$dir"); done < <(
   chezmoi managed "${chez[@]}" --include dirs --path-style absolute "${homes[@]}" |
@@ -51,16 +58,19 @@ while IFS= read -r dir; do out_dirs+=("$dir"); done < <(
 src_dirs=()
 while IFS= read -r dir; do src_dirs+=("$dir"); done < <(chezmoi source-path "${chez[@]}" "${out_dirs[@]}")
 
-# Paths that another channel owns, so an unmanaged path there is expected, not
-# stale: APM installs from apm.yml, Claude Code's own cloud sync bucket, and
-# the pi extension that `cmux hooks pi install` writes.
+# Paths that another channel owns, so a path there is expected, not stale: the
+# entries in stale-owned.txt, and the skills that APM installs from apm.yml.
 own="$(
-  echo "$CLAUDE_HOME/skills/synced"
-  echo "$HOME/.pi/agent/extensions/cmux-session.ts"
-  echo "$HOME/.pi/agent/extensions/.cmux-session.lock"
+  list stale-owned.txt
   yq -r '.dependencies.apm[] | (.skills[] // (.git | split("/") | .[-1]))' "$REPO/apm.yml" |
     sed "s|^|$CLAUDE_HOME/skills/|"
 )"
+
+# Drop the paths from stdin that are an owned path or sit under one.
+not_owned() {
+  awk 'NR == FNR { own[$0]; next }
+    { for (p in own) if ($0 == p || index($0, p "/") == 1) next; print }' <(echo "$own") -
+}
 
 # ${exists[@]+"${exists[@]}"}: an empty array is unbound under set -u in bash 3.2.
 exists=()
@@ -71,13 +81,13 @@ for dir in "${out_dirs[@]}"; do [[ -d "$dir" ]] && exists+=("$dir"); done
 orphans=""
 if ((${#exists[@]} > 0)); then
   orphans="$(chezmoi unmanaged "${chez[@]}" --path-style absolute "${exists[@]}" |
-    grep -vxF -f <(echo "$own") || true)"
+    not_owned)"
 fi
 section "Deployed, no longer in the repo (chezmoi apply leaves these behind):" "$orphans"
 
 # 2. Empty directories: the files moved out, the directory stayed.
-empty="$(find "${src_dirs[@]}" ${exists[@]+"${exists[@]}"} -mindepth 1 -type d -empty \
-  -not -path "$CLAUDE_HOME/skills/synced/*" | sort)"
+empty="$(find "${src_dirs[@]}" ${exists[@]+"${exists[@]}"} -mindepth 1 -type d -empty |
+  not_owned | sort)"
 section "Empty directory (its files moved away):" "$empty"
 
 # 3. Catalog rows that point at a directory that moved.

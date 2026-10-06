@@ -1,6 +1,6 @@
 # stale
 
-Reports leftover files after a rename or a move in each directory that chezmoi manages directly under an agent home: `~/.claude/`, `~/.codex/`, `~/.pi/agent/`, or `~/.omp/agent/`. Today that is `~/.claude/{commands,hooks,rules,skills}`, `~/.codex/hooks`, and `~/.pi/agent/extensions`. The script reads the directories from `chezmoi managed`, so a new directory in `dot_claude/` or `dot_pi/agent/` is scanned without an edit. A new agent home needs one entry in the `homes` list in the script.
+Reports leftover files after a rename or a move in each directory that chezmoi manages directly under an agent home: `~/.claude/`, `~/.codex/`, `~/.pi/agent/`, or `~/.omp/agent/`. Today that is `~/.claude/{commands,hooks,rules,skills}`, `~/.codex/hooks`, and `~/.pi/agent/extensions`. The script reads the directories from `chezmoi managed`, so a new directory in `dot_claude/` or `dot_pi/agent/` is scanned without an edit. The agent homes are listed in [`stale-homes.txt`](stale-homes.txt), so a new agent home needs one line there.
 
 The script never scans an agent home itself, or the whole home directory. A home holds runtime state that chezmoi does not manage, such as `auth.json`, `sessions/`, and sqlite databases, and `clean-stale` would offer it for deletion. [`stale.sh`](stale.sh) reads only, unless you pass `--delete`.
 
@@ -12,11 +12,12 @@ The script never scans an agent home itself, or the whole home directory. A home
 | An empty directory in one of those directories, in `dot_claude/` or in the deployed copy                      | The files moved out, the directory stayed.                                                                                                                        |
 | A `dir` in [`skills.json`](../../dot_claude/skills/install-skills/references/skills.json) that does not exist | The catalog row still points at the directory's old path.                                                                                                         |
 
-The first check skips the paths that a channel other than chezmoi owns, so they are not reported as stale:
+The first two checks skip the paths that a channel other than chezmoi owns, and every path under them, so they are not reported as stale:
 
+- the paths in [`stale-owned.txt`](stale-owned.txt), such as `~/.claude/skills/synced/`, which Claude Code writes, and the pi extension that `cmux hooks pi install` writes
 - the skills that `apm.yml` installs, read with `yq` from `dependencies.apm` (a `skills:` subset if the entry has one, else the last segment of the `git:` ref)
-- `~/.claude/skills/synced/`, which Claude Code writes
-- `~/.pi/agent/extensions/cmux-session.ts` and its `.cmux-session.lock`, which `cmux hooks pi install` writes
+
+To skip a new path that another tool writes, add a line to `stale-owned.txt`.
 
 ## Running it
 
@@ -34,7 +35,7 @@ HOME=/tmp/fakehome scripts/inspect/stale.sh
 
 chezmoi has three related features, and none covers the whole job:
 
-- `chezmoi unmanaged` is the report for the first check, and the script calls it. It does not know which unmanaged paths another channel owns, so the script filters out the APM skills and `synced/`.
+- `chezmoi unmanaged` is the report for the first check, and the script calls it. It does not know which unmanaged paths another channel owns, so the script filters out the APM skills and the paths in `stale-owned.txt`.
 - The `exact_` directory prefix makes `chezmoi apply` delete unmanaged entries itself, and it keeps entries from `.chezmoiignore`. It is not recursive: every subdirectory to prune needs its own `exact_`, so every directory under `dot_claude/skills` and `dot_claude/commands` would be renamed, and the APM skill names would be duplicated into `.chezmoiignore`.
 - `.chezmoiremove` deletes listed targets on apply. It needs the old path written by hand after each rename, so it detects nothing.
 
