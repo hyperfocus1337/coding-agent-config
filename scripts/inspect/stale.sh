@@ -3,12 +3,14 @@
 set -euo pipefail
 
 # Report leftovers from file and directory movements in the directories that
-# chezmoi manages directly under ~/.claude (skills, commands, hooks, rules, ...).
-# Three symptoms of a move that was not finished:
-#   1. A deployed path under ~/.claude that chezmoi no longer manages (chezmoi
+# chezmoi manages directly under an agent home (~/.claude/skills,
+# ~/.codex/hooks, ~/.pi/agent/extensions, ...). Three symptoms of a move that
+# was not finished:
+#   1. A deployed path in those trees that chezmoi no longer manages (chezmoi
 #      unmanaged). chezmoi apply never deletes, so the old path stays after a
 #      rename in the repo. Paths that .chezmoiignore covers are not listed.
-#   2. An empty directory, in the repo or in ~/.claude, whose files moved away.
+#   2. An empty directory, in the repo or in the deployed copy, whose files
+#      moved away.
 #   3. A skill catalog row whose `dir` no longer exists.
 # Default: report only, exit 1 if it finds any. With --delete: print the same
 # report, then remove the paths from checks 1 and 2 after a confirm prompt.
@@ -32,22 +34,30 @@ section() {
 
 chez=(--source "$REPO" --destination "$HOME")
 
-# Trees to scan: each directory chezmoi manages directly under ~/.claude, in
-# the deployed copy and in the repo (chezmoi source). A while-read loop, not
-# mapfile, because macOS ships bash 3.2.
+# Agent homes. Each one holds runtime state that chezmoi does not manage (auth,
+# sessions, databases), so the script never scans a home itself, only the
+# directories chezmoi manages directly under it, which hold config alone.
+homes=("$CLAUDE_HOME" "$HOME/.codex" "$HOME/.pi/agent" "$HOME/.omp/agent")
+
+# Trees to scan, in the deployed copy and in the repo (chezmoi source). A
+# while-read loop, not mapfile, because macOS ships bash 3.2.
 out_dirs=()
 while IFS= read -r dir; do out_dirs+=("$dir"); done < <(
-  chezmoi managed "${chez[@]}" --include dirs --path-style absolute "$CLAUDE_HOME" |
-    awk -v p="$CLAUDE_HOME/" 'index($0, p) == 1 && index(substr($0, length(p) + 1), "/") == 0'
+  chezmoi managed "${chez[@]}" --include dirs --path-style absolute "${homes[@]}" |
+    awk 'BEGIN { for (i = 1; i < ARGC; i++) home[ARGV[i]]; ARGC = 1 }
+      { parent = $0; sub(/\/[^\/]*$/, "", parent) }
+      parent in home' "${homes[@]}"
 )
 src_dirs=()
 while IFS= read -r dir; do src_dirs+=("$dir"); done < <(chezmoi source-path "${chez[@]}" "${out_dirs[@]}")
 
-# Paths under ~/.claude/skills that another channel owns, so an unmanaged path
-# there is expected, not stale: APM installs from apm.yml, and Claude Code's own
-# cloud sync bucket.
+# Paths that another channel owns, so an unmanaged path there is expected, not
+# stale: APM installs from apm.yml, Claude Code's own cloud sync bucket, and
+# the pi extension that `cmux hooks pi install` writes.
 own="$(
   echo "$CLAUDE_HOME/skills/synced"
+  echo "$HOME/.pi/agent/extensions/cmux-session.ts"
+  echo "$HOME/.pi/agent/extensions/.cmux-session.lock"
   yq -r '.dependencies.apm[] | (.skills[] // (.git | split("/") | .[-1]))' "$REPO/apm.yml" |
     sed "s|^|$CLAUDE_HOME/skills/|"
 )"
@@ -76,7 +86,7 @@ section "Skill catalog row points at a missing directory ($CATALOG):" \
     while read -r dir; do [[ -e "$REPO/$dir" ]] || echo "$dir"; done)"
 
 if ((findings == 0)); then
-  echo "No stale files in $CLAUDE_HOME/{$(basename -a "${out_dirs[@]}" | paste -sd, -)}."
+  echo "No stale files in: $(printf '%s\n' "${out_dirs[@]}" | sed "s|^$HOME|~|" | paste -sd' ' -)"
   exit 0
 fi
 printf '\n%d stale path(s).\n' "$findings"

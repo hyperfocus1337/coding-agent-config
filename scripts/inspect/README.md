@@ -1,6 +1,8 @@
 # stale
 
-Reports leftover files after a rename or a move in each directory that chezmoi manages directly under `~/.claude/` (`commands`, `hooks`, `rules`, `skills`). The script reads that list from `chezmoi managed`, so a new top-level directory in `dot_claude/` is scanned without an edit. [`stale.sh`](stale.sh) reads only, unless you pass `--delete`.
+Reports leftover files after a rename or a move in each directory that chezmoi manages directly under an agent home: `~/.claude/`, `~/.codex/`, `~/.pi/agent/`, or `~/.omp/agent/`. Today that is `~/.claude/{commands,hooks,rules,skills}`, `~/.codex/hooks`, and `~/.pi/agent/extensions`. The script reads the directories from `chezmoi managed`, so a new directory in `dot_claude/` or `dot_pi/agent/` is scanned without an edit. A new agent home needs one entry in the `homes` list in the script.
+
+The script never scans an agent home itself, or the whole home directory. A home holds runtime state that chezmoi does not manage, such as `auth.json`, `sessions/`, and sqlite databases, and `clean-stale` would offer it for deletion. [`stale.sh`](stale.sh) reads only, unless you pass `--delete`.
 
 ## What counts as stale
 
@@ -14,6 +16,7 @@ The first check skips the paths that a channel other than chezmoi owns, so they 
 
 - the skills that `apm.yml` installs, read with `yq` from `dependencies.apm` (a `skills:` subset if the entry has one, else the last segment of the `git:` ref)
 - `~/.claude/skills/synced/`, which Claude Code writes
+- `~/.pi/agent/extensions/cmux-session.ts` and its `.cmux-session.lock`, which `cmux hooks pi install` writes
 
 ## Running it
 
@@ -43,6 +46,6 @@ Empty source directories and stale catalog rows have no chezmoi equivalent.
 just clean-stale
 ```
 
-This runs the same report, then asks once before it removes every path from the first two sections with `rm -rf`. It exits 0 after the removal and 1 on abort. Read the report before you answer `y`: a file you added by hand under `~/.claude/` and never tracked in the repo also shows up in the first check. The third section (catalog rows) is never deleted; edit `skills.json` by hand.
+This runs the same report, then asks once before it removes every path from the first two sections with `rm -rf`. It exits 0 after the removal and 1 on abort. Read the report before you answer `y`: a file you added by hand in a scanned directory and never tracked in the repo also shows up in the first check. The third section (catalog rows) is never deleted; edit `skills.json` by hand.
 
 On the host, `just clean-stale-all` runs `clean-stale` locally, then inside the devcontainer with its own report and prompt. The devcontainer run starts even when the local run exits 1.
