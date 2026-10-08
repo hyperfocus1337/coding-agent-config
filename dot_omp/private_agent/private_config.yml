@@ -9,3 +9,7 @@ theme:
 setupVersion: 2
 dev:
   autoqaConsent: granted
+statusLine:
+  preset: default
+  separator: pipe
+personality: default
