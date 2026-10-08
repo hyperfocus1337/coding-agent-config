@@ -20,10 +20,14 @@ Caveats:
     transcript, so it does not show in /resume.
   * The request files hold your instructions and account details. They stay in
     the printed directory; delete it when done.
+  * The session loads ~/.claude/settings-minimal.json as its --settings layer,
+    like the `claude` function in ~/.claude/claude.sh. Claude Code keeps only
+    the last --settings flag, so one after -- replaces that layer: `{}`
+    measures the full config that `claude-full` starts.
 
 Usage:
   python3 ~/.claude/skills/context-payload/scripts/capture-request.py               # capture in the current directory
-  python3 ~/.claude/skills/context-payload/scripts/capture-request.py -- --settings '{"disableWorkflows":true}'
+  python3 ~/.claude/skills/context-payload/scripts/capture-request.py -- --settings '{}'      # measure the full config
   python3 ~/.claude/skills/context-payload/scripts/capture-request.py --dir /tmp/x  # report on an earlier capture
 """
 
@@ -121,7 +125,14 @@ def capture(out: Path, claude_args: list[str], timeout: int) -> None:
     }
     master, slave = pty.openpty()
     proc = subprocess.Popen(
-        ["claude", "--debug-file", str(out / "debug.log"), *claude_args],
+        [
+            "claude",
+            "--debug-file",
+            str(out / "debug.log"),
+            "--settings",
+            str(Path.home() / ".claude" / "settings-minimal.json"),
+            *claude_args,
+        ],
         env=env,
         stdin=slave,
         stdout=slave,

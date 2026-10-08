@@ -44,10 +44,10 @@ The per-part tokens split that total by character share.
 The skill then names the five largest items you can remove, and the setting that removes each one.
 It edits no file.
 
-Arguments after `--` go to `claude`, so you can measure a settings change before you make it:
+The session loads `~/.claude/settings-minimal.json`, like the `claude` shell function. Arguments after `--` go to `claude`. A `--settings` there replaces the minimal layer, so `{}` measures the full config that `claude-full` starts:
 
 ```
-/context-payload -- --settings '{"disableWorkflows":true}'
+/context-payload -- --settings '{}'
 ```
 
 The script also runs outside a session:
