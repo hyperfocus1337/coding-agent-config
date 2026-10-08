@@ -1,0 +1,65 @@
+# Claude Code configuration in omp
+
+An [Oh My Pi](https://github.com/can1357/oh-my-pi) (`omp`) session can load this repository's shared `~/.claude/skills`, `~/.claude/commands`, and `~/.claude/CLAUDE.md` through its built-in discovery providers. It does not need pi's Claude compatibility extensions. Written against omp 18.8.4.
+
+| Resource    | How omp loads it                                                               | Where                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Skills      | Claude user discovery when enabled; also the shared `.agents` skills directory | [`dot_claude/skills/`](../../dot_claude/skills/), [`dot_agents/symlink_skills`](../../dot_agents/symlink_skills) |
+| Commands    | its Claude provider, with short names and namespaced aliases                   | [`dot_claude/commands/`](../../dot_claude/commands/)                                                             |
+| `CLAUDE.md` | its Claude context-file provider when user discovery is enabled                | [`dot_claude/CLAUDE.md`](../../dot_claude/CLAUDE.md)                                                             |
+| Settings    | the native `~/.omp/agent/config.yml` file                                      | [`dot_omp/private_agent/private_config.yml`](../../dot_omp/private_agent/private_config.yml)                     |
+
+## Discovery
+
+Foreign user-level sources are opt-in. Set `CLAUDE_CONFIG_DIR` to the Claude directory, or include `claude` in omp's `enabledProviders`, to enable the Claude user source. `disabledProviders` takes precedence. Setting `commands.enableClaudeUser` enables only user commands, not the other Claude resources.
+
+The shell inspected for this page sets `CLAUDE_CONFIG_DIR` to `~/.claude`. This is an environment setting, not a key in the repository's omp configuration. Without that variable or another opt-in, do not assume omp reads the user Claude directory. Project Claude command discovery is enabled by default through `commands.enableClaudeProject`.
+
+## Skills
+
+omp discovers Claude user skills under the active Claude directory when that source is enabled. It also supports `~/.agents/skills`, which this repository links to `~/.claude/skills`. The shared files do not need a pi extension. Skill slash commands use `/skill:<name>` when `skills.enableSkillCommands` is enabled.
+
+## Commands
+
+omp recursively scans the active Claude directory's `commands/` and the working directory's `.claude/commands/`. A nested file gets both its basename and a colon-separated path alias. For [`git/commit/conversation.md`](../../dot_claude/commands/git/commit/conversation.md), the two names are:
+
+| Command                    | Name form        |
+| -------------------------- | ---------------- |
+| `/conversation`            | basename         |
+| `/git:commit:conversation` | namespaced alias |
+
+Both entries come from the same file, not two copies or two extensions. The installed runtime reports both as `source: "file"` through RPC. Use the namespaced form to avoid basename collisions with commands in other directories.
+
+Upstream implements this in [`addClaudeCommandNamespaceAliases()`](https://github.com/can1357/oh-my-pi/blob/v18.8.4/packages/coding-agent/src/discovery/claude.ts). The [slash-command internals](https://github.com/can1357/oh-my-pi/blob/v18.8.4/docs/slash-command-internals.md) describe discovery, precedence, and expansion.
+
+## pi extensions
+
+The repository's [pi `claude-commands` extension](../../dot_pi/agent/extensions/claude-commands/README.md) registers only namespaced commands such as `/git:commit:conversation`. omp's native Claude provider already supplies those aliases, so this extension is not needed for command discovery in omp.
+
+omp supports pi-compatible extension packages, but compatibility is separate from directory discovery. Its default native extension roots are `~/.omp/agent/extensions/` and `<cwd>/.omp/extensions/`, not `~/.pi/agent/extensions/`. An extension from elsewhere can still load through an explicit `--extension` path, the `extensions` setting, an installed plugin, or an agent-directory override. Profiles also change the user root. See [extension loading](https://github.com/can1357/oh-my-pi/blob/v18.8.4/docs/extension-loading.md).
+
+Seeing both conversation command names does not show that omp loaded the pi extension.
+
+## `CLAUDE.md`
+
+With Claude user discovery enabled, omp reads `CLAUDE.md` directly from the active Claude directory. It does not need pi's `~/.pi/agent/AGENTS.md` symlink for this resource.
+
+## Checks
+
+Run this command from the repository root to inspect command registration without invoking a command or starting a model turn. It requires `jq` and enables the Claude user source for this process:
+
+```sh
+printf '%s\n' '{"id":"command-sources","type":"get_available_commands"}' |
+  CLAUDE_CONFIG_DIR="$HOME/.claude" omp --mode rpc --no-ui --no-session --no-lsp |
+  jq -c 'select(.id == "command-sources" and .success == true) | .data.commands[] | select(.name == "conversation" or .name == "git:commit:conversation") | {name, source}'
+```
+
+Both entries should have `source: "file"`. `source: "extension"` would instead identify an extension-registered handler in the published command list. The probe checks registration, not prompt expansion or commit behavior.
+
+## Settings
+
+[`dot_omp/private_agent/private_config.yml`](../../dot_omp/private_agent/private_config.yml) supplies the default model role, symbols, composer shape, and themes. chezmoi applies it to `~/.omp/agent/config.yml` with private permissions. It is a plain source file, not a merge script; runtime setting changes are not merged back into it. Update the source file to retain a change across applies.
+
+## Out of scope
+
+This page does not establish compatibility for Claude hooks, scoped rules, MCP servers, or subagents. Native Claude command discovery does not imply that every Claude or pi integration is loaded.
