@@ -21,6 +21,7 @@ ours=$(
   },
   "packages": [
     "npm:pi-web-access",
+    "npm:pi-powerline-footer",
     "npm:@juicesharp/rpiv-ask-user-question"
   ],
   "skills": [
@@ -32,7 +33,11 @@ ours=$(
     "openrouter/deepseek/deepseek-v4-pro",
     "openrouter/moonshotai/kimi-k3",
     "openai/gpt-6.1-sol"
-  ]
+  ],
+  "powerline": {
+    "preset": "default",
+    "placement": "below"
+  }
 }
 EOF
 )
