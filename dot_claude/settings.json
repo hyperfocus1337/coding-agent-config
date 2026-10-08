@@ -13,26 +13,9 @@
     "sessionUrl": false
   },
   "permissions": {
-    "deny": [
-      "EnterPlanMode",
-      "ExitPlanMode",
-      "DesignSync",
-      "NotebookEdit",
-      "SendMessage",
-      "SendFeedback",
-      "PushNotification",
-      "RemoteTrigger",
-      "ReportFindings",
-      "ScheduleWakeup",
-      "CronCreate",
-      "CronDelete",
-      "CronList"
-    ],
     "defaultMode": "bypassPermissions"
   },
   "model": "opus",
-  "disableClaudeAiConnectors": true,
-  "disableBundledSkills": true,
   "hooks": {
     "PreToolUse": [
       {
@@ -147,9 +130,6 @@
       }
     ]
   },
-  "disableRemoteControl": true,
-  "disableWorkflows": true,
-  "disableArtifact": true,
   "statusLine": {
     "type": "command",
     "command": "npx -y ccstatusline@latest",
