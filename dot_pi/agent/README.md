@@ -2,27 +2,26 @@
 
 chezmoi renders this directory to `~/.pi/agent`, pi's user-scope configuration directory. It holds the settings file, the symlink that gives pi the Claude Code instructions, and the extensions that give it the Claude Code commands and rules. [`docs/agents/pi.md`](../../docs/agents/pi.md) is the overview.
 
-| Path                                                           | What lives there                                                                                                                                   |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`modify_settings.json`](#settings)                            | chezmoi modify script for `~/.pi/agent/settings.json`. Sets the provider and model, theme, the `skills` and `packages` arrays, and the model list. |
-| [`test/modify-settings-json.sh`](test/modify-settings-json.sh) | Test for `modify_settings.json`. Run: `bash test/modify-settings-json.sh`.                                                                         |
-| `symlink_AGENTS.md`                                            | Holds `../../.claude/CLAUDE.md`, so `~/.pi/agent/AGENTS.md` is the Claude Code instruction file. pi loads it in every project, trusted or not.     |
-| [`extensions/`](extensions/README.md)                          | One directory per extension, each with `index.ts`, a README, and implementation notes.                                                             |
+| Path                                  | What lives there                                                                                                                                   |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`modify_settings.json`](#settings)   | chezmoi modify script for `~/.pi/agent/settings.json`. Sets the provider and model, theme, the `skills` and `packages` arrays, and the model list. |
+| `symlink_AGENTS.md`                   | Holds `../../.claude/CLAUDE.md`, so `~/.pi/agent/AGENTS.md` is the Claude Code instruction file. pi loads it in every project, trusted or not.     |
+| [`extensions/`](extensions/README.md) | One directory per extension, each with `index.ts`, a README, and implementation notes.                                                             |
 
 The symlink target is relative to the link, not to the home directory: chezmoi writes the file's content as the target verbatim, so `../../.claude/CLAUDE.md` resolves from `~/.pi/agent/` and a path written from `~` would dangle.
 
 ## Settings
 
-| Setting                         | Value                                                     | Effect                                                                                              |
-| ------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `defaultProvider`               | `openai`                                                  | Provider for a new session.                                                                         |
-| `defaultModel`                  | `gpt-6-sol`                                               | Model for a new session.                                                                            |
-| `enabledModels`                 | three OpenRouter models and `openai/gpt-6-sol`            | The models offered in the picker. pi writes this key itself, see [Settings drift](#settings-drift). |
-| `theme`                         | `light`                                                   |                                                                                                     |
-| `hideThinkingBlock`             | `true`                                                    | Thinking is not rendered in the transcript.                                                         |
-| `terminal.showTerminalProgress` | `true`                                                    | Progress in the terminal title.                                                                     |
-| `packages`                      | `pi-web-access`, `pi-footer`, `pi-context-view`, `@juicesharp/rpiv-ask-user-question` | Web tools, the three-line footer, the context viewer, and structured questions. |
-| `skills`                        | `["~/.claude/skills", "!../../.claude/skills/synced/**"]` | The Claude Code skills, minus the claude.ai cache. See below.                                       |
+| Setting                         | Value                                                                                 | Effect                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `defaultProvider`               | `openai`                                                                              | Provider for a new session.                                                                         |
+| `defaultModel`                  | `gpt-6-sol`                                                                           | Model for a new session.                                                                            |
+| `enabledModels`                 | three OpenRouter models and `openai/gpt-6-sol`                                        | The models offered in the picker. pi writes this key itself, see [Settings drift](#settings-drift). |
+| `theme`                         | `light`                                                                               |                                                                                                     |
+| `hideThinkingBlock`             | `true`                                                                                | Thinking is not rendered in the transcript.                                                         |
+| `terminal.showTerminalProgress` | `true`                                                                                | Progress in the terminal title.                                                                     |
+| `packages`                      | `pi-web-access`, `pi-footer`, `pi-context-view`, `@juicesharp/rpiv-ask-user-question` | Web tools, the three-line footer, the context viewer, and structured questions.                     |
+| `skills`                        | `["~/.claude/skills", "!../../.claude/skills/synced/**"]`                             | The Claude Code skills, minus the claude.ai cache. See below.                                       |
 
 Extensions need no entry: `~/.pi/agent/extensions/*/index.ts` is a path pi scans on its own.
 
