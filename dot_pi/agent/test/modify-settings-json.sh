@@ -26,6 +26,7 @@ printf '%s' '{
 check "keeps deviceId" '.deviceId == "abc"'
 check "keeps lastChangelogVersion" '.lastChangelogVersion == "9.9.9"'
 check "repo model wins" '.defaultProvider == "openai" and .defaultModel == "gpt-6.1-sol"'
+check "context viewer keeps powerline" '(.packages | index("npm:pi-context-view") != null and index("npm:pi-powerline-footer") != null) and .powerline == {"preset": "default", "placement": "below"}'
 check "repo array replaces current" '.enabledModels | index("local/drift-model") == null'
 check "objects merge key by key" '.terminal == {"showTerminalProgress": true, "extra": 1}'
 

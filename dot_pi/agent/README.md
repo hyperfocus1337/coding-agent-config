@@ -21,10 +21,14 @@ The symlink target is relative to the link, not to the home directory: chezmoi w
 | `theme`                         | `light`                                                   |                                                                                                     |
 | `hideThinkingBlock`             | `true`                                                    | Thinking is not rendered in the transcript.                                                         |
 | `terminal.showTerminalProgress` | `true`                                                    | Progress in the terminal title.                                                                     |
-| `packages`                      | `["npm:pi-mcp-adapter"]`                                  | MCP support, which pi does not ship. The package also contributes the `mcp-scripting` skill.        |
+| `packages`                      | `pi-web-access`, `pi-powerline-footer`, `pi-context-view`, `@juicesharp/rpiv-ask-user-question` | Web tools, the powerline footer, the context viewer, and structured questions. |
 | `skills`                        | `["~/.claude/skills", "!../../.claude/skills/synced/**"]` | The Claude Code skills, minus the claude.ai cache. See below.                                       |
 
 Extensions need no entry: `~/.pi/agent/extensions/*/index.ts` is a path pi scans on its own.
+
+### Context usage
+
+`pi-powerline-footer` keeps its default preset below the editor, including context tokens and percentage. [`pi-context-view`](https://github.com/dimk90/pi-context-view) adds an on-demand visualization, not a persistent footer bar. Run `/context` for the estimated context breakdown or `/context injections` to inspect the system prompt, tool definitions, and extension instructions. It adds no instructions to model context.
 
 ### The `skills` array
 

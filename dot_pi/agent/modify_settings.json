@@ -22,6 +22,7 @@ ours=$(
   "packages": [
     "npm:pi-web-access",
     "npm:pi-powerline-footer",
+    "npm:pi-context-view",
     "npm:@juicesharp/rpiv-ask-user-question"
   ],
   "skills": [
