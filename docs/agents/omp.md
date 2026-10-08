@@ -41,10 +41,6 @@ omp supports pi-compatible extension packages, but compatibility is separate fro
 
 Seeing both conversation command names does not show that omp loaded the pi extension.
 
-## CLAUDE.md
-
-With Claude user discovery enabled, omp reads `CLAUDE.md` directly from the active Claude directory. It does not need pi's `~/.pi/agent/AGENTS.md` symlink for this resource.
-
 ## Rules
 
 omp does not discover `~/.claude/rules/` through its Claude provider. [`RULES.md.tmpl`](../../dot_omp/private_agent/RULES.md.tmpl) instead joins the shared unscoped rules into `~/.omp/agent/RULES.md` when chezmoi applies. It uses the same filtering as the Codex template: read the top-level `dot_claude/rules/*.md` files, skip `README.md`, and skip files that start with `---`. Files with frontmatter are excluded because their `paths:` scope cannot be preserved in an always-apply file.
@@ -52,6 +48,10 @@ omp does not discover `~/.claude/rules/` through its Claude provider. [`RULES.md
 The native provider loads the generated file as always-apply instructions. This does not require Claude user discovery, pi extensions, or imports in `CLAUDE.md`. See [sticky rules](https://github.com/can1357/oh-my-pi/blob/v18.8.4/docs/context-files.md#sticky-rules-vs-normal-context).
 
 After a rule edit, run `just chezmoi` in each environment that needs the change. Start a fresh omp session or use `/clear` or `/new` to reload the generated file. Named profiles and `PI_CODING_AGENT_DIR` use a different native agent directory; this template targets the default `~/.omp/agent`.
+
+## `CLAUDE.md`
+
+With Claude user discovery enabled, omp reads `CLAUDE.md` directly from the active Claude directory. It does not need pi's `~/.pi/agent/AGENTS.md` symlink for this resource.
 
 ## Checks
 
