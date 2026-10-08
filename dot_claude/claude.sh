@@ -14,6 +14,13 @@
 # `claude` also sets ENABLE_CLAUDEAI_MCP_SERVERS=false, which turns off the
 # claude.ai MCP servers. `claude-full` removes it, because a `claude-full`
 # started from a `claude` session inherits it.
+#
+# `claude-nohooks` is `claude` plus disableAllHooks: jq adds the key to
+# settings-minimal.json and passes the result as inline JSON. This also turns
+# off the status line and the guardrail hooks, such as block-secret-commits.
+# For full mode without hooks, run
+# `claude-full --settings '{"disableAllHooks": true}'`.
 
 claude() { ENABLE_CLAUDEAI_MCP_SERVERS=false command claude --settings "$HOME/.claude/settings-minimal.json" "$@"; }
+claude-nohooks() { ENABLE_CLAUDEAI_MCP_SERVERS=false command claude --settings "$(jq -c '.disableAllHooks = true' "$HOME/.claude/settings-minimal.json")" "$@"; }
 claude-full() { env -u ENABLE_CLAUDEAI_MCP_SERVERS claude "$@"; }

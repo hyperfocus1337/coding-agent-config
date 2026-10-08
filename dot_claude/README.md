@@ -4,16 +4,16 @@ Portable Claude Code configuration: instructions, commands, skills, hooks, and s
 
 Clone this repo and run `chezmoi apply` (or `just chezmoi` from the repo root) to render `dot_claude/` into `~/.claude`.
 
-| Path                                              | What lives there                                                                                       |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `CLAUDE.md`                                       | System-wide context, loaded at the start of every session. An index of about three lines.              |
-| [`rules/`](rules/README.md)                       | The standing instructions themselves, one per file: writing, tools, code.                              |
-| [`commands/`](commands/README.md)                 | Slash commands, invoked as `/<namespace>:<name>`. 30 commands in six namespaces.                       |
-| [`skills/`](skills/README.md)                     | On-demand skills, loaded when invoked rather than at session start. Install routing and task work.     |
-| [`hooks/`](hooks/README.md)                       | Shell commands Claude Code runs on tool lifecycle events. One directory per hook.                      |
-| [`settings.json`](#settings)                      | Model, permission mode, hook wiring and timeouts, enabled plugins, marketplaces, status line.          |
-| [`settings-minimal.json`](#minimal-and-full-mode) | Denied tools and `disable*` keys, added by the `claude` shell function.                                |
-| [`claude.sh`](#minimal-and-full-mode)             | The `claude` and `claude-full` functions for bash and zsh. Fish: `dot_config/fish/conf.d/claude.fish`. |
+| Path                                              | What lives there                                                                                                          |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `CLAUDE.md`                                       | System-wide context, loaded at the start of every session. An index of about three lines.                                 |
+| [`rules/`](rules/README.md)                       | The standing instructions themselves, one per file: writing, tools, code.                                                 |
+| [`commands/`](commands/README.md)                 | Slash commands, invoked as `/<namespace>:<name>`. 30 commands in six namespaces.                                          |
+| [`skills/`](skills/README.md)                     | On-demand skills, loaded when invoked rather than at session start. Install routing and task work.                        |
+| [`hooks/`](hooks/README.md)                       | Shell commands Claude Code runs on tool lifecycle events. One directory per hook.                                         |
+| [`settings.json`](#settings)                      | Model, permission mode, hook wiring and timeouts, enabled plugins, marketplaces, status line.                             |
+| [`settings-minimal.json`](#minimal-and-full-mode) | Denied tools and `disable*` keys, added by the `claude` shell function.                                                   |
+| [`claude.sh`](#minimal-and-full-mode)             | The `claude`, `claude-nohooks`, and `claude-full` functions for bash and zsh. Fish: `dot_config/fish/conf.d/claude.fish`. |
 
 Each README above documents its own directory. This file says what is where, and documents `settings.json` below.
 
@@ -52,18 +52,20 @@ Three keys hold lists that this file does not repeat, because the list changes a
 . ~/.claude/claude.sh
 ```
 
-| Command       | Settings                                     |
-| ------------- | -------------------------------------------- |
-| `claude`      | `settings.json` plus `settings-minimal.json` |
-| `claude-full` | `settings.json` only, all features available |
+| Command          | Settings                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| `claude`         | `settings.json` plus `settings-minimal.json`                                                     |
+| `claude-nohooks` | `settings.json` plus `settings-minimal.json` with `disableAllHooks`: no hooks and no status line |
+| `claude-full`    | `settings.json` only, all features available                                                     |
 
-Both commands use `~/.claude`, so they share history, sessions, memory, and login. A deny rule cannot be removed by a later settings file, so the minimal file is a layer on top of the full file and not the other way round. See [`docs/research/context/alternative-settings.md`](../docs/research/context/alternative-settings.md).
+All three commands use `~/.claude`, so they share history, sessions, memory, and login. A deny rule cannot be removed by a later settings file, so the minimal file is a layer on top of the full file and not the other way round. See [`docs/research/context/alternative-settings.md`](../docs/research/context/alternative-settings.md).
 
 Limits:
 
 - Only shells that load these functions get the minimal layer. The IDE extension, the desktop app, and scripts that start `claude` run in full mode.
 - Claude Code keeps only the last `--settings` flag, so `claude --settings X` replaces the minimal layer.
-- `claude` also sets `ENABLE_CLAUDEAI_MCP_SERVERS=false`, which turns off the claude.ai MCP servers. `claude-full` removes the variable, because a `claude-full` started from a `claude` session inherits it.
+- `claude-nohooks` also turns off the guardrail hooks, such as `block-secret-commits` and `block-commit-attribution`. For full mode without hooks, run `claude-full --settings '{"disableAllHooks": true}'`.
+- `claude` and `claude-nohooks` also set `ENABLE_CLAUDEAI_MCP_SERVERS=false`, which turns off the claude.ai MCP servers. `claude-full` removes the variable, because a `claude-full` started from a `claude` session inherits it.
 
 ### The 1-hour prompt cache trade-off
 

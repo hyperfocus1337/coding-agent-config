@@ -5,6 +5,10 @@ function claude --description 'Claude Code with settings-minimal.json'
     ENABLE_CLAUDEAI_MCP_SERVERS=false command claude --settings $HOME/.claude/settings-minimal.json $argv
 end
 
+function claude-nohooks --description 'Claude Code with settings-minimal.json, no hooks or status line'
+    ENABLE_CLAUDEAI_MCP_SERVERS=false command claude --settings (jq -c '.disableAllHooks = true' $HOME/.claude/settings-minimal.json) $argv
+end
+
 function claude-full --description 'Claude Code with the full settings'
     env -u ENABLE_CLAUDEAI_MCP_SERVERS claude $argv
 end
