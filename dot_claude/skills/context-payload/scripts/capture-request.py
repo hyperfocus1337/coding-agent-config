@@ -20,10 +20,14 @@ Caveats:
     transcript, so it does not show in /resume.
   * The request files hold your instructions and account details. They stay in
     the printed directory; delete it when done.
-  * The session loads ~/.claude/settings-minimal.json as its --settings layer,
-    like the `claude` function in ~/.claude/claude.sh. Claude Code keeps only
-    the last --settings flag, so one after -- replaces that layer: `{}`
-    measures the full config that `claude-full` starts.
+  * The new session copies the --settings flag of the `claude` session that
+    runs the script, so it measures the same mode: the minimal layer under
+    `claude`, the full config under `claude-full`, the merged file under cmux.
+    Other flags, such as cmux's --mcp-config, are not copied, and the cmux
+    wrapper adds none: the cmux-cua tools are absent. Outside a
+    session, it loads ~/.claude/settings-minimal.json, like the `claude` shell
+    function. Claude Code keeps only the last --settings flag, so one after --
+    replaces the copied flag: `{}` measures the full config.
 
 Usage:
   python3 ~/.claude/skills/context-payload/scripts/capture-request.py               # capture in the current directory
@@ -115,22 +119,83 @@ def mcp_servers(text: str) -> dict[str, str] | None:
     }
 
 
+def parent_settings() -> list[str]:
+    """The --settings flag of the nearest `claude` ancestor process.
+
+    Linux reads the exact argv from /proc. macOS has no /proc, so it splits the
+    `ps` output on whitespace. shortcut: on macOS a --settings value with a space
+    in it cannot be read back, and the minimal layer is used instead. Upgrade
+    path: read the argv through sysctl KERN_PROCARGS2.
+    """
+    minimal = ["--settings", str(Path.home() / ".claude" / "settings-minimal.json")]
+    pid = os.getppid()
+    while pid > 1:
+        row = subprocess.run(
+            ["ps", "-o", "ppid=,args=", "-p", str(pid)],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout.split(None, 1)
+        if len(row) < 2:
+            break
+        cmdline = Path(f"/proc/{pid}/cmdline")
+        argv = (
+            cmdline.read_bytes().decode().split("\0")[:-1]
+            if cmdline.exists()
+            else row[1].split()
+        )
+        if Path(argv[0]).name == "claude" or "/claude/versions/" in argv[0]:
+            for i, arg in enumerate(argv):
+                if arg.startswith("--settings="):
+                    value = arg.split("=", 1)[1]
+                elif arg == "--settings" and i + 1 < len(argv):
+                    value = argv[i + 1]
+                else:
+                    continue
+                if not Path(value).expanduser().is_file():
+                    try:
+                        json.loads(value)
+                    except json.JSONDecodeError:
+                        print(
+                            f"warning: cannot read the parent --settings {value!r}, using {minimal[1]}",
+                            file=sys.stderr,
+                        )
+                        return minimal
+                return ["--settings", value]
+            return []
+        pid = int(row[0])
+    return minimal
+
+
 def capture(out: Path, claude_args: list[str], timeout: int) -> None:
     env = {k: v for k, v in os.environ.items() if k not in PARENT_SESSION_VARS} | {
+        # Under cmux, `claude` on PATH is a wrapper that deep-merges every
+        # --settings into one file, so a later `{}` did not replace the copied
+        # flag. This opt-out makes it pass argv through unchanged.
+        "CMUX_CLAUDE_HOOKS_DISABLED": "1",
         "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
         "OTEL_LOGS_EXPORTER": "none",
         "OTEL_METRICS_EXPORTER": "none",
         "OTEL_TRACES_EXPORTER": "none",
         "OTEL_LOG_RAW_API_BODIES": f"file:{out}",
     }
+    settings = parent_settings()
+    # Claude Code keeps only the last --settings, so report that one.
+    flags = [*settings, *claude_args]
+    last = "none (full config)"
+    for i, flag in enumerate(flags):
+        if flag == "--settings" and i + 1 < len(flags):
+            last = flags[i + 1]
+        elif flag.startswith("--settings="):
+            last = flag.split("=", 1)[1]
+    print(f"Settings: {last}", flush=True)
     master, slave = pty.openpty()
     proc = subprocess.Popen(
         [
             "claude",
             "--debug-file",
             str(out / "debug.log"),
-            "--settings",
-            str(Path.home() / ".claude" / "settings-minimal.json"),
+            *settings,
             *claude_args,
         ],
         env=env,

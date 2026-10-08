@@ -44,7 +44,7 @@ The per-part tokens split that total by character share.
 The skill then names the five largest items you can remove, and the setting that removes each one.
 It edits no file.
 
-The session loads `~/.claude/settings-minimal.json`, like the `claude` shell function. Arguments after `--` go to `claude`. A `--settings` there replaces the minimal layer, so `{}` measures the full config that `claude-full` starts:
+The new session copies the `--settings` flag of the session that runs the skill, so it measures the same mode: minimal under `claude`, full under `claude-full`. The report prints the copied value on its `Settings:` line. Arguments after `--` go to `claude`, and a `--settings` there replaces the copied one, so `{}` measures the full config from any session:
 
 ```
 /context-payload -- --settings '{}'
