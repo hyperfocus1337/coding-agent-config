@@ -1,6 +1,6 @@
 # Claude Code configuration in Codex
 
-A [Codex CLI](https://developers.openai.com/codex/cli) session loads the user-scope configuration from this repository's single copy: `~/.claude/skills`, the scripts in `~/.claude/hooks`, and `CLAUDE.md` with the rules in `~/.claude/rules/`. Symlinks, one hooks file, one wrapper script, and one chezmoi template do it. No hook script or rule moves or changes. Commands do not reach Codex; use [pi](pi.md) when you need them. Written against Codex CLI 0.154.0.
+A [Codex CLI](https://developers.openai.com/codex/cli) session loads the user-scope configuration from this repository's single copy: `~/.claude/skills`, the scripts in `~/.claude/hooks`, and `CLAUDE.md` with the rules in `~/.claude/rules/`. Symlinks, one hooks file, one wrapper script, and one chezmoi template do it. No hook script or rule moves or changes. The Codex-only `claude-command` skill reads a selected Claude command on demand. Written against Codex CLI 0.160.1.
 
 | Resource                         | How Codex loads it                                                                           | Where                                                                    |
 | -------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
@@ -9,7 +9,7 @@ A [Codex CLI](https://developers.openai.com/codex/cli) session loads the user-sc
 | File hooks on `apply_patch`      | a wrapper that runs a file hook once per patched file                                        | [`dot_codex/hooks/apply-patch.sh`](../../dot_codex/hooks/apply-patch.sh) |
 | `CLAUDE.md` and rules            | `~/.codex/AGENTS.md`, rendered from `CLAUDE.md` and every rule                               | [`dot_codex/AGENTS.md.tmpl`](../../dot_codex/AGENTS.md.tmpl)             |
 | Project rules of this repository | `AGENTS.md` at the repository root, a symlink to `.claude/rules/apply.md`                    | [`AGENTS.md`](../../AGENTS.md)                                           |
-| Commands                         | not loaded, see [Not loaded](#not-loaded)                                                    |                                                                          |
+| Commands                         | an explicit-only adapter skill in `~/.codex/skills/claude-command/`                           | [`dot_codex/skills/claude-command/SKILL.md`](../../dot_codex/skills/claude-command/SKILL.md) |
 
 [`codex-compat.md`](../research/agents/codex-compat.md) holds the probes behind this page.
 
@@ -18,6 +18,14 @@ A [Codex CLI](https://developers.openai.com/codex/cli) session loads the user-sc
 `dot_agents/symlink_skills` holds `../.claude/skills`, a path relative to the link. Codex follows the link and registers every `SKILL.md` unchanged. In the TUI, type `$` to pick a skill.
 
 Codex scans subdirectories and has no exclude setting, so it also lists `~/.claude/skills/synced/`, the claude.ai cache Claude Code keeps per organisation, once per organisation. A `[[skills.config]]` entry with `enabled = false` disables one exact `SKILL.md` path, not a directory, so the duplicates are accepted. pi also reads `~/.agents/skills`, but it drops a skill it already loaded through another path, so pi shows no duplicates.
+
+### Claude commands in Codex
+
+Type `$claude-command git:commit:single` or `$claude-command /git:changelog week`. The adapter reads only the selected file from `~/.claude/commands`, preserves its arguments, runs its shell context blocks, and maps Claude tool names to Codex actions. Nested command invocations use the same lookup. It stops if a required capability is unavailable or a routing cycle occurs.
+
+chezmoi deploys the adapter from `dot_codex/skills/claude-command/` to `~/.codex/skills/claude-command/`, which Codex scans natively. It does not enter the shared `~/.agents/skills` directory. `agents/openai.yaml` disables implicit invocation. Claude tool permissions do not become Codex permissions, and adaptation is performed by the model, not by a Claude command parser. Individual commands do not appear as slash-menu entries.
+
+The lookup code lives in the skill's `scripts/read-command.py`. Run `python3 dot_codex/skills/claude-command/test/read-command.py` from the repository root to check command-name validation, argument count, missing files, symlink escapes, and the explicit-only policy.
 
 ## Instructions
 
@@ -57,7 +65,7 @@ Codex runs a hook only after you trust it. Open the Codex TUI once on the host a
 
 ## Not loaded
 
-- **Commands.** Codex has no user slash commands. Its plugin importer turns a Claude command into a skill only when the body has no `$ARGUMENTS` and no `` !`cmd` `` span, which is 14 of the 59 commands here. A `UserPromptSubmit` hook could expand a command, but it runs after you press Enter, so the TUI shows no command list.
+- **Native Claude slash commands.** The adapter above provides explicit access, not Claude's slash-command parser or individual command-picker entries. Codex's plugin importer turns a Claude command into a skill only when the body has no `$ARGUMENTS` and no `` !`cmd` `` span.
 - **Rules with `paths:` scoping.** Codex has no counterpart. The template skips them.
 
 ## Checks
