@@ -1,6 +1,6 @@
 # Instruction load and adherence
 
-[`skills-context.md`](skills-context.md) counts the characters a session loads. This doc counts something the character total hides: how many separate directives the model is asked to obey at once, and which of them contradict each other. Token cost is linear and cheap. Adherence is not: it falls off with the number of constraints active in a single response, and it collapses when two constraints tell the model opposite things.
+The [`context-payload`](../../../dot_claude/skills/context-payload/SKILL.md) skill measures what a session loads. This doc counts something the character total hides: how many separate directives the model is asked to obey at once, and which of them contradict each other. Token cost is linear and cheap. Adherence is not: it falls off with the number of constraints active in a single response, and it collapses when two constraints tell the model opposite things.
 
 Measured 2026-08-22 on `opus[1m]`, with the four plugins in `settings.json` enabled.
 

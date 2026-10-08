@@ -70,7 +70,7 @@ Claude Code downloads the skills enabled for the claude.ai account into `~/.clau
 
 To turn a skill off on every surface, turn it off in **Customize** in the Desktop sidebar or in the claude.ai skill settings. `pdf` and `xlsx` always sync, so this setting does not remove them.
 
-The table lists the 16 skills that a session on 2026-09-26 received before the change. Chars is the length of the listing line for each skill, and the total also counts one newline per skill. [`skills-context.md`](skills-context.md) has the full measurement.
+The table lists the 16 skills that a session on 2026-09-26 received before the change. Chars is the length of the listing line for each skill, and the total also counts one newline per skill.
 
 | Skill                 |      Chars | Purpose                                                    |
 | --------------------- | ---------: | ---------------------------------------------------------- |

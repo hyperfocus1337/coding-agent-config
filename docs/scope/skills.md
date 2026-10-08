@@ -34,4 +34,4 @@ Claude reads `.claude/skills/` in the project and `~/.claude/skills/` for the us
 
 ## Cost
 
-Only the name and description of a skill are loaded at session start. The body of `SKILL.md`, its `references/`, and its `scripts/` cost nothing until the skill runs. A skill with `disable-model-invocation: true` costs nothing at all and cannot be auto-selected, only invoked by name. Per-skill measurements come from [`scripts/context-budget/measure-context.py`](../../scripts/context-budget/measure-context.py) and are recorded in [`docs/research/context/skills-context.md`](../research/context/skills-context.md).
+Only the name and description of a skill are loaded at session start. The body of `SKILL.md`, its `references/`, and its `scripts/` cost nothing until the skill runs. A skill with `disable-model-invocation: true` costs nothing at all and cannot be auto-selected, only invoked by name. Use the [`context-payload`](../../dot_claude/skills/context-payload/SKILL.md) skill to capture a new session's first API request and estimate the cost of its skill listings.

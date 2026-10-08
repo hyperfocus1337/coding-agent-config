@@ -1,7 +1,6 @@
 """Capture the first API request of an interactive Claude Code session and rank its parts.
 
-Where scripts/context-budget/measure-context.py reconstructs the payload from files on disk, this script
-records the real request. It starts `claude` in a pseudo-terminal with the
+This script records the real request. It starts `claude` in a pseudo-terminal with the
 official OTEL_LOG_RAW_API_BODIES=file:<dir> setting, waits until the MCP
 servers settle, types one short prompt, waits for the main-thread response,
 then stops the session. No proxy and no dependencies.

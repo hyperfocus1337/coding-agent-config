@@ -64,8 +64,6 @@ Limits:
 - `--print` sends a different system prompt and fewer tools, so the script uses the interactive session. On Claude Code 2.1.283 that session left no transcript, so it does not show in `/resume`.
 - The capture directory holds your instructions and account details. The skill deletes it. When you run the script directly, delete it yourself.
 
-For the static view of what is on disk, including disabled skills, see [`scripts/context-budget/`](../../scripts/context-budget/README.md).
-
 Third-party skills do not live here. They arrive through APM or a plugin, and every channel is mapped in [`docs/sources/channels.md`](../../docs/sources/channels.md).
 
 ## Explain-diff sources

@@ -162,7 +162,7 @@ State the scope, the harnesses, the channel, the files written, and whether the 
 
 ## Notes
 
-- Resident cost is per skill description, paid in every session where the skill is installed. Numbers in `why` come from `scripts/context-budget/measure-context.py`.
+- Resident cost is per skill description, paid in every session where the skill is installed. Use the [`context-payload`](../context-payload/SKILL.md) skill to measure the current session-start payload.
 - A skill with `disable-model-invocation: true` costs nothing in the listing and cannot be auto-selected. It stays invocable by exact name.
 - Claude reads `.claude/skills/` only. `.agents/skills/` is the cross-agent location that Codex and several vendor CLIs use, and the directory APM deploys to for the `codex` target. `docs/agents/codex.md` describes this repository's symlink layout for serving both.
 - Uninstalling is not part of this skill. Removing a user-scope skill means deleting its row, and the directory it deployed to.
