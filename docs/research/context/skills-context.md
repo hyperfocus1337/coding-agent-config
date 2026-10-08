@@ -193,7 +193,7 @@ Either guard alone is sufficient; the README files are documentation, not comman
 The script does not see the costs below, so they were measured separately.
 
 Claude Code's bundled skills cost nothing.
-`disableBundledSkills: true` in `dot_claude/settings.json` removes them, and the session of 2026-09-27 listed no bundled skill.
+`disableBundledSkills: true` in `dot_claude/settings-minimal.json` removes them, and the session of 2026-09-27 listed no bundled skill.
 Without that setting, they add 15 entries and about 6,000 characters, with `dataviz` at 1,182 and `claude-api` at 1,086.
 [`disabled-tools.md`](disabled-tools.md) lists what the setting removes.
 
