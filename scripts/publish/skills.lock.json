@@ -28,8 +28,8 @@
     "hash": "4f185f0d5d4215de951ff127601e1a96998ab1492f4b29e271fe462af8babc76"
   },
   "technical-writing": {
-    "version": "0.1.0",
-    "hash": "53f69d78166b1e9e12f25fe8cbcadd6b9f4bb76b2b77480b0ea9353a34c20d95"
+    "version": "0.1.1",
+    "hash": "6f2b843087c6b4317e52e279535ce3445904c3444c8f33141bc3ba8ea9a870e3"
   },
   "markitdown": {
     "version": "0.1.0",
@@ -40,7 +40,11 @@
     "hash": "1b6fff7bf780f8c1d77d919216e2bd29d98884a7c79d203baba7c441b61663bb"
   },
   "context-payload": {
+    "version": "0.1.1",
+    "hash": "69e0c862831ca89f0d3b87d256f07d990f6d5eed64bb16ec6022b4a7993a7945"
+  },
+  "prose-cleanup": {
     "version": "0.1.0",
-    "hash": "07dcc1806821d77a564568edb1717834ba2338e51d2907d44dfdf1415b6d94a4"
+    "hash": "1580b536ccb9f1130da0f3ae0289740d817b9edf2b05b00bc77164e750d42469"
   }
 }
