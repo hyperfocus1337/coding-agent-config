@@ -21,14 +21,18 @@ The symlink target is relative to the link, not to the home directory: chezmoi w
 | `theme`                         | `light`                                                   |                                                                                                     |
 | `hideThinkingBlock`             | `true`                                                    | Thinking is not rendered in the transcript.                                                         |
 | `terminal.showTerminalProgress` | `true`                                                    | Progress in the terminal title.                                                                     |
-| `packages`                      | `pi-web-access`, `pi-powerline-footer`, `pi-context-view`, `@juicesharp/rpiv-ask-user-question` | Web tools, the powerline footer, the context viewer, and structured questions. |
+| `packages`                      | `pi-web-access`, `pi-footer`, `pi-context-view`, `@juicesharp/rpiv-ask-user-question` | Web tools, the three-line footer, the context viewer, and structured questions. |
 | `skills`                        | `["~/.claude/skills", "!../../.claude/skills/synced/**"]` | The Claude Code skills, minus the claude.ai cache. See below.                                       |
 
 Extensions need no entry: `~/.pi/agent/extensions/*/index.ts` is a path pi scans on its own.
 
 ### Context usage
 
-`pi-powerline-footer` keeps its default preset below the editor, including context tokens and percentage. [`pi-context-view`](https://github.com/dimk90/pi-context-view) adds an on-demand visualization, not a persistent footer bar. Run `/context` for the estimated context breakdown or `/context injections` to inspect the system prompt, tool definitions, and extension instructions. It adds no instructions to model context.
+[`pi-footer`](https://github.com/wobondar/pi-footer) uses [`extensions/pi-footer.json`](extensions/pi-footer.json) for three gray powerline rows: working directory/branch/diff totals, origin remote URL/model, and context bar with used/max tokens and percentage. Home paths use `~`. The built-in widgets do not show the remote as `owner/repo` or report session and weekly subscription-limit percentages. Use a Powerline-compatible font for the separators.
+
+Run `/footer` to edit the live layout. Save a change back to this repository if you want it to survive the next chezmoi apply, which restores the tracked configuration. The settings merge removes the retired `powerline` key and replaces the package list, so the old footer is not loaded.
+
+[`pi-context-view`](https://github.com/dimk90/pi-context-view) keeps its on-demand visualization. Run `/context` for the estimated context breakdown or `/context injections` to inspect the system prompt, tool definitions, and extension instructions. It adds no instructions to model context.
 
 ### The `skills` array
 

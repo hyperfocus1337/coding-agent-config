@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "enabled": true,
+  "preset": "powerline-mono",
+  "separator": "none",
+  "iconMode": "nerd",
+  "terminal": {
+    "widthMode": "full",
+    "colorLevel": "ansi256"
+  },
+  "lines": [
+    [
+      {
+        "id": "cwd",
+        "type": "cwd",
+        "options": {
+          "raw": true,
+          "cwdDisplayStyle": "full-home",
+          "fg": "brightWhite",
+          "bg": "ansi256:240"
+        }
+      },
+      {
+        "id": "cwd-branch-separator",
+        "type": "separator",
+        "options": {
+          "separator": "powerline-right-spaced",
+          "fg": "ansi256:240",
+          "bg": "ansi256:250"
+        }
+      },
+      {
+        "id": "branch",
+        "type": "git-branch",
+        "options": {
+          "fg": "black",
+          "bg": "ansi256:250"
+        }
+      },
+      {
+        "id": "branch-diff-separator",
+        "type": "separator",
+        "options": {
+          "separator": "powerline-right-spaced",
+          "fg": "ansi256:250",
+          "bg": "ansi256:233"
+        }
+      },
+      {
+        "id": "diff",
+        "type": "git-diff",
+        "options": {
+          "raw": true,
+          "gitDiffMode": "compact",
+          "fg": "brightWhite",
+          "bg": "ansi256:233"
+        }
+      }
+    ],
+    [
+      {
+        "id": "remote",
+        "type": "git-remote",
+        "options": {
+          "raw": true,
+          "fg": "black",
+          "bg": "ansi256:248"
+        }
+      },
+      {
+        "id": "remote-model-separator",
+        "type": "separator",
+        "options": {
+          "separator": "powerline-right-spaced",
+          "fg": "ansi256:248",
+          "bg": "ansi256:240"
+        }
+      },
+      {
+        "id": "model",
+        "type": "model",
+        "options": {
+          "raw": true,
+          "fg": "brightWhite",
+          "bg": "ansi256:240"
+        }
+      }
+    ],
+    [
+      {
+        "id": "context",
+        "type": "context-bar",
+        "options": {
+          "raw": true,
+          "contextBarMode": "default",
+          "tokenFormatStyle": "compact",
+          "fg": "black",
+          "bg": "ansi256:252"
+        }
+      }
+    ]
+  ]
+}

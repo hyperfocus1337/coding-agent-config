@@ -21,7 +21,7 @@ ours=$(
   },
   "packages": [
     "npm:pi-web-access",
-    "npm:pi-powerline-footer",
+    "npm:pi-footer",
     "npm:pi-context-view",
     "npm:@juicesharp/rpiv-ask-user-question"
   ],
@@ -34,15 +34,12 @@ ours=$(
     "openrouter/deepseek/deepseek-v4-pro",
     "openrouter/moonshotai/kimi-k3",
     "openai/gpt-6.1-sol"
-  ],
-  "powerline": {
-    "preset": "default",
-    "placement": "below"
-  }
+  ]
 }
 EOF
 )
 
 # ── Merge over the current file ───────────────────────────────────────────────
 # Empty stdin (no ~/.pi/agent/settings.json yet) reads as {}.
-jq -n --argjson ours "$ours" '((try input catch {}) // {}) * $ours'
+# Remove the retired pi-powerline-footer settings.
+jq -n --argjson ours "$ours" '(((try input catch {}) // {}) * $ours) | del(.powerline)'
