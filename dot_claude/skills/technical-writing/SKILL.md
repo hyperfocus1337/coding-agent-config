@@ -1,6 +1,7 @@
 ---
 name: technical-writing
 description: Write or edit clear technical English for software developers and operators, using Google developer documentation style as the primary standard plus selected ASD-STE100 principles. Use when writing or revising documentation, README files, release notes, API reference text, error messages, help text, code comments, commit messages, or any prose in a technical deliverable. Also use when the user asks to tighten, de-fluff, clarify, or copy-edit existing technical prose, or says "make this read like docs".
+disable-model-invocation: true
 ---
 
 # technical-writing
