@@ -25,7 +25,7 @@ printf '%s' '{
 }' | sh "$SCRIPT" >"$out"
 check "keeps deviceId" '.deviceId == "abc"'
 check "keeps lastChangelogVersion" '.lastChangelogVersion == "9.9.9"'
-check "repo model wins" '.defaultProvider == "openai" and .defaultModel == "gpt-6-sol"'
+check "repo model wins" '.defaultProvider == "openai" and .defaultModel == "gpt-6.1-sol"'
 check "repo array replaces current" '.enabledModels | index("local/drift-model") == null'
 check "objects merge key by key" '.terminal == {"showTerminalProgress": true, "extra": 1}'
 
