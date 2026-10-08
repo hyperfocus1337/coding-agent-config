@@ -1,0 +1,10 @@
+{{- /* ~/.omp/agent/RULES.md: shared unscoped Claude rules.
+Like the Codex template, skip README.md and files with frontmatter: paths:
+scoping cannot be preserved in an always-apply file. */ -}}
+# Rules from ~/.claude/rules
+{{- range (joinPath .chezmoi.sourceDir "dot_claude/rules/*.md" | glob) }}
+{{- $rule := include . }}
+{{- if and (ne (base .) "README.md") (not (hasPrefix "---" $rule)) }}
+{{ $rule }}
+{{- end }}
+{{- end }}
