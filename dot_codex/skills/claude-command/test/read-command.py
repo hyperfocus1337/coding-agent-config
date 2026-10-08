@@ -1,16 +1,19 @@
 """Run: python3 dot_codex/skills/claude-command/test/read-command.py"""
 
+# --- Imports ---
 import os
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
+# --- Skill paths and invocation policy ---
 skill = Path(__file__).resolve().parents[1]
 script = skill / "scripts/read-command.py"
 policy = skill / "agents/openai.yaml"
 assert policy.read_text().strip() == "policy:\n  allow_implicit_invocation: false"
 
+# --- Command lookup checks ---
 with tempfile.TemporaryDirectory() as directory:
     home = Path(directory)
     commands = home / ".claude/commands"
@@ -40,6 +43,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert result.returncode != 0 and "escapes" in result.stderr
     assert "must not read" not in result.stdout
 
+# --- Argument count checks and result ---
 for args in ([], ["one", "two"]):
     result = subprocess.run([sys.executable, str(script), *args], capture_output=True, text=True)
     assert result.returncode != 0 and "Usage:" in result.stderr
