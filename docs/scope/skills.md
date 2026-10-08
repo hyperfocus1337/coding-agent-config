@@ -30,7 +30,7 @@ Both recipes are in the [`justfile`](../../justfile). They read the catalog in t
 
 ## Where Claude reads skills from
 
-Claude reads `.claude/skills/` in the project and `~/.claude/skills/` for the user. It does **not** read `.agents/skills/`, which is the Codex and cross-agent location. This matters for `glab skills install`, whose default output is `.agents/skills/`: the catalog row carries `--path .claude/skills` so the skill lands where Claude will find it. Serving both agents from one directory is possible with a symlink or a local plugin wrapper, covered in [`docs/research/agents/codex-compat.md`](../research/agents/codex-compat.md).
+Claude reads `.claude/skills/` in the project and `~/.claude/skills/` for the user. It does **not** read `.agents/skills/`, which is the Codex and cross-agent location. This matters for `glab skills install`, whose default output is `.agents/skills/`: the catalog row carries `--path .claude/skills` so the skill lands where Claude will find it. This repository serves both agents from one directory through a symlink, described in [the Codex configuration overview](../agents/codex.md#skills).
 
 ## Cost
 

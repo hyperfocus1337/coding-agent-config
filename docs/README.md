@@ -60,15 +60,13 @@ The `research/` folder holds investigations into the agent environment and sessi
 
 ### Other agents
 
-The `research/agents/` folder holds the source reading and probes behind [`agents/pi.md`](agents/pi.md) and [`agents/codex.md`](agents/codex.md). One finding per page:
+The `research/agents/` folder holds the source reading and probes behind [`agents/pi.md`](agents/pi.md). One finding per page:
 
 - [`hook-events.md`](research/agents/hook-events.md) lists every lifecycle event a hook can attach to on each side, 33 for Claude Code and 36 for pi. The two are flexible in opposite directions: pi reaches deeper per event, into the message list and the provider request, while Claude Code fires at more of the points a guardrail cares about and can answer in five ways, three of which need no code.
-- [`codex-compat.md`](research/agents/codex-compat.md) measures what Claude Code 2.1.278 and Codex 0.154.0 already share: Codex runs Claude's hook payload and loads Claude-format plugins, Claude reads `AGENTS.md` once `instructionFiles` is set, and one `.agents/skills/` tree serves both through a symlink.
 
 | File                                                 | Description                                                         |
 | ---------------------------------------------------- | ------------------------------------------------------------------- |
 | [`hook-events.md`](research/agents/hook-events.md)   | Hook lifecycle events in Claude Code and pi, compared (from source) |
-| [`codex-compat.md`](research/agents/codex-compat.md) | Sharing skills, instructions, and hooks with Codex (measured)       |
 
 ### Commands
 

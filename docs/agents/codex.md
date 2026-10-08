@@ -11,8 +11,6 @@ A [Codex CLI](https://developers.openai.com/codex/cli) session loads the user-sc
 | Project rules of this repository | `AGENTS.md` at the repository root, a symlink to `.claude/rules/apply.md`                    | [`AGENTS.md`](../../AGENTS.md)                                           |
 | Commands                         | an explicit-only adapter skill in `~/.codex/skills/claude-command/`                           | [`dot_codex/skills/claude-command/SKILL.md`](../../dot_codex/skills/claude-command/SKILL.md) |
 
-[`codex-compat.md`](../research/agents/codex-compat.md) holds the probes behind this page.
-
 ## Skills
 
 `dot_agents/symlink_skills` holds `../.claude/skills`, a path relative to the link. Codex follows the link and registers every `SKILL.md` unchanged. In the TUI, type `$` to pick a skill.
