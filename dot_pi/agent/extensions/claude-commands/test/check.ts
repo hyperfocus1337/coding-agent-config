@@ -21,6 +21,8 @@ import claudeCommandsExtension, {
   expandSpans,
   parseFile,
   substituteArgs,
+  withInlineCommands,
+  inlineCommandEditor,
 } from "../index.ts";
 
 let checks = 0;
@@ -342,6 +344,74 @@ if (process.env.PI_PACKAGE) {
   });
   const previous = process.env.PI_EXPAND_SLASH_COMMANDS;
   try {
+    const { CombinedAutocompleteProvider, Editor } = await import(tuiPath);
+    const provider = withInlineCommands(new CombinedAutocompleteProvider([
+      { name: "git:commit:single", description: "Commit" },
+    ], root));
+    const options = { signal: new AbortController().signal };
+    await check("slash completion preserves text on the first and later lines", async () => {
+      for (const [lines, line, col] of [
+        [["/git"], 0, 4],
+        [["Please /git after"], 0, 11],
+        [["First line", "/git after"], 1, 4],
+        [["First line", "  then /git after"], 1, 11],
+      ]) {
+        const suggestions = await provider.getSuggestions(lines, line, col, options);
+        assert.equal(suggestions.prefix, "/git");
+        assert.equal(suggestions.items[0].value, "git:commit:single");
+        const result = provider.applyCompletion(lines, line, col, suggestions.items[0], suggestions.prefix);
+        assert.equal(result.lines[line], lines[line].slice(0, col - 4) + "/git:commit:single " + lines[line].slice(col));
+        assert.equal(result.cursorCol, col - 4 + "/git:commit:single ".length);
+        if (line) assert.equal(result.lines[0], lines[0]);
+      }
+    });
+    await check("typing slash triggers the editor provider after text and newlines", async () => {
+      const InlineEditor = inlineCommandEditor(Editor);
+      const editor = new InlineEditor({ requestRender() {} }, {
+        borderColor: (text) => text,
+        selectList: { selectedPrefix: (text) => text, selectedText: (text) => text,
+          description: (text) => text, scrollInfo: (text) => text, noMatch: (text) => text },
+      });
+      let calls = 0;
+      editor.setAutocompleteProvider({ ...provider, async getSuggestions(...args) {
+        calls++;
+        return provider.getSuggestions(...args);
+      } });
+      for (const text of ["Please ", "First line\n"]) {
+        editor.setText(text);
+        const before = calls;
+        editor.handleInput("/");
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        assert.ok(calls > before, `no completion request after ${JSON.stringify(text)}`);
+        editor.handleInput("g");
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        assert.ok(editor.isShowingAutocomplete());
+        editor.handleInput("\t");
+        assert.equal(editor.getText(), text + "/git:commit:single ");
+        editor.handleInput("\x1b");
+      }
+    });
+    await check("file and argument completion delegate unchanged", async () => {
+      const calls = [];
+      const fallback = {
+        triggerCharacters: ["@", "#"],
+        async getSuggestions(...args) { calls.push(args); return null; },
+        applyCompletion(...args) { calls.push(args); return "unchanged"; },
+        shouldTriggerFileCompletion() { return true; },
+      };
+      const wrapped = withInlineCommands(fallback);
+      assert.deepEqual(wrapped.triggerCharacters, ["@", "#"]);
+      for (const text of ["https://git", "word/git", "See /tmp/file", "@file", "/git argument"]) {
+        const lines = [text];
+        await wrapped.getSuggestions(lines, 0, text.length, options);
+        assert.equal(calls.at(-1)[0], lines);
+      }
+      const lines = ["See /tmp"];
+      await wrapped.getSuggestions(lines, 0, 8, { ...options, force: true });
+      assert.equal(calls.at(-1)[0], lines);
+      assert.equal(wrapped.applyCompletion(lines, 0, 8, { value: "/tmp/file", label: "file" }, "/tmp"), "unchanged");
+      assert.equal(wrapped.shouldTriggerFileCompletion(lines, 0, 8), true);
+    });
     const commands = new Map();
     let renderer;
     const messages = [];
@@ -352,6 +422,7 @@ if (process.env.PI_PACKAGE) {
         assert.equal(type, "claude-command");
         renderer = render;
       },
+      on() {},
       registerCommand(name, command) { commands.set(name, command); },
       exec: async () => ({ stdout: "context", stderr: "", code: failExec ? 1 : 0 }),
       sendMessage(message, options) { messages.push({ message, options }); },

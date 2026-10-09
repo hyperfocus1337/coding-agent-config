@@ -15,6 +15,12 @@ Directories become `:` segments, so the name matches what Claude Code registers:
 
 A `name:` in frontmatter replaces the leaf only, not the path. `README.md` at any level is documentation, not a command. The command list shows `argument-hint:` first, then `description:` from frontmatter, or the first line of the body when there is none. This is the `<hint> — <description>` form pi uses for its own prompt templates. With the hint first, it stays visible when the list truncates a long description.
 
+## Completion
+
+Typing `/` at the start of the prompt, after whitespace, or on a later line opens the command dropdown. Selecting a command keeps the text before and after the cursor. URLs and paths that contain another `/` use pi's existing completion behavior.
+
+This changes completion only. Claude commands still execute only at the start of the submitted prompt; an inline command name remains literal text. The extension uses a custom editor, so another extension that replaces the editor can override this behavior.
+
 ## Display
 
 By default, the transcript shows only the command and its arguments, such as `/git:commit:single fix typo`. The model still receives the full expanded instructions, including argument substitution and dynamic context.
@@ -55,6 +61,6 @@ A `` !`cmd` `` span runs `cmd` through `/bin/sh -c` in the session's working dir
 
 ## Checks
 
-`node test/check.ts` from this directory, or `just pi-check` for the type check as well. The checks cover naming, frontmatter parsing, every placeholder form and escape, span placement and failure, and the installed tree: every name unique, every command described, the colliding basenames all present. With `PI_PACKAGE` set, the checks also cover compact and full display, identical model input in both modes, and delivery failures. `just pi-check` sets this path.
+`node test/check.ts` from this directory, or `just pi-check` for the type check as well. The checks cover naming, frontmatter parsing, every placeholder form and escape, span placement and failure, and the installed tree: every name unique, every command described, the colliding basenames all present. With `PI_PACKAGE` set, the checks also cover compact and full display, identical model input in both modes, delivery failures, inline completion, and slash triggers after text and newlines. `just pi-check` sets this path.
 
 For why the extension registers commands itself instead of using pi's `prompts` setting, and how the expansion is ordered and parsed, see [docs/implementation.md](docs/implementation.md).

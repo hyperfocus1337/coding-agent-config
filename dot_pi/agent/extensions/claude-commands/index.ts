@@ -34,6 +34,57 @@ import type {
   ExtensionCommandContext,
 } from "@earendil-works/pi-coding-agent";
 
+import type { AutocompleteProvider } from "@earendil-works/pi-tui";
+
+/** Complete slash names at a whitespace boundary without replacing nearby text. */
+export function withInlineCommands(provider: AutocompleteProvider): AutocompleteProvider {
+  const slashPrefix = (lines: string[], line: number, col: number) =>
+    /(?:^|\s)(\/[^\s/]*)$/.exec((lines[line] ?? "").slice(0, col))?.[1];
+  return {
+    triggerCharacters: provider.triggerCharacters,
+    async getSuggestions(lines, line, col, options) {
+      const prefix = slashPrefix(lines, line, col);
+      if (prefix) {
+        const suggestions = await provider.getSuggestions([prefix], 0, prefix.length, { ...options, force: false });
+        if (suggestions || !options.force) return suggestions;
+      }
+      return provider.getSuggestions(lines, line, col, options);
+    },
+    applyCompletion(lines, line, col, item, prefix) {
+      if (prefix === slashPrefix(lines, line, col) && !item.value.includes("/")) {
+        const result = provider.applyCompletion([prefix], 0, prefix.length, item, prefix);
+        const start = col - prefix.length;
+        const updated = [...lines];
+        updated[line] = lines[line].slice(0, start) + result.lines[0] + lines[line].slice(col);
+        return { lines: updated, cursorLine: line, cursorCol: start + result.cursorCol };
+      }
+      return provider.applyCompletion(lines, line, col, item, prefix);
+    },
+    shouldTriggerFileCompletion: (lines, line, col) =>
+      provider.shouldTriggerFileCompletion?.(lines, line, col) ?? true,
+  };
+}
+
+/** Keep pi's shortcuts, but request completion when its slash trigger skips a token. */
+export function inlineCommandEditor(Base: typeof import("@earendil-works/pi-coding-agent").CustomEditor) {
+  return class extends Base {
+    setAutocompleteProvider(provider: AutocompleteProvider) {
+      super.setAutocompleteProvider(withInlineCommands(provider));
+    }
+    handleInput(data: string) {
+      const before = this.getText();
+      super.handleInput(data);
+      const { line, col } = this.getCursor();
+      const prefix = /(?:^|\s)(\/[^\s/]*)$/.exec(this.getLines()[line].slice(0, col));
+      if (this.getText() !== before && prefix && !this.isShowingAutocomplete()) {
+        // shortcut: pi 1.1 has no public completion request API. Use its existing
+        // non-Tab request until pi exposes one; Tab auto-applies a single match.
+        (this as unknown as { tryTriggerAutocomplete(): void }).tryTriggerAutocomplete();
+      }
+    }
+  };
+}
+
 /** Claude's own budget for one dynamic-context command. */
 const SPAN_TIMEOUT_MS = 120_000;
 
@@ -381,6 +432,14 @@ export default async function claudeCommandsExtension(pi: ExtensionAPI) {
       );
     },
   );
+  pi.on("session_start", async (_event, ctx) => {
+    if (ctx.mode !== "tui") return;
+    const { CustomEditor } = await import("@earendil-works/pi-coding-agent");
+    const InlineCommandEditor = inlineCommandEditor(CustomEditor);
+    ctx.ui.setEditorComponent((tui, theme, keybindings) =>
+      new InlineCommandEditor(tui, theme, keybindings),
+    );
+  });
   const root = path.join(os.homedir(), ".claude", "commands");
 
   for (const command of discover(root)) {
