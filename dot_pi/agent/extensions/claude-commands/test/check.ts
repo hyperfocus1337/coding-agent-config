@@ -462,10 +462,12 @@ if (process.env.PI_PACKAGE) {
         assert.equal(handlers.has("resources_discover"), false);
         assert.deepEqual(await skillHandlers.get("resources_discover")({}, localCtx), { skillPaths: [path.join(local, "skills")] });
         await ruleHandlers.get("session_start")({}, localCtx);
-        const prompt = ruleHandlers.get("before_agent_start")({ systemPrompt: "base" }).systemPrompt;
-        assert.ok(prompt.includes("# Rules from ~/.claude/rules"));
-        assert.ok(prompt.includes(`Rules from ${local}/rules\n\nProject instructions`));
-        assert.ok(!prompt.includes("Project scoped instructions"));
+        const promptEvent = { systemPromptOptions: { contextFiles: [] } };
+        assert.equal(ruleHandlers.get("before_agent_start")(promptEvent), undefined);
+        const files = promptEvent.systemPromptOptions.contextFiles;
+        assert.ok(files.some((file) => file.path.startsWith(path.join(os.homedir(), ".claude", "rules"))));
+        assert.ok(files.some((file) => file.path === path.join(local, "rules", "code.md") && file.content === "Project instructions"));
+        assert.ok(!files.some((file) => file.content.includes("Project scoped instructions")));
         const result = { toolName: "read", input: { path: "src/file.ts" }, isError: false };
         const count = messages.length;
         ruleHandlers.get("tool_result")(result, localCtx);
@@ -486,7 +488,9 @@ if (process.env.PI_PACKAGE) {
         await handlers.get("session_start")({}, deniedCtx);
         assert.equal(await skillHandlers.get("resources_discover")({}, deniedCtx), undefined);
         await ruleHandlers.get("session_start")({}, deniedCtx);
-        assert.ok(!ruleHandlers.get("before_agent_start")({ systemPrompt: "base" }).systemPrompt.includes("Do not load"));
+        const deniedEvent = { systemPromptOptions: { contextFiles: [] } };
+        ruleHandlers.get("before_agent_start")(deniedEvent);
+        assert.ok(!deniedEvent.systemPromptOptions.contextFiles.some((file) => file.content.includes("Do not load")));
       } finally {
         process.argv = previousArgv;
         fs.rmSync(project, { recursive: true, force: true });

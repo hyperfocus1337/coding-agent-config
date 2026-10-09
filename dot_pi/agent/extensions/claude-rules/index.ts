@@ -3,9 +3,9 @@
  *
  * Loads `~/.claude/rules/**\/*.md` the way Claude Code loads user-level rules:
  *
- * - A rule with no `paths:` frontmatter is appended to the system prompt at
- *   `before_agent_start`. The block is built once at load, so it is byte-identical
- *   across turns and does not cost a prompt-cache miss.
+ * - A rule with no `paths:` frontmatter is added to structured `contextFiles` at
+ *   `before_agent_start`, with its path and body. Files are read at session start,
+ *   so their contents stay stable across turns.
  * - A rule with `paths:` is sent once per session, as a custom message, after the
  *   `read`, `write` or `edit` tool touches a file inside the project that matches
  *   one of its globs. `deliverAs: "steer"` places it before the next LLM call, which
@@ -43,6 +43,8 @@ export interface Rule {
   /** Globs from `paths:`. Empty for an unscoped rule. */
   paths: string[];
   body: string;
+  /** Absolute file path used by pi's structured instruction-file records. */
+  filePath: string;
   /** Absolute project-rule path, also its persisted identity. */
   source?: string;
 }
@@ -81,6 +83,7 @@ export function discover(root: string): Rule[] {
       const parsed = parseFile(fs.readFileSync(filePath, "utf-8"));
       return {
         name: path.relative(root, filePath),
+        filePath: path.resolve(filePath),
         paths: patterns(parsed.frontmatter.paths),
         body: parsed.body.trimEnd(),
       };
@@ -102,21 +105,15 @@ export function matches(rule: Rule, relativePath: string): boolean {
   );
 }
 
-/** The system-prompt block for the unscoped rules, or an empty string when there are none. */
-export function systemPromptBlock(rules: Rule[], root = "~/.claude/rules"): string {
-  const unscoped = rules.filter((rule) => rule.paths.length === 0);
-  if (unscoped.length === 0) {
-    return "";
-  }
-  return [
-    `# Rules from ${root}`,
-    ...unscoped.map((rule) => rule.body),
-  ].join("\n\n");
+/** Structured instruction-file records for unscoped rules only. */
+export function instructionFiles(rules: Rule[]): Array<{ path: string; content: string }> {
+  return rules.filter((rule) => rule.paths.length === 0)
+    .map((rule) => ({ path: rule.filePath, content: rule.body }));
 }
 
 export default function claudeRules(pi: ExtensionAPI): void {
   let scoped: Rule[] = [];
-  let block = "";
+  let files: Array<{ path: string; content: string }> = [];
   const sent = new Set<string>();
 
   let local: string | undefined;
@@ -127,8 +124,7 @@ export default function claudeRules(pi: ExtensionAPI): void {
       ? discover(root).map((rule) => ({ ...rule, source: path.join(root, rule.name) }))
       : [];
     scoped = [...rules, ...projectRules].filter((rule) => rule.paths.length > 0);
-    block = [systemPromptBlock(rules), root ? systemPromptBlock(projectRules, root) : ""]
-      .filter(Boolean).join("\n\n");
+    files = instructionFiles([...rules, ...projectRules]);
   }
   // The project coordinator announces approval on the shared event bus.
   // Rebuild on the event too, so extension load order does not affect local rules.
@@ -148,9 +144,11 @@ export default function claudeRules(pi: ExtensionAPI): void {
     }
   });
 
-  pi.on("before_agent_start", (event) =>
-    block ? { systemPrompt: `${event.systemPrompt}\n\n${block}` } : undefined,
-  );
+  pi.on("before_agent_start", (event) => {
+    const contextFiles = event.systemPromptOptions.contextFiles;
+    const existing = new Set(contextFiles.map((file) => file.path));
+    contextFiles.push(...files.filter((file) => !existing.has(file.path)));
+  });
 
   pi.on("tool_result", (event, ctx) => {
     const target = event.input.path;

@@ -4,7 +4,9 @@ Loads `~/.claude/rules/**/*.md` and approved `<cwd>/.claude/rules/**/*.md`: a ru
 
 ## Unscoped rules
 
-Every rule file with no `paths:` frontmatter is appended to the system prompt in file-name order. User rules appear under `# Rules from ~/.claude/rules`; project rules appear under a separate heading with their absolute directory path. Both scopes are retained, including rules with the same filename. The block is built at session start and does not change between turns, so it costs one prompt-cache write per session, not one per turn. `README.md` is documentation, not a rule.
+Every rule file with no `paths:` frontmatter is added to pi's structured `contextFiles` in file-name order, with its absolute path and body. User and approved project rules are both retained, including rules with the same filename. Existing instruction files are preserved, and a path already present is not added twice. Rule contents are read at session start and stay stable between turns; `/reload` picks up edits. `README.md` is documentation, not a rule.
+
+Pi renders these records in its `project_context` section. `pi-context-view` can therefore list each rule under **Instruction Files**, rather than treat the bodies as extension prompt additions. After applying this change, run `/reload` and `/context`; if the viewer still shows an older captured request, send a new prompt and open `/context` again. Path-scoped rules remain conditional messages and do not appear in the initial instruction-file list.
 
 ## Project approval
 
@@ -32,6 +34,6 @@ A rule with `paths:` is sent after the `read`, `write`, or `edit` tool succeeds 
 
 ## Checks
 
-`node test/check.ts` from this directory, or `just pi-check` for the type check as well. The checks cover `paths:` parsing, every row of the glob table, a path outside the project, discovery on a fixture tree, block stability, and the installed tree: every installed rule is unscoped, and the three bodies are in the block in full.
+`node test/check.ts` from this directory, or `just pi-check` for the type check as well. The checks cover `paths:` parsing, every row of the glob table, a path outside the project, discovery on a fixture tree, stable instruction-file records, preservation of native files, duplicate prevention, scoped-rule exclusion, approval denial, and the installed rule bodies. With `PI_PACKAGE` set, they also check pi's native rendering and, when `pi-context-view` is installed, its Instruction Files classification.
 
 For where the two injection points sit in pi's event model and why the globs need no dependency, see [docs/implementation.md](docs/implementation.md).

@@ -1,12 +1,14 @@
 # Implementation notes
 
-Why the extension injects where it does. [README.md](../README.md) describes the behaviour for a person writing rules; this file is for a person changing the code. Written against pi 0.85.1.
+Why the extension injects where it does. [README.md](../README.md) describes the behaviour for a person writing rules; this file is for a person changing the code. The structured instruction-file integration is checked against pi 1.1.0.
 
 ## Unscoped rules: `before_agent_start`
 
-pi builds the system prompt from `systemPromptOptions` (`cwd`, `skills`, `contextFiles`, `customPrompt`, `appendSystemPrompt`, `selectedTools`, `toolSnippets`, `promptGuidelines`), and that object is read-only input to the `before_agent_start` handler. The only way to add text is to return `{ systemPrompt }`, which replaces the prompt and chains across handlers in load order. So the extension appends its block to `event.systemPrompt` and returns it.
+Pi 1.1 exposes mutable, normalized `event.systemPromptOptions` to `before_agent_start`. The handler adds unscoped rules to `contextFiles` as `{ path, content }` records and returns no prompt override. Pi rebuilds the prompt from those options, renders each file under `<project_context>` as `<project_instructions path="...">`, and preserves the structured section in the transcript. This also supplies the records that `pi-context-view` classifies as Instruction Files.
 
-The block is computed at `session_start`, from `discover()`, and the handler returns the same text each turn. Rule files are not read per turn; `/reload` picks up an edit. User and project rules have separate headings. The `claude-project` event from the `claude-project` coordinator supplies the approved local directory and also rebuilds the block, so either extension load order works. Without the coordinator, only user rules load. Commands and skills can be disabled without changing rule approval.
+The handler preserves existing files and skips paths already present. It no longer returns `{ systemPrompt }`, which would force an opaque prompt and hide the files' structure. An unrelated extension that forces a full prompt can still override native structured rendering.
+
+Instruction-file records are computed at `session_start`, from `discover()`, and retain the same paths and bodies across turns. Rule files are not read per turn; `/reload` picks up an edit. The `claude-project` event supplies the approved local directory and also rebuilds the records, so either extension load order works. Without the coordinator, only user rules load. Commands and skills can be disabled without changing rule approval.
 
 ## Scoped rules: `tool_result` plus `sendMessage`
 
@@ -26,4 +28,4 @@ Claude Code documents its glob semantics as a table: `*` stays inside a path seg
 
 ## Probing a live session
 
-A probe extension placed after this one in `~/.pi/agent/extensions/` sees the appended block in `event.systemPrompt` at `before_agent_start`; one placed before it, or loaded with `-e`, runs first and sees the prompt without the block. To see a scoped rule fire, the probe needs a model call that reads a matching file, so it takes a provider or a stub that returns a canned `read` tool call; the rule then appears as `user -> assistant -> toolResult -> custom(claude-rule)` in the message list of the second call. Print mode runs one turn, so block stability across turns is checked across two `pi -p` processes, or by the fact that the block is a constant.
+A probe extension placed after this one sees the rule records in `event.systemPromptOptions.contextFiles` and their native wrappers in `event.systemPrompt` at `before_agent_start`. A probe that runs before it does not yet see the added records. To see a scoped rule fire, the probe needs a model call that reads a matching file, so it takes a provider or a stub that returns a canned `read` tool call; the rule then appears as `user -> assistant -> toolResult -> custom(claude-rule)` in the message list of the second call. The self-checks verify stable records, native prompt rendering, and the installed context viewer's classification without a model call.

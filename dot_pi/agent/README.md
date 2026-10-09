@@ -31,7 +31,7 @@ Extensions need no entry: `~/.pi/agent/extensions/*/index.ts` is a path pi scans
 
 Run `/footer` to edit the live layout. Save a change back to this repository if you want it to survive the next chezmoi apply, which restores the tracked configuration. The settings merge removes the retired `powerline` key and replaces the package list, so the old footer is not loaded.
 
-[`pi-context-view`](https://github.com/dimk90/pi-context-view) keeps its on-demand visualization. Run `/context` for the estimated context breakdown or `/context injections` to inspect the system prompt, tool definitions, and extension instructions. It adds no instructions to model context.
+[`pi-context-view`](https://github.com/dimk90/pi-context-view) keeps its on-demand visualization. Run `/context` for the estimated context breakdown or `/context injections` to inspect the system prompt, tool definitions, and extension instructions. It adds no instructions to model context. Unscoped Claude rules use native instruction-file records, so each rule appears under Instruction Files. Path-scoped rules remain conditional messages.
 
 ### Project Claude resources
 
