@@ -4,6 +4,9 @@
   "preset": "powerline-mono",
   "separator": "none",
   "iconMode": "nerd",
+  "extensionStatusRow": {
+    "hiddenKeys": ["codex-session", "codex-weekly"]
+  },
   "terminal": {
     "widthMode": "full",
     "colorLevel": "ansi256"
@@ -96,6 +99,28 @@
           "tokenFormatStyle": "compact",
           "fg": "black",
           "bg": "ansi256:252"
+        }
+      },
+      {
+        "id": "codex-session",
+        "type": "external-status",
+        "options": {
+          "raw": true,
+          "externalStatusKey": "codex-session",
+          "hideWhenEmpty": true,
+          "fg": "brightWhite",
+          "bg": "ansi256:240"
+        }
+      },
+      {
+        "id": "codex-weekly",
+        "type": "external-status",
+        "options": {
+          "raw": true,
+          "externalStatusKey": "codex-weekly",
+          "hideWhenEmpty": true,
+          "fg": "black",
+          "bg": "ansi256:250"
         }
       }
     ]

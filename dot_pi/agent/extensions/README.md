@@ -8,6 +8,7 @@ Extensions are TypeScript modules pi loads at startup, through jiti, with no bui
 | [`claude-rules`](claude-rules/README.md)       | `~/.claude/rules`    | Puts unscoped rules in the system prompt and sends a rule with `paths:` once per session after a file tool touches a matching file.                             |
 | [`claude-project`](claude-project/README.md) | `<cwd>/.claude` | Resolves project approval once and announces the approved directory to resource extensions. |
 | [`claude-skills`](claude-skills/README.md) | `<cwd>/.claude/skills` | Supplies approved local skills to pi's native skill loader. |
+| [`codex-usage`](codex-usage/README.md)         | Pi's OpenAI and Codex OAuth authentication | Publishes 5-hour and weekly plan quota-used percentages for active `openai` or `openai-codex` models. Verifies the OpenAI app registration using companion Codex authentication.                  |
 | [`compact-bash`](compact-bash/README.md)       | pi's own `bash` tool | Replaces the five-line output preview under a `bash` call with one line, `42 lines`. `ctrl+o`, and a command that fails, keep pi's own output.                  |
 
 The Claude resource extensions, together with the `skills` setting and the `AGENTS.md` symlink documented in [`../README.md`](../README.md), make pi read the user-scope configuration in [`dot_claude/`](../../../dot_claude/README.md), so one copy serves both agents. [`docs/agents/pi.md`](../../../docs/agents/pi.md) is the overview. `compact-bash` changes pi's own display and carries no Claude Code behaviour.
