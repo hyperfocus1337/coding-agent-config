@@ -14,7 +14,7 @@ The first two, together with the `skills` setting and the `AGENTS.md` symlink do
 
 **The behaviour it replaces is the contract.** `claude-commands` and `claude-rules` each reproduce a documented Claude Code behaviour; `compact-bash` replaces one pi renderer and keeps the rest of the tool. Each README names what it does not carry over and why, and the header comment of `index.ts` states the same list in short form.
 
-**User scope only.** No extension reads a project's `.claude/` or `.pi/`. This repository holds user scope only, and project scope is what most of the complexity in a full port (trust gates, settings chains) exists for.
+**User and project Claude resources.** The extensions retain user resources and load approved `.claude/commands`, `.claude/rules`, and `.claude/skills` from the session working directory. `claude-commands` owns approval, registers local commands, supplies local skills to pi's native loader, and sends the approved directory to `claude-rules` over the event bus. They do not search ancestor directories.
 
 **No dependency.** Frontmatter parsing, glob matching, and argument splitting use the standard library. `claude-rules` imports `parseFile` from `claude-commands`, so the two share one frontmatter parser.
 

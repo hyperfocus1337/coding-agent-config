@@ -1,6 +1,14 @@
 # claude-commands
 
-Registers every `~/.claude/commands/**/*.md` file as a pi slash command, named by its path, and expands the body the way Claude Code does before it goes to the model as user-role context.
+Registers user commands from `~/.claude/commands/**/*.md` and approved project commands from `<cwd>/.claude/commands/**/*.md` as pi slash commands. It keeps Claude command names and expands the body before it goes to the model as user-role context.
+
+## Project resources
+
+At session start, the extension checks `.claude/commands`, `.claude/rules`, and `.claude/skills` in the session working directory. Project commands replace user commands with the same name. The extension supplies the local skills directory through pi's `resources_discover` hook and announces the approved directory to `claude-rules`. Pi's native loader validates skills and handles name conflicts; the first loaded skill wins, so a local skill does not override a user skill with the same name.
+
+Approval follows `--approve` or `--no-approve`, pi's saved `/trust` decision, then the global `defaultProjectTrust` setting. If the setting is `ask`, the TUI asks for approval for this session; non-interactive modes skip local resources. Use `/trust` to save the decision, or `pi --approve` for an explicit automated run. This separate check is needed because pi does not include `.claude` directories in its built-in project-resource detection.
+
+Run pi from the project root. The extension does not search ancestor directories. Run `/reload` after adding a command, rule, or skill. Keep both Claude extensions installed so local rules receive the approval event.
 
 ## Names
 
@@ -31,7 +39,7 @@ To show the full prompt, start pi with:
 PI_EXPAND_SLASH_COMMANDS=1 pi
 ```
 
-Unset the variable or set it to `0` for compact display. Only `1` enables full display. `ctrl+o` also reveals the full prompt in compact mode. This toggle applies to commands from `~/.claude/commands`, not pi's built-in commands or native prompt templates. Existing session entries sent before this change keep their original display.
+Unset the variable or set it to `0` for compact display. Only `1` enables full display. `ctrl+o` also reveals the full prompt in compact mode. This toggle applies to user and project Claude commands, not pi's built-in commands or native prompt templates. Existing session entries sent before this change keep their original display.
 
 ## Arguments
 
@@ -61,6 +69,6 @@ A `` !`cmd` `` span runs `cmd` through `/bin/sh -c` in the session's working dir
 
 ## Checks
 
-`node test/check.ts` from this directory, or `just pi-check` for the type check as well. The checks cover naming, frontmatter parsing, every placeholder form and escape, span placement and failure, and the installed tree: every name unique, every command described, the colliding basenames all present. With `PI_PACKAGE` set, the checks also cover compact and full display, identical model input in both modes, delivery failures, inline completion, and slash triggers after text and newlines. `just pi-check` sets this path.
+`node test/check.ts` from this directory, or `just pi-check` for the type check as well. The checks cover naming, frontmatter parsing, every placeholder form and escape, span placement and failure, and the installed tree: every name unique, every command described, the colliding basenames all present. With `PI_PACKAGE` set, the checks also cover project command overrides, local skill discovery, local unscoped and scoped rules, approval denial, persisted rule identities, compact and full display, identical model input in both modes, delivery failures, inline completion, and slash triggers after text and newlines. `just pi-check` sets this path.
 
 For why the extension registers commands itself instead of using pi's `prompts` setting, and how the expansion is ordered and parsed, see [docs/implementation.md](docs/implementation.md).

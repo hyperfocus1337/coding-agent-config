@@ -10,6 +10,14 @@ pi has two native ways to load prompt files: the `prompts` array in `settings.js
 
 The handler reads the file at invocation, not at load, so an edit to a command file takes effect on the next call without `/reload`.
 
+## Project discovery and approval
+
+`project.ts` checks the session working directory for local Claude resources. At `session_start`, `claude-commands` resolves approval, registers project commands after user commands, and emits `claude-project` with the approved directory or `undefined`. It retains this value for `resources_discover`, which returns the local `skills` path. Pi loads and advertises the skills through its native loader. No global relative skill entry is used because such entries resolve from the agent directory.
+
+Approval checks explicit CLI overrides, `ProjectTrustStore`, and the global `defaultProjectTrust` setting. An undecided TUI session asks for approval; an undecided non-interactive session skips local resources. The helper imports pi's runtime API only when it needs saved trust or settings, so the pure parser checks still run without pi package resolution.
+
+The approval event uses pi's shared event bus rather than module state: pi loads extension factories with separate jiti instances and `moduleCache: false`. A module-level cache would not reliably share approval between extensions.
+
 ## Argument hints
 
 pi shows an argument hint for built-in commands and prompt templates as `<hint> — <description>` in the `/` dropdown. `registerCommand` has no `argumentHint` field, and the interactive mode drops the field for extension commands when it builds the dropdown (checked in pi 1.0.3). So `describe` writes the hint into the description in the same form. The dropdown truncates the description to the terminal width, so the hint must come first to stay visible. pi has no ghost text after `/name `, as Claude Code shows. The extension installs a `CustomEditor` subclass through `setEditorComponent` to support slash completion after whitespace and on later lines. Only one extension can own the editor, so another editor extension can replace this behavior.

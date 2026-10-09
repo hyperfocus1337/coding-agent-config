@@ -35,6 +35,7 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 
 import type { AutocompleteProvider } from "@earendil-works/pi-tui";
+import { approvedProjectRoot } from "./project.ts";
 
 /** Complete slash names at a whitespace boundary without replacing nearby text. */
 export function withInlineCommands(provider: AutocompleteProvider): AutocompleteProvider {
@@ -432,7 +433,11 @@ export default async function claudeCommandsExtension(pi: ExtensionAPI) {
       );
     },
   );
+  let local: string | undefined;
   pi.on("session_start", async (_event, ctx) => {
+    local = await approvedProjectRoot(ctx);
+    pi.events.emit("claude-project", local);
+    if (local) register(path.join(local, "commands"));
     if (ctx.mode !== "tui") return;
     const { CustomEditor } = await import("@earendil-works/pi-coding-agent");
     const InlineCommandEditor = inlineCommandEditor(CustomEditor);
@@ -440,39 +445,44 @@ export default async function claudeCommandsExtension(pi: ExtensionAPI) {
       new InlineCommandEditor(tui, theme, keybindings),
     );
   });
-  const root = path.join(os.homedir(), ".claude", "commands");
+  pi.on("resources_discover", () =>
+    local ? { skillPaths: [path.join(local, "skills")] } : undefined,
+  );
+  register(path.join(os.homedir(), ".claude", "commands"));
 
-  for (const command of discover(root)) {
-    const description = describe(command);
-    pi.registerCommand(command.name, {
-      ...(description ? { description } : {}),
-      handler: async (args: string, ctx: ExtensionCommandContext) => {
-        // stderr is kept separate here and merged into the span output, because
-        // appending `2>&1` to the script would bind to its last command only.
-        const exec: Exec = async (script) =>
-          pi.exec("/bin/sh", ["-c", script], {
-            cwd: ctx.cwd,
-            timeout: SPAN_TIMEOUT_MS,
-          });
-        try {
-          pi.sendMessage(
-            {
-              customType: "claude-command",
-              content: await expand(command.filePath, args, exec),
-              display: true,
-              details: {
-                invocation: `/${command.name}${args ? ` ${args}` : ""}`,
+  function register(root: string): void {
+    for (const command of discover(root)) {
+      const description = describe(command);
+      pi.registerCommand(command.name, {
+        ...(description ? { description } : {}),
+        handler: async (args: string, ctx: ExtensionCommandContext) => {
+          // stderr is kept separate here and merged into the span output, because
+          // appending `2>&1` to the script would bind to its last command only.
+          const exec: Exec = async (script) =>
+            pi.exec("/bin/sh", ["-c", script], {
+              cwd: ctx.cwd,
+              timeout: SPAN_TIMEOUT_MS,
+            });
+          try {
+            pi.sendMessage(
+              {
+                customType: "claude-command",
+                content: await expand(command.filePath, args, exec),
+                display: true,
+                details: {
+                  invocation: `/${command.name}${args ? ` ${args}` : ""}`,
+                },
               },
-            },
-            { triggerTurn: true },
-          );
-        } catch (error) {
-          ctx.ui.notify(
-            `/${command.name} failed: ${error instanceof Error ? error.message : String(error)}`,
-            "error",
-          );
-        }
-      },
-    });
+              { triggerTurn: true },
+            );
+          } catch (error) {
+            ctx.ui.notify(
+              `/${command.name} failed: ${error instanceof Error ? error.message : String(error)}`,
+              "error",
+            );
+          }
+        },
+      });
+    }
   }
 }

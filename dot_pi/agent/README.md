@@ -33,6 +33,10 @@ Run `/footer` to edit the live layout. Save a change back to this repository if 
 
 [`pi-context-view`](https://github.com/dimk90/pi-context-view) keeps its on-demand visualization. Run `/context` for the estimated context breakdown or `/context injections` to inspect the system prompt, tool definitions, and extension instructions. It adds no instructions to model context.
 
+### Project Claude resources
+
+The global `skills` array loads user skills only. Relative entries in user settings resolve from `~/.pi/agent`, not from the current repository. The `claude-commands` extension adds `<cwd>/.claude/skills` through pi's resource hook after approval, loads local commands, and tells `claude-rules` to load local rules. No project `.pi/settings.json` is required. See [project resources](extensions/claude-commands/README.md#project-resources) for trust decisions and name conflicts. Run pi from the repository root, then use `/reload` to pick up new files.
+
 ### The `skills` array
 
 pi implements the same Agent Skills standard as Claude Code, so every `SKILL.md` under `~/.claude/skills` registers unchanged as `/skill:<name>`, with `name` and `description` read by pi's own loader. That covers the skills in `dot_claude/skills/` and the ones APM installs next to them. pi delivers the raw skill body: no `` !`cmd` `` span, no `@file` inlining, no `$ARGUMENTS`, no `context: fork`. No skill in this repository uses them.

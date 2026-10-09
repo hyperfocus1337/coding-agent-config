@@ -17,8 +17,8 @@
  * and a pattern with no slash matches the project root only. A path is relative to
  * `ctx.cwd`; a file outside it matches nothing.
  *
- * Not carried over, and why: project-scope `.claude/rules/`, because this
- * repository holds user scope only; `@import` expansion and `claudeMdExcludes`,
+ * Also loads approved project-scope `.claude/rules/` at session start.
+ * Not carried over: `@import` expansion and `claudeMdExcludes`,
  * because no rule here uses them.
  *
  * Reference: https://code.claude.com/docs/en/memory, and pi-code's
@@ -43,6 +43,8 @@ export interface Rule {
   /** Globs from `paths:`. Empty for an unscoped rule. */
   paths: string[];
   body: string;
+  /** Absolute project-rule path, also its persisted identity. */
+  source?: string;
 }
 
 /**
@@ -101,26 +103,43 @@ export function matches(rule: Rule, relativePath: string): boolean {
 }
 
 /** The system-prompt block for the unscoped rules, or an empty string when there are none. */
-export function systemPromptBlock(rules: Rule[]): string {
+export function systemPromptBlock(rules: Rule[], root = "~/.claude/rules"): string {
   const unscoped = rules.filter((rule) => rule.paths.length === 0);
   if (unscoped.length === 0) {
     return "";
   }
   return [
-    "# Rules from ~/.claude/rules",
+    `# Rules from ${root}`,
     ...unscoped.map((rule) => rule.body),
   ].join("\n\n");
 }
 
 export default function claudeRules(pi: ExtensionAPI): void {
-  const rules = discover(path.join(os.homedir(), ".claude", "rules"));
-  const scoped = rules.filter((rule) => rule.paths.length > 0);
-  const block = systemPromptBlock(rules);
+  let scoped: Rule[] = [];
+  let block = "";
   const sent = new Set<string>();
 
-  // Rebuild the sent set from the session, so a resume, fork or /new starts from
-  // what the current branch already carries.
+  let local: string | undefined;
+  function loadRules(): void {
+    const rules = discover(path.join(os.homedir(), ".claude", "rules"));
+    const root = local ? path.join(local, "rules") : undefined;
+    const projectRules = root
+      ? discover(root).map((rule) => ({ ...rule, source: path.join(root, rule.name) }))
+      : [];
+    scoped = [...rules, ...projectRules].filter((rule) => rule.paths.length > 0);
+    block = [systemPromptBlock(rules), root ? systemPromptBlock(projectRules, root) : ""]
+      .filter(Boolean).join("\n\n");
+  }
+  // The commands extension owns approval and announces it on the shared event bus.
+  // Rebuild on the event too, so extension load order does not affect local rules.
+  pi.events.on("claude-project", (root) => {
+    local = typeof root === "string" ? root : undefined;
+    loadRules();
+  });
+
+  // Rebuild from the current branch on resume, fork, /new and /reload.
   pi.on("session_start", (_event, ctx) => {
+    loadRules();
     sent.clear();
     for (const entry of ctx.sessionManager.getBranch()) {
       if (entry.type === "custom_message" && entry.customType === CUSTOM_TYPE) {
@@ -144,16 +163,17 @@ export default function claudeRules(pi: ExtensionAPI): void {
     }
     const relativePath = path.relative(ctx.cwd, path.resolve(ctx.cwd, target));
     for (const rule of scoped) {
-      if (sent.has(rule.name) || !matches(rule, relativePath)) {
+      const id = rule.source ?? rule.name;
+      if (sent.has(id) || !matches(rule, relativePath)) {
         continue;
       }
-      sent.add(rule.name);
+      sent.add(id);
       pi.sendMessage(
         {
           customType: CUSTOM_TYPE,
-          content: `Rule from ~/.claude/rules/${rule.name}, which applies to ${relativePath}:\n\n${rule.body}`,
+          content: `Rule from ${rule.source ?? `~/.claude/rules/${rule.name}`}, which applies to ${relativePath}:\n\n${rule.body}`,
           display: false,
-          details: { name: rule.name },
+          details: { name: id },
         },
         { deliverAs: "steer" },
       );

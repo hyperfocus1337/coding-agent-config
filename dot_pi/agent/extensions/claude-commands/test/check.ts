@@ -13,6 +13,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { createRequire, registerHooks } from "node:module";
+import { EventEmitter } from "node:events";
 import claudeCommandsExtension, {
   commandName,
   describe,
@@ -24,6 +25,7 @@ import claudeCommandsExtension, {
   withInlineCommands,
   inlineCommandEditor,
 } from "../index.ts";
+import claudeRules from "../../claude-rules/index.ts";
 
 let checks = 0;
 async function check(
@@ -413,16 +415,19 @@ if (process.env.PI_PACKAGE) {
       assert.equal(wrapped.shouldTriggerFileCompletion(lines, 0, 8), true);
     });
     const commands = new Map();
+    const handlers = new Map();
+    const events = new EventEmitter();
     let renderer;
     const messages = [];
     const notifications = [];
     let failExec = false;
     await claudeCommandsExtension({
+      events,
       registerMessageRenderer(type, render) {
         assert.equal(type, "claude-command");
         renderer = render;
       },
-      on() {},
+      on(name, handler) { handlers.set(name, handler); },
       registerCommand(name, command) { commands.set(name, command); },
       exec: async () => ({ stdout: "context", stderr: "", code: failExec ? 1 : 0 }),
       sendMessage(message, options) { messages.push({ message, options }); },
@@ -430,6 +435,62 @@ if (process.env.PI_PACKAGE) {
     const ctx = { cwd: root, ui: { notify: (...args) => notifications.push(args) } };
     const command = found[0];
     const expected = await expand(command.filePath, "42", fakeExec("context"));
+
+    await check("project commands, rules and skills load from the session cwd", async () => {
+      const project = fs.mkdtempSync(path.join(os.tmpdir(), "pi-claude-project-"));
+      const previousArgv = [...process.argv];
+      try {
+        const local = path.join(project, ".claude");
+        for (const kind of ["commands", "rules", "skills"]) fs.mkdirSync(path.join(local, kind), { recursive: true });
+        fs.writeFileSync(path.join(local, "commands", "override.md"), `---\nname: ${command.name}\n---\nProject command $ARGUMENTS`);
+        fs.writeFileSync(path.join(local, "rules", "code.md"), "Project instructions");
+        fs.writeFileSync(path.join(local, "rules", "scoped.md"), "---\npaths: src/**\n---\nProject scoped instructions");
+        process.argv.push("--approve");
+        const localCtx = { ...ctx, cwd: project, mode: "print", sessionManager: { getBranch: () => [] } };
+        const ruleHandlers = new Map();
+        claudeRules({ events, on(name, handler) { ruleHandlers.set(name, handler); }, sendMessage(message) { messages.push({ message }); } });
+        await handlers.get("session_start")({}, localCtx);
+        await commands.get(command.name).handler("42", localCtx);
+        assert.equal(messages.at(-1).message.content, "Project command 42");
+        assert.deepEqual(await handlers.get("resources_discover")({}, localCtx), { skillPaths: [path.join(local, "skills")] });
+        await ruleHandlers.get("session_start")({}, localCtx);
+        const prompt = ruleHandlers.get("before_agent_start")({ systemPrompt: "base" }).systemPrompt;
+        assert.ok(prompt.includes("# Rules from ~/.claude/rules"));
+        assert.ok(prompt.includes(`Rules from ${local}/rules\n\nProject instructions`));
+        assert.ok(!prompt.includes("Project scoped instructions"));
+        const result = { toolName: "read", input: { path: "src/file.ts" }, isError: false };
+        const count = messages.length;
+        ruleHandlers.get("tool_result")(result, localCtx);
+        assert.equal(messages.length, count + 1);
+        const scoped = messages.at(-1).message;
+        assert.equal(scoped.details.name, path.join(local, "rules", "scoped.md"));
+        ruleHandlers.get("tool_result")(result, localCtx);
+        assert.equal(messages.length, count + 1);
+        await ruleHandlers.get("session_start")({}, { ...localCtx, sessionManager: { getBranch: () => [{ type: "custom_message", ...scoped }] } });
+        ruleHandlers.get("tool_result")(result, localCtx);
+        assert.equal(messages.length, count + 1);
+        const denied = path.join(project, "denied");
+        fs.mkdirSync(path.join(denied, ".claude", "rules"), { recursive: true });
+        fs.writeFileSync(path.join(denied, ".claude", "rules", "local.md"), "Do not load");
+        process.argv = [...previousArgv, "--no-approve"];
+        const deniedCtx = { ...localCtx, cwd: denied };
+        await handlers.get("session_start")({}, deniedCtx);
+        assert.equal(await handlers.get("resources_discover")({}, deniedCtx), undefined);
+        await ruleHandlers.get("session_start")({}, deniedCtx);
+        assert.ok(!ruleHandlers.get("before_agent_start")({ systemPrompt: "base" }).systemPrompt.includes("Do not load"));
+      } finally {
+        process.argv = previousArgv;
+        fs.rmSync(project, { recursive: true, force: true });
+        // Restore the global command used by the delivery checks below.
+        await claudeCommandsExtension({
+          events,
+          registerMessageRenderer() {}, on() {},
+          registerCommand(name, command) { commands.set(name, command); },
+          exec: async () => ({ stdout: "context", stderr: "", code: failExec ? 1 : 0 }),
+          sendMessage(message, options) { messages.push({ message, options }); },
+        });
+      }
+    });
 
     await check("display modes send identical expanded user-role context", async () => {
       for (const value of [undefined, "0", "1", "true"]) {

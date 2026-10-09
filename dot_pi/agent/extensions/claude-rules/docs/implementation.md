@@ -6,15 +6,15 @@ Why the extension injects where it does. [README.md](../README.md) describes the
 
 pi builds the system prompt from `systemPromptOptions` (`cwd`, `skills`, `contextFiles`, `customPrompt`, `appendSystemPrompt`, `selectedTools`, `toolSnippets`, `promptGuidelines`), and that object is read-only input to the `before_agent_start` handler. The only way to add text is to return `{ systemPrompt }`, which replaces the prompt and chains across handlers in load order. So the extension appends its block to `event.systemPrompt` and returns it.
 
-Every change to the system prompt invalidates the prompt cache, so the block is computed once at load, from `discover()`, and the handler returns the same string each turn. Rule files are read at load, not per turn; `/reload` picks up an edit.
+The block is computed at `session_start`, from `discover()`, and the handler returns the same text each turn. Rule files are not read per turn; `/reload` picks up an edit. User and project rules have separate headings. The `claude-project` event from `claude-commands` supplies the approved local directory and also rebuilds the block, so either extension load order works. Without that extension, only user rules load.
 
 ## Scoped rules: `tool_result` plus `sendMessage`
 
 Claude Code delivers a scoped rule after it reads a matching file. The extension watches `tool_result` for the `read`, `write`, and `edit` tools, which carry the file in `event.input.path`, resolves it against `ctx.cwd`, and matches the relative path. A tool result with `isError` is skipped.
 
-Delivery is `pi.sendMessage({ customType: "claude-rule", ... }, { deliverAs: "steer" })`. A steer message is inserted before the next model call, which is the same point the `context` event offers, and a custom message persists in the session as a `custom_message` entry. That persistence is what makes "once per session" cheap: at `session_start` the extension walks `ctx.sessionManager.getBranch()` and rebuilds the set of sent rule names from the entries with that `customType`, so a resume, a fork, or `/new` starts from what the current branch already carries. The `context` event would need the extension to keep a queue between the tool result and the next call instead. `display: false` keeps the message out of the transcript view; `ctx.ui.notify` shows one line instead.
+Delivery is `pi.sendMessage({ customType: "claude-rule", ... }, { deliverAs: "steer" })`. A steer message is inserted before the next model call, which is the same point the `context` event offers, and a custom message persists in the session as a `custom_message` entry. That persistence is what makes "once per session" cheap: at `session_start` the extension walks `ctx.sessionManager.getBranch()` and rebuilds the set of sent rule identities from the entries with that `customType`, so a resume, a fork, or `/new` starts from what the current branch already carries. The `context` event would need the extension to keep a queue between the tool result and the next call instead. `display: false` keeps the message out of the transcript view; `ctx.ui.notify` shows one line instead.
 
-The message body names the rule and the file that triggered it, then the rule text.
+The message body names the rule and the file that triggered it, then the rule text. User identities remain relative names for compatibility with existing sessions. Project identities are absolute rule paths, so equal filenames in the two scopes do not suppress each other.
 
 ## Globs: `path.matchesGlob`
 
