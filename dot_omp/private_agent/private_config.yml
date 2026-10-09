@@ -13,3 +13,5 @@ statusLine:
   preset: default
   separator: pipe
 personality: default
+commands:
+  enableClaudeUser: true
