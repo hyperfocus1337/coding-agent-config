@@ -21,7 +21,7 @@
   "disableClaudeAiConnectors": true,
   "disableBundledSkills": true,
   "disableWorkflows": true,
-  "disableArtifact": true,
+  "enableArtifact": false,
   "disableAllHooks": false,
   "disableAgentView": false,
   "disableRemoteControl": false,
