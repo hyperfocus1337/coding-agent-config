@@ -6,6 +6,9 @@
 set -u
 
 HOOK="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/hook.sh"
+# The Vale config in the chezmoi source, not the applied copy in ~/.config.
+LINT_PROSE_VALE_DIR="$(cd "${HOOK%/*}/../../../dot_config/vale" && pwd)"
+export LINT_PROSE_VALE_DIR
 for bin in jq vale; do
   command -v "$bin" >/dev/null 2>&1 || { echo "SKIP no $bin on PATH"; exit 0; }
 done
@@ -110,10 +113,10 @@ run "$(bash_payload "cat > $repo/new.md <<'EOF' ... EOF && git commit -am new")"
 check "a write and commit in one command is compared to HEAD~1" 2 'new.md:1:'
 
 # --- A Vale failure does not block ---
-# A copy of the hook with a rule Vale cannot load.
-cp -R "${HOOK%/*}" "$tmp/broken"
-echo 'extends: nonsense' > "$tmp/broken/vale/styles/Writing/ParagraphLength.yml"
-HOOK=$tmp/broken/hook.sh run "$(edit_payload "$tmp/long.md")"
+# A copy of the Vale config with a rule Vale cannot load.
+cp -R "$LINT_PROSE_VALE_DIR" "$tmp/broken"
+echo 'extends: nonsense' > "$tmp/broken/styles/Writing/ParagraphLength.yml"
+LINT_PROSE_VALE_DIR=$tmp/broken run "$(edit_payload "$tmp/long.md")"
 check "a broken rule is reported to the user, not blocked" 1 'Vale failed'
 
 # --- Skips ---

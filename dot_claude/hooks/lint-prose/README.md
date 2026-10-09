@@ -19,11 +19,13 @@ Wired to four entries in `settings.json`: `Write|Edit|MultiEdit` and `Bash` on `
 
 The hook checks the whole file, then reports only the alerts on paragraphs that hold a line git reports as changed against `HEAD`. When the Bash command also ran `git commit`, the hook compares against `HEAD~1`. When there is nothing to compare against, the hook reports every alert in the file: this occurs outside git, for an untracked file, and in the first commit. In all other cases, an old long paragraph elsewhere in the file does not block an unrelated change.
 
-[`check.sh`](check.sh) runs Vale with the bundled [`vale/vale.ini`](vale/vale.ini), so a repository's own Vale config is never read. It is also the scanner behind the `prose-cleanup` skill:
+The hook runs [`check.sh`](../../../dot_config/vale/scripts/check.sh), which runs Vale with the shared [`vale.ini`](../../../dot_config/vale/vale.ini) in `~/.config/vale/`. Because of this, Vale never reads a repository's own Vale config. `check.sh` is also the scanner behind the `prose-cleanup` skill:
 
 ```sh
-bash ~/.claude/hooks/lint-prose/check.sh README.md docs/*.md
+bash ~/.config/vale/scripts/check.sh README.md docs/*.md
 ```
+
+`LINT_PROSE_VALE_DIR` replaces `~/.config/vale` as the directory of the config and `scripts/check.sh`. The tests set it to `dot_config/vale` in the chezmoi source.
 
 ## Settings
 

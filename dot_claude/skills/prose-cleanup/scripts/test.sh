@@ -4,6 +4,9 @@
 set -u
 
 SCAN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scan.sh"
+# The Vale config in the chezmoi source, not the applied copy in ~/.config.
+LINT_PROSE_VALE_DIR="$(cd "${SCAN%/*}/../../../../dot_config/vale" && pwd)"
+export LINT_PROSE_VALE_DIR
 for bin in vale fd git; do
   command -v "$bin" >/dev/null 2>&1 || { echo "SKIP no $bin on PATH"; exit 0; }
 done

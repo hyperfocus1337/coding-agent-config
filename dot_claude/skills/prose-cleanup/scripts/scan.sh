@@ -12,15 +12,14 @@
 
 # --- Paths and extensions ---
 set -uo pipefail
-HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-# The same file in the chezmoi source and in ~/.claude.
-check=$HERE/../../../hooks/lint-prose/check.sh
+# The shared Vale config and scripts/check.sh. The test points it at the chezmoi source.
+check=${LINT_PROSE_VALE_DIR:-$HOME/.config/vale}/scripts/check.sh
 # The hook's extensions, without .txt: a .txt file in a directory is often a log.
 exts=(md markdown org html htm)
 
 # --- Preflight ---
 die() { echo "scan.sh: $1" >&2; exit 2; }
-[[ -f "$check" ]] || die "no lint-prose hook at $check"
+[[ -f "$check" ]] || die "no check.sh at $check"
 vale --version >/dev/null 2>&1 || die "vale is not installed, or does not run"
 
 # --- Collect files ---

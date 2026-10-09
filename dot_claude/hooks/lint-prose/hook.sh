@@ -19,7 +19,8 @@ vale --version >/dev/null 2>&1 || exit 0
 lint_disable=" ${CLAUDE_LINT_DISABLE:-} "
 lint_disable=${lint_disable//,/ }
 [[ "$lint_disable" == *" all "* || "$lint_disable" == *" prose "* ]] && exit 0
-HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# The shared Vale config and scripts/check.sh. The test points it at the chezmoi source.
+vale_dir=${LINT_PROSE_VALE_DIR:-$HOME/.config/vale}
 # The prose extensions. .txt is added on Write/Edit only: a .txt path in a Bash
 # command is often a log the command wrote, and a log with one sentence per line
 # reads as one long paragraph.
@@ -75,7 +76,7 @@ done
 report=''
 failed=''
 lint() { # check.sh arguments. Sets $alerts. Returns 1 on alerts, else 0.
-	alerts=$(bash "$HERE/check.sh" "$@" 2>&1) && return 0
+	alerts=$(bash "$vale_dir/scripts/check.sh" "$@" 2>&1) && return 0
 	[[ $? -eq 1 ]] && return 1
 	failed+="lint-prose: Vale failed, so the prose was not checked:"$'\n'"$alerts"$'\n'
 	alerts=''
