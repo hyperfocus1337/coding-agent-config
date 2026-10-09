@@ -3,7 +3,7 @@
 # Run: bash test.sh. Needs vale, fd, and git on PATH.
 set -u
 
-SCAN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scan.sh"
+SCAN="$(cd "$(dirname "${BASH_SOURCE[0]}")/../scripts" && pwd)/scan.sh"
 # The Vale config in the chezmoi source, not the applied copy in ~/.config.
 LINT_PROSE_VALE_DIR="$(cd "${SCAN%/*}/../../../../dot_config/vale" && pwd)"
 export LINT_PROSE_VALE_DIR
