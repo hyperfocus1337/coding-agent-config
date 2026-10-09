@@ -20,7 +20,10 @@
   },
   "disableClaudeAiConnectors": true,
   "disableBundledSkills": true,
-  "disableRemoteControl": false,
   "disableWorkflows": true,
-  "disableArtifact": true
+  "disableArtifact": true,
+  "disableAllHooks": false,
+  "disableAgentView": false,
+  "disableRemoteControl": false,
+  "disableSkillShellExecution": false
 }
