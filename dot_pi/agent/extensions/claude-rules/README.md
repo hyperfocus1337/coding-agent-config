@@ -8,7 +8,7 @@ Every rule file with no `paths:` frontmatter is appended to the system prompt in
 
 ## Project approval
 
-The `claude-commands` extension owns project approval and sends the approved `.claude` directory over pi's shared event bus. Keep both extensions installed. See [project resources](../claude-commands/README.md#project-resources) for trust decisions, working-directory scope, and reload instructions.
+The [claude-project coordinator](../claude-project/README.md) owns project approval and sends the approved `.claude` directory over pi's shared event bus. Keep the coordinator installed for local rules; the commands and skills extensions do not need to be enabled. See [project resources](../claude-commands/README.md#project-resources) for trust decisions, working-directory scope, and reload instructions.
 
 ## Scoped rules
 

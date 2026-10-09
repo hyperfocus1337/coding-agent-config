@@ -26,6 +26,8 @@ import claudeCommandsExtension, {
   inlineCommandEditor,
 } from "../index.ts";
 import claudeRules from "../../claude-rules/index.ts";
+import claudeProject from "../../claude-project/index.ts";
+import claudeSkills from "../../claude-skills/index.ts";
 
 let checks = 0;
 async function check(
@@ -448,11 +450,17 @@ if (process.env.PI_PACKAGE) {
         process.argv.push("--approve");
         const localCtx = { ...ctx, cwd: project, mode: "print", sessionManager: { getBranch: () => [] } };
         const ruleHandlers = new Map();
+        const projectHandlers = new Map();
+        const skillHandlers = new Map();
+        claudeProject({ events, on(name, handler) { projectHandlers.set(name, handler); } });
+        claudeSkills({ events, on(name, handler) { skillHandlers.set(name, handler); } });
         claudeRules({ events, on(name, handler) { ruleHandlers.set(name, handler); }, sendMessage(message) { messages.push({ message }); } });
+        await projectHandlers.get("session_start")({}, localCtx);
         await handlers.get("session_start")({}, localCtx);
         await commands.get(command.name).handler("42", localCtx);
         assert.equal(messages.at(-1).message.content, "Project command 42");
-        assert.deepEqual(await handlers.get("resources_discover")({}, localCtx), { skillPaths: [path.join(local, "skills")] });
+        assert.equal(handlers.has("resources_discover"), false);
+        assert.deepEqual(await skillHandlers.get("resources_discover")({}, localCtx), { skillPaths: [path.join(local, "skills")] });
         await ruleHandlers.get("session_start")({}, localCtx);
         const prompt = ruleHandlers.get("before_agent_start")({ systemPrompt: "base" }).systemPrompt;
         assert.ok(prompt.includes("# Rules from ~/.claude/rules"));
@@ -474,8 +482,9 @@ if (process.env.PI_PACKAGE) {
         fs.writeFileSync(path.join(denied, ".claude", "rules", "local.md"), "Do not load");
         process.argv = [...previousArgv, "--no-approve"];
         const deniedCtx = { ...localCtx, cwd: denied };
+        await projectHandlers.get("session_start")({}, deniedCtx);
         await handlers.get("session_start")({}, deniedCtx);
-        assert.equal(await handlers.get("resources_discover")({}, deniedCtx), undefined);
+        assert.equal(await skillHandlers.get("resources_discover")({}, deniedCtx), undefined);
         await ruleHandlers.get("session_start")({}, deniedCtx);
         assert.ok(!ruleHandlers.get("before_agent_start")({ systemPrompt: "base" }).systemPrompt.includes("Do not load"));
       } finally {

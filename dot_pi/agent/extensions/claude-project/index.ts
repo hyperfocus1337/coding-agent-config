@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 /** Claude resource locations for this session, not for the agent settings directory. */
 export function projectRoot(cwd: string): string | undefined {
@@ -32,4 +32,11 @@ export async function approvedProjectRoot(ctx: ExtensionContext): Promise<string
     `Load commands, rules, and skills from ${root}? Commands can execute shell code. Use /trust to save a decision.`,
   );
   return trusted ? root : undefined;
+}
+
+/** Resolve approval once and notify each resource extension through pi's event bus. */
+export default function claudeProject(pi: ExtensionAPI): void {
+  pi.on("session_start", async (_event, ctx) => {
+    pi.events.emit("claude-project", await approvedProjectRoot(ctx));
+  });
 }

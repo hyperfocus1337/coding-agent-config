@@ -6,7 +6,7 @@ Why the extension injects where it does. [README.md](../README.md) describes the
 
 pi builds the system prompt from `systemPromptOptions` (`cwd`, `skills`, `contextFiles`, `customPrompt`, `appendSystemPrompt`, `selectedTools`, `toolSnippets`, `promptGuidelines`), and that object is read-only input to the `before_agent_start` handler. The only way to add text is to return `{ systemPrompt }`, which replaces the prompt and chains across handlers in load order. So the extension appends its block to `event.systemPrompt` and returns it.
 
-The block is computed at `session_start`, from `discover()`, and the handler returns the same text each turn. Rule files are not read per turn; `/reload` picks up an edit. User and project rules have separate headings. The `claude-project` event from `claude-commands` supplies the approved local directory and also rebuilds the block, so either extension load order works. Without that extension, only user rules load.
+The block is computed at `session_start`, from `discover()`, and the handler returns the same text each turn. Rule files are not read per turn; `/reload` picks up an edit. User and project rules have separate headings. The `claude-project` event from the `claude-project` coordinator supplies the approved local directory and also rebuilds the block, so either extension load order works. Without the coordinator, only user rules load. Commands and skills can be disabled without changing rule approval.
 
 ## Scoped rules: `tool_result` plus `sendMessage`
 

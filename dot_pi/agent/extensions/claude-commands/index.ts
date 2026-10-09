@@ -35,7 +35,6 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 
 import type { AutocompleteProvider } from "@earendil-works/pi-tui";
-import { approvedProjectRoot } from "./project.ts";
 
 /** Complete slash names at a whitespace boundary without replacing nearby text. */
 export function withInlineCommands(provider: AutocompleteProvider): AutocompleteProvider {
@@ -433,11 +432,10 @@ export default async function claudeCommandsExtension(pi: ExtensionAPI) {
       );
     },
   );
-  let local: string | undefined;
+  pi.events.on("claude-project", (root) => {
+    if (typeof root === "string") register(path.join(root, "commands"));
+  });
   pi.on("session_start", async (_event, ctx) => {
-    local = await approvedProjectRoot(ctx);
-    pi.events.emit("claude-project", local);
-    if (local) register(path.join(local, "commands"));
     if (ctx.mode !== "tui") return;
     const { CustomEditor } = await import("@earendil-works/pi-coding-agent");
     const InlineCommandEditor = inlineCommandEditor(CustomEditor);
@@ -445,9 +443,6 @@ export default async function claudeCommandsExtension(pi: ExtensionAPI) {
       new InlineCommandEditor(tui, theme, keybindings),
     );
   });
-  pi.on("resources_discover", () =>
-    local ? { skillPaths: [path.join(local, "skills")] } : undefined,
-  );
   register(path.join(os.homedir(), ".claude", "commands"));
 
   function register(root: string): void {

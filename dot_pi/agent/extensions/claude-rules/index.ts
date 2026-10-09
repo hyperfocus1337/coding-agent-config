@@ -130,7 +130,7 @@ export default function claudeRules(pi: ExtensionAPI): void {
     block = [systemPromptBlock(rules), root ? systemPromptBlock(projectRules, root) : ""]
       .filter(Boolean).join("\n\n");
   }
-  // The commands extension owns approval and announces it on the shared event bus.
+  // The project coordinator announces approval on the shared event bus.
   // Rebuild on the event too, so extension load order does not affect local rules.
   pi.events.on("claude-project", (root) => {
     local = typeof root === "string" ? root : undefined;

@@ -4,11 +4,11 @@ Registers user commands from `~/.claude/commands/**/*.md` and approved project c
 
 ## Project resources
 
-At session start, the extension checks `.claude/commands`, `.claude/rules`, and `.claude/skills` in the session working directory. Project commands replace user commands with the same name. The extension supplies the local skills directory through pi's `resources_discover` hook and announces the approved directory to `claude-rules`. Pi's native loader validates skills and handles name conflicts; the first loaded skill wins, so a local skill does not override a user skill with the same name.
+The `claude-project` coordinator checks local Claude resources at session start and announces the approved directory. This extension registers commands from that directory. Project commands replace user commands with the same name. Skill discovery belongs to [claude-skills](../claude-skills/README.md); rule loading belongs to [claude-rules](../claude-rules/README.md). Neither is required for command loading.
 
 Approval follows `--approve` or `--no-approve`, pi's saved `/trust` decision, then the global `defaultProjectTrust` setting. If the setting is `ask`, the TUI asks for approval for this session; non-interactive modes skip local resources. Use `/trust` to save the decision, or `pi --approve` for an explicit automated run. This separate check is needed because pi does not include `.claude` directories in its built-in project-resource detection.
 
-Run pi from the project root. The extension does not search ancestor directories. Run `/reload` after adding a command, rule, or skill. Keep both Claude extensions installed so local rules receive the approval event.
+Run pi from the project root. The extension does not search ancestor directories. Run `/reload` after adding a command, rule, or skill. Keep [claude-project](../claude-project/README.md) installed for local command approval.
 
 ## Names
 

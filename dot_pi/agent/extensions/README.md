@@ -6,15 +6,17 @@ Extensions are TypeScript modules pi loads at startup, through jiti, with no bui
 | ---------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`claude-commands`](claude-commands/README.md) | `~/.claude/commands` | Registers every command file as a slash command named by its path, `/git:commit:single`, and expands arguments and `` !`cmd` `` spans the way Claude Code does. |
 | [`claude-rules`](claude-rules/README.md)       | `~/.claude/rules`    | Puts unscoped rules in the system prompt and sends a rule with `paths:` once per session after a file tool touches a matching file.                             |
+| [`claude-project`](claude-project/README.md) | `<cwd>/.claude` | Resolves project approval once and announces the approved directory to resource extensions. |
+| [`claude-skills`](claude-skills/README.md) | `<cwd>/.claude/skills` | Supplies approved local skills to pi's native skill loader. |
 | [`compact-bash`](compact-bash/README.md)       | pi's own `bash` tool | Replaces the five-line output preview under a `bash` call with one line, `42 lines`. `ctrl+o`, and a command that fails, keep pi's own output.                  |
 
-The first two, together with the `skills` setting and the `AGENTS.md` symlink documented in [`../README.md`](../README.md), make pi read the user-scope configuration in [`dot_claude/`](../../../dot_claude/README.md), so one copy serves both agents. [`docs/agents/pi.md`](../../../docs/agents/pi.md) is the overview. `compact-bash` changes pi's own display and carries no Claude Code behaviour.
+The Claude resource extensions, together with the `skills` setting and the `AGENTS.md` symlink documented in [`../README.md`](../README.md), make pi read the user-scope configuration in [`dot_claude/`](../../../dot_claude/README.md), so one copy serves both agents. [`docs/agents/pi.md`](../../../docs/agents/pi.md) is the overview. `compact-bash` changes pi's own display and carries no Claude Code behaviour.
 
 ## Shared conventions
 
 **The behaviour it replaces is the contract.** `claude-commands` and `claude-rules` each reproduce a documented Claude Code behaviour; `compact-bash` replaces one pi renderer and keeps the rest of the tool. Each README names what it does not carry over and why, and the header comment of `index.ts` states the same list in short form.
 
-**User and project Claude resources.** The extensions retain user resources and load approved `.claude/commands`, `.claude/rules`, and `.claude/skills` from the session working directory. `claude-commands` owns approval, registers local commands, supplies local skills to pi's native loader, and sends the approved directory to `claude-rules` over the event bus. They do not search ancestor directories.
+**User and project Claude resources.** The extensions retain user resources and load approved `.claude/commands`, `.claude/rules`, and `.claude/skills` from the session working directory. `claude-project` owns approval and announces the approved directory over the event bus. Commands, rules, and skills each have their own consumer extension and can be enabled independently. They do not search ancestor directories.
 
 **No dependency.** Frontmatter parsing, glob matching, and argument splitting use the standard library. `claude-rules` imports `parseFile` from `claude-commands`, so the two share one frontmatter parser.
 

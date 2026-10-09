@@ -35,7 +35,7 @@ Run `/footer` to edit the live layout. Save a change back to this repository if 
 
 ### Project Claude resources
 
-The global `skills` array loads user skills only. Relative entries in user settings resolve from `~/.pi/agent`, not from the current repository. The `claude-commands` extension adds `<cwd>/.claude/skills` through pi's resource hook after approval, loads local commands, and tells `claude-rules` to load local rules. No project `.pi/settings.json` is required. See [project resources](extensions/claude-commands/README.md#project-resources) for trust decisions and name conflicts. Run pi from the repository root, then use `/reload` to pick up new files.
+The global `skills` array loads user skills only. Relative entries in user settings resolve from `~/.pi/agent`, not from the current repository. The `claude-project` coordinator approves local resources. Each resource extension consumes its approval event: `claude-commands` registers commands, `claude-rules` loads rules, and `claude-skills` adds `<cwd>/.claude/skills` through pi's resource hook. The three resource extensions can be enabled independently. No project `.pi/settings.json` is required. See [project resources](extensions/claude-commands/README.md#project-resources) for trust decisions and name conflicts. Run pi from the repository root, then use `/reload` to pick up new files.
 
 ### The `skills` array
 
