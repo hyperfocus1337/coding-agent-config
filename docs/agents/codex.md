@@ -2,14 +2,14 @@
 
 A [Codex CLI](https://developers.openai.com/codex/cli) session loads the user-scope configuration from this repository's single copy: `~/.claude/skills`, the scripts in `~/.claude/hooks`, and `CLAUDE.md` with the rules in `~/.claude/rules/`. Symlinks, one hooks file, one wrapper script, and one chezmoi template do it. No hook script or rule moves or changes. The Codex-only `claude-command` skill reads a selected Claude command on demand. Written against Codex CLI 0.160.1.
 
-| Resource                         | How Codex loads it                                                                           | Where                                                                    |
-| -------------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Skills                           | its native user skills directory, a chezmoi symlink `~/.agents/skills` to `~/.claude/skills` | [`dot_agents/symlink_skills`](../../dot_agents/symlink_skills)           |
-| Hooks                            | `~/.codex/hooks.json`, which calls the scripts in `~/.claude/hooks/`                         | [`dot_codex/modify_hooks.json`](../../dot_codex/modify_hooks.json)       |
-| File hooks on `apply_patch`      | a wrapper that runs a file hook once per patched file                                        | [`dot_codex/hooks/apply-patch.sh`](../../dot_codex/hooks/apply-patch.sh) |
-| `CLAUDE.md` and rules            | `~/.codex/AGENTS.md`, rendered from `CLAUDE.md` and every rule                               | [`dot_codex/AGENTS.md.tmpl`](../../dot_codex/AGENTS.md.tmpl)             |
-| Project rules of this repository | `CODEX.md` at the repository root, a configured fallback symlink to `.claude/rules/apply.md` | [`CODEX.md`](../../CODEX.md)                                           |
-| Commands                         | an explicit-only adapter skill in `~/.codex/skills/claude-command/`                           | [`dot_codex/skills/claude-command/SKILL.md`](../../dot_codex/skills/claude-command/SKILL.md) |
+| Resource                         | How Codex loads it                                                                           | Where                                                                                        |
+| -------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Skills                           | its native user skills directory, a chezmoi symlink `~/.agents/skills` to `~/.claude/skills` | [`dot_agents/symlink_skills`](../../dot_agents/symlink_skills)                               |
+| Hooks                            | `~/.codex/hooks.json`, which calls the scripts in `~/.claude/hooks/`                         | [`dot_codex/modify_hooks.json`](../../dot_codex/modify_hooks.json)                           |
+| File hooks on `apply_patch`      | a wrapper that runs a file hook once per patched file                                        | [`dot_codex/hooks/apply-patch.sh`](../../dot_codex/hooks/apply-patch.sh)                     |
+| `CLAUDE.md` and rules            | `~/.codex/AGENTS.md`, rendered from `CLAUDE.md` and every rule                               | [`dot_codex/AGENTS.md.tmpl`](../../dot_codex/AGENTS.md.tmpl)                                 |
+| Project rules of this repository | `CODEX.md` at the repository root, a configured fallback symlink to `.claude/rules/apply.md` | [`CODEX.md`](../../CODEX.md)                                                                 |
+| Commands                         | an explicit-only adapter skill in `~/.codex/skills/claude-command/`                          | [`dot_codex/skills/claude-command/SKILL.md`](../../dot_codex/skills/claude-command/SKILL.md) |
 
 ## Skills
 
