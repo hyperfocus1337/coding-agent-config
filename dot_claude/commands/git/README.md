@@ -18,7 +18,7 @@ Stage and commit working directory changes.
 | `commit:conversation` | Commit this conversation's changes as scoped commits    |
 | `commit:parallel`     | Same as `commit:conversation`, safe with other sessions |
 | `commit:multiple`     | Split changes into several commits                      |
-| `commit:extend`       | Fold changes into an existing commit                    |
+| `commit:extend`       | Fold changes into one or more existing commits          |
 | `commit:split`        | Split the previous commit into separate commits         |
 | `commit:push`         | Commit and push                                         |
 | `commit:plan`         | Plan the commits a commit command would make            |
@@ -43,7 +43,7 @@ The four commit commands differ on two axes: which changes they take, and how ma
 
 `commit:parallel` takes the same changes as `commit:conversation`, for when other sessions commit on the same branch at the same time. It builds each commit in a private index and moves the branch only if no other commit landed first, so it never commits the work of another session. Every session that commits must use it. See [`commit/README.md`](commit/README.md#parallel-sessions).
 
-`commit:task` takes an optional scope argument; without one it takes the last request in the conversation. `commit:extend` folds changes into an existing commit instead of creating one. `commit:split` does the reverse: it undoes `HEAD` and recommits it as one commit per logical unit. It takes the reason for the split as its argument.
+`commit:task` takes an optional scope argument; without one it takes the last request in the conversation. `commit:extend` folds changes into one or more existing commits instead of creating one. `commit:split` does the reverse: it undoes `HEAD` and recommits it as one commit per logical unit. It takes the reason for the split as its argument.
 
 ### How `commit:any` routes
 
