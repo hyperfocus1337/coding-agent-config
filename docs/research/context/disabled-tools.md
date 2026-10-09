@@ -25,14 +25,25 @@ A tool name in `permissions.deny` removes that tool from the session. Because a 
 
 ## Disabled features
 
-| Key                         | Effect                                                                                                       |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `disableBundledSkills`      | Removes the skills and workflows that ship with Claude Code. Built-in commands such as `/init` stay typable. |
-| `disableWorkflows`          | Removes dynamic workflows and the bundled workflow commands.                                                 |
-| `disableRemoteControl`      | Blocks `claude remote-control`, the `--remote-control` flag, and the in-session toggle.                      |
-| `disableClaudeAiConnectors` | Stops the fetch and connection of claude.ai MCP connectors.                                                  |
-| `disableArtifact`           | Removes the `Artifact` tool, which publishes output as a web page on claude.ai.                              |
-| `syncClaudeAiSkills: false` | Stops the download of the claude.ai account skills and moves the synced ones to `~/.claude/skills/.trash/`.  |
+| Key                         | Effect                                                                                                                        |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `disableBundledSkills`      | Removes the skills and workflows that ship with Claude Code. Built-in commands such as `/init` stay typable.                  |
+| `disableWorkflows`          | Removes dynamic workflows and the bundled workflow commands.                                                                  |
+| `disableRemoteControl`      | Blocks `claude remote-control`, the `--remote-control` flag, and the in-session toggle.                                       |
+| `disableClaudeAiConnectors` | Stops the fetch and connection of claude.ai MCP connectors.                                                                   |
+| `enableArtifact: false`     | Removes the `Artifact` tool, which publishes output as a web page on claude.ai. It replaces the deprecated `disableArtifact`. |
+| `syncClaudeAiSkills: false` | Stops the download of the claude.ai account skills and moves the synced ones to `~/.claude/skills/.trash/`.                   |
+
+`dot_claude/settings-minimal.json` also sets these keys to `false`, so you can turn each one on in the file. With `false`, the feature runs, the same as when the key is not set.
+
+| Key                          | Effect when `true`                                                                                             |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `disableRemoteControl`       | See the table above.                                                                                           |
+| `disableAgentView`           | Removes `claude agents`, `--bg`, `/background`, and the on-demand supervisor.                                  |
+| `disableSkillShellExecution` | Replaces each `` !`...` `` block in skills and commands with a notice. The `git:*` commands need these blocks. |
+| `disableAllHooks`            | Stops hooks, the custom status line, and the custom file suggestion command. `claude-nohooks` sets it.         |
+
+`disableAutoMode` and `disableDeepLinkRegistration` accept only the string `"disable"`, which has no "off" form, so the file does not contain them.
 
 ## Skills lost to `disableBundledSkills`
 
@@ -53,7 +64,7 @@ To find these skills on Claude Code 2.1.283, two headless sessions listed their 
 
 `/init` and `/security-review` are built-in commands, not bundled skills, so the model no longer sees them, but you can still type them.
 
-The `artifact-design`, `artifact-diagramming`, and `artifact-capabilities` skills go with the `Artifact` tool, which `disableArtifact` already removes. The headless test did not show them with either setting, so this page does not confirm which of the two keys removes them.
+The `artifact-design`, `artifact-diagramming`, and `artifact-capabilities` skills go with the `Artifact` tool, which `enableArtifact: false` already removes. The headless test did not show them with either setting, so this page does not confirm which of the two keys removes them.
 
 ## Skills lost to `syncClaudeAiSkills: false`
 
@@ -103,8 +114,8 @@ Five of these skills need tools that a terminal session here does not have: `doc
 
 Three of the keys also have an environment variable with the same effect.
 
-| Key                    | Environment variable                 |
-| ---------------------- | ------------------------------------ |
-| `disableBundledSkills` | `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` |
-| `disableWorkflows`     | `CLAUDE_CODE_DISABLE_WORKFLOWS`      |
-| `disableArtifact`      | `CLAUDE_CODE_DISABLE_ARTIFACT`       |
+| Key                     | Environment variable                 |
+| ----------------------- | ------------------------------------ |
+| `disableBundledSkills`  | `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` |
+| `disableWorkflows`      | `CLAUDE_CODE_DISABLE_WORKFLOWS`      |
+| `enableArtifact: false` | `CLAUDE_CODE_DISABLE_ARTIFACT`       |

@@ -46,7 +46,7 @@ Three keys hold lists that this file does not repeat, because the list changes a
 
 ### Minimal and full mode
 
-`settings.json` holds the full config. `settings-minimal.json` holds only the 13 denied tools and the 5 `disable*` keys that [`docs/research/context/disabled-tools.md`](../docs/research/context/disabled-tools.md) explains. Fish loads the `claude` and `claude-full` functions from `~/.config/fish/conf.d/claude.fish` with no further step. For bash or zsh, add this line to `~/.bashrc` or `~/.zshrc`:
+`settings.json` holds the full config. `settings-minimal.json` holds only the 13 denied tools and the 7 `disable*` keys and `enableArtifact` that [`docs/research/context/disabled-tools.md`](../docs/research/context/disabled-tools.md) explains. Fish loads the `claude` and `claude-full` functions from `~/.config/fish/conf.d/claude.fish` with no further step. For bash or zsh, add this line to `~/.bashrc` or `~/.zshrc`:
 
 ```sh
 . ~/.claude/claude.sh
