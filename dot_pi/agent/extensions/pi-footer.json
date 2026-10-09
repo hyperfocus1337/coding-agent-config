@@ -66,26 +66,9 @@
         "type": "git-remote",
         "options": {
           "raw": true,
+          "hideWhenEmpty": false,
           "fg": "black",
-          "bg": "ansi256:248"
-        }
-      },
-      {
-        "id": "remote-model-separator",
-        "type": "separator",
-        "options": {
-          "separator": "powerline-right-spaced",
-          "fg": "ansi256:248",
-          "bg": "ansi256:240"
-        }
-      },
-      {
-        "id": "model",
-        "type": "model",
-        "options": {
-          "raw": true,
-          "fg": "brightWhite",
-          "bg": "ansi256:240"
+          "bg": "ansi256:250"
         }
       }
     ],
@@ -95,10 +78,19 @@
         "type": "context-bar",
         "options": {
           "raw": true,
-          "contextBarMode": "default",
+          "contextBarMode": "medium",
           "tokenFormatStyle": "compact",
           "fg": "black",
           "bg": "ansi256:252"
+        }
+      },
+      {
+        "id": "context-session-separator",
+        "type": "separator",
+        "options": {
+          "separator": "powerline-right-spaced",
+          "fg": "ansi256:252",
+          "bg": "ansi256:240"
         }
       },
       {
@@ -108,8 +100,18 @@
           "raw": true,
           "externalStatusKey": "codex-session",
           "hideWhenEmpty": true,
+          "trimValue": 8,
           "fg": "brightWhite",
           "bg": "ansi256:240"
+        }
+      },
+      {
+        "id": "session-weekly-separator",
+        "type": "separator",
+        "options": {
+          "separator": "powerline-right-spaced",
+          "fg": "ansi256:240",
+          "bg": "ansi256:250"
         }
       },
       {
@@ -119,8 +121,27 @@
           "raw": true,
           "externalStatusKey": "codex-weekly",
           "hideWhenEmpty": true,
+          "trimValue": 7,
           "fg": "black",
           "bg": "ansi256:250"
+        }
+      },
+      {
+        "id": "weekly-model-separator",
+        "type": "separator",
+        "options": {
+          "separator": "powerline-right-spaced",
+          "fg": "ansi256:250",
+          "bg": "ansi256:240"
+        }
+      },
+      {
+        "id": "model-provider",
+        "type": "model-provider",
+        "options": {
+          "raw": true,
+          "fg": "brightWhite",
+          "bg": "ansi256:240"
         }
       }
     ]
