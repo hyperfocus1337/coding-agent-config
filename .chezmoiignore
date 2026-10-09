@@ -25,6 +25,7 @@ CODEX.md
 .codex/hooks/test/**
 .codex/test/**
 .codex/skills/**/test/**
+.config/vale/**/README.md
 .omp/agent/README.md
 .pi/agent/README.md
 .pi/agent/extensions/README.md
