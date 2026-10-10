@@ -24,12 +24,12 @@
     "hash": "196c1b63d218d25b95e616922f3c3055970d1f045012cfdfbc4a4aa2fad7e930"
   },
   "install-skills": {
-    "version": "0.1.3",
-    "hash": "4f185f0d5d4215de951ff127601e1a96998ab1492f4b29e271fe462af8babc76"
+    "version": "0.1.4",
+    "hash": "e401d2bace8ec3216765ae97bec419fe12fdd954163c2db3b1f071d2503086fd"
   },
   "technical-writing": {
-    "version": "0.1.1",
-    "hash": "6f2b843087c6b4317e52e279535ce3445904c3444c8f33141bc3ba8ea9a870e3"
+    "version": "0.1.2",
+    "hash": "cec29f7a83fd44a7c71ed40b797b5abafebf922e7383630453c9d75692670566"
   },
   "markitdown": {
     "version": "0.1.0",
@@ -40,11 +40,11 @@
     "hash": "1b6fff7bf780f8c1d77d919216e2bd29d98884a7c79d203baba7c441b61663bb"
   },
   "context-payload": {
-    "version": "0.1.1",
-    "hash": "69e0c862831ca89f0d3b87d256f07d990f6d5eed64bb16ec6022b4a7993a7945"
+    "version": "0.1.2",
+    "hash": "95c7c06923e734fdce5a469ad132747609bc77f95fb938f61d32a4c8e3f283f5"
   },
   "prose-cleanup": {
-    "version": "0.1.0",
-    "hash": "1580b536ccb9f1130da0f3ae0289740d817b9edf2b05b00bc77164e750d42469"
+    "version": "0.1.1",
+    "hash": "8acd912144726a2b72b334a439021183182962a3967876e74846bc71645c7ef1"
   }
 }
