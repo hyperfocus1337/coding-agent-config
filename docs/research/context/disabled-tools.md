@@ -64,7 +64,13 @@ To find these skills on Claude Code 2.1.283, two headless sessions listed their 
 
 `/init` and `/security-review` are built-in commands, not bundled skills, so the model no longer sees them, but you can still type them.
 
-The `artifact-design`, `artifact-diagramming`, and `artifact-capabilities` skills go with the `Artifact` tool, which `enableArtifact: false` already removes. The headless test did not show them with either setting, so this page does not confirm which of the two keys removes them.
+## Artifact skills
+
+The `artifact-design`, `artifact-diagramming`, and `artifact-capabilities` skills go with the `Artifact` tool. In the Claude Code 2.1.296 binary, `artifact-design` and `artifact-diagramming` are enabled only when the Artifact feature is on, so `enableArtifact: false` hides them. `artifact-capabilities` has a different check, and the binary does not show if `enableArtifact` affects it. A headless test did not show any of the three skills with `enableArtifact` set to `true` or `false`, so the test does not confirm this.
+
+To hide all three in every session, `dot_claude/settings.json` sets each one to `"off"` in `skillOverrides`. `"off"` hides a skill from the model and from the `/` menu. The key must stay in `settings.json`: Claude Code reads `skillOverrides` only from user, project, and local settings, and ignores it in the `--settings` layer that loads `settings-minimal.json`. As a result, `claude-full` also hides the three skills.
+
+The `$comment` key at the top of `settings.json` records this, because JSON has no comment syntax. When you change a skill in `/skills`, Claude Code rewrites `skillOverrides`, and it can also remove the `$comment` key. This was not tested.
 
 ## Skills lost to `syncClaudeAiSkills: false`
 
