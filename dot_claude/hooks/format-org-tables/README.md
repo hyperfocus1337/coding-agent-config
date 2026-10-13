@@ -49,7 +49,7 @@ One detail the code does care about. The amend hint below reports through `hookS
 
 #### Write and commit in one command
 
-A single Bash call can write a file, commit it, and push it. Aligning the file afterwards fixes the file, not the commit: the commit still holds the unaligned version, and the working tree is now dirty. Only Claude can amend, so the hook says so, through `hookSpecificOutput.additionalContext` naming the files it changed.
+A single Bash call can write a file, commit it, and push it. Aligning the file afterwards fixes the file, not the commit: the commit still holds the unaligned version, and the working tree is now dirty. Only Claude can amend, so the hook says so, through `hookSpecificOutput.additionalContext` naming the files it changed. In a Claude session, the [`format-staged-files`](../format-staged-files/README.md) pre-commit hook aligns the file before the commit, so this notice appears only when that hook skipped the file: a file with unstaged changes, a `--no-verify` commit, or a session without `CLAUDECODE`. A test of the notice must turn that hook off, or the notice never appears.
 
 Two conditions gate the hint, and both are needed. The file has to be one Emacs itself rewrote, which is a `cksum` of every target before the run against the same list after it. And the file has to be one the last commit holds, which is `git diff-tree --no-commit-id --name-only -r --root HEAD`; `--root` is what makes the first commit of a repo answer, since it has no `HEAD~1`. A file outside a repo answers nothing and does not report.
 

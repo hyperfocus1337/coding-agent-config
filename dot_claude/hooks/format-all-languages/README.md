@@ -66,7 +66,7 @@ A single Bash call can write a file, commit it, and push it (`cat > README.md <<
 
 So when the command text contains `git commit`, each root also contributes the files of the last commit (`git diff --name-only --diff-filter=d HEAD~1 HEAD`). A repo with a single commit has no `HEAD~1`; that git call fails silently and the working-tree sources still apply.
 
-Formatting those files fixes the file, not the commit: the commit still holds the unformatted version, and the working tree is now dirty. Only Claude can amend, so the hook says so, through `hookSpecificOutput.additionalContext` naming the files it reformatted. The hint is emitted only when a file the command committed actually changed.
+Formatting those files fixes the file, not the commit: the commit still holds the unformatted version, and the working tree is now dirty. Only Claude can amend, so the hook says so, through `hookSpecificOutput.additionalContext` naming the files it reformatted. The hint is emitted only when a file the command committed actually changed. In a Claude session, the [`format-staged-files`](../format-staged-files/README.md) pre-commit hook formats the file before the commit, so this hint appears only when that hook skipped the file: a file with unstaged changes, a `--no-verify` commit, or a session without `CLAUDECODE`. A test of the hint must turn that hook off, or the hint never appears.
 
 ## Supported extensions
 
