@@ -22,7 +22,7 @@ The `PostToolUse` formatters run after a tool call ends. When one Bash command w
 - The hook runs in every repository, with no install step per repository.
 - A repository's own `.git/hooks/pre-commit` or `core.hooksPath` hook still runs. Git runs config-based hooks first and the hook directory hook last.
 
-To turn the hook off in one repository, run `git config hook.claude-format-staged.enabled false` there. To skip it for one commit, use `git commit --no-verify`.
+To turn the hook off in one repository, run `git config hook.claude-format-staged.enabled false` there. To skip it for one commit, use `git commit --no-verify`. To turn it off in a test, see [Shared conventions](../README.md#shared-conventions).
 
 ## What it does
 

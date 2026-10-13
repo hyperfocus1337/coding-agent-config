@@ -19,9 +19,10 @@ tmp=$(mktemp -d "${HOME}/.org-hook-test.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
 fail=0
 
-# The global config can hold a pre-commit hook, such as format-staged-files,
-# that aligns the file before the commit, and then nothing is left to amend.
-export GIT_CONFIG_GLOBAL=/dev/null
+# Turn off the format-staged-files pre-commit hook from ~/.config/git/config.
+# It aligns the file before the commit, and then nothing is left to amend.
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0=hook.claude-format-staged.enabled GIT_CONFIG_VALUE_0=false
 export GIT_AUTHOR_NAME=test GIT_AUTHOR_EMAIL=test@example.com
 export GIT_COMMITTER_NAME=test GIT_COMMITTER_EMAIL=test@example.com
 

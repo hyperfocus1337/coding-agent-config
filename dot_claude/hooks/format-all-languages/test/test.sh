@@ -24,6 +24,10 @@ tmp=$(mktemp -d "${HOME}/.format-hook-test.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
 fail=0
 
+# Turn off the format-staged-files pre-commit hook from ~/.config/git/config.
+# It formats the file before the commit, and then nothing is left to amend.
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0=hook.claude-format-staged.enabled GIT_CONFIG_VALUE_0=false
 export GIT_AUTHOR_NAME=test GIT_AUTHOR_EMAIL=test@example.com
 export GIT_COMMITTER_NAME=test GIT_COMMITTER_EMAIL=test@example.com
 

@@ -85,6 +85,10 @@ repo=$tmp/repo
 git init -q "$repo"
 export GIT_AUTHOR_NAME=test GIT_AUTHOR_EMAIL=test@example.com
 export GIT_COMMITTER_NAME=test GIT_COMMITTER_EMAIL=test@example.com
+# Turn off the format-staged-files pre-commit hook from ~/.config/git/config,
+# so each commit holds the fixture text as written.
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0=hook.claude-format-staged.enabled GIT_CONFIG_VALUE_0=false
 # An old long paragraph over two lines, then a short one.
 printf '%s\nStill the old paragraph.\n\nShort.\n' "$long" > "$repo/old.md"
 git -C "$repo" add old.md && git -C "$repo" commit -q -m old

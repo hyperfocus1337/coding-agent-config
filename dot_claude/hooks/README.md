@@ -30,4 +30,13 @@ Hooks are shell commands Claude Code runs on session lifecycle events, for examp
 
 **Per-repo escape hatches.** `block-secret-commits` reads `.claude-allow-secrets` and `.betterleaksignore`; `enforce-cli-tools` reads `.claude-allow-cli-tools`. Both also accept an environment variable for a one-off override. See the hook README for the exact names.
 
+**A test that commits turns off `format-staged-files`.** In a Claude session, `CLAUDECODE=1` is set, so `git commit` in a fixture repository under `$HOME` starts the global pre-commit hook. The hook formats the fixture before the commit, so the commit does not hold the text that the test wrote. Put these lines in each test that commits, before the first commit. They turn off only this hook and keep the other global settings:
+
+```sh
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0=hook.claude-format-staged.enabled GIT_CONFIG_VALUE_0=false
+```
+
+A fixture under `/tmp` or `$TMPDIR` does not need them, because the formatters skip those directories.
+
 **Deliberate shortcuts** carry a `shortcut:` comment naming the ceiling and the upgrade path, matching the marker `rules/code.md` defines.
