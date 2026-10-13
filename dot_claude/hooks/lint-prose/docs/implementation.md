@@ -13,7 +13,7 @@ The paragraph check started as a `.md` branch in [`lint-all-languages`](../../li
 3. **Room to grow.** More Vale rules come from [`technical-linting-rules.md`](../../../../docs/research/hooks/linting/technical-linting-rules.md). Vale can also lint comments in code files, and a `.py` file in `lint-all-languages` would then need two linters in one branch.
 4. **Precedent.** [`format-org-tables`](../../format-org-tables/README.md) is a separate hook for one concern, next to `format-all-languages`.
 
-The cost is a third copy of the code that finds the files: the payload read, the Bash path search with the 120-second mtime test, and the temp-file skip. It is about 40 lines. A shared library would be one more file for every hook to source, for three callers.
+The cost is a second copy of the payload read and the temp-file skip, about 10 lines.
 
 ## Rules
 
@@ -42,7 +42,7 @@ A `<title>` counts as a paragraph. A title with 6 sentences is not a real case, 
 
 Vale 3.23.0 hands AsciiDoc and reStructuredText to an external tool (`asciidoctor`, `rst2html`) and stops with exit 2 when that tool is missing, so the hook does not take `.adoc` or `.rst` files.
 
-Plain text has no markup, so Vale cannot tell prose from a log. A log with one sentence per line gives an alert for the whole block. The Bash matcher therefore does not take `.txt` paths, because a command that names a `.txt` file often redirects output into it. A `.txt` file that Claude writes with `Write` or `Edit` is checked.
+Plain text has no markup, so Vale cannot tell prose from a log. A log with one sentence per line gives an alert for the whole block. The hook only sees a `.txt` file that Claude writes with `Write` or `Edit`, which is prose, not a log.
 
 ## Frontmatter
 
@@ -52,14 +52,13 @@ Org needs no such step. Vale read `#+title: A [b] {c}` without an error. The bla
 
 ## Only the changed paragraphs
 
-A `Write`, `Edit`, or Bash command that changes one paragraph of a file sends the whole file to Vale. An `Edit` does not send only its `new_string`, because then an edit that adds a 6th sentence to an existing paragraph would pass. Before this filter, every old long paragraph in the file blocked each write again. The model read the same alerts on each write, about text it did not write. On a real `dot_doom.d/config.org` with uncommitted changes, the whole-file check gave 14 alerts, and the filter gave 0, because no change was in a long paragraph.
+A `Write` or `Edit` that changes one paragraph of a file sends the whole file to Vale. An `Edit` does not send only its `new_string`, because then an edit that adds a 6th sentence to an existing paragraph would pass. Before this filter, every old long paragraph in the file blocked each write again. The model read the same alerts on each write, about text it did not write. On a real `dot_doom.d/config.org` with uncommitted changes, the whole-file check gave 14 alerts, and the filter gave 0, because no change was in a long paragraph.
 
 The filter reads `git diff -U0` for the file and collects the changed line numbers from the `+start,count` part of each hunk header. A hunk with a count of 0 is a deletion, and it marks the line before it, so a paragraph that lost a sentence still counts as changed. Vale reports a paragraph alert at the first line of the paragraph. The hook keeps an alert when a changed line falls between that line and the next blank line.
 
 | Case                                         | Compared against     |
 | -------------------------------------------- | -------------------- |
 | A tracked file                               | `HEAD`               |
-| A Bash command that also ran `git commit`    | `HEAD~1`             |
 | Outside git, an untracked file, first commit | Nothing: every alert |
 
 The diff against `HEAD` also holds changes from before the session. Those are uncommitted work, so their alerts are still useful. A tight list with no blank lines is one span, so a change to one item keeps the alerts of every long item in that list. The upgrade is to find item boundaries, and the trade-off has a `shortcut:` comment in `hook.sh`.
@@ -68,7 +67,7 @@ The hook has no switch to report the whole file. For a session that cleans up ol
 
 ## Once per session
 
-The changed-paragraph filter still lets one alert block many times. On Bash, each command that names a recently written file runs the check again. During a commit, `git add`, `git commit`, and `git log` can each name the same file, so one long paragraph blocked 4 times in a row.
+The changed-paragraph filter still lets one alert block many times. A long paragraph with an uncommitted change blocks on each later edit to the same file, also an edit to another paragraph. When the hook still ran on Bash, `git add`, `git commit`, and `git log` each named the same file, and one long paragraph blocked 4 times in a row.
 
 So each alert blocks once per session. After a block, the hook adds a line to `$TMPDIR/lint-prose-<session_id>` for each alert: the file path, the rule, and the `cksum` of the paragraph text. When a later check finds an alert with that line in the record, the hook lists it under `lint-prose: blocked on before in this session` and exits 1. The user sees it, and Claude does not get a block.
 
@@ -78,6 +77,12 @@ The key holds the paragraph text, not the line number, for two reasons:
 - An edit to the paragraph that leaves it too long changes the text. The alert is then new, and it blocks again.
 
 A payload with no `session_id`, or one with characters outside `A-Z a-z 0-9 _ -`, has no record, so every alert blocks. The record stays in `$TMPDIR` until the system clears it.
+
+## Why not Bash
+
+The hook ran on Bash until 2026-10-13. A Bash payload names no file, so the hook took the prose paths from the command text and kept the ones with an mtime under 120 seconds old. The command text also names files that the command only reads. In one session, 5 read-only commands such as `rg … config.org` and `sed -n 420p config.org` each blocked, because a parallel session had saved `config.org` in the last 2 minutes. An mtime cannot tell which process wrote the file.
+
+To find the files a command wrote, the hook must compare the disk before and after the command, as [`track-bash-changes`](../../track-bash-changes/README.md) does. That is a `PreToolUse` snapshot and state per call, for prose that Claude almost always writes with `Write` or `Edit`. So the hook does not run on Bash, and prose that a Bash command writes, such as `cat > notes.md <<EOF`, is not checked. To check it, run `/prose-cleanup` or `check.sh`.
 
 ## Why it blocks
 

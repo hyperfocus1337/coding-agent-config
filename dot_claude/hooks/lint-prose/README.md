@@ -1,25 +1,25 @@
 # lint-prose
 
-A `PostToolUse` and `PostToolUseFailure` hook that lints the prose in each Markdown, Org, HTML, or plain-text file Claude writes, through [Vale](https://vale.sh/). It blocks the tool result on an alert, so Claude sees it and fixes the text.
+A `PostToolUse` hook that lints the prose in each Markdown, Org, HTML, or plain-text file Claude writes with `Write`, `Edit`, or `MultiEdit`, through [Vale](https://vale.sh/). It blocks the tool result on an alert, so Claude sees it and fixes the text.
 
 ## What it checks
 
 One rule for now: a paragraph, list item, or blockquote has at most 5 sentences, the limit in `writing.md`. Vale reads only the prose: it skips frontmatter, Org keyword lines, headings, code, `<script>`, and `<pre>`. [`docs/implementation.md`](docs/implementation.md) lists what each format counts, and how to add a rule.
 
-| Extension         | Vale reads                                                      |
-| ----------------- | --------------------------------------------------------------- |
-| `.md` `.markdown` | Paragraphs, list items, blockquotes                             |
-| `.org`            | Paragraphs, list items, `#+begin_quote`                         |
-| `.html` `.htm`    | The text inside elements, not the markup                        |
-| `.txt`            | Blocks of text between blank lines. On `Write` and `Edit` only. |
+| Extension         | Vale reads                               |
+| ----------------- | ---------------------------------------- |
+| `.md` `.markdown` | Paragraphs, list items, blockquotes      |
+| `.org`            | Paragraphs, list items, `#+begin_quote`  |
+| `.html` `.htm`    | The text inside elements, not the markup |
+| `.txt`            | Blocks of text between blank lines       |
 
 ## How it works
 
-Wired to four entries in `settings.json`: `Write|Edit|MultiEdit` and `Bash` on `PostToolUse`, and `Bash` again on `PostToolUseFailure`. It finds the files the same way [`lint-all-languages`](../lint-all-languages/README.md#bash-the-paths-the-command-just-wrote) does: the named file on `Write` and `Edit`, and on Bash the paths in the command text that the command just wrote. Files under `/tmp`, `/var/tmp`, and `$TMPDIR` are skipped. On Bash, `.txt` paths are skipped too: a command such as `make test > out.txt` writes a log, and a log with one sentence per line reads as one long paragraph.
+Wired to one entry in `settings.json`: `Write|Edit|MultiEdit` on `PostToolUse`. The hook checks the file that the payload names. Files under `/tmp`, `/var/tmp`, and `$TMPDIR` are skipped. Prose that a Bash command writes is not checked, see [Why not Bash](docs/implementation.md#why-not-bash).
 
-The hook checks the whole file, then reports only the alerts on paragraphs that hold a line git reports as changed against `HEAD`. When the Bash command also ran `git commit`, the hook compares against `HEAD~1`. When there is nothing to compare against, the hook reports every alert in the file: this occurs outside git, for an untracked file, and in the first commit. In all other cases, an old long paragraph elsewhere in the file does not block an unrelated change.
+The hook checks the whole file, then reports only the alerts on paragraphs that hold a line git reports as changed against `HEAD`. When there is nothing to compare against, the hook reports every alert in the file: this occurs outside git, for an untracked file, and in the first commit. In all other cases, an old long paragraph elsewhere in the file does not block an unrelated change.
 
-Each alert blocks once per session. After that, the same rule on the same paragraph text goes to you with exit 1, so the commands of one commit do not block again on one paragraph. An edit that leaves the paragraph too long blocks again. [`docs/implementation.md`](docs/implementation.md#once-per-session) gives the details.
+Each alert blocks once per session. After that, the same rule on the same paragraph text goes to you with exit 1, so a later edit to the same file does not block again on that paragraph. An edit that leaves the paragraph too long blocks again. [`docs/implementation.md`](docs/implementation.md#once-per-session) gives the details.
 
 The hook runs [`check.sh`](../../../dot_config/vale/scripts/check.sh), which runs Vale with the shared [`vale.ini`](../../../dot_config/vale/vale.ini) in `~/.config/vale/`. Because of this, Vale never reads a repository's own Vale config. `check.sh` is also the scanner behind the `prose-cleanup` skill:
 
@@ -50,4 +50,4 @@ mise use -g vale # Linux, or any system with mise
 
 ## Testing
 
-`bash test/test.sh` covers the rule in each format, the Bash matcher, the changed-paragraph filter in a git repository, the once-per-session record, a Vale failure, and the skips. It needs `jq` and `vale`.
+`bash test/test.sh` covers the rule in each format, a Bash payload, the changed-paragraph filter in a git repository, the once-per-session record, a Vale failure, and the skips. It needs `jq` and `vale`.

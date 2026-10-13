@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Smoke test for hook.sh: the paragraph rule in each format, the Bash matcher,
-# the changed-paragraph filter, the once-per-session record, a Vale failure, and
-# the skips. Run: bash test.sh
+# Smoke test for hook.sh: the paragraph rule in each format, the changed-
+# paragraph filter, the once-per-session record, a Vale failure, and the skips. Run: bash test.sh
 # Needs jq and vale on PATH; without either the hook self-disables and the test
 # would pass vacuously, so it skips loudly.
 set -u
@@ -34,7 +33,6 @@ check() { # name, expected status, expected substring in output ('' for none)
 }
 
 edit_payload() { jq -nc --arg f "$1" '{hook_event_name:"PostToolUse",tool_input:{file_path:$f}}'; }
-bash_payload() { jq -nc --arg cwd "$tmp" --arg c "$1" '{hook_event_name:"PostToolUse",cwd:$cwd,tool_input:{command:$c}}'; }
 
 long='One. Two. Three. Four. Five. Six, the last sentence here.'
 
@@ -70,16 +68,10 @@ printf '%s\n\nShort.\n' "$long" > "$tmp/notes.txt"
 run "$(edit_payload "$tmp/notes.txt")"
 check "plain text: a long paragraph is blocked" 2 'notes.txt:1:'
 
-run "$(bash_payload "make test > $tmp/notes.txt")"
-check "plain text: a .txt file a Bash command wrote is left alone" 0 ''
-
-# --- Bash matcher ---
-run "$(bash_payload "cat > $tmp/long.md <<'EOF' ... EOF")"
-check "Bash matcher checks a file the command just wrote" 2 'long.md:3:'
-
-touch -t 202001010000 "$tmp/item.md"
-run "$(bash_payload "cat $tmp/item.md")"
-check "a path the command only read is left alone" 0 ''
+# --- Bash ---
+# Not wired to Bash, but a Bash payload that reaches the hook must not block.
+run "$(jq -nc --arg c "cat $tmp/long.md" '{hook_event_name:"PostToolUse",tool_input:{command:$c}}')"
+check "a Bash payload is left alone" 0 ''
 
 # --- Only the changed paragraphs (a git repo) ---
 repo=$tmp/repo
@@ -110,12 +102,8 @@ run "$(jq -nc --arg f "$repo/five.md" '{hook_event_name:"PostToolUse",tool_input
 check "an Edit that adds a 6th sentence to a paragraph is blocked" 2 'five.md:1:'
 
 printf '%s\n' "$long" > "$repo/new.md"
-run "$(bash_payload "cat > $repo/new.md <<'EOF' ... EOF")"
+run "$(edit_payload "$repo/new.md")"
 check "an untracked file is checked whole" 2 'new.md:1:'
-
-git -C "$repo" add new.md && git -C "$repo" commit -q -m new
-run "$(bash_payload "cat > $repo/new.md <<'EOF' ... EOF && git commit -am new")"
-check "a write and commit in one command is compared to HEAD~1" 2 'new.md:1:'
 
 # --- Once per session ---
 # The record goes in $TMPDIR. A directory of its own keeps the fixtures in $tmp

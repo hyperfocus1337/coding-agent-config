@@ -71,11 +71,6 @@
           },
           {
             "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/lint-prose/hook.sh\"",
-            "timeout": 15
-          },
-          {
-            "type": "command",
             "command": "bash \"$HOME/.claude/hooks/track-bash-changes/hook.sh\"",
             "timeout": 10
           }
@@ -135,11 +130,6 @@
           {
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/lint-all-languages/hook.sh\"",
-            "timeout": 15
-          },
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/lint-prose/hook.sh\"",
             "timeout": 15
           },
           {
