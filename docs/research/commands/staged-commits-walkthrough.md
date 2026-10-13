@@ -156,6 +156,8 @@ The staged diff holds only the fix, in the right place. `git restore --staged` k
 
 ### 6. Unit 1: commit (step 3.3)
 
+The commit runs in a new Bash call, after the model reads the check output of step 5:
+
 ```console
 $ git commit -q -m "fix(lib): quote the greet argument"
 $ git log --oneline -1
@@ -205,7 +207,7 @@ index 8b7b003..9b39204 100755
  }
 ```
 
-The second hunk is yours, from before the conversation. The model copies the file header and the first hunk to a new file, `lib-wave.patch`, and applies that file to the index. If the copy fails, `lib-wave.patch` does not exist and `git apply` stops with an error, so it cannot stage the full diff in `lib.patch`. `README.md` holds only the feature, so the whole file goes in:
+The second hunk is yours, from before the conversation. The model finds the `wave` hunk by its text, not by its start line, and copies the file header and that hunk to a new file, `lib-wave.patch`, and applies that file to the index. If the copy fails, `lib-wave.patch` does not exist and `git apply` stops with an error, so it cannot stage the full diff in `lib.patch`. `README.md` holds only the feature, so the whole file goes in:
 
 ```console
 $ git apply --cached /tmp/tmp.lIRiVVoWiu/lib-wave.patch
@@ -236,6 +238,8 @@ $ git diff --cached -- lib.sh
  # They take no arguments.
  # Keep them short.
 ```
+
+The model reads this output, then commits in a new Bash call:
 
 ```console
 $ git commit -q -m "feat(lib): add wave"
@@ -288,7 +292,7 @@ The first two units are the same as in steps 4 to 8. The check of unit 1 also un
 | Lists  | Builds an include list and an exclude list from the conversation.                                            | No lists. Every change is in scope.                                                     |
 | Group  | Groups the include list by concern, foundational changes first. A fix on its own initiative is its own unit. | Groups all changes by concern, foundational changes first.                              |
 | Stage  | Same three methods.                                                                                          | Same three methods.                                                                     |
-| Check  | Reads `git diff --cached` for every staged file. Every hunk must be yours.                                   | Reads `git diff --cached` only for partly staged files. Every hunk must be in the unit. |
+| Check  | Reads `git diff --cached` for every staged file. Every hunk must be in the unit.                             | Reads `git diff --cached` only for partly staged files. Every hunk must be in the unit. |
 | Commit | Conventional Commits. A body that needs "also" means the unit must split.                                    | Conventional Commits.                                                                   |
 | End    | `git status` shows only exclude paths.                                                                       | `git status` is clean.                                                                  |
 | Output | One line per commit, plus `left: <count> paths`.                                                             | One line per commit.                                                                    |
@@ -300,6 +304,12 @@ The first two units are the same as in steps 4 to 8. The check of unit 1 also un
 `git diff -U3` merges two changes into one hunk when 6 or fewer unchanged lines separate them. In a first version of this scenario, 6 lines separated the `wave` function from the `shout` change. The diff in step 7 then had one hunk that held both, and a patch that kept the `wave` hunk also committed your `shout` change. The setup above has 7 lines between the two changes, so they stay separate.
 
 When the hunk you need also holds a change of another unit, use the file version method from step 4, not the patch method. The check in step 3.2 catches a wrong patch: it reads every staged hunk before the commit.
+
+### The check runs too late in one Bash call
+
+The check protects the commit only when the model reads it before `git commit` runs. In one real session, one Bash call held the hunk split, `git apply --cached`, the check, and the commits of two units. The split matched no hunk, because it took start lines from a `-U1` diff and the patch came from `-U3`. `git apply` failed, the next line staged the whole file, and both units went into one commit, `6cec8a04`.
+
+The commands now put each commit in a new Bash call, after the check, and pick hunks by their text. The fix of that commit then used `git apply --unidiff-zero`, which can place a hunk in the wrong spot (see [avoided methods](../../../dot_claude/commands/git/commit/README.md#avoided)), so the commands also forbid it.
 
 ### The check unstages what you staged
 
