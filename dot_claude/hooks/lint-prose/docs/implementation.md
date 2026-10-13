@@ -72,6 +72,8 @@ An `error` alert makes Vale exit 1, and the hook then exits 2. A `PostToolUse` h
 
 Vale exits 2 when it fails, for example on a rule it cannot load or on input it cannot parse. `check.sh` passes that code through, and the hook then exits 1 with `lint-prose: Vale failed` and Vale's error. Exit 1 shows the message to the user and does not block. The error is not in the prose, so a block would tell Claude to fix text that is correct.
 
+When `vale` is on `PATH` but `~/.config/vale/scripts/check.sh` is missing, chezmoi did not deploy the Vale config on that machine. The hook then exits 1 with a message that names the missing file and tells you to run `just chezmoi`. It checks this only after it finds a prose file to lint, so other edits stay silent.
+
 Before this change, a failure on `Write` or Bash exited 0 with no output, the same as a clean pass, and a failure on `Edit` blocked as an alert. The Vale team's [`vale-edit.sh`](https://github.com/vale-cli/agent-tools/blob/main/hooks/vale-edit.sh) has the same split between alerts and a failed run.
 
 Blocking means each new rule must have few false positives. Test a rule against this repository's docs with `/prose-cleanup` or `check.sh` before you set it to `error`.

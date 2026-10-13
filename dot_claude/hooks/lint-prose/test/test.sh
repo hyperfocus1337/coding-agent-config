@@ -119,6 +119,9 @@ echo 'extends: nonsense' > "$tmp/broken/styles/Writing/ParagraphLength.yml"
 LINT_PROSE_VALE_DIR=$tmp/broken run "$(edit_payload "$tmp/long.md")"
 check "a broken rule is reported to the user, not blocked" 1 'Vale failed'
 
+LINT_PROSE_VALE_DIR=$tmp/missing run "$(edit_payload "$tmp/long.md")"
+check "a missing Vale config is reported to the user, not blocked" 1 'just chezmoi'
+
 # --- Skips ---
 printf '%s\n' "$long" > "$tmp/notes.log"
 run "$(edit_payload "$tmp/notes.log")"

@@ -67,6 +67,12 @@ for f in "${candidates[@]-}"; do
 	targets+=("$f")
 done
 [[ ${#targets[@]} -gt 0 ]] || exit 0
+# Vale on PATH but no config: chezmoi did not deploy ~/.config/vale here. Say
+# so on exit 1, not as "Vale failed", so the fix is clear and nothing blocks.
+[[ -f "$vale_dir/scripts/check.sh" ]] || {
+	printf 'lint-prose: %s is missing, so the prose was not checked. Run `just chezmoi` to deploy the Vale config.\n' "$vale_dir/scripts/check.sh" 1>&2
+	exit 1
+}
 
 # --- Check ---
 # check.sh exits 1 on alerts and 2 when Vale fails, such as on a broken rule. A
