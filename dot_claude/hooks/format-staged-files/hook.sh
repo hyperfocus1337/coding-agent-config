@@ -35,7 +35,11 @@ while IFS= read -r -d '' rel; do
   payload=$(jq -nc --arg f "$f" '{hook_event_name: "PostToolUse", tool_input: {file_path: $f}}')
   bash "$HOOKS/format-all-languages/hook.sh" <<<"$payload" >/dev/null 2>&1
   bash "$HOOKS/format-org-tables/hook.sh" <<<"$payload" >/dev/null 2>&1
-  [[ "$(cksum <"$f")" == "$before" ]] || git add -- "$rel"
+  [[ "$(cksum <"$f")" == "$before" ]] && continue
+  git add -- "$rel"
+  # Git passes pre-commit stderr through, also with `commit -q`. Without this
+  # line, a changed file size is the only trace of the restage.
+  echo "format-staged-files: reformatted and restaged $rel" >&2
 done < <(git diff --cached --name-only --diff-filter=ACMR -z)
 
 exit 0

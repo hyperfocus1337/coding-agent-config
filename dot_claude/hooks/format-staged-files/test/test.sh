@@ -35,8 +35,10 @@ git -C "$tmp" commit -q --allow-empty -m init
 
 # Prettier rewrites a `*` bullet to `-`.
 printf '*   one\n' >"$tmp/new.md"
-git -C "$tmp" add new.md && git -C "$tmp" commit -q -m new
+git -C "$tmp" add new.md
+err=$(git -C "$tmp" commit -q -m new 2>&1)
 check "a staged new file is committed formatted" "$(committed new.md)" "- one"
+check "a restage is reported on stderr" "$err" "format-staged-files: reformatted and restaged new.md"
 check "the tree is clean after the commit" "$(dirty)" ""
 
 # Write and commit in one call, the case the PostToolUse formatters miss.
@@ -64,8 +66,10 @@ fi
 
 # A file no formatter handles is committed unchanged.
 printf 'x  =  1\n' >"$tmp/a.txt"
-git -C "$tmp" add a.txt && git -C "$tmp" commit -q -m txt
+git -C "$tmp" add a.txt
+err=$(git -C "$tmp" commit -q -m txt 2>&1)
 check "a file no formatter handles is unchanged" "$(committed a.txt)" "x  =  1"
+check "an unchanged file is not reported" "$err" ""
 
 # Outside Claude Code the hook does nothing.
 printf '*   four\n' >"$tmp/new.md"
