@@ -5,8 +5,9 @@
 # HTML, and plain-text files after Claude changes them, through check.sh and
 # Vale. On Write/Edit the payload names the file. On Bash it names none, so the
 # hook checks the paths the command text holds, and only the ones the command
-# just wrote. Only paragraphs git reports as changed count. Exit 2 = block the
-# tool result and surface stderr back to Claude.
+# just wrote. Only paragraphs git reports as changed count, and each alert
+# blocks once per session. Exit 2 = block the tool result and surface stderr
+# back to Claude.
 # Design notes and the rules: docs/implementation.md.
 
 # --- Preflight ---
@@ -29,6 +30,11 @@ exts='md|markdown|org|html?'
 # --- Read payload ---
 payload=$(cat)
 edited_file=$(jq -r '.tool_input.file_path // empty' <<<"$payload")
+# The alerts this session already blocked on. No session ID, no record: every
+# alert blocks. docs/implementation.md "Once per session".
+seen=''
+sid=$(jq -r '.session_id // empty' <<<"$payload")
+[[ "$sid" =~ ^[A-Za-z0-9_-]+$ ]] && seen=${TMPDIR:-/tmp}/lint-prose-$sid
 
 candidates=()
 if [[ -n "$edited_file" ]]; then
@@ -80,6 +86,7 @@ done
 # is fine, and dropping it reads as a clean pass. So it goes to the user on exit
 # 1, which does not block. docs/implementation.md "Why it blocks".
 report=''
+repeats=''
 failed=''
 lint() { # check.sh arguments. Sets $alerts. Returns 1 on alerts, else 0.
 	alerts=$(bash "$vale_dir/scripts/check.sh" "$@" 2>&1) && return 0
@@ -125,8 +132,22 @@ for f in "${targets[@]}"; do
           if (l in changed) { print; next }
       }' <(printf '%s\n' "$lines") "$f" - <<<"$alerts")
 	fi
-	report+=${alerts:+$alerts$'\n'}
+	# An alert is a repeat when $seen holds its file, rule, and paragraph text.
+	# The text, not the line: an edit above the paragraph moves it, and an edit
+	# that leaves it too long makes it new again.
+	while IFS= read -r a; do
+		[[ -n "$a" ]] || continue
+		IFS=: read -r line _ rule _ <<<"${a#"$f:"}"
+		key="$f:$rule:$(awk -v s="$line" 'NR >= s { if (NR > s && /^[[:space:]]*$/) exit; print }' "$f" | cksum)"
+		if [[ -n "$seen" ]] && grep -Fxq -- "$key" "$seen" 2>/dev/null; then
+			repeats+=$a$'\n'
+		else
+			report+=$a$'\n'
+			[[ -n "$seen" ]] && printf '%s\n' "$key" >>"$seen"
+		fi
+	done <<<"$alerts"
 done
 [[ -n "$report" ]] && { printf '%s' "$report$failed" 1>&2; exit 2; }
+[[ -n "$repeats" ]] && failed="lint-prose: blocked on before in this session, so not again:"$'\n'"$repeats$failed"
 [[ -n "$failed" ]] && { printf '%s' "$failed" 1>&2; exit 1; }
 exit 0

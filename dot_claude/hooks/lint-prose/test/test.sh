@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Smoke test for hook.sh: the paragraph rule in each format, the Bash matcher,
-# the changed-paragraph filter, a Vale failure, and the skips. Run: bash test.sh
+# the changed-paragraph filter, the once-per-session record, a Vale failure, and
+# the skips. Run: bash test.sh
 # Needs jq and vale on PATH; without either the hook self-disables and the test
 # would pass vacuously, so it skips loudly.
 set -u
@@ -115,6 +116,29 @@ check "an untracked file is checked whole" 2 'new.md:1:'
 git -C "$repo" add new.md && git -C "$repo" commit -q -m new
 run "$(bash_payload "cat > $repo/new.md <<'EOF' ... EOF && git commit -am new")"
 check "a write and commit in one command is compared to HEAD~1" 2 'new.md:1:'
+
+# --- Once per session ---
+# The record goes in $TMPDIR. A directory of its own keeps the fixtures in $tmp
+# outside $TMPDIR, which the hook skips.
+mkdir "$tmp/state"
+session_payload() { jq -nc --arg f "$1" --arg s "$2" '{hook_event_name:"PostToolUse",session_id:$s,tool_input:{file_path:$f}}'; }
+printf '%s\n' "$long" > "$tmp/repeat.md"
+TMPDIR=$tmp/state run "$(session_payload "$tmp/repeat.md" a)"
+check "a session blocks on an alert the first time" 2 'repeat.md:1:'
+
+TMPDIR=$tmp/state run "$(session_payload "$tmp/repeat.md" a)"
+check "a repeat goes to the user, not blocked" 1 'blocked on before'
+
+printf '\n%s\n' "$long" > "$tmp/repeat.md"
+TMPDIR=$tmp/state run "$(session_payload "$tmp/repeat.md" a)"
+check "a paragraph that only moved is still a repeat" 1 'repeat.md:2:'
+
+printf '\n%s Seven.\n' "$long" > "$tmp/repeat.md"
+TMPDIR=$tmp/state run "$(session_payload "$tmp/repeat.md" a)"
+check "a changed paragraph that is still too long blocks again" 2 'repeat.md:2:'
+
+TMPDIR=$tmp/state run "$(session_payload "$tmp/repeat.md" b)"
+check "another session blocks on the same alert" 2 'repeat.md:2:'
 
 # --- A Vale failure does not block ---
 # A copy of the Vale config with a rule Vale cannot load.

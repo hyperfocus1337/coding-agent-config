@@ -66,6 +66,19 @@ The diff against `HEAD` also holds changes from before the session. Those are un
 
 The hook has no switch to report the whole file. For a session that cleans up old paragraphs, use the [`prose-cleanup`](../../../skills/prose-cleanup/SKILL.md) skill, which runs `check.sh` without the filter.
 
+## Once per session
+
+The changed-paragraph filter still lets one alert block many times. On Bash, each command that names a recently written file runs the check again. During a commit, `git add`, `git commit`, and `git log` can each name the same file, so one long paragraph blocked 4 times in a row.
+
+So each alert blocks once per session. After a block, the hook adds a line to `$TMPDIR/lint-prose-<session_id>` for each alert: the file path, the rule, and the `cksum` of the paragraph text. When a later check finds an alert with that line in the record, the hook lists it under `lint-prose: blocked on before in this session` and exits 1. The user sees it, and Claude does not get a block.
+
+The key holds the paragraph text, not the line number, for two reasons:
+
+- An edit above the paragraph moves it to a new line. The text is the same, so the alert stays a repeat.
+- An edit to the paragraph that leaves it too long changes the text. The alert is then new, and it blocks again.
+
+A payload with no `session_id`, or one with characters outside `A-Z a-z 0-9 _ -`, has no record, so every alert blocks. The record stays in `$TMPDIR` until the system clears it.
+
 ## Why it blocks
 
 An `error` alert makes Vale exit 1, and the hook then exits 2. A `PostToolUse` hook reaches the model only when it exits 2. On exit 0 its output goes to the transcript, and Claude never sees it. [`lint-all-languages`](../../lint-all-languages/README.md#why-it-blocks) gives the full reason.

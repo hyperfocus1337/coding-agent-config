@@ -19,6 +19,8 @@ Wired to four entries in `settings.json`: `Write|Edit|MultiEdit` and `Bash` on `
 
 The hook checks the whole file, then reports only the alerts on paragraphs that hold a line git reports as changed against `HEAD`. When the Bash command also ran `git commit`, the hook compares against `HEAD~1`. When there is nothing to compare against, the hook reports every alert in the file: this occurs outside git, for an untracked file, and in the first commit. In all other cases, an old long paragraph elsewhere in the file does not block an unrelated change.
 
+Each alert blocks once per session. After that, the same rule on the same paragraph text goes to you with exit 1, so the commands of one commit do not block again on one paragraph. An edit that leaves the paragraph too long blocks again. [`docs/implementation.md`](docs/implementation.md#once-per-session) gives the details.
+
 The hook runs [`check.sh`](../../../dot_config/vale/scripts/check.sh), which runs Vale with the shared [`vale.ini`](../../../dot_config/vale/vale.ini) in `~/.config/vale/`. Because of this, Vale never reads a repository's own Vale config. `check.sh` is also the scanner behind the `prose-cleanup` skill:
 
 ```sh
@@ -48,4 +50,4 @@ mise use -g vale # Linux, or any system with mise
 
 ## Testing
 
-`bash test/test.sh` covers the rule in each format, the Bash matcher, the changed-paragraph filter in a git repository, a Vale failure, and the skips. It needs `jq` and `vale`.
+`bash test/test.sh` covers the rule in each format, the Bash matcher, the changed-paragraph filter in a git repository, the once-per-session record, a Vale failure, and the skips. It needs `jq` and `vale`.
