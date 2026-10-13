@@ -13,6 +13,7 @@ Hooks are shell commands Claude Code runs on session lifecycle events, for examp
 | [`block-secret-commits`](block-secret-commits/README.md)         | `PreToolUse` (Bash)                                           | Blocks a `git commit` that would add a secret: a betterleaks scan of the staged diff, plus a rescan of new binary files.                             |
 | [`enforce-cli-tools`](enforce-cli-tools/README.md)               | `PreToolUse` (Bash)                                           | Blocks a banned CLI tool in command position and names the replacement. Table-driven.                                                                |
 | [`block-commit-attribution`](block-commit-attribution/README.md) | `PreToolUse` (Bash)                                           | Blocks a `git commit` whose message has a `Co-Authored-By: Claude` trailer.                                                                          |
+| [`track-bash-changes`](track-bash-changes/README.md)             | `PreToolUse`, `PostToolUse`, `PostToolUseFailure` (Bash)      | Logs the files each Bash call changed in the session repo, for the `session-files` skill. Compares git trees from before and after the call.         |
 
 ## Shared conventions
 

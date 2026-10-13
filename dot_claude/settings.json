@@ -41,6 +41,11 @@
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/block-commit-attribution/hook.sh\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/track-bash-changes/hook.sh\"",
+            "timeout": 10
           }
         ]
       }
@@ -68,6 +73,11 @@
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/lint-prose/hook.sh\"",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/track-bash-changes/hook.sh\"",
+            "timeout": 10
           }
         ]
       },
@@ -131,6 +141,11 @@
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/lint-prose/hook.sh\"",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/track-bash-changes/hook.sh\"",
+            "timeout": 10
           }
         ]
       }
