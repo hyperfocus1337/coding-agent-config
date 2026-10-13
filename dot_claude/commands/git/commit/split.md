@@ -19,12 +19,12 @@ Split `HEAD` into one commit per logical unit. The reason for the split: $ARGUME
 2. **Undo.** `git reset --soft HEAD~1`, then `git restore --staged .` so every change of the commit is unstaged.
 3. **Group.** Group by concern, not by file. One file can hold two units. Order foundational changes first.
 4. **Commit.** Per unit:
-   1. Stage the unit. Never `git add -A`, `git add .`, `git add -u`, or `git commit -a`.
+   1. Stage the unit. Never `git add -A`, `git add .`, `git add -u`, `git commit -a`, or `git apply --unidiff-zero`.
       - A whole file: `git add <path>`.
-      - Part of a file: write `git diff -U3 -- <path>` to a patch outside the repository, copy this unit's hunks to a new, unused patch file, and run `git apply --cached <new patch>`.
+      - Part of a file: write `git diff -U3 -- <path>` to a patch outside the repository, copy this unit's hunks, picked by their text, to a new, unused patch file, and run `git apply --cached <new patch>`.
       - One hunk that mixes two units: write this unit's version of the file to a file outside the repository, starting from `git show :<path>`. Then run `git hash-object -w <file>` and `git update-index --cacheinfo <mode>,<sha>,<path>`, with `<mode>` from `git ls-files -s <path>`.
    2. Check the stage. Compare `git diff --cached --name-only` against the unit and unstage anything extra with `git restore --staged <path>`. For each partly staged file, read `git diff --cached -- <path>` and confirm every hunk is in this unit and sits where it belongs.
-   3. Commit with Conventional Commits. Reuse the original subject for the unit it describes.
+   3. In a new Bash call, after you read the check, commit with Conventional Commits. Reuse the original subject for the unit it describes.
 5. **Repeat.** Continue until `git status` is clean and `git diff <original sha>` is empty.
 
 If a git command fails, stop and report the error. Do not run the next step.

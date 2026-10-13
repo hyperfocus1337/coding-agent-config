@@ -95,6 +95,8 @@ The method has these limits:
 ## Checks
 
 - Before each commit, the model reads `git diff --cached -- <path>` for every partly staged file. This catches a hunk in the wrong place. The commands do not run tests, because the test command differs per project and a test run slows every commit.
+- The commit runs in a new Bash call, after the model reads the check. In one session, one call held a hunk split, `git apply --cached`, the check, and the commits of two units. The split failed, the next line ran `git add` on the whole file, and both units went into one commit. The model saw the check output only after both commits.
+- The model picks the hunks of a unit by their text. In the same session, it took start lines from a `-U1` diff and matched 0 hunks of the `-U3` patch: more context lines move the start lines and merge neighboring hunks.
 - A failed git command stops the run. An editor that refreshes git status (for example `git-auto-refresh` in Emacs) can hold `.git/index.lock` for a moment. In one session, `git restore --staged` failed on the lock, the next commands ran anyway, and they staged the wrong hunks.
 
 ## Context size
