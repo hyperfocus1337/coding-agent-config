@@ -67,7 +67,7 @@ The hook loops over the buffer and calls `org-table-align` on each table:
 
 ```elisp
 (progn
-  (setq make-backup-files nil create-lockfiles nil)
+  (setq make-backup-files nil create-lockfiles nil org-link-descriptive nil)
   (dolist (file (split-string (getenv "ORG_TABLE_FILES") "\n" t))
     (with-current-buffer (find-file-noselect file)
       (org-mode)
@@ -86,6 +86,10 @@ The `org-at-table-p` guard matters because the regexp also matches `|` lines ins
 Alignment is Org's own, so it follows Org's conventions rather than Prettier's: display width is used for the padding, which is why `⌘ ⇧ ⌃ ⌥` glyphs line up correctly, and columns holding only numbers are right-aligned.
 
 The pass is idempotent. An already-aligned file comes out byte-identical.
+
+## Links count at their raw width
+
+`org-link-descriptive` is `t` by default, and then Org hides the brackets and the target of a link such as `[[*Cache][Cache]]`, also in a batch Emacs. `org-table-align` measures a cell by its shown text, so the cell gets 12 fewer pad characters than its raw width needs. The table is straight in an Org buffer that hides links, and crooked in a diff, in Magit and in every other editor. The hook sets `org-link-descriptive` to `nil`, so a link counts at its raw width and each `|` is at the same column in the file. In Emacs, the `org-markup-kinds` package of the Doom config aligns the same way and pads the hidden link text on screen.
 
 `make-backup-files` and `create-lockfiles` are switched off before the buffer is touched. Both default to on, and with backups on, `save-buffer` drops a `file.org~` next to every Org file the hook formats, which is exactly the kind of litter a background hook must not leave behind.
 

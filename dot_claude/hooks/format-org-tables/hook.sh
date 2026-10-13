@@ -91,10 +91,12 @@ before=''
 # --- Align ---
 # One Emacs for the whole list: the ~1.4s is startup, so N files cost one
 # startup and not N. README "One Emacs run for every file".
+# org-link-descriptive nil counts a link at its raw width, so the table is
+# straight in a diff too. README "Links count at their raw width".
 ORG_TABLE_FILES=$(printf '%s\n' "${targets[@]}") \
   emacs --batch --no-init-file --eval '
 (progn
-  (setq make-backup-files nil create-lockfiles nil)
+  (setq make-backup-files nil create-lockfiles nil org-link-descriptive nil)
   (dolist (file (split-string (getenv "ORG_TABLE_FILES") "\n" t))
     (with-current-buffer (find-file-noselect file)
       (org-mode)

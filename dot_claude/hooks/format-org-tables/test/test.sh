@@ -81,6 +81,14 @@ edit_payload "$tmp/formula.org" | hook >/dev/null
 if grep -q '| *2 | *3 | *0 |' "$tmp/formula.org"; then echo "ok   align  a TBLFM formula is not evaluated"
 else echo "FAIL align  the TBLFM formula was evaluated"; fail=1; fi
 
+# A link counts at its raw width, so the table is straight in a diff and in
+# every other editor, not only in an Org buffer that hides the link target.
+printf '| a | see [[*Cache][Cache]] |\n| b | x |\n' > "$tmp/link.org"
+edit_payload "$tmp/link.org" | hook >/dev/null
+if [[ $(awk '{ print length }' "$tmp/link.org" | sort -u | wc -l) -eq 1 ]]; then
+  echo "ok   align  a link counts at its raw width"
+else echo "FAIL align  a link counts at its shown width"; fail=1; fi
+
 echo
 echo "== the Bash matcher =="
 
