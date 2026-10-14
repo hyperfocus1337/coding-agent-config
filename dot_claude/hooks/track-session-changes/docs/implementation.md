@@ -13,7 +13,29 @@ Probes with a scratch settings file and a disposable session showed these payloa
 | Codex       | `PreToolUse`, `PostToolUse` Bash and `apply_patch`     | `session_id`, `tool_use_id` (`exec-<uuid>`), `cwd`, `tool_input.command`                 |
 | Both        | `SessionStart`                                         | None. The event only starts the prune                                                    |
 
+Codex needs trust in the TUI for each new `hooks.json` entry, on the host and in the devcontainer. The probes used `codex exec --dangerously-bypass-hook-trust`. Codex starts a second session for its memories, with its own session ID and `cwd` `~/.codex/memories`. Its `SessionStart` only runs the prune.
+
 The `tool_response` of a Claude Code Edit or Write is equal (`==` in jq) to the `toolUseResult` of the same call in the transcript. Claude Code sends `cwd` and `file_path` as resolved paths, for example `/private/tmp/x`, not `/tmp/x`. Codex sends `PostToolUse` also after a command that exits non-zero, with `tool_response` `""`. Codex has no `PostToolUseFailure` event.
+
+## Log place
+
+All agents log to one tree, `~/.local/state/agent-changes/`, and not next to each agent log. In a container, a bind mount puts the same tree on the host disk, so the `agent-changed-files` package reads all logs with one `rg` and no `docker exec`. The snapshot state does not go on the bind mount: the hook rewrites it at each call, so it stays on the local disk of the host or the container.
+
+| Shared directory                                 | Next to each agent log                       |
+| ------------------------------------------------ | -------------------------------------------- |
+| One path rule in the hook and the package        | One rule per agent, and Codex breaks it      |
+| One `rg` over one tree, host and container       | One glob per agent                           |
+| The overlap filter reads all agents in one place | It must collect four layouts                 |
+| A change of an agent log layout has no effect    | The hook breaks with no error                |
+| Needs its own prune                              | Goes away with the old sessions of the agent |
+
+## Design options not taken
+
+| Option                            | Why not                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------ |
+| Keep `hook.sh` next to TypeScript | Saves 0.06 s per Bash call, but keeps two implementations that can drift |
+| A fixed list of repos to snapshot | Each Bash call pays for each repo in the list                            |
+| A snapshot with git-ignored files | Slow in repos with `node_modules`, build output, or caches               |
 
 ## Line of an Edit or Write
 
