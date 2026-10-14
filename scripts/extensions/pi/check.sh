@@ -45,11 +45,15 @@ find_pi_package() {
     fi
     directory="$(dirname "${directory}")"
   done
+  # pnpm 11 puts each global install in its own <root>/<hash>/node_modules, as
+  # a link into its store. pi-tui sits beside the real directory, so print that.
   for root in "${GLOBAL_ROOTS[@]}"; do
-    if [[ -f ${root}/@earendil-works/pi-coding-agent/dist/index.d.ts ]]; then
-      printf '%s\n' "${root}/@earendil-works/pi-coding-agent"
-      return 0
-    fi
+    for directory in "${root}/@earendil-works/pi-coding-agent" "${root}"/*/node_modules/@earendil-works/pi-coding-agent; do
+      if [[ -f ${directory}/dist/index.d.ts ]]; then
+        (cd "${directory}" && pwd -P)
+        return 0
+      fi
+    done
   done
   return 1
 }
@@ -95,6 +99,8 @@ done
 WORK="$(mktemp -d)"
 trap 'rm -rf "${WORK}"' EXIT
 
+# track-session-changes imports ./core.ts, which is the chezmoi link
+# symlink_core.ts in the repository. rootDirs makes tsc find it in the hook.
 cat >"${WORK}/tsconfig.json" <<JSON
 {
   "compilerOptions": {
@@ -106,6 +112,7 @@ cat >"${WORK}/tsconfig.json" <<JSON
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "types": [],
+    "rootDirs": ["${EXTENSIONS}/track-session-changes", "${REPO}/dot_claude/hooks/track-session-changes"],
     "paths": {
       "@earendil-works/pi-coding-agent": ["${PI_TYPES}"],
       "@earendil-works/pi-tui": ["${PI_TUI_TYPES}"]

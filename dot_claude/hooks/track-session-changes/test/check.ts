@@ -11,7 +11,13 @@ import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { headerPath, hunkLine, patchFiles, patchLine } from "../core.ts";
+import {
+  changedLine,
+  headerPath,
+  hunkLine,
+  patchFiles,
+  patchLine,
+} from "../core.ts";
 
 let checks = 0;
 function check(what: string, run: () => void): void {
@@ -48,6 +54,14 @@ check("Write that appends: the first + line", () => {
 
 check("Write that creates a file has no hunks: line 1", () => {
   assert.equal(patchLine([]), 1);
+});
+
+check("pi write: the first line that differs, none when equal", () => {
+  assert.equal(changedLine("a\nb\nc\n", "a\nB\nc\n"), 2);
+  assert.equal(changedLine("a\nb\n", "a\nb\nc\n"), 3);
+  assert.equal(changedLine("a\nb\nc\n", "a\nb\n"), 3);
+  assert.equal(changedLine("", "x\n"), 1);
+  assert.equal(changedLine("a\n", "a\n"), undefined);
 });
 
 check("-U0 hunk: the new start, or the line after a pure deletion", () => {

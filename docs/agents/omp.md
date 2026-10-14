@@ -37,7 +37,7 @@ Upstream implements this in [`addClaudeCommandNamespaceAliases()`](https://githu
 
 The repository's [pi `claude-commands` extension](../../dot_pi/agent/extensions/claude-commands/README.md) registers only namespaced commands such as `/git:commit:conversation`. omp's native Claude provider already supplies those aliases, so this extension is not needed for command discovery in omp.
 
-omp supports pi-compatible extension packages, but compatibility is separate from directory discovery. Its default native extension roots are `~/.omp/agent/extensions/` and `<cwd>/.omp/extensions/`, not `~/.pi/agent/extensions/`. An extension from elsewhere can still load through an explicit `--extension` path, the `extensions` setting, an installed plugin, or an agent-directory override. Profiles also change the user root. See [extension loading](https://github.com/can1357/oh-my-pi/blob/v18.8.4/docs/extension-loading.md).
+omp supports pi-compatible extension packages, but compatibility is separate from directory discovery. Its default native extension roots are `~/.omp/agent/extensions/` and `<cwd>/.omp/extensions/`, not `~/.pi/agent/extensions/`. An extension from elsewhere can still load through an explicit `--extension` path, the `extensions` setting, an installed plugin, or an agent-directory override. Profiles also change the user root. The [`track-session-changes`](../../dot_pi/agent/extensions/track-session-changes/README.md) extension is the one pi extension that omp loads: chezmoi links it into `~/.omp/agent/extensions/`. See [extension loading](https://github.com/can1357/oh-my-pi/blob/v18.8.4/docs/extension-loading.md).
 
 Seeing both conversation command names does not show that omp loaded the pi extension.
 

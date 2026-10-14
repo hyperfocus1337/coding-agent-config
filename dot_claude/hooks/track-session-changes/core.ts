@@ -1,8 +1,8 @@
 /**
  * Records the files that an agent session changes, one log line per file per
- * tool call. The command hook (`hook.ts`) calls it for Claude Code and Codex.
- * No dependency and no agent import, so an in-process extension can import it
- * too.
+ * tool call. The command hook (`hook.ts`) calls it for Claude Code and Codex,
+ * and the pi extension imports it in-process for pi and omp. No dependency and
+ * no agent import.
  *
  * Log: ~/.local/state/agent-changes/<agent>/<session id>.tsv, one line per file:
  * start, end, tool, status (A, M, D), repo, path, line. The line is the first
@@ -323,6 +323,21 @@ export function patchLine(hunks: Hunk[] | undefined): number {
     (line) => line.startsWith("+") || line.startsWith("-"),
   );
   return hunk.newStart + Math.max(context, 0);
+}
+
+/**
+ * The first line that differs between two texts, for a pi or omp write. Lines
+ * removed at the end give the line after the last one that is left, as a pure
+ * deletion in `hunkLine`. Undefined when the texts are equal.
+ */
+export function changedLine(before: string, after: string): number | undefined {
+  if (before === after) return undefined;
+  const old = before.split("\n");
+  const now = after.split("\n");
+  let line = 0;
+  while (line < old.length && line < now.length && old[line] === now[line])
+    line++;
+  return line + 1;
 }
 
 /** Logs the files that a tool named in its input. Such a tool needs no snapshot. */

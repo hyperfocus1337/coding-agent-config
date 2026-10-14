@@ -8,6 +8,10 @@ chezmoi applies this directory to `~/.omp/agent`. This README stays in the repos
 
 After editing a rule, run `just chezmoi`, then start a fresh omp session or use `/clear` or `/new`.
 
+## Extensions
+
+omp loads extensions from `~/.omp/agent/extensions/`, not from `~/.pi/agent/extensions/`. [`extensions/symlink_track-session-changes`](extensions/symlink_track-session-changes) links the pi extension [`track-session-changes`](../../dot_pi/agent/extensions/track-session-changes/README.md) into that root, so omp logs the files of its sessions with the same code as pi. Start a new omp session after `just chezmoi` to load an edit.
+
 ## Configuration
 
 [`private_config.yml`](private_config.yml) becomes `~/.omp/agent/config.yml` with private permissions.
