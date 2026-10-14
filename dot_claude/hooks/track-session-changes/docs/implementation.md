@@ -15,7 +15,9 @@ Probes with a scratch settings file and a disposable session showed these payloa
 
 Codex needs trust in the TUI for each new `hooks.json` entry, on the host and in the devcontainer. The probes used `codex exec --dangerously-bypass-hook-trust`. Codex starts a second session for its memories, with its own session ID and `cwd` `~/.codex/memories`. Its `SessionStart` only runs the prune.
 
-The `tool_response` of a Claude Code Edit or Write is equal (`==` in jq) to the `toolUseResult` of the same call in the transcript. Claude Code sends `cwd` and `file_path` as resolved paths, for example `/private/tmp/x`, not `/tmp/x`. Codex sends `PostToolUse` also after a command that exits non-zero, with `tool_response` `""`. Codex has no `PostToolUseFailure` event.
+The `tool_response` of a Claude Code Edit or Write has the same fields as the `toolUseResult` of the same call in the transcript, but not always the same values. On 2026-10-14, with Claude Code 2.1.300, `tool_response` had the full `originalFile` for files up to 2 MB, while the transcript stored `null` for each file of 44 KB or more. So a transcript does not show what the hook receives. Claude Code sends `cwd` and `file_path` as resolved paths, for example `/private/tmp/x`, not `/tmp/x`.
+
+Codex sends `PostToolUse` also after a command that exits non-zero, with `tool_response` `""`. Codex has no `PostToolUseFailure` event.
 
 ## Log place
 
