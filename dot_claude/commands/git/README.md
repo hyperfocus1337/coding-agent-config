@@ -6,6 +6,12 @@ disable-model-invocation: true
 
 Shorthand command names and what they map to.
 
+## Setup
+
+| Command | Description                                |
+| ------- | ------------------------------------------ |
+| `init`  | Create a git repository with a main branch |
+
 ## Commit
 
 Stage and commit working directory changes.
