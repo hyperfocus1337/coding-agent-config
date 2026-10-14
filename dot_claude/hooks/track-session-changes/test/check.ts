@@ -391,6 +391,14 @@ check("a symlinked cwd keeps the link in the path", () => {
   ]);
 });
 
+check("a repo with two names gets one snapshot", () => {
+  // The log of s2 names the repo through the link, and cwd is the real path.
+  bash(r1, () => sh(r1, "echo t >>tracked.txt"), { session: "s2" });
+  assert.deepEqual(logged("s2").slice(1), [
+    `Bash\tM\t${r1}\t${r1}/tracked.txt\t12`,
+  ]);
+});
+
 check("a repo without commits", () => {
   const empty = path.join(tmp, "empty");
   fs.mkdirSync(empty);

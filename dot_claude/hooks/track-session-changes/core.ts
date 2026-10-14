@@ -112,7 +112,7 @@ export const repoOf = (dir: string) => repoAt(dir)?.top ?? "";
  * no `rev-parse` for a directory that an earlier call looked up. An entry
  * holds while `<top>/.git` exists and no directory between `dir` and the top
  * has a `.git`. A directory outside every repo is not cached, so a later
- * `git init` there counts.
+ * `git init` there counts. The result has one entry per real repo path.
  */
 function cachedRepos(state: string, dirs: string[]): Map<string, Repo> {
   const file = path.join(state, "repos.json");
@@ -137,7 +137,11 @@ function cachedRepos(state: string, dirs: string[]): Map<string, Repo> {
       repo = repoAt(dir);
       if (repo) [cache[dir], changed] = [repo, true];
     }
-    if (repo && !repos.has(repo.top)) repos.set(repo.top, repo);
+    // One repo can have two names, such as /tmp and /private/tmp on macOS.
+    if (repo) {
+      const real = fs.realpathSync(repo.top);
+      if (!repos.has(real)) repos.set(real, repo);
+    }
   }
   if (changed) {
     fs.mkdirSync(state, { recursive: true });
