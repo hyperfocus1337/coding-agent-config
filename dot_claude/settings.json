@@ -46,6 +46,11 @@
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/track-bash-changes/hook.sh\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/track-session-changes/hook.ts\" claude",
+            "timeout": 10
           }
         ]
       }
@@ -73,6 +78,11 @@
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/track-bash-changes/hook.sh\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/track-session-changes/hook.ts\" claude",
+            "timeout": 10
           }
         ]
       },
@@ -97,6 +107,22 @@
           {
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/lint-prose/hook.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/track-session-changes/hook.ts\" claude",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/track-session-changes/hook.ts\" claude",
             "timeout": 10
           }
         ]
@@ -135,6 +161,11 @@
           {
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/track-bash-changes/hook.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/track-session-changes/hook.ts\" claude",
             "timeout": 10
           }
         ]

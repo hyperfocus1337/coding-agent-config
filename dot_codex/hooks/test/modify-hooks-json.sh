@@ -34,6 +34,6 @@ check "container drops cmux hooks" '[.. | .command? // empty | select(test("cmux
 check "container keeps repo hooks" '.hooks.Stop | length == 1'
 
 HOME=$tmp/host sh "$SCRIPT" </dev/null >"$tmp/out"
-check "empty stdin gives repo hooks" '.hooks | keys == ["PostToolUse","PreToolUse","Stop"]'
+check "empty stdin gives repo hooks" '.hooks | keys == ["PostToolUse","PreToolUse","SessionStart","Stop"]'
 
 exit "$fail"

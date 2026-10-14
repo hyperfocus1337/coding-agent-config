@@ -32,6 +32,11 @@ ours=$(cat <<'EOF'
             "command": "bash \"$HOME/.claude/hooks/lint-all-languages/hook.sh\"",
             "timeout": 15,
             "type": "command"
+          },
+          {
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/track-session-changes/hook.ts\" codex",
+            "timeout": 10,
+            "type": "command"
           }
         ],
         "matcher": "Bash"
@@ -57,6 +62,11 @@ ours=$(cat <<'EOF'
             "command": "bash \"$HOME/.codex/hooks/apply-patch.sh\" \"$HOME/.claude/hooks/lint-prose/hook.sh\"",
             "timeout": 15,
             "type": "command"
+          },
+          {
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/track-session-changes/hook.ts\" codex",
+            "timeout": 10,
+            "type": "command"
           }
         ],
         "matcher": "apply_patch"
@@ -74,9 +84,35 @@ ours=$(cat <<'EOF'
             "command": "bash \"$HOME/.claude/hooks/enforce-cli-tools/hook.sh\"",
             "timeout": 5,
             "type": "command"
+          },
+          {
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/track-session-changes/hook.ts\" codex",
+            "timeout": 10,
+            "type": "command"
           }
         ],
         "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/track-session-changes/hook.ts\" codex",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "apply_patch"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/track-session-changes/hook.ts\" codex",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
       }
     ],
     "Stop": [
