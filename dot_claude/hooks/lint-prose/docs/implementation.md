@@ -82,7 +82,7 @@ A payload with no `session_id`, or one with characters outside `A-Z a-z 0-9 _ -`
 
 The hook ran on Bash until 2026-10-13. A Bash payload names no file, so the hook took the prose paths from the command text and kept the ones with an mtime under 120 seconds old. The command text also names files that the command only reads. In one session, 5 read-only commands such as `rg … config.org` and `sed -n 420p config.org` each blocked, because a parallel session had saved `config.org` in the last 2 minutes. An mtime cannot tell which process wrote the file.
 
-To find the files a command wrote, the hook must compare the disk before and after the command, as [`track-bash-changes`](../../track-bash-changes/README.md) does. That is a `PreToolUse` snapshot and state per call, for prose that Claude almost always writes with `Write` or `Edit`. So the hook does not run on Bash, and prose that a Bash command writes, such as `cat > notes.md <<EOF`, is not checked. To check it, run `/prose-cleanup` or `check.sh`.
+To find the files a command wrote, the hook must compare the disk before and after the command, as [`track-session-changes`](../../track-session-changes/README.md) does. That is a `PreToolUse` snapshot and state per call, for prose that Claude almost always writes with `Write` or `Edit`. So the hook does not run on Bash, and prose that a Bash command writes, such as `cat > notes.md <<EOF`, is not checked. To check it, run `/prose-cleanup` or `check.sh`.
 
 ## Why it blocks
 

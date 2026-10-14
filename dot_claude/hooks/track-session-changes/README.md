@@ -2,7 +2,7 @@
 
 A hook that logs each file a session changes, with the tool, the call window, and the first changed line. It runs for Claude Code and Codex as a command hook: `node hook.ts <agent>`. The logic is in `core.ts`, which has no dependency. The [pi extension](../../../dot_pi/agent/extensions/track-session-changes/README.md) imports it in-process for pi and omp. The [`session-files`](../../skills/session-files/) skill reads the log.
 
-It replaces [`track-bash-changes`](../track-bash-changes/). Until the `agent-changed-files` package in the chezmoi repo reads the new log, both hooks run side by side.
+It replaced `track-bash-changes` on 2026-10-14, which logged only the Bash calls of Claude Code to `<session id>/bash-changes.tsv` beside the transcript. The `session-files` skill still reads those files for older sessions.
 
 ## Log
 
