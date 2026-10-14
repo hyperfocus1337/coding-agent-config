@@ -68,7 +68,7 @@ The Claude Code hooks stay unchanged and do not need to know about Codex. All Co
 
 - **Stdout.** The wrapper passes each hook's stdout through. In the single-file branch, no hook writes to stdout now. If a hook starts to print JSON there, a multi-file patch gives Codex several JSON objects, and Codex rejects the output.
 - **Timeout.** The `timeout` of a `hooks.json` entry covers the whole wrapper, so it covers N hook runs in sequence for an N-file patch. The values are copied from the single-run Claude Code entries. Not measured for large patches.
-- **No PostToolUseFailure.** Codex has no such event. A Bash command that writes a file and then exits non-zero gets no format pass under Codex.
+- **No PostToolUseFailure.** Codex has no such event. It sends `PostToolUse` also after a Bash command that exits non-zero (Codex CLI 0.160.1), so such a command still gets a format pass.
 - **Trust.** The trust hash covers the `hooks.json` entry, not the script. An edit to the wrapper needs no new trust.
 
 ### Test
