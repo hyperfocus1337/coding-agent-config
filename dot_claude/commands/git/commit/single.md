@@ -6,8 +6,8 @@ description: Create a single git commit
 ## Context
 
 - Status: !`git status -sb`
-- Diff: !`git diff HEAD`
-- Recent commits: !`git log --oneline -5`
+- Diff: !`git diff HEAD 2>/dev/null || git diff --cached`
+- Recent commits: !`git log --oneline -5 2>/dev/null || echo "no commits yet"`
 
 ## Your task
 

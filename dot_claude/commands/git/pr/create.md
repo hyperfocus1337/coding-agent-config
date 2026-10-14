@@ -6,9 +6,9 @@ description: Commit, push, and open a PR
 ## Context
 
 - Current git status: !`git status`
-- Current git diff (staged and unstaged changes): !`git diff HEAD`
+- Current git diff (staged and unstaged changes): !`git diff HEAD 2>/dev/null || git diff --cached`
 - Current branch: !`git branch --show-current`
-- Recent commits: !`git log --oneline -5`
+- Recent commits: !`git log --oneline -5 2>/dev/null || echo "no commits yet"`
 
 ## Your task
 

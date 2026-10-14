@@ -6,8 +6,8 @@ description: Commit this conversation's changes as scoped commits
 ## Context
 
 - Status: !`git status -sb`
-- Change size per file: !`git diff HEAD --stat`
-- Recent commits: !`git log --oneline -5`
+- Change size per file: !`git diff HEAD --stat 2>/dev/null || git diff --cached --stat`
+- Recent commits: !`git log --oneline -5 2>/dev/null || echo "no commits yet"`
 
 ## Your task
 
