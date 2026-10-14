@@ -340,6 +340,35 @@ check("Write: create outside a repo, and a failed Edit logs nothing", () => {
   assert.deepEqual(logged(), [`Write\tA\t\t${file}\t1`]);
 });
 
+check("NotebookEdit: the first changed line of the file text", () => {
+  clear();
+  const file = `${r2}/n.ipynb`;
+  // The payload shape of a probe on 2026-10-14. A failed call sends no event.
+  const base = {
+    session_id: "s1",
+    hook_event_name: "PostToolUse",
+    tool_name: "NotebookEdit",
+    cwd: r1,
+    tool_input: { notebook_path: file, cell_id: "c1", new_source: "x" },
+  };
+  fire({
+    ...base,
+    tool_use_id: "n1",
+    tool_response: {
+      error: "",
+      notebook_path: file,
+      original_file: '{\n "cells": [\n  "a"\n ]\n}\n',
+      updated_file: '{\n "cells": [\n  "x"\n ]\n}\n',
+    },
+  });
+  fire({
+    ...base,
+    tool_use_id: "n2",
+    tool_response: { error: "Cell not found", notebook_path: file },
+  });
+  assert.deepEqual(logged(), [`NotebookEdit\tM\t${r2}\t${file}\t3`]);
+});
+
 check(
   "Codex apply_patch: files from the patch, lines from the snapshot",
   () => {

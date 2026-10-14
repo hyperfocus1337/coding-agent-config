@@ -12,7 +12,7 @@ Each session writes one log: `~/.local/state/agent-changes/<agent>/<session id>.
 | ------ | -------------------------- | ------------------------------------------------------------- |
 | start  | `2026-10-14T09:12:03.120Z` | UTC with milliseconds                                         |
 | end    | `2026-10-14T09:12:03.480Z` | UTC with milliseconds                                         |
-| tool   | `Bash`                     | `Bash`, `Edit`, `Write`, or `apply_patch`                     |
+| tool   | `Bash`                     | `Bash`, `Edit`, `Write`, `NotebookEdit`, or `apply_patch`     |
 | status | `M`                        | `A`, `M`, or `D`. A type change, such as file to link, is `M` |
 | repo   | `/Users/me/repo`           | Top of the git work tree. Empty outside a repo                |
 | path   | `/Users/me/repo/x.org`     | Absolute                                                      |
@@ -20,16 +20,17 @@ Each session writes one log: `~/.local/state/agent-changes/<agent>/<session id>.
 
 ## What it records
 
-| Tool                   | Events                                                   | Files                                      | Line                                          |
-| ---------------------- | -------------------------------------------------------- | ------------------------------------------ | --------------------------------------------- |
-| Claude Code Edit       | `PostToolUse`                                            | `tool_input.file_path`                     | First hunk of `structuredPatch` in the result |
-| Claude Code Write      | `PostToolUse`                                            | `tool_input.file_path`                     | The same. A new file has no hunks: line 1     |
-| Claude Code Bash       | `PreToolUse`, `PostToolUse`, `PostToolUseFailure`        | Snapshot difference                        | First hunk of `git diff-files -p -U0`         |
-| Codex Bash             | `PreToolUse`, `PostToolUse`, also after a failed command | Snapshot difference                        | The same                                      |
-| Codex `apply_patch`    | `PreToolUse`, `PostToolUse`                              | `*** Add/Update/Delete File`, `Move to`    | From the snapshot. A new file outside it: 1   |
-| Both agents, any event | `SessionStart`                                           | None: deletes logs and state after 30 days | None                                          |
+| Tool                     | Events                                                   | Files                                      | Line                                                                             |
+| ------------------------ | -------------------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------- |
+| Claude Code Edit         | `PostToolUse`                                            | `tool_input.file_path`                     | First hunk of `structuredPatch` in the result                                    |
+| Claude Code Write        | `PostToolUse`                                            | `tool_input.file_path`                     | The same. A new file has no hunks: line 1                                        |
+| Claude Code NotebookEdit | `PostToolUse`                                            | `tool_input.notebook_path`                 | First line that differs between `original_file` and `updated_file` of the result |
+| Claude Code Bash         | `PreToolUse`, `PostToolUse`, `PostToolUseFailure`        | Snapshot difference                        | First hunk of `git diff-files -p -U0`                                            |
+| Codex Bash               | `PreToolUse`, `PostToolUse`, also after a failed command | Snapshot difference                        | The same                                                                         |
+| Codex `apply_patch`      | `PreToolUse`, `PostToolUse`                              | `*** Add/Update/Delete File`, `Move to`    | From the snapshot. A new file outside it: 1                                      |
+| Both agents, any event   | `SessionStart`                                           | None: deletes logs and state after 30 days | None                                                                             |
 
-A tool that names its files also logs a file outside every repo and a git-ignored file. A failed Edit or Write returns an error string instead of `structuredPatch`, so the hook logs nothing for it.
+A tool that names its files also logs a file outside every repo and a git-ignored file. A failed Edit or Write returns an error string instead of `structuredPatch`, so the hook logs nothing for it. A failed NotebookEdit sends no `PostToolUse`. `MultiEdit` is in the matcher of the format hooks, but Claude Code no longer has the tool, so this hook ignores it.
 
 ## Snapshots
 

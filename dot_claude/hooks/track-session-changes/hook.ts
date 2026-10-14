@@ -10,6 +10,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import {
   beginCall,
+  changedLine,
   endCall,
   patchFiles,
   patchLine,
@@ -25,11 +26,14 @@ interface Payload {
   tool_name?: string;
   cwd?: string;
   duration_ms?: number;
-  tool_input?: { file_path?: string; command?: string };
+  tool_input?: { file_path?: string; command?: string; notebook_path?: string };
   tool_response?: {
     type?: string;
     filePath?: string;
     structuredPatch?: Hunk[];
+    error?: string;
+    original_file?: string;
+    updated_file?: string;
   };
 }
 
@@ -63,8 +67,27 @@ function run(agent: string, payload: Payload) {
     return;
   }
 
-  // A successful Edit or Write returns structuredPatch. A failed one returns an error string.
   const result = payload.tool_response;
+  const end = new Date();
+  const start = new Date(end.getTime() - (payload.duration_ms ?? 0));
+
+  // A NotebookEdit result holds the file text before and after the call.
+  const notebook = payload.tool_input?.notebook_path;
+  if (tool === "NotebookEdit") {
+    if (event !== "PostToolUse" || !notebook || result?.error !== "") return;
+    const line = changedLine(
+      result.original_file ?? "",
+      result.updated_file ?? "",
+    );
+    const change = {
+      status: "M",
+      path: path.resolve(cwd, notebook),
+      line,
+    } as const;
+    return recordFiles(agent, session, tool, start, end, [change]);
+  }
+
+  // A successful Edit or Write returns structuredPatch. A failed one returns an error string.
   const file = payload.tool_input?.file_path ?? result?.filePath;
   if (
     event !== "PostToolUse" ||
@@ -73,8 +96,6 @@ function run(agent: string, payload: Payload) {
     !result?.structuredPatch
   )
     return;
-  const end = new Date();
-  const start = new Date(end.getTime() - (payload.duration_ms ?? 0));
   const status = result.type === "create" ? "A" : "M";
   const change = {
     status,
