@@ -9,9 +9,10 @@
  * changed line after the call, empty for D or when it is not known.
  *
  * State: ~/.cache/track-session-changes/<agent>/<session id>/, with one git
- * index per repo, the pending calls, and an object directory with the trees
- * and the blobs of the snapshots. It reads the repo objects as an alternate, so
- * the hook never writes to a repo.
+ * index per repo, the repos found so far, the pending calls with a link to the
+ * index of each call, and an object directory with the blobs of the snapshots.
+ * It reads the repo objects as an alternate, so the hook never writes to a
+ * repo.
  */
 
 import { spawnSync } from "node:child_process";
@@ -107,6 +108,47 @@ function repoAt(dir: string): Repo | undefined {
 export const repoOf = (dir: string) => repoAt(dir)?.top ?? "";
 
 /**
+ * `repoAt` with a cache in `repos.json` of the session state, so a call starts
+ * no `rev-parse` for a directory that an earlier call looked up. An entry
+ * holds while `<top>/.git` exists and no directory between `dir` and the top
+ * has a `.git`. A directory outside every repo is not cached, so a later
+ * `git init` there counts.
+ */
+function cachedRepos(state: string, dirs: string[]): Map<string, Repo> {
+  const file = path.join(state, "repos.json");
+  let cache: Record<string, Repo> = {};
+  try {
+    cache = JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, Repo>;
+  } catch {
+    // No cache yet.
+  }
+  const holds = (dir: string, { top }: Repo) => {
+    if (!fs.existsSync(path.join(top, ".git"))) return false;
+    for (; dir !== top; dir = path.dirname(dir))
+      if (dir === path.dirname(dir) || fs.existsSync(path.join(dir, ".git")))
+        return false;
+    return true;
+  };
+  let changed = false;
+  const repos = new Map<string, Repo>();
+  for (const dir of dirs) {
+    let repo = cache[dir] && holds(dir, cache[dir]) ? cache[dir] : undefined;
+    if (!repo) {
+      repo = repoAt(dir);
+      if (repo) [cache[dir], changed] = [repo, true];
+    }
+    if (repo && !repos.has(repo.top)) repos.set(repo.top, repo);
+  }
+  if (changed) {
+    fs.mkdirSync(state, { recursive: true });
+    const tmp = `${file}.${process.pid}.${Date.now()}`;
+    fs.writeFileSync(tmp, JSON.stringify(cache));
+    fs.renameSync(tmp, file);
+  }
+  return repos;
+}
+
+/**
  * The environment that points git at the session object directory. The repo
  * objects stay readable as an alternate, and new objects go to the session.
  */
@@ -116,46 +158,46 @@ const objectEnv = (state: string, repo: Repo) => ({
 });
 
 /**
- * Writes the work tree of the repo as a tree object in the session object
- * directory and returns its ID. Each session keeps one index per repo, so git
- * hashes only the files whose stat changed since the last snapshot. Without
- * `--info-only`, update-index stores the blobs, so a later diff can read them.
+ * Brings the session index of the repo up to date with the work tree, and
+ * links it to `link`, the index of one call. Each session keeps one index per
+ * repo, so `git add -A` hashes only the files whose stat changed since the
+ * last call. It stores their blobs, so the end of the call can diff them.
  */
-function snapshot(state: string, repo: Repo): string | undefined {
-  const { top } = repo;
-  const env = objectEnv(state, repo);
+function snapshot(state: string, repo: Repo, link: string): boolean {
   const index = path.join(
     state,
     "index",
-    createHash("sha1").update(top).digest("hex"),
+    createHash("sha1").update(repo.top).digest("hex"),
   );
+  const env = objectEnv(state, repo);
   fs.mkdirSync(path.dirname(index), { recursive: true });
   fs.mkdirSync(env.GIT_OBJECT_DIRECTORY, { recursive: true });
   // Parallel calls share the index, so work on a copy and rename it back.
   const tmp = `${index}.${process.pid}.${Date.now()}`;
   try {
     const from = fs.existsSync(index) ? index : repo.index;
-    if (fs.existsSync(from)) fs.copyFileSync(from, tmp);
+    if (fs.existsSync(from)) {
+      fs.copyFileSync(from, tmp);
+      // git trusts the stat data of an entry older than the index file, so
+      // the copy keeps the time of the original.
+      const { atime, mtime } = fs.statSync(from);
+      fs.utimesSync(tmp, atime, mtime);
+    }
     const indexEnv = { ...env, GIT_INDEX_FILE: tmp };
-    const dirty = git(
-      top,
-      ["ls-files", "-z", "-m", "-o", "-d", "--exclude-standard"],
-      indexEnv,
-    );
-    if (dirty === undefined) return undefined;
-    const update = [
-      "update-index",
-      "-z",
-      "--add",
-      "--remove",
-      "--replace",
-      "--stdin",
-    ];
-    if (git(top, update, indexEnv, dirty) === undefined) return undefined;
-    const tree = git(top, ["write-tree", "--missing-ok"], indexEnv)?.trim();
-    if (!tree) return undefined;
+    if (git(repo.top, ["add", "-A"], indexEnv) === undefined) return false;
+    // A repo with no file has no index, and git reads a missing link as empty.
+    if (!fs.existsSync(tmp)) return true;
+    // git replaces the index file on each write, so the link keeps this one.
+    fs.mkdirSync(path.dirname(link), { recursive: true });
+    try {
+      fs.linkSync(tmp, link);
+    } catch {
+      fs.copyFileSync(tmp, link);
+      const { atime, mtime } = fs.statSync(tmp);
+      fs.utimesSync(link, atime, mtime);
+    }
     fs.renameSync(tmp, index);
-    return tree;
+    return true;
   } finally {
     fs.rmSync(tmp, { force: true });
   }
@@ -197,35 +239,49 @@ export function hunkLine(header: string): number | undefined {
   return Number(match[1]) + (match[2] === "0" ? 1 : 0);
 }
 
-/** The files that differ between two trees of the repo, with the first changed line of each. */
-function diffTrees(
-  state: string,
-  repo: Repo,
-  before: string,
-  after: string,
-): Change[] {
+/**
+ * The files that differ between the index of a call and the work tree, with
+ * the first changed line of each. `git status` gives the paths in one
+ * process, and a patch runs only when a tracked file changed.
+ */
+function diffCall(state: string, repo: Repo, link: string): Change[] {
   const { top } = repo;
-  const env = objectEnv(state, repo);
-  const names = git(
+  const env = { ...objectEnv(state, repo), GIT_INDEX_FILE: link };
+  const status = git(
     top,
-    ["diff-tree", "-r", "-z", "--no-renames", "--name-status", before, after],
+    [
+      ...["--no-optional-locks", "status", "--porcelain=v2", "-z"],
+      ...["--untracked-files=all", "--no-renames", "--ignore-submodules=dirty"],
+    ],
     env,
   );
-  if (!names) return [];
+  if (!status) return [];
+  const changes: Change[] = [];
+  for (const entry of status.split("\0")) {
+    // `1 XY sub mH mI mW hH hI path`: Y is the work tree against the index.
+    // T, a type change such as a file that became a symlink, counts as M.
+    // A nested repo shows as an untracked directory, `? dir/`, and is left out.
+    const fields = entry.split(" ");
+    const add = (status: Change["status"], file: string) =>
+      changes.push({
+        status,
+        path: path.join(top, file),
+        line: status === "A" ? 1 : undefined,
+        repo: top,
+      });
+    if (entry.startsWith("1 ") && fields[1][1] !== ".")
+      add(fields[1][1] === "D" ? "D" : "M", fields.slice(8).join(" "));
+    else if (entry.startsWith("? ") && !entry.endsWith("/"))
+      add("A", entry.slice(2));
+  }
+  if (!changes.some((change) => change.status === "M")) return changes;
   // The patch only adds the lines. When it fails or is too large, the paths still count.
   const patch = git(
     top,
     [
-      ...[
-        "-c",
-        "core.quotePath=false",
-        "diff-tree",
-        "-r",
-        "--no-renames",
-        "--no-ext-diff",
-        "--no-textconv",
-      ],
-      ...["--src-prefix=a/", "--dst-prefix=b/", "-p", "-U0", before, after],
+      ...["-c", "core.quotePath=false", "diff-files", "--no-ext-diff"],
+      ...["--no-textconv", "--ignore-submodules=dirty", "--diff-filter=MT"],
+      ...["--src-prefix=a/", "--dst-prefix=b/", "-p", "-U0"],
     ],
     env,
     undefined,
@@ -234,26 +290,12 @@ function diffTrees(
   const lines = new Map<string, number | undefined>();
   let file: string | undefined;
   for (const text of patch?.split("\n") ?? []) {
-    if (text.startsWith("diff --git ")) file = headerPath(text);
+    if (text.startsWith("diff --git ")) file = path.join(top, headerPath(text));
     else if (file !== undefined && text.startsWith("@@ ") && !lines.has(file))
       lines.set(file, hunkLine(text));
   }
-  const fields = names.split("\0");
-  const changes: Change[] = [];
-  for (let i = 0; i + 1 < fields.length; i += 2) {
-    // T, a type change such as a file that became a symlink, counts as M.
-    const status = fields[i] === "A" || fields[i] === "D" ? fields[i] : "M";
-    const line =
-      status === "D"
-        ? undefined
-        : (lines.get(fields[i + 1]) ?? (status === "A" ? 1 : undefined));
-    changes.push({
-      status: status as Change["status"],
-      path: path.join(top, fields[i + 1]),
-      line,
-      repo: top,
-    });
-  }
+  for (const change of changes)
+    if (change.status === "M") change.line = lines.get(change.path);
   return changes;
 }
 
@@ -357,7 +399,7 @@ export function recordFiles(
 
 interface Pending {
   start: string;
-  repos: (Repo & { tree: string })[];
+  repos: (Repo & { link: string })[];
 }
 
 /**
@@ -373,16 +415,16 @@ export function beginCall(
 ) {
   if (!safeName(agent, session, callId)) return;
   const state = stateDir(agent, session);
-  const repos = new Map<string, Repo>();
   const dirs = [cwd, ...paths.map((file) => path.dirname(file))];
-  for (const dir of [...dirs, ...touchedRepos(agent, session)]) {
-    const repo = repoAt(dir);
-    if (repo && !repos.has(repo.top)) repos.set(repo.top, repo);
-  }
+  const repos = cachedRepos(state, [...dirs, ...touchedRepos(agent, session)]);
   const pending: Pending = { start: new Date().toISOString(), repos: [] };
   for (const repo of repos.values()) {
-    const tree = snapshot(state, repo);
-    if (tree) pending.repos.push({ ...repo, tree });
+    const link = path.join(
+      state,
+      "calls",
+      `${callId}.${pending.repos.length}.index`,
+    );
+    if (snapshot(state, repo, link)) pending.repos.push({ ...repo, link });
   }
   if (pending.repos.length === 0) return;
   fs.mkdirSync(path.join(state, "pending"), { recursive: true });
@@ -393,10 +435,10 @@ export function beginCall(
 }
 
 /**
- * Snapshots the repos of `beginCall` again after the call and logs the
- * difference. With `named`, the call named its files (apply_patch): only those
- * are logged, and the snapshot gives their lines. A named file outside the
- * snapshot repos gets line 1 for A and no line for M.
+ * Compares the work tree with the index of each repo from `beginCall` and logs
+ * the difference. With `named`, the call named its files (apply_patch): only
+ * those are logged, and the snapshot gives their lines. A named file outside
+ * the snapshot repos gets line 1 for A and no line for M.
  */
 export function endCall(
   agent: string,
@@ -418,10 +460,11 @@ export function endCall(
   const end = new Date();
   const start = pending ? new Date(pending.start) : end;
   const changes: Change[] = [];
-  for (const { tree: before, ...repo } of pending?.repos ?? []) {
-    const after = snapshot(state, repo);
-    if (after && after !== before)
-      changes.push(...diffTrees(state, repo, before, after));
+  for (const { link, ...repo } of pending?.repos ?? []) {
+    // A pending call of the version before `link` has no index to compare.
+    if (!link) continue;
+    changes.push(...diffCall(state, repo, link));
+    fs.rmSync(link, { force: true });
   }
   if (!named) return append(agent, session, tool, start, end, changes);
   const found = new Map(changes.map((change) => [change.path, change]));
@@ -458,9 +501,9 @@ export function patchFiles(patch: string, cwd: string): Change[] {
 
 // ── Prune ─────────────────────────────────────────────────────────────────────
 
-const mtime = (file: string) => {
+const mtime = (file: string, kind: "mtimeMs" | "ctimeMs" = "mtimeMs") => {
   try {
-    return fs.statSync(file).mtimeMs;
+    return fs.statSync(file)[kind];
   } catch {
     return 0;
   }
@@ -477,7 +520,9 @@ const entries = (dir: string) => {
  * Deletes the logs and the session state of all agents that were not written
  * for 30 days, and pending calls older than one day. A snapshot renames a file
  * in index/, and a call adds and removes one in pending/, so the newest mtime
- * of the session directory and these two is its last use.
+ * of the session directory and these two is its last use. The index of a call
+ * in calls/ is a link that keeps the mtime of the index, so its age is the
+ * ctime, which the link sets.
  */
 export function prune(now = Date.now()) {
   for (const agent of entries(logRoot()))
@@ -494,8 +539,12 @@ export function prune(now = Date.now()) {
       if (now - used > KEEP)
         fs.rmSync(session, { recursive: true, force: true });
       else
-        for (const call of entries(path.join(session, "pending")))
-          if (now - mtime(call) > KEEP_PENDING)
-            fs.rmSync(call, { force: true });
+        for (const [sub, kind] of [
+          ["pending", "mtimeMs"],
+          ["calls", "ctimeMs"],
+        ] as const)
+          for (const call of entries(path.join(session, sub)))
+            if (now - mtime(call, kind) > KEEP_PENDING)
+              fs.rmSync(call, { force: true });
     }
 }

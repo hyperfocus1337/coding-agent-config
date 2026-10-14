@@ -1,6 +1,6 @@
 # Implementation notes
 
-How [`core.ts`](../core.ts) takes a snapshot and finds the first changed line, and what it costs. [README.md](../README.md) describes what the hook does for a user. This file is for a person who changes the code. Measured on 2026-10-14 with node 26.10.0, git 2.55.0, Claude Code, and Codex CLI 0.160.1.
+How [`core.ts`](../core.ts) takes a snapshot and finds the first changed line, and what it costs. [README.md](../README.md) describes what the hook does for a user. This file is for a person who changes the code. Measured on 2026-10-14 with node 26.10.0, git 2.55.0 and 2.56.0, Claude Code, and Codex CLI 0.160.1.
 
 ## Payloads
 
@@ -21,29 +21,28 @@ The `tool_response` of a Claude Code Edit or Write is equal (`==` in jq) to the 
 
 ## Snapshot
 
-One snapshot of one repo takes one `git rev-parse` and three git commands:
+A Bash call starts 2 git processes per repo when it changes nothing, and 3 when it modifies a tracked file:
 
-1. `rev-parse --show-cdup --path-format=absolute --git-path objects --git-path index` gives the repo top, the object directory, and the repo index in one process. The top is `cwd` plus `--show-cdup`, so it keeps symlinks. `--show-toplevel` would resolve them.
-2. `ls-files -z -m -o -d --exclude-standard` lists the modified, untracked, and deleted files against the session index of this repo.
-3. `update-index -z --add --remove --replace --stdin` hashes these files and stores their blobs.
-4. `write-tree --missing-ok` writes the tree.
+1. `PreToolUse` finds the repos. `rev-parse --show-cdup --path-format=absolute --git-path objects --git-path index` gives the repo top, the object directory, and the repo index in one process. The top is `cwd` plus `--show-cdup`, so it keeps symlinks. `--show-toplevel` would resolve them. `repos.json` keeps the result per directory, so `rev-parse` runs once per directory per session. An entry holds while `<top>/.git` exists and no directory between the directory and the top has a `.git`. A directory outside every repo is not kept, so a later `git init` there counts.
+2. `PreToolUse` runs `git add -A` on a copy of the session index of the repo, links the copy to `calls/<id>.<n>.index`, and renames the copy back to the session index.
+3. The end event runs `git --no-optional-locks status --porcelain=v2 -z --untracked-files=all --no-renames --ignore-submodules=dirty` against the link: the work tree column gives `M` and `D`, and an untracked file gives `A`.
+4. Only when a tracked file changed, the end event runs `diff-files -p -U0 --diff-filter=MT` against the link for the lines.
 
-`GIT_OBJECT_DIRECTORY` points at the session `objects/`, and `GIT_ALTERNATE_OBJECT_DIRECTORIES` at the repo objects, so git reads the repo objects and writes new objects only to the session. The first snapshot starts from a copy of the repo index. Each later one starts from the session index, so git rehashes only the files whose stat changed since the last snapshot. Parallel calls share the index, so each snapshot works on a copy and renames it back.
+`GIT_OBJECT_DIRECTORY` points at the session `objects/`, and `GIT_ALTERNATE_OBJECT_DIRECTORIES` at the repo objects, so git reads the repo objects and writes new objects only to the session. The first snapshot starts from a copy of the repo index. Each later one starts from the session index, so git rehashes only the files whose stat changed since the last call. Parallel calls share the index, so each snapshot works on a copy and renames it back.
 
-`track-bash-changes` ran `update-index --info-only`, which stores no blobs. A tree diff then has names and blob IDs but no content to diff. This hook stores the blobs, so the diff can read both sides. A blob is stored once per content, so only new versions cost disk. After the first snapshot of the chezmoi repo, `objects/` held 276 KB.
+git writes an index to a new file and renames it, so the link keeps the index of the call while a parallel call replaces the session index. The link also keeps the mtime of the index. git trusts the stat data of an entry only when the entry is older than the index file, so the copy of step 2 gets the mtime of its source too. A copy with a new mtime makes git miss a rewrite of the same size in the same second. On 2026-10-14, 7 runs of 60 random calls through the version before this one and through this one gave the same lines, except one such write: the version before missed it, and this one logged it. Where a link fails, the hook copies the file and keeps its mtime.
 
-`PreToolUse` writes the repo records and the tree IDs to `pending/<tool_use_id>`. The end event reads them, so it needs no `rev-parse`, and a different `cwd` after the call does not change which repos it compares.
+`track-bash-changes` ran `update-index --info-only`, which stores no blobs. A diff then has names and blob IDs but no content to diff. This hook stores the blobs, so the diff can read the side before the call. A blob is stored once per content, so only new versions cost disk. After the first snapshot of the chezmoi repo, `objects/` held 276 KB. The first snapshot stores the blob of each dirty and untracked file that git does not ignore. On 2026-10-14 the largest session state was 1.3 MB, so the hook has no size limit.
+
+`PreToolUse` writes the repo records and the link paths to `pending/<tool_use_id>`. The end event reads them, so it needs no `rev-parse`, and a different `cwd` after the call does not change which repos it compares.
 
 ## Line of a Bash change
 
-The end event runs two diffs between the trees, only when the tree IDs differ:
+The first `@@ -a,b +c,d @@` after each `diff --git` header of the patch gives the line: `c`, or `c + 1` when `d` is 0 (a pure deletion sits after line `c`). A new file gets line 1, and a deleted file no line. `T` (type change) becomes `M`.
 
-- `diff-tree -r -z --no-renames --name-status` gives the status and the path of each file. `T` (type change) becomes `M`.
-- `diff-tree -r --no-renames -p -U0` gives the hunks. The first `@@ -a,b +c,d @@` after each `diff --git` header gives the line: `c`, or `c + 1` when `d` is 0 (a pure deletion sits after line `c`).
+The patch parse reads the path from the `diff --git a/P b/P` header. Both sides of a `diff-files` header hold the same path, so P is the first half. `core.quotePath=false` makes git quote only a path with a control character, a quote, or a backslash. `headerPath` decodes that C quoting.
 
-The patch parse reads the path from the `diff --git a/P b/P` header. With `--no-renames`, both sides hold the same path, so P is the first half. `core.quotePath=false` makes git quote only a path with a control character, a quote, or a backslash. `headerPath` decodes that C quoting.
-
-`--no-ext-diff`, `--no-textconv`, and the explicit prefixes keep user diff settings out of the output. A binary file has no hunk, so its line is empty, or 1 when it is new. A patch larger than 64 MB fails, and the paths stay with an empty line.
+`--no-ext-diff`, `--no-textconv`, and the explicit prefixes keep user diff settings out of the output. A binary file has no hunk, so its line is empty. A patch larger than 64 MB fails, and the paths stay with an empty line. `--ignore-submodules=dirty` logs a submodule only when its commit moves, and does not look into its work tree.
 
 ## Apply_patch
 
@@ -53,17 +52,34 @@ The paths come from the `*** Add File`, `*** Update File`, `*** Delete File`, an
 
 ## Cost
 
-| Item                                                          | Time                                            |
-| ------------------------------------------------------------- | ----------------------------------------------- |
-| `node -e 0`                                                   | 45 ms                                           |
-| `node hook.ts`, no work, no compile cache                     | 85 ms                                           |
-| `node hook.ts`, no work, compile cache                        | 50 ms                                           |
-| One git process (`rev-parse`)                                 | 15 ms                                           |
-| `ls-files -m -o -d` in the chezmoi repo                       | 25 to 45 ms                                     |
-| One Bash call in the chezmoi repo, Pre and Post, median of 10 | 230 ms, against 182 ms for `track-bash-changes` |
+| Item                                        | Time        |
+| ------------------------------------------- | ----------- |
+| `node -e 0`                                 | 40 to 45 ms |
+| `node hook.ts`, no work, compile cache      | 50 ms       |
+| One git process from a shell                | 8 ms        |
+| One git process from `spawnSync` in node    | 14 to 22 ms |
+| `git add -A` in the chezmoi repo, work only | 9.4 ms      |
 
-Node strips the types of each `.ts` file at each start, which costs about 35 ms. `NODE_COMPILE_CACHE` keeps the compiled code in `~/.cache/node-compile-cache`, so the wiring sets it in the hook command. The machine was under load during the measurements, so single runs varied by up to 100 ms.
+On the host, the cost comes from the count of process starts, not from the work of git. A Bash call in the chezmoi repo that changes nothing, Pre and Post, median of 11 runs with a scratch `HOME` and a load average of 12:
+
+| Version                                                                          | Git starts | Time          |
+| -------------------------------------------------------------------------------- | ---------- | ------------- |
+| `ls-files`, `update-index`, `write-tree` before and after, `rev-parse` each call | 7          | 238 to 290 ms |
+| This code                                                                        | 2          | 160 ms        |
+
+The prototype of this code measured 55 ms against 82 ms in the devcontainer, where a node start costs about 20 ms. With 70 Bash calls in a mean session, the change saves about 6 to 9 s per session on the host. Node strips the types of each `.ts` file at each start, which costs about 35 ms. `NODE_COMPILE_CACHE` keeps the compiled code in `~/.cache/node-compile-cache`, so the wiring sets it in the hook command.
+
+## Options measured and not taken
+
+| Option                                                     | Why not                                                                                                                                                                          |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Skip read-only commands                                    | The `if` field of a Claude Code hook holds one rule, and a match runs the hook, so it cannot skip. A check in the hook still pays the node start, and a wrong guess loses a file |
+| `PostToolUse` with `async: true`                           | No order between the async `PostToolUse` of one call and the `PreToolUse` of the next. The snapshot after the call can hold the writes of the next call                          |
+| A node server, with a `curl` client and a fallback to node | A `curl` start costs 15 ms, so it saves about 30 ms per hook run on the host, for one more process on the host and in the container                                              |
+| `core.fsmonitor` and `core.untrackedCache`                 | 10 to 20 ms slower in the chezmoi repo, and `core.fsmonitor` starts a daemon per repo                                                                                            |
+| `.mjs` in place of `.ts`                                   | About 4 ms per start with `NODE_COMPILE_CACHE`, which the hook command already sets                                                                                              |
+| A size limit for the blobs of the first snapshot           | `git add -A` takes no limit, so a limit needs the file list first, which costs the `ls-files` start again. Check the session state sizes again when one grows past a few MB      |
 
 ## Test
 
-[`test/check.ts`](../test/check.ts) checks the parsers in-process and runs `hook.ts` as a child process with a scratch `HOME`, around file changes in scratch repos. It covers add, modify, and delete with lines, a pure deletion, parallel calls, a failed call, Edit and Write payloads, the touched repos, `apply_patch`, a symlinked `cwd`, a repo without commits, a bad session ID, and the prune.
+[`test/check.ts`](../test/check.ts) checks the parsers in-process and runs `hook.ts` as a child process with a scratch `HOME`, around file changes in scratch repos. It covers add, modify, and delete with lines, a pure deletion, parallel and overlapping calls, a failed call, the repo cache, Edit and Write payloads, the touched repos, `apply_patch`, a symlinked `cwd`, a repo without commits, a bad session ID, and the prune of logs, state, pending calls, and call indexes.

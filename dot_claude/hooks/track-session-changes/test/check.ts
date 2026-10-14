@@ -17,6 +17,7 @@ import {
   hunkLine,
   patchFiles,
   patchLine,
+  prune,
 } from "../core.ts";
 
 let checks = 0;
@@ -227,6 +228,7 @@ check("Bash: a failed call still counts", () => {
 check("the repo objects stay untouched, and no pending call is left", () => {
   assert.equal(objectCount(), repoObjects);
   assert.deepEqual(fs.readdirSync(path.join(stateOf("s1"), "pending")), []);
+  assert.deepEqual(fs.readdirSync(path.join(stateOf("s1"), "calls")), []);
 });
 
 check("the log line has the call window in UTC with milliseconds", () => {
@@ -245,6 +247,42 @@ check("parallel calls both log, and share one index", () => {
   fire({ ...base, tool_use_id: "p2", hook_event_name: "PostToolUse" });
   assert.equal(logged().length, 2);
   assert.equal(fs.readdirSync(path.join(stateOf("s1"), "index")).length, 1);
+});
+
+check("overlapping calls: each logs the changes of its own window", () => {
+  const base = { tool_name: "Bash", cwd: r1 };
+  const ov = (session: string, id: string, event: string) =>
+    fire({
+      ...base,
+      session_id: session,
+      tool_use_id: id,
+      hook_event_name: event,
+    });
+  ov("oa", "a1", "PreToolUse");
+  sh(r1, "echo x >x.txt");
+  ov("ob", "b1", "PreToolUse");
+  sh(r1, "echo y >y.txt; echo a >>new.txt");
+  ov("oa", "a1", "PostToolUse");
+  ov("ob", "b1", "PostToolUse");
+  const files = (session: string) =>
+    logged(session)
+      .map((line) => path.basename(line.split("\t")[3]))
+      .sort();
+  assert.deepEqual(files("oa"), ["new.txt", "x.txt", "y.txt"]);
+  assert.deepEqual(files("ob"), ["new.txt", "y.txt"]);
+});
+
+check("a cached repo gives way to a repo made in a directory below it", () => {
+  const sub = path.join(r1, "nested");
+  fs.mkdirSync(sub);
+  bash(sub, () => sh(sub, "echo 1 >one.txt"), { session: "s6" });
+  sh(sub, "git init -q .");
+  bash(sub, () => sh(sub, "echo 2 >two.txt"), { session: "s6" });
+  assert.deepEqual(logged("s6"), [
+    `Bash\tA\t${r1}\t${sub}/one.txt\t1`,
+    `Bash\tA\t${sub}\t${sub}/two.txt\t1`,
+  ]);
+  fs.rmSync(sub, { recursive: true });
 });
 
 const r2 = repo("r2", { "a.txt": lines(5) });
@@ -403,6 +441,21 @@ check("SessionStart prunes old logs, old state, and old pending calls", () => {
   );
   assert.equal(fs.existsSync(logOf("s1")), true);
   assert.equal(fs.existsSync(path.join(stateOf("s1"), "index")), true);
+});
+
+check("the prune deletes a call index by the time of its link", () => {
+  const calls = path.join(stateOf("s1"), "calls");
+  fs.writeFileSync(path.join(calls, "lost.0.index"), "");
+  const home0 = process.env.HOME;
+  process.env.HOME = home;
+  try {
+    prune(Date.now() + 12 * 3600 * 1000);
+    assert.equal(fs.existsSync(path.join(calls, "lost.0.index")), true);
+    prune(Date.now() + 2 * 24 * 3600 * 1000);
+    assert.equal(fs.existsSync(path.join(calls, "lost.0.index")), false);
+  } finally {
+    process.env.HOME = home0;
+  }
 });
 
 console.log(
