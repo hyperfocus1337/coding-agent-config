@@ -41,6 +41,8 @@ All agents log to one tree, `~/.local/state/agent-changes/`, and not next to eac
 
 `structuredPatch` holds hunks with three context lines. The first changed line is `newStart` plus the count of context lines (` ` prefix) before the first `+` or `-` line. A pure deletion gives the line that now sits where the deleted lines were. A Write that creates a file has an empty `structuredPatch`, so the line is 1. The start of the call is the end minus `duration_ms`, because Edit and Write have no `PreToolUse` hook.
 
+The repo field of an Edit, a Write, a NotebookEdit, or a pi or omp write comes from `repos.json` too, see [Snapshot](#snapshot), so `rev-parse` runs once per directory per session. On 2026-10-14 this took an Edit hook run from 104 ms to 75 ms on the host.
+
 ## Snapshot
 
 A Bash call starts 2 git processes per repo when it changes nothing, and 3 when it modifies a tracked file:

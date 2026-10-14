@@ -311,6 +311,9 @@ check("Edit: line from structuredPatch, start from duration_ms", () => {
   assert.deepEqual(logged(), [`Edit\tM\t${r2}\t${r2}/a.txt\t3`]);
   const [start, end] = rows()[0].split("\t");
   assert.equal(Date.parse(end) - Date.parse(start), 1500);
+  // The next tool call in r2 finds the repo with no rev-parse.
+  const cache = fs.readFileSync(path.join(stateOf("s1"), "repos.json"), "utf8");
+  assert.equal(JSON.parse(cache)[r2]?.top, r2);
 });
 
 check("Bash: snapshots the repos the session changed, not other repos", () => {

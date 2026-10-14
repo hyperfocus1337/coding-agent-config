@@ -104,17 +104,18 @@ function repoAt(dir: string): Repo | undefined {
   return { top: path.resolve(dir, cdup), objects, index };
 }
 
-/** The top of the work tree that holds `dir`, or "" outside a repo. */
-export const repoOf = (dir: string) => repoAt(dir)?.top ?? "";
-
 /**
  * `repoAt` with a cache in `repos.json` of the session state, so a call starts
  * no `rev-parse` for a directory that an earlier call looked up. An entry
  * holds while `<top>/.git` exists and no directory between `dir` and the top
  * has a `.git`. A directory outside every repo is not cached, so a later
- * `git init` there counts. The result has one entry per real repo path.
+ * `git init` there counts. The result maps each of `dirs` to its repo,
+ * undefined outside a repo.
  */
-function cachedRepos(state: string, dirs: string[]): Map<string, Repo> {
+function cachedRepos(
+  state: string,
+  dirs: string[],
+): Map<string, Repo | undefined> {
   const file = path.join(state, "repos.json");
   let cache: Record<string, Repo> = {};
   try {
@@ -130,18 +131,15 @@ function cachedRepos(state: string, dirs: string[]): Map<string, Repo> {
     return true;
   };
   let changed = false;
-  const repos = new Map<string, Repo>();
+  const repos = new Map<string, Repo | undefined>();
   for (const dir of dirs) {
+    if (repos.has(dir)) continue;
     let repo = cache[dir] && holds(dir, cache[dir]) ? cache[dir] : undefined;
     if (!repo) {
       repo = repoAt(dir);
       if (repo) [cache[dir], changed] = [repo, true];
     }
-    // One repo can have two names, such as /tmp and /private/tmp on macOS.
-    if (repo) {
-      const real = fs.realpathSync(repo.top);
-      if (!repos.has(real)) repos.set(real, repo);
-    }
+    repos.set(dir, repo);
   }
   if (changed) {
     fs.mkdirSync(state, { recursive: true });
@@ -315,18 +313,19 @@ function append(
   changes: Change[],
 ) {
   if (changes.length === 0) return;
-  const repos = new Map<string, string>();
+  const repos = cachedRepos(
+    stateDir(agent, session),
+    changes
+      .filter((change) => change.repo === undefined)
+      .map((change) => path.dirname(change.path)),
+  );
   const text = changes.map((change) => {
-    const dir = path.dirname(change.path);
-    if (change.repo === undefined && !repos.has(dir))
-      repos.set(dir, repoOf(dir));
-    const repo = change.repo ?? repos.get(dir);
     const fields = [
       start.toISOString(),
       end.toISOString(),
       tool,
       change.status,
-      repo,
+      change.repo ?? repos.get(path.dirname(change.path))?.top ?? "",
       change.path,
       change.line ?? "",
     ];
@@ -420,7 +419,16 @@ export function beginCall(
   if (!safeName(agent, session, callId)) return;
   const state = stateDir(agent, session);
   const dirs = [cwd, ...paths.map((file) => path.dirname(file))];
-  const repos = cachedRepos(state, [...dirs, ...touchedRepos(agent, session)]);
+  const repos = new Map<string, Repo>();
+  for (const repo of cachedRepos(state, [
+    ...dirs,
+    ...touchedRepos(agent, session),
+  ]).values()) {
+    if (!repo) continue;
+    // One repo can have two names, such as /tmp and /private/tmp on macOS.
+    const real = fs.realpathSync(repo.top);
+    if (!repos.has(real)) repos.set(real, repo);
+  }
   const pending: Pending = { start: new Date().toISOString(), repos: [] };
   for (const repo of repos.values()) {
     const link = path.join(
