@@ -132,7 +132,8 @@ function load(title: string, session: string) {
   return (name: string, event: Record<string, unknown>) =>
     handlers.get(name)!(event, ctx);
 }
-const log = (agent: string, session: string) => {
+/** The fields of each log line: from the tool to the line, or the blob IDs. */
+const log = (agent: string, session: string, blobs = false) => {
   const file = path.join(
     tmp,
     "home/.local/state/agent-changes",
@@ -144,9 +145,13 @@ const log = (agent: string, session: string) => {
         .readFileSync(file, "utf8")
         .trim()
         .split("\n")
-        .map((line) => line.split("\t").slice(2))
+        .map((line) => line.split("\t").slice(...(blobs ? [7] : [2, 7])))
     : [];
 };
+const blobId = (text: string) =>
+  execFileSync("git", ["hash-object", "--stdin"], { input: text })
+    .toString()
+    .trim();
 
 check("bash: a call ID with | and / still snapshots", () => {
   const fire = load("pi", "s1");
@@ -194,6 +199,10 @@ check(
       ["write", "A", repo, path.join(repo, "w.txt"), "1"],
       ["write", "M", repo, path.join(repo, "w.txt"), "3"],
     ]);
+    assert.deepEqual(log("pi", "s2", true), [
+      ["", blobId("one\ntwo\n")],
+      [blobId("one\ntwo\n"), blobId("one\ntwo\nthree\n")],
+    ]);
   },
 );
 
@@ -231,6 +240,35 @@ check("omp: its own log, and a failed edit logs nothing", () => {
     ["edit", "M", repo, path.join(repo, "f.txt"), "2"],
   ]);
   assert.deepEqual(log("pi", "s3"), []);
+});
+
+check("omp edit of two files: each file read at the call is its before", () => {
+  const fire = load("omp", "s4");
+  fs.writeFileSync(path.join(repo, "g.txt"), "g\n");
+  fire("tool_call", {
+    toolName: "edit",
+    toolCallId: "e3",
+    input: { paths: ["f.txt", "g.txt"] },
+  });
+  const f = fs.readFileSync(path.join(repo, "f.txt"), "utf8");
+  fs.writeFileSync(path.join(repo, "f.txt"), "F\n");
+  fs.writeFileSync(path.join(repo, "g.txt"), "G\n");
+  fire("tool_result", {
+    toolName: "edit",
+    toolCallId: "e3",
+    input: { paths: ["f.txt", "g.txt"] },
+    isError: false,
+    details: {
+      perFileResults: [
+        { path: path.join(repo, "f.txt"), op: "update", firstChangedLine: 1 },
+        { path: path.join(repo, "g.txt"), op: "update", firstChangedLine: 1 },
+      ],
+    },
+  });
+  assert.deepEqual(log("omp", "s4", true), [
+    [blobId(f), blobId("F\n")],
+    [blobId("g\n"), blobId("G\n")],
+  ]);
 });
 
 // ── Installed pi package ──────────────────────────────────────────────────────

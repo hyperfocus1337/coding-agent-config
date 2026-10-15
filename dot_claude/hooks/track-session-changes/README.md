@@ -42,6 +42,7 @@ The hook stores the blobs of each logged file in `~/.local/state/agent-changes/<
 | ---------------------------- | ------------------------------------------------------------------------------------------ | ---------------- |
 | Claude Code Edit and Write   | `originalFile` of the result, with the line endings of the file. Else a rebuild of an Edit | The file on disk |
 | Claude Code NotebookEdit     | `original_file` of the result                                                              | The file on disk |
+| pi and omp edit and write    | The files that the input names, read at the tool call                                      | The file on disk |
 | Bash, `apply_patch`          | The index entry of the file in the snapshot of the call                                    | The file on disk |
 | A file that the call made    | None                                                                                       | As above         |
 | A file that the call deleted | As above                                                                                   | None             |

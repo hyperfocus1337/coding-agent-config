@@ -4,7 +4,8 @@
  * file runs in omp through a link in ~/.omp/agent/extensions.
  *
  * bash: a git snapshot of the repos before and after the call.
- * edit: the paths and `firstChangedLine` of the tool details.
+ * edit: the paths and `firstChangedLine` of the tool details, and the files of
+ * the input, read at the call, as the before blobs.
  * write: the old file, read at the call, against the file after the result.
  * Other tools that write files are not recorded. Advisory: a failure is
  * dropped and never reaches the tool call.
@@ -33,11 +34,13 @@ interface EditFile {
   firstChangedLine?: number;
 }
 
-/** A started edit or write: its start, and for a write the file before it. */
+/**
+ * A started edit or write: its start, and the text before it of each file
+ * that its input names.
+ */
 interface Started {
   start: Date;
-  path?: string;
-  before?: string;
+  before: Map<string, string | undefined>;
 }
 
 /** A tool path as pi resolves it: without a leading @, with ~ expanded, against `cwd`. */
@@ -109,16 +112,22 @@ export default function trackSessionChanges(pi: ExtensionAPI) {
       const session = ctx.sessionManager.getSessionId();
       if (event.toolName === "bash")
         return beginCall(agent, session, callName(event.toolCallId), ctx.cwd);
-      if (event.toolName === "edit")
-        started.set(event.toolCallId, { start: new Date() });
-      if (event.toolName === "write" && typeof event.input.path === "string") {
-        const file = toolPath(event.input.path, ctx.cwd);
-        started.set(event.toolCallId, {
-          start: new Date(),
-          path: file,
-          before: read(file),
-        });
-      }
+      if (event.toolName !== "edit" && event.toolName !== "write") return;
+      // An omp edit names its files in `paths`, a pi edit and a write in `path`.
+      const { path: one, paths } = event.input as {
+        path?: unknown;
+        paths?: unknown;
+      };
+      const named = [one, ...(Array.isArray(paths) ? paths : [])].filter(
+        (file): file is string => typeof file === "string",
+      );
+      const before = new Map(
+        named.map((file) => {
+          const full = toolPath(file, ctx.cwd);
+          return [full, read(full)] as const;
+        }),
+      );
+      started.set(event.toolCallId, { start: new Date(), before });
     }),
   );
 
@@ -138,17 +147,20 @@ export default function trackSessionChanges(pi: ExtensionAPI) {
           "edit",
           call.start,
           end,
-          editFiles(event.details, event.input, ctx.cwd),
+          editFiles(event.details, event.input, ctx.cwd).map((change) => ({
+            ...change,
+            old: call.before.get(change.path),
+          })),
         );
-      if (event.toolName === "write" && call.path) {
-        const after = read(call.path);
+      const [file, before] = [...call.before][0] ?? [];
+      if (event.toolName === "write" && file) {
+        const after = read(file);
         if (after === undefined) return;
-        const line =
-          call.before === undefined ? 1 : changedLine(call.before, after);
+        const line = before === undefined ? 1 : changedLine(before, after);
         if (line === undefined) return;
-        const status = call.before === undefined ? "A" : "M";
+        const status = before === undefined ? "A" : "M";
         recordFiles(agent, session, "write", call.start, end, [
-          { status, path: call.path, line },
+          { status, path: file, line, old: before },
         ]);
       }
     }),

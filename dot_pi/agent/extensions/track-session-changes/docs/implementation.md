@@ -46,14 +46,16 @@ The log directory needs the agent name. `process.title` is `pi` in pi and `omp` 
 | `edit`  | `firstChangedLine` of the details. pi has no path in the details, so the input `path` resolves against `ctx.cwd`, with `@` stripped and `~` expanded |
 | `write` | `tool_call` reads the old file into memory. `tool_result` reads the new file, and `changedLine` of `core.ts` gives the first line that differs       |
 
+For the before blobs, `tool_call` of an `edit` or a `write` reads each file that `path` or `paths` of the input names into memory, and `recordFiles` of `core.ts` stores the text of each changed file as its before blob. The file is raw from disk, so the CRLF rule of the hook for `originalFile` does not apply.
+
 The write line reads the file after the result, not the `content` input, because omp can format a file after it writes it. A file that did not exist before gets `A` and line 1.
 
 ## Cost
 
-A `bash` call runs two snapshots in the agent process: eight `git` processes, and no node start. With the machine at a load average of 10 to 12, one `git` start took 26 ms, and one call (begin and end) took a median of 166 ms in a one-file repo and 208 ms in the chezmoi repo. An `edit` starts no process. A `write` reads the file twice.
+A `bash` call runs two snapshots in the agent process: eight `git` processes, and no node start. With the machine at a load average of 10 to 12, one `git` start took 26 ms, and one call (begin and end) took a median of 166 ms in a one-file repo and 208 ms in the chezmoi repo. An `edit` or a `write` starts no process, except in a repo whose attributes name a filter, see the [hook notes](../../../../../dot_claude/hooks/track-session-changes/docs/implementation.md#git-filters). It reads each named file at the call and each changed file at the result, and writes their blobs in-process.
 
 `spawnSync` blocks the event loop of the agent during a snapshot. The interface does not redraw during that time.
 
 ## Test
 
-[`test/check.ts`](../test/check.ts) checks `editFiles` with the details of the real pi and omp edits, then runs the handlers with a stub `pi`, a scratch `HOME`, and a scratch repo. It covers a bash call with a pi call ID, a write that creates, updates, and leaves a file as it was, an omp edit, and a failed edit. The last group reads the installed pi package at `PI_PACKAGE`: `firstChangedLine` in `EditToolDetails`, no details for `write`, and the two events.
+[`test/check.ts`](../test/check.ts) checks `editFiles` with the details of the real pi and omp edits, then runs the handlers with a stub `pi`, a scratch `HOME`, and a scratch repo. It covers a bash call with a pi call ID, a write that creates, updates, and leaves a file as it was, with its blobs, an omp edit, a failed edit, and the before blobs of an omp edit of two files. The last group reads the installed pi package at `PI_PACKAGE`: `firstChangedLine` in `EditToolDetails`, no details for `write`, and the two events.

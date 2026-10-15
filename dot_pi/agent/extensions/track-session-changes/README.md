@@ -1,6 +1,6 @@
 # track-session-changes
 
-Logs each file that a pi or omp session changes, with the tool, the call window, and the first changed line. It is the in-process side of the [`track-session-changes`](../../../../dot_claude/hooks/track-session-changes/README.md) hook: `core.ts` here is a link to the hook's `core.ts`, so pi, omp, Claude Code, and Codex write the same log with the same code. The [`session-files`](../../../../dot_claude/skills/session-files/) skill and the `agent-changed-files` package read the log.
+Logs each file that a pi or omp session changes, with the tool, the call window, the first changed line, and the git blobs of the file before and after the call. It is the in-process side of the [`track-session-changes`](../../../../dot_claude/hooks/track-session-changes/README.md) hook: `core.ts` here is a link to the hook's `core.ts`, so pi, omp, Claude Code, and Codex write the same log with the same code. The [`session-files`](../../../../dot_claude/skills/session-files/) skill and the `agent-changed-files` package read the log.
 
 omp runs the same extension: chezmoi links `~/.omp/agent/extensions/track-session-changes` to this directory. omp reads only its own extension root, so the extension loads once in each agent.
 
@@ -16,6 +16,8 @@ Each session writes `~/.local/state/agent-changes/<agent>/<session id>.tsv`, wit
 | `edit`  | `tool_call`, `tool_result` | pi: the input `path`. omp: each file of the tool details | `firstChangedLine` of the details. An omp file it creates: 1 |
 | `write` | `tool_call`, `tool_result` | The input `path`                                         | The old file, read at the call, against the file after it    |
 | None    | `session_start`            | None: deletes logs and state of all agents after 30 days | None                                                         |
+
+The before blob of an `edit` or a `write` is the text of each file that the input names in `path` or `paths`, read at the call. An omp edit that names its files only inside its patch gets no before blob. The after blob is the file on disk at the result, and a `bash` call gets its blobs as in the [hook](../../../../dot_claude/hooks/track-session-changes/README.md#blobs).
 
 An omp edit can change several files, delete a file, or move one. A delete logs `D`, and a move logs the old path as `D` and the new path as `A`. A failed edit or write logs nothing. A failed bash call logs its changes. A write that leaves the file as it was logs nothing.
 
