@@ -21,6 +21,10 @@ Seven modes that change how an answer is written, and one command that clears th
 
 Two one-shot commands that check the request before the work starts. See [ask/README.md](ask/README.md).
 
+## restate/ — write my text back
+
+Nine one-shot commands that write my text back as a goal, a scope, an outline, or a prompt, then wait for my confirmation. See [restate/README.md](restate/README.md).
+
 ## docs/ — documentation style
 
 Two mode switches that stay on for the session, and six one-shot edits that act on the text pasted after the command. See [docs/README.md](docs/README.md).
