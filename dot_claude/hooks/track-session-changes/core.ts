@@ -5,14 +5,19 @@
  * no agent import.
  *
  * Log: ~/.local/state/agent-changes/<agent>/<session id>.tsv, one line per file:
- * start, end, tool, status (A, M, D), repo, path, line. The line is the first
- * changed line after the call, empty for D or when it is not known.
+ * start, end, tool, status (A, M, D), repo, path, line, before, after. The
+ * line is the first changed line after the call, empty for D or when it is not
+ * known. Before and after are the git blob IDs of the file around the call.
+ *
+ * Objects: ~/.local/state/agent-changes/<agent>/<session id>/objects/, a git
+ * object directory with the blobs of the snapshots and of each before and
+ * after. It is beside the log, so a bind mount gives the host the blobs of a
+ * container session too. It reads the repo objects as an alternate, so the
+ * hook never writes to a repo.
  *
  * State: ~/.cache/track-session-changes/<agent>/<session id>/, with one git
- * index per repo, the repos found so far, the pending calls with a link to the
- * index of each call, and an object directory with the blobs of the snapshots.
- * It reads the repo objects as an alternate, so the hook never writes to a
- * repo.
+ * index per repo, the repos found so far, and the pending calls with a link to
+ * the index of each call.
  */
 
 import { spawnSync } from "node:child_process";
@@ -20,6 +25,7 @@ import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { deflateSync } from "node:zlib";
 
 /** One changed file of one tool call. */
 export interface Change {
@@ -30,11 +36,23 @@ export interface Change {
   line?: number;
   /** The repo top. Undefined when not looked up yet, "" outside a repo. */
   repo?: string;
+  /** Blob ID of the file before the call. Undefined for A or when not known. */
+  before?: string;
+  /** Blob ID of the file after the call. Undefined for D or when not known. */
+  after?: string;
+  /**
+   * The text before the call, for a tool that names its file. `recordFiles`
+   * stores it as the before blob.
+   */
+  old?: string;
 }
 
 /** A hunk of Claude Code `structuredPatch`, as in Edit and Write results. */
 export interface Hunk {
+  oldStart?: number;
+  oldLines?: number;
   newStart: number;
+  newLines?: number;
   lines: string[];
 }
 
@@ -55,6 +73,8 @@ export const logFile = (agent: string, session: string) =>
   path.join(logRoot(), agent, `${session}.tsv`);
 const stateDir = (agent: string, session: string) =>
   path.join(stateRoot(), agent, session);
+const objectsDir = (agent: string, session: string) =>
+  path.join(logRoot(), agent, session, "objects");
 
 /** An agent, session, or call id becomes a file name, so it must not be a path. */
 const safeName = (...names: string[]) =>
@@ -66,7 +86,7 @@ function git(
   top: string,
   args: string[],
   env: Record<string, string> = {},
-  input?: string,
+  input?: string | Buffer,
   maxBuffer?: number,
 ): string | undefined {
   const run = spawnSync("git", ["-C", top, ...args], {
@@ -116,6 +136,7 @@ function cachedRepos(
   state: string,
   dirs: string[],
 ): Map<string, Repo | undefined> {
+  if (dirs.length === 0) return new Map();
   const file = path.join(state, "repos.json");
   let cache: Record<string, Repo> = {};
   try {
@@ -153,11 +174,114 @@ function cachedRepos(
 /**
  * The environment that points git at the session object directory. The repo
  * objects stay readable as an alternate, and new objects go to the session.
+ * Until 2026-10-15 the session objects were in the state directory, which a
+ * session that ran across that day still reads; the prune deletes them by
+ * 2026-11-14, and git only warns about a missing alternate.
  */
-const objectEnv = (state: string, repo: Repo) => ({
-  GIT_OBJECT_DIRECTORY: path.join(state, "objects"),
-  GIT_ALTERNATE_OBJECT_DIRECTORIES: repo.objects,
+const objectEnv = (objects: string, state: string, repo: Repo) => ({
+  GIT_OBJECT_DIRECTORY: objects,
+  GIT_ALTERNATE_OBJECT_DIRECTORIES: `${repo.objects}:${path.join(state, "objects")}`,
 });
+
+// ── Blobs ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Writes `data` as a loose blob to the object directory `objects`, in-process,
+ * and returns its ID. A git start would cost 10 ms or more per blob.
+ */
+export function writeBlob(objects: string, data: Buffer): string {
+  const header = Buffer.from(`blob ${data.length}\0`);
+  const id = createHash("sha1").update(header).update(data).digest("hex");
+  const file = path.join(objects, id.slice(0, 2), id.slice(2));
+  if (!fs.existsSync(file)) {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const tmp = `${file}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, deflateSync(Buffer.concat([header, data])), {
+      mode: 0o444,
+    });
+    fs.renameSync(tmp, file);
+  }
+  return id;
+}
+
+/**
+ * The text of the attribute files that apply to `file` in `repo`: the
+ * `.gitattributes` of each directory from the top down, `info/attributes`,
+ * and the global file. A missing file adds nothing.
+ */
+function attributes(repo: Repo, file: string): string {
+  const files = [
+    path.join(path.dirname(repo.objects), "info", "attributes"),
+    path.join(
+      process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config"),
+      "git",
+      "attributes",
+    ),
+  ];
+  for (let dir = path.dirname(file); ; dir = path.dirname(dir)) {
+    files.push(path.join(dir, ".gitattributes"));
+    if (dir === repo.top || dir === path.dirname(dir)) break;
+  }
+  return files
+    .map((name) => {
+      try {
+        return fs.readFileSync(name, "utf8");
+      } catch {
+        return "";
+      }
+    })
+    .join("\n");
+}
+
+/**
+ * Stores `data`, the text of `file` in `repo`, as a blob and returns its ID.
+ * git applies the clean filter of the attributes when it hashes a file, and an
+ * in-process write does not. So when an attribute file names a filter, or
+ * names an end of line conversion and `data` holds a CR, `git hash-object`
+ * writes the blob. An attribute file that names them for other paths only
+ * costs that git start too.
+ */
+function storeBlob(
+  objects: string,
+  state: string,
+  data: Buffer,
+  repo: Repo | undefined,
+  file: string,
+): string | undefined {
+  const text = repo ? attributes(repo, file) : "";
+  if (
+    !repo ||
+    !(
+      /\b(filter|ident|working-tree-encoding)\b/.test(text) ||
+      (/\b(text|eol|crlf)\b/.test(text) && data.includes(13))
+    )
+  )
+    return writeBlob(objects, data);
+  fs.mkdirSync(objects, { recursive: true });
+  const id = git(
+    repo.top,
+    ["hash-object", "-w", "--stdin", `--path=${path.relative(repo.top, file)}`],
+    objectEnv(objects, state, repo),
+    data,
+  )?.trim();
+  return id || undefined;
+}
+
+/** Stores the file on disk as a blob. Undefined when it cannot be read. */
+function storeFile(
+  objects: string,
+  state: string,
+  repo: Repo | undefined,
+  file: string,
+): string | undefined {
+  let data: Buffer;
+  try {
+    data = fs.readFileSync(file);
+  } catch {
+    return undefined;
+  }
+  return storeBlob(objects, state, data, repo, file);
+}
 
 /**
  * Brings the session index of the repo up to date with the work tree, and
@@ -165,13 +289,18 @@ const objectEnv = (state: string, repo: Repo) => ({
  * repo, so `git add -A` hashes only the files whose stat changed since the
  * last call. It stores their blobs, so the end of the call can diff them.
  */
-function snapshot(state: string, repo: Repo, link: string): boolean {
+function snapshot(
+  objects: string,
+  state: string,
+  repo: Repo,
+  link: string,
+): boolean {
   const index = path.join(
     state,
     "index",
     createHash("sha1").update(repo.top).digest("hex"),
   );
-  const env = objectEnv(state, repo);
+  const env = objectEnv(objects, state, repo);
   fs.mkdirSync(path.dirname(index), { recursive: true });
   fs.mkdirSync(env.GIT_OBJECT_DIRECTORY, { recursive: true });
   // Parallel calls share the index, so work on a copy and rename it back.
@@ -243,12 +372,18 @@ export function hunkLine(header: string): number | undefined {
 
 /**
  * The files that differ between the index of a call and the work tree, with
- * the first changed line of each. `git status` gives the paths in one
- * process, and a patch runs only when a tracked file changed.
+ * the first changed line and the blobs of each. `git status` gives the paths
+ * and the before blobs in one process, and a patch runs only when a tracked
+ * file changed. The after blobs are written in-process.
  */
-function diffCall(state: string, repo: Repo, link: string): Change[] {
+function diffCall(
+  objects: string,
+  state: string,
+  repo: Repo,
+  link: string,
+): Change[] {
   const { top } = repo;
-  const env = { ...objectEnv(state, repo), GIT_INDEX_FILE: link };
+  const env = { ...objectEnv(objects, state, repo), GIT_INDEX_FILE: link };
   const status = git(
     top,
     [
@@ -260,19 +395,29 @@ function diffCall(state: string, repo: Repo, link: string): Change[] {
   if (!status) return [];
   const changes: Change[] = [];
   for (const entry of status.split("\0")) {
-    // `1 XY sub mH mI mW hH hI path`: Y is the work tree against the index.
+    // `1 XY sub mH mI mW hH hI path`: Y is the work tree against the index,
+    // and hI the blob of the file in the index of the call.
     // T, a type change such as a file that became a symlink, counts as M.
     // A nested repo shows as an untracked directory, `? dir/`, and is left out.
     const fields = entry.split(" ");
-    const add = (status: Change["status"], file: string) =>
+    const add = (status: Change["status"], file: string, before?: string) => {
+      const full = path.join(top, file);
       changes.push({
         status,
-        path: path.join(top, file),
+        path: full,
         line: status === "A" ? 1 : undefined,
         repo: top,
+        before: before && !/^0+$/.test(before) ? before : undefined,
+        after:
+          status === "D" ? undefined : storeFile(objects, state, repo, full),
       });
+    };
     if (entry.startsWith("1 ") && fields[1][1] !== ".")
-      add(fields[1][1] === "D" ? "D" : "M", fields.slice(8).join(" "));
+      add(
+        fields[1][1] === "D" ? "D" : "M",
+        fields.slice(8).join(" "),
+        fields[7],
+      );
     else if (entry.startsWith("? ") && !entry.endsWith("/"))
       add("A", entry.slice(2));
   }
@@ -328,6 +473,8 @@ function append(
       change.repo ?? repos.get(path.dirname(change.path))?.top ?? "",
       change.path,
       change.line ?? "",
+      change.before ?? "",
+      change.after ?? "",
     ];
     return `${fields.join("\t")}\n`;
   });
@@ -385,7 +532,127 @@ export function changedLine(before: string, after: string): number | undefined {
   return line + 1;
 }
 
-/** Logs the files that a tool named in its input. Such a tool needs no snapshot. */
+/**
+ * The before text of a Claude Code Edit or Write, with the line endings of the
+ * file on disk. `originalFile` has LF line endings, but the tool keeps the
+ * CRLF endings of the file. So when each line of `after` ends in CRLF, each LF
+ * of `original` becomes CRLF. Undefined for a file with mixed line endings.
+ */
+export function lineEndings(
+  original: string,
+  after: string,
+): string | undefined {
+  if (!after.includes("\r\n") || original.includes("\r")) return original;
+  const lines = after.split("\n").slice(0, -1);
+  if (!lines.every((line) => line.endsWith("\r"))) return undefined;
+  return original.replace(/\n/g, "\r\n");
+}
+
+/** The edit of a Claude Code Edit result. */
+export interface Edit {
+  oldString?: string;
+  newString?: string;
+  replaceAll?: boolean;
+}
+
+/**
+ * Checks that the old side of each hunk is in `text`. `structuredPatch` shows a
+ * tab as two spaces, so the check does too.
+ */
+function hunksFit(text: string, hunks: Hunk[]): boolean {
+  const lines = text.split("\n");
+  const norm = (line: string) => line.replace(/\t/g, "  ");
+  return hunks.every((hunk) => {
+    if (hunk.oldStart === undefined) return false;
+    const old = hunk.lines
+      .filter((line) => line[0] === " " || line[0] === "-")
+      .map((line) => line.slice(1));
+    const first = Math.max(hunk.oldStart - 1, 0);
+    return old.every((line, i) => norm(lines[first + i] ?? "") === norm(line));
+  });
+}
+
+/**
+ * The text of a file before a Claude Code Edit, rebuilt from the text after
+ * it, for a result without `originalFile`. Undoing the hunks alone is wrong,
+ * because `structuredPatch` shows a tab as two spaces. So it puts `oldString`
+ * back in place of `newString` at an occurrence that overlaps a hunk, or at
+ * each such occurrence with `replaceAll`, and checks the old side of each hunk.
+ * An occurrence can reach past its hunk, which holds only the changed lines
+ * and 3 context lines. Undefined when no occurrence passes, so the rebuild
+ * never gives a wrong text.
+ */
+export function rebuildOriginal(
+  after: string,
+  edit: Edit,
+  hunks: Hunk[],
+): string | undefined {
+  const { oldString, newString, replaceAll } = edit;
+  if (oldString === undefined || newString === undefined || !hunks.length)
+    return undefined;
+  const starts = [0];
+  for (let i = after.indexOf("\n"); i !== -1; i = after.indexOf("\n", i + 1))
+    starts.push(i + 1);
+  const lineOf = (offset: number) => {
+    let [low, high] = [0, starts.length - 1];
+    while (low < high) {
+      const mid = (low + high + 1) >> 1;
+      if (starts[mid] <= offset) low = mid;
+      else high = mid - 1;
+    }
+    return low + 1;
+  };
+  const ranges = hunks.map((hunk) => {
+    const count =
+      hunk.newLines ?? hunk.lines.filter((line) => line[0] !== "-").length;
+    return [hunk.newStart, hunk.newStart + Math.max(count, 1) - 1];
+  });
+  const overlaps = (from: number, to: number) =>
+    ranges.some(([first, last]) => lineOf(from) <= last && lineOf(to) >= first);
+  const spots: number[] = [];
+  if (newString === "") {
+    // A deletion leaves no text to find, so each offset of a hunk is a spot.
+    if (replaceAll) return undefined;
+    for (const [first, last] of ranges)
+      for (
+        let i = starts[first - 1] ?? after.length;
+        i <= (starts[last] ?? after.length);
+        i++
+      )
+        spots.push(i);
+  } else
+    for (
+      let i = after.indexOf(newString);
+      i !== -1;
+      i = after.indexOf(newString, i + newString.length)
+    )
+      if (overlaps(i, i + newString.length - 1)) spots.push(i);
+  const build = (at: number[]) => {
+    let [text, last] = ["", 0];
+    for (const i of at) {
+      text += after.slice(last, i) + oldString;
+      last = i + newString.length;
+    }
+    return text + after.slice(last);
+  };
+  if (replaceAll) {
+    const text = build(spots);
+    return spots.length && hunksFit(text, hunks) ? text : undefined;
+  }
+  // Each try copies the file, so a large file with many spots gives up.
+  if (spots.length * after.length > 64 * 1024 * 1024) return undefined;
+  for (const i of spots) {
+    const text = build([i]);
+    if (hunksFit(text, hunks)) return text;
+  }
+  return undefined;
+}
+
+/**
+ * Logs the files that a tool named in its input. Such a tool needs no
+ * snapshot. The file on disk is the after blob of a change, and its `old` text
+ * the before blob.
+ */
 export function recordFiles(
   agent: string,
   session: string,
@@ -394,8 +661,28 @@ export function recordFiles(
   end: Date,
   changes: Change[],
 ) {
-  if (safeName(agent, session))
-    append(agent, session, tool, start, end, changes);
+  if (!safeName(agent, session)) return;
+  const state = stateDir(agent, session);
+  const objects = objectsDir(agent, session);
+  const repos = cachedRepos(
+    state,
+    changes.map((change) => path.dirname(change.path)),
+  );
+  for (const change of changes) {
+    const repo = repos.get(path.dirname(change.path));
+    change.repo ??= repo?.top ?? "";
+    if (change.status !== "D")
+      change.after ??= storeFile(objects, state, repo, change.path);
+    if (change.status !== "A" && change.old !== undefined)
+      change.before ??= storeBlob(
+        objects,
+        state,
+        Buffer.from(change.old),
+        repo,
+        change.path,
+      );
+  }
+  append(agent, session, tool, start, end, changes);
 }
 
 // ── Tools without a path: Bash and apply_patch ────────────────────────────────
@@ -418,6 +705,7 @@ export function beginCall(
 ) {
   if (!safeName(agent, session, callId)) return;
   const state = stateDir(agent, session);
+  const objects = objectsDir(agent, session);
   const dirs = [cwd, ...paths.map((file) => path.dirname(file))];
   const repos = new Map<string, Repo>();
   for (const repo of cachedRepos(state, [
@@ -436,7 +724,8 @@ export function beginCall(
       "calls",
       `${callId}.${pending.repos.length}.index`,
     );
-    if (snapshot(state, repo, link)) pending.repos.push({ ...repo, link });
+    if (snapshot(objects, state, repo, link))
+      pending.repos.push({ ...repo, link });
   }
   if (pending.repos.length === 0) return;
   fs.mkdirSync(path.join(state, "pending"), { recursive: true });
@@ -449,8 +738,9 @@ export function beginCall(
 /**
  * Compares the work tree with the index of each repo from `beginCall` and logs
  * the difference. With `named`, the call named its files (apply_patch): only
- * those are logged, and the snapshot gives their lines. A named file outside
- * the snapshot repos gets line 1 for A and no line for M.
+ * those are logged, and the snapshot gives their lines and blobs. A named file
+ * outside the snapshot repos gets line 1 for A and no line for M, and no
+ * before blob.
  */
 export function endCall(
   agent: string,
@@ -461,6 +751,7 @@ export function endCall(
 ) {
   if (!safeName(agent, session, callId)) return;
   const state = stateDir(agent, session);
+  const objects = objectsDir(agent, session);
   const file = path.join(state, "pending", callId);
   let pending: Pending | undefined;
   try {
@@ -475,15 +766,18 @@ export function endCall(
   for (const { link, ...repo } of pending?.repos ?? []) {
     // A pending call of the version before `link` has no index to compare.
     if (!link) continue;
-    changes.push(...diffCall(state, repo, link));
+    changes.push(...diffCall(objects, state, repo, link));
     fs.rmSync(link, { force: true });
   }
   if (!named) return append(agent, session, tool, start, end, changes);
   const found = new Map(changes.map((change) => [change.path, change]));
   for (const change of named) {
+    const snap = found.get(change.path);
+    change.before ??= snap?.before;
     if (change.status === "D") continue;
-    change.line ??=
-      found.get(change.path)?.line ?? (change.status === "A" ? 1 : undefined);
+    change.line ??= snap?.line ?? (change.status === "A" ? 1 : undefined);
+    change.after ??=
+      snap?.after ?? storeFile(objects, state, undefined, change.path);
   }
   append(agent, session, tool, start, end, named);
 }
@@ -530,7 +824,8 @@ const entries = (dir: string) => {
 
 /**
  * Deletes the logs and the session state of all agents that were not written
- * for 30 days, and pending calls older than one day. A snapshot renames a file
+ * for 30 days, and pending calls older than one day. The objects of a session
+ * go when both its log and its state are gone. A snapshot renames a file
  * in index/, and a call adds and removes one in pending/, so the newest mtime
  * of the session directory and these two is its last use. The index of a call
  * in calls/ is a link that keeps the mtime of the index, so its age is the
@@ -559,4 +854,16 @@ export function prune(now = Date.now()) {
             if (now - mtime(call, kind) > KEEP_PENDING)
               fs.rmSync(call, { force: true });
     }
+  // containers/ holds the logs of each container, which its own prune keeps.
+  for (const agent of entries(logRoot()))
+    if (path.basename(agent) !== "containers")
+      for (const dir of entries(agent)) {
+        const session = path.basename(dir);
+        if (
+          fs.existsSync(path.join(dir, "objects")) &&
+          !fs.existsSync(`${dir}.tsv`) &&
+          !fs.existsSync(stateDir(path.basename(agent), session))
+        )
+          fs.rmSync(dir, { recursive: true, force: true });
+      }
 }
