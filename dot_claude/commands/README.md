@@ -37,10 +37,6 @@ Commands that move content into labeled sections and rewrite nothing unless you 
 
 Two commands that rewrite a GitHub issue to be clearer. See [issues/README.md](issues/README.md).
 
-## summarize/ — transcript summaries
-
-One command that summarizes a meeting or transcript. See [summarize/README.md](summarize/README.md).
-
 ## chezmoi — dotfile sync
 
 `/chezmoi` is a single command that takes a subcommand, not a namespace.

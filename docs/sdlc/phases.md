@@ -265,7 +265,6 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 | [`technical-writing`](../../dot_claude/skills/technical-writing/SKILL.md)                                                  | Write or edit technical English against Google developer documentation style. |
 | [`/text:proofread`](../../dot_claude/commands/text/proofread.md)                                                           | Proofread text for spelling, grammar, and readability.                        |
 | [`meeting-summarizer`](../../dot_claude/skills/meeting-summarizer/SKILL.md)                                                | Turn a meeting or interview transcript into structured English notes.         |
-| [`/summarize:transcripts`](../../dot_claude/commands/summarize/transcripts.md)                                             | Summarize a meeting or transcript into sections with action items.            |
 | [`teach`](https://github.com/mattpocock/skills/blob/main/skills/productivity/teach/SKILL.md)                               | Explain a concept or codebase area for onboarding.                            |
 | [`handoff`](https://github.com/mattpocock/skills/blob/main/skills/productivity/handoff/SKILL.md)                           | Capture session state so work can be picked up later.                         |
 | [`writing-great-skills`](https://github.com/mattpocock/skills/blob/main/skills/productivity/writing-great-skills/SKILL.md) | Author well-structured skills for this environment.                           |
