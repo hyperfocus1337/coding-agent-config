@@ -19,7 +19,7 @@ Seven modes that change how an answer is written, and one command that clears th
 
 ## ask/ — ask before acting
 
-Two one-shot commands that check the request before the work starts. See [ask/README.md](ask/README.md).
+Three one-shot commands that ask questions before the work starts. See [ask/README.md](ask/README.md).
 
 ## restate/ — write my text back
 
