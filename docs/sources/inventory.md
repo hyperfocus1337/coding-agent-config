@@ -45,10 +45,9 @@ Prompt templates under [`dot_claude/commands/`](../../dot_claude/commands/README
 
 #### Text
 
-| Command                                                          | Description                                            |
-| ---------------------------------------------------------------- | ------------------------------------------------------ |
-| [`/code:explain`](../../dot_claude/commands/code/explain.md)     | Explain a code snippet step by step.                   |
-| [`/text:proofread`](../../dot_claude/commands/text/proofread.md) | Proofread text for spelling, grammar, and readability. |
+| Command                                                      | Description                          |
+| ------------------------------------------------------------ | ------------------------------------ |
+| [`/code:explain`](../../dot_claude/commands/code/explain.md) | Explain a code snippet step by step. |
 
 ### Skills
 

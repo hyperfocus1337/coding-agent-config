@@ -263,7 +263,6 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | [`markitdown`](../../dot_claude/skills/markitdown/SKILL.md)                                                                | Convert a PDF, Office, image, audio, or HTML file to Markdown.                |
 | [`technical-writing`](../../dot_claude/skills/technical-writing/SKILL.md)                                                  | Write or edit technical English against Google developer documentation style. |
-| [`/text:proofread`](../../dot_claude/commands/text/proofread.md)                                                           | Proofread text for spelling, grammar, and readability.                        |
 | [`meeting-summarizer`](../../dot_claude/skills/meeting-summarizer/SKILL.md)                                                | Turn a meeting or interview transcript into structured English notes.         |
 | [`teach`](https://github.com/mattpocock/skills/blob/main/skills/productivity/teach/SKILL.md)                               | Explain a concept or codebase area for onboarding.                            |
 | [`handoff`](https://github.com/mattpocock/skills/blob/main/skills/productivity/handoff/SKILL.md)                           | Capture session state so work can be picked up later.                         |

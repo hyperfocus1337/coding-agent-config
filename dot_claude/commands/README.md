@@ -52,7 +52,3 @@ The command passes `--source <root>` when the working directory is in a git repo
 ## code/ — code utilities
 
 Commands that explain, review, and clean up code. See [code/README.md](code/README.md).
-
-## text/ — text utilities
-
-One command that proofreads text. See [text/README.md](text/README.md).
