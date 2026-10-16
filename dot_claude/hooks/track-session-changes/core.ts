@@ -764,8 +764,6 @@ export function endCall(
   const start = pending ? new Date(pending.start) : end;
   const changes: Change[] = [];
   for (const { link, ...repo } of pending?.repos ?? []) {
-    // A pending call of the version before `link` has no index to compare.
-    if (!link) continue;
     changes.push(...diffCall(objects, state, repo, link));
     fs.rmSync(link, { force: true });
   }
