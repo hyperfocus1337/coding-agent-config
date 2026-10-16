@@ -174,9 +174,10 @@ function cachedRepos(
 /**
  * The environment that points git at the session object directory. The repo
  * objects stay readable as an alternate, and new objects go to the session.
- * Until 2026-10-15 the session objects were in the state directory, which a
- * session that ran across that day still reads; the prune deletes them by
- * 2026-11-14, and git only warns about a missing alternate.
+ * shortcut: `objects/` in the state directory is a second alternate, because
+ * some session states hold blobs there. git only warns when it is missing.
+ * The prune deletes the last of these directories by 2026-11-14; then remove
+ * the second alternate.
  */
 const objectEnv = (objects: string, state: string, repo: Repo) => ({
   GIT_OBJECT_DIRECTORY: objects,

@@ -35,7 +35,7 @@ All agents log to one tree, `~/.local/state/agent-changes/`, and not next to eac
 
 | Option                            | Why not                                                                  |
 | --------------------------------- | ------------------------------------------------------------------------ |
-| Keep `hook.sh` next to TypeScript | Saves 0.06 s per Bash call, but keeps two implementations that can drift |
+| A shell script for Bash calls     | Saves 0.06 s per Bash call, but gives two implementations that can drift |
 | A fixed list of repos to snapshot | Each Bash call pays for each repo in the list                            |
 | A snapshot with git-ignored files | Slow in repos with `node_modules`, build output, or caches               |
 
@@ -43,7 +43,7 @@ All agents log to one tree, `~/.local/state/agent-changes/`, and not next to eac
 
 `structuredPatch` holds hunks with three context lines. The first changed line is `newStart` plus the count of context lines (` ` prefix) before the first `+` or `-` line. A pure deletion gives the line that now sits where the deleted lines were. A Write that creates a file has an empty `structuredPatch`, so the line is 1. The start of the call is the end minus `duration_ms`, because Edit and Write have no `PreToolUse` hook.
 
-The repo field of an Edit, a Write, a NotebookEdit, or a pi or omp write comes from `repos.json` too, see [Snapshot](#snapshot), so `rev-parse` runs once per directory per session. On 2026-10-14 this took an Edit hook run from 104 ms to 75 ms on the host.
+The repo field of an Edit, a Write, a NotebookEdit, or a pi or omp write comes from `repos.json` too, see [Snapshot](#snapshot), so `rev-parse` runs once per directory per session. On 2026-10-14 on the host, an Edit hook run took 75 ms with the cache and 104 ms with a `rev-parse` at each call.
 
 ## Snapshot
 
@@ -54,11 +54,17 @@ A Bash call starts 2 git processes per repo when it changes nothing, and 3 when 
 3. The end event runs `git --no-optional-locks status --porcelain=v2 -z --untracked-files=all --no-renames --ignore-submodules=dirty` against the link: the work tree column gives `M` and `D`, and an untracked file gives `A`.
 4. Only when a tracked file changed, the end event runs `diff-files -p -U0 --diff-filter=MT` against the link for the lines.
 
-`GIT_OBJECT_DIRECTORY` points at the session `objects/`, and `GIT_ALTERNATE_OBJECT_DIRECTORIES` at the repo objects, so git reads the repo objects and writes new objects only to the session. Until 2026-10-15 the session `objects/` was in the state directory. That old directory is a second alternate, so a session that ran across the change still diffs against its old blobs. git only warns about a missing alternate. The prune removes the old directories by 2026-11-14, and then the second alternate can go. The first snapshot starts from a copy of the repo index. Each later one starts from the session index, so git rehashes only the files whose stat changed since the last call. Parallel calls share the index, so each snapshot works on a copy and renames it back.
+`GIT_OBJECT_DIRECTORY` points at the session `objects/`, and `GIT_ALTERNATE_OBJECT_DIRECTORIES` at the repo objects, so git reads the repo objects and writes new objects only to the session. `objects/` in the state directory is a second alternate, because some session states hold blobs there. git only warns when it is missing. The prune deletes the last of these directories by 2026-11-14, and then the second alternate can go.
 
-git writes an index to a new file and renames it, so the link keeps the index of the call while a parallel call replaces the session index. The link also keeps the mtime of the index. git trusts the stat data of an entry only when the entry is older than the index file, so the copy of step 2 gets the mtime of its source too. A copy with a new mtime makes git miss a rewrite of the same size in the same second. On 2026-10-14, 7 runs of 60 random calls through the version before this one and through this one gave the same lines, except one such write: the version before missed it, and this one logged it. Where a link fails, the hook copies the file and keeps its mtime.
+The first snapshot starts from a copy of the repo index. Each later one starts from the session index, so git rehashes only the files whose stat changed since the last call. Parallel calls share the index, so each snapshot works on a copy and renames it back.
 
-`track-bash-changes` ran `update-index --info-only`, which stores no blobs. A diff then has names and blob IDs but no content to diff. This hook stores the blobs, so the diff can read the side before the call. A blob is stored once per content, so only new versions cost disk. After the first snapshot of the chezmoi repo, `objects/` held 276 KB. The first snapshot stores the blob of each dirty and untracked file that git does not ignore. On 2026-10-14 the largest session state was 1.3 MB, so the hook has no size limit.
+git writes an index to a new file and renames it, so the link keeps the index of the call while a parallel call replaces the session index. The link also keeps the mtime of the index. Where a link fails, the hook copies the file and keeps its mtime.
+
+git trusts the stat data of an entry only when the entry is older than the index file, so the copy of step 2 gets the mtime of its source too. A copy with a new mtime makes git miss a rewrite of the same size in the same second. On 2026-10-14, 7 runs of 60 random calls gave the same lines with a copy that gets a new mtime and with a copy that keeps the mtime, except one such write: the first copy missed it, and the second logged it.
+
+`update-index --info-only` stores no blobs, so a diff has names and blob IDs but no content to diff. `git add -A` stores the blobs, so the diff can read the side before the call. A blob is stored once per content, so only new versions cost disk.
+
+The first snapshot stores the blob of each dirty and untracked file that git does not ignore. After the first snapshot of the chezmoi repo, `objects/` held 276 KB. On 2026-10-14 the largest session state was 1.3 MB, so the hook has no size limit.
 
 `PreToolUse` writes the repo records and the link paths to `pending/<tool_use_id>`. The end event reads them, so it needs no `rev-parse`, and a different `cwd` after the call does not change which repos it compares.
 
@@ -83,7 +89,7 @@ Each log line holds the blob IDs of the file before and after the call, see [REA
 | 6 KB                                  | 10.1 ms        | 9.9 ms               | 0.2 to 0.6 ms |
 | The 388 KB `config.org`               | 22.3 ms        | 13.7 ms              | 3.3 ms        |
 
-On 2026-10-15 an Edit of a copy of `config.org`, with `originalFile` and a scratch `HOME`, took a median of 48 ms over 9 runs before and after this change, at a load average of 20. A blob that is in `objects/` is not written again, so only a new version of a file costs the write.
+On 2026-10-15 an Edit of a copy of `config.org`, with `originalFile` and a scratch `HOME`, took a median of 48 ms over 9 runs both with and without the blob writes, at a load average of 20. A blob that is in `objects/` is not written again, so only a new version of a file costs the write.
 
 ### Git filters
 
@@ -142,12 +148,12 @@ The paths come from the `*** Add File`, `*** Update File`, `*** Delete File`, an
 
 On the host, the cost comes from the count of process starts, not from the work of git. A Bash call in the chezmoi repo that changes nothing, Pre and Post, median of 11 runs with a scratch `HOME` and a load average of 12:
 
-| Version                                                                          | Git starts | Time          |
+| Snapshot                                                                         | Git starts | Time          |
 | -------------------------------------------------------------------------------- | ---------- | ------------- |
 | `ls-files`, `update-index`, `write-tree` before and after, `rev-parse` each call | 7          | 238 to 290 ms |
-| This code                                                                        | 2          | 160 ms        |
+| Session index with `git add -A`, `repos.json`                                    | 2          | 160 ms        |
 
-The prototype of this code measured 55 ms against 82 ms in the devcontainer, where a node start costs about 20 ms. With 70 Bash calls in a mean session, the change saves about 6 to 9 s per session on the host. Node strips the types of each `.ts` file at each start, which costs about 35 ms. `NODE_COMPILE_CACHE` keeps the compiled code in `~/.cache/node-compile-cache`, so the wiring sets it in the hook command.
+In the devcontainer, where a node start costs about 20 ms, a prototype of the session index snapshot measured 55 ms against 82 ms. With 70 Bash calls in a mean session, the session index saves about 6 to 9 s per session on the host. Node strips the types of each `.ts` file at each start, which costs about 35 ms. `NODE_COMPILE_CACHE` keeps the compiled code in `~/.cache/node-compile-cache`, so the wiring sets it in the hook command.
 
 ## Options measured and not taken
 
