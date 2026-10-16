@@ -68,7 +68,7 @@ The hook always exits 0 and prints nothing. The command in `settings.json` and i
 
 ## Limits
 
-- The first Bash write to a repo the session has not changed yet is not logged. Bash writes to git-ignored files are not logged.
+- A Bash call snapshots only the repo of its working directory and the repos in the session log. So a Bash write to another repo is not logged until a tool that names its files changes that repo, or a call runs with its working directory there. Bash writes to git-ignored files are not logged.
 - A Bash snapshot cannot tell which process wrote a file. A file that another process changes during the call is logged as a change of the call. The overlap filter of the `agent-changed-files` package drops such a write when another session logged it with a tool path.
 - A background Bash call (`run_in_background`) returns before the command ends, so the hook misses its later writes.
 - A call that the user denies leaves a pending file and its index links. The prune deletes them after one day.
