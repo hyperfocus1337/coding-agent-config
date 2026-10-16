@@ -21,6 +21,7 @@ The four channel skills carry `disable-model-invocation: true`. Start from `inst
 | Skill                                       | Description                                                                                                     |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | [`markitdown`](markitdown/)                 | Converts PDF, Office, image, audio, HTML, and archive files to Markdown with the `markitdown` CLI.              |
+| [`unlimited-ocr`](unlimited-ocr/)           | OCRs scanned PDFs and images to Markdown with Baidu's Unlimited-OCR model, through MLX on Apple Silicon.        |
 | [`technical-writing`](technical-writing/)   | Writes or edits technical English against Google developer documentation style plus ASD-STE100 principles.      |
 | [`meeting-summarizer`](meeting-summarizer/) | Turns a meeting or call transcript into a structured English summary with decisions and an action-items table.  |
 | [`organize`](organize/)                     | Reorganizes a config or code file into labeled, comment-delimited sections, prompting for a header style first. |

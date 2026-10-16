@@ -43,4 +43,4 @@ Change the `*.pdf` glob to the file type the target holds: `*.docx`, `*.pptx`, `
 - Without `-o`, markitdown prints to stdout, so `markitdown file.pdf > out.md` also works.
 - Report where each output landed.
 - If `markitdown` is missing, install it with `uv tool install markitdown[all]` or `pip install markitdown[all]`.
-- If the source is a scanned PDF with no text layer, markitdown returns little or nothing. Read the pages as images instead.
+- If the source is a scanned PDF with no text layer, markitdown returns little or nothing. Use the `unlimited-ocr` skill on an Apple Silicon Mac. In other locations, read the pages as images.
