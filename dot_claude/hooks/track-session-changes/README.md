@@ -2,8 +2,6 @@
 
 A hook that logs each file a session changes, with the tool, the call window, the first changed line, and the git blobs of the file before and after the call. It runs for Claude Code and Codex as a command hook: `node hook.ts <agent>`. The logic is in `core.ts`, which has no dependency. The [pi extension](../../../dot_pi/agent/extensions/track-session-changes/README.md) imports it in-process for pi and omp. The [`session-files`](../../skills/session-files/) skill reads the log.
 
-It replaced `track-bash-changes` on 2026-10-14, which logged only the Bash calls of Claude Code to `<session id>/bash-changes.tsv` beside the transcript. Those files and the `bash-objects`, `bash-index` and `bash-pending` directories of that hook were deleted on 2026-10-14.
-
 ## Log
 
 Each session writes one log: `~/.local/state/agent-changes/<agent>/<session id>.tsv`, with `claude`, `codex`, `pi`, or `omp` as the agent. Subagent calls carry the session ID of the main session, so they go to the same log. One line per file per call, tab-separated:
@@ -20,7 +18,7 @@ Each session writes one log: `~/.local/state/agent-changes/<agent>/<session id>.
 | before | `3b18e512dbc8…`            | Git blob ID of the file before the call. Empty for `A`        |
 | after  | `9daeafb9864c…`            | Git blob ID of the file after the call. Empty for `D`         |
 
-A line from before 2026-10-15 has 7 fields, without `before` and `after`. A blob ID is empty also when the hook cannot know it, see [Blobs](#blobs). The `agent-changed-files` package of the chezmoi repo reads the blobs to find the changes of one session in a file.
+A line with 7 fields has no `before` and `after`. A blob ID is empty also when the hook cannot know it, see [Blobs](#blobs). The `agent-changed-files` package of the chezmoi repo reads the blobs to find the changes of one session in a file.
 
 ## What it records
 
@@ -49,7 +47,7 @@ The hook stores the blobs of each logged file in `~/.local/state/agent-changes/<
 
 A before blob is missing for a file with mixed line endings, for an Edit whose rebuild fails, and for an `apply_patch` file outside every snapshot repo.
 
-A tool that names its files also logs a file outside every repo and a git-ignored file. A failed Edit or Write returns an error string instead of `structuredPatch`, so the hook logs nothing for it. A failed NotebookEdit sends no `PostToolUse`. `MultiEdit` is in the matcher of the format hooks, but Claude Code no longer has the tool, so this hook ignores it.
+A tool that names its files also logs a file outside every repo and a git-ignored file. A failed Edit or Write returns an error string and no `structuredPatch`, so the hook logs nothing for it. A failed NotebookEdit sends no `PostToolUse`. `MultiEdit` is in the matcher of the format hooks, but Claude Code has no such tool, so this hook ignores it.
 
 ## Snapshots
 
