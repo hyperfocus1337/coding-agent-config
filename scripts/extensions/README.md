@@ -30,7 +30,7 @@ Read the current set:
 just plugin-catalog
 ```
 
-Enable and disable state is not in the catalog. `enabledPlugins` in [`dot_claude/settings.json`](../../dot_claude/settings.json) owns it, and `plugins/disable.sh` applies its `false` entries after the installs, because installing a disabled plugin re-enables it. Per-plugin reasoning: [`docs/scope/plugins.md`](../../docs/scope/plugins.md). Component and token inventory per plugin: [`docs/sources/inventory.md`](../../docs/sources/inventory.md).
+Enable and disable state is not in the catalog. `enabledPlugins` in [`dot_claude/settings.json.tmpl`](../../dot_claude/settings.json.tmpl) owns it, and `plugins/disable.sh` applies its `false` entries after the installs, because installing a disabled plugin re-enables it. Per-plugin reasoning: [`docs/scope/plugins.md`](../../docs/scope/plugins.md). Component and token inventory per plugin: [`docs/sources/inventory.md`](../../docs/sources/inventory.md).
 
 ---
 

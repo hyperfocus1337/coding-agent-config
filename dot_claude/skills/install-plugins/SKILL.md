@@ -40,17 +40,17 @@ Each row records intent, never live state.
 
 ### What the catalog does not hold
 
-| Fact                            | Where it lives instead                         |
-| :------------------------------ | :--------------------------------------------- |
-| component inventory, token cost | `claude plugin details <name>`, read live      |
-| which plugins are installed     | `claude plugin list --json`, read live         |
-| enabled or disabled             | `enabledPlugins` in `dot_claude/settings.json` |
+| Fact                            | Where it lives instead                              |
+| :------------------------------ | :-------------------------------------------------- |
+| component inventory, token cost | `claude plugin details <name>`, read live           |
+| which plugins are installed     | `claude plugin list --json`, read live              |
+| enabled or disabled             | `enabledPlugins` in `dot_claude/settings.json.tmpl` |
 
 ### How a row is used
 
 `scripts/extensions/plugins/install.sh` reads the catalog and installs every `scope: "user"` row that is not `superseded`. A row is therefore the single declaration of a user-scope plugin: no row, no plugin after a clean rebuild.
 
-`enabledPlugins` is the separate disable switch. chezmoi deploys `dot_claude/settings.json` to `~/.claude/settings.json`, and `scripts/extensions/plugins/disable.sh` applies the `false` entries after an install. Installing a disabled plugin re-enables it, which is why that step runs last.
+`enabledPlugins` is the separate disable switch. chezmoi deploys `dot_claude/settings.json.tmpl` to `~/.claude/settings.json`, and `scripts/extensions/plugins/disable.sh` applies the `false` entries after an install. Installing a disabled plugin re-enables it, which is why that step runs last.
 
 ## Procedure
 
@@ -111,7 +111,7 @@ Only for `user` scope, and only after the user confirms the write.
 
 Locate the config repo in this order: `$AGENT_CONFIG_REPO`, then `/workspaces/coding-agent-config` if it exists, then ask.
 
-Add or update the row in `<config-repo>/dot_claude/skills/install-plugins/references/plugins.json` with `scope: "user"`, a `why`, and a `use_when`. When the plugin ships MCP servers the user does not want loaded, also add `"<id>": false` to `enabledPlugins` in `<config-repo>/dot_claude/settings.json`. Then tell the user to commit both changes and, on other machines, to run `just extensions` to reproduce them.
+Add or update the row in `<config-repo>/dot_claude/skills/install-plugins/references/plugins.json` with `scope: "user"`, a `why`, and a `use_when`. When the plugin ships MCP servers the user does not want loaded, also add `"<id>": false` to `enabledPlugins` in `<config-repo>/dot_claude/settings.json.tmpl`. Then tell the user to commit both changes and, on other machines, to run `just extensions` to reproduce them.
 
 Skip this step for `project` and `local` scope. Those installs live in the target repo, not here.
 

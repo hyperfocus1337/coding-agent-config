@@ -50,7 +50,7 @@ echo "==> Installing MCP servers and skills via APM"
 "$SCRIPT_DIR/apm/install.sh"
 
 # --- Disable unwanted defaults ---
-# Apply the `false` entries in dot_claude/settings.json, because installing a
+# Apply the `false` entries in dot_claude/settings.json.tmpl, because installing a
 # disabled plugin re-enables it.
 echo "==> Disabling unwanted plugins"
 "$SCRIPT_DIR/plugins/disable.sh"

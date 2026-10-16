@@ -1,6 +1,6 @@
 # Disabled built-in tools
 
-`dot_claude/settings-minimal.json` turns off built-in tools and features that this setup does not use by default. The `claude` shell function in `dot_claude/claude.sh` and `dot_config/fish/conf.d/claude.fish` adds it as a `--settings` layer, and `claude-full` starts without it. `syncClaudeAiSkills` stays in `dot_claude/settings.json`, so both commands keep it. Each built-in tool puts its schema in the system prompt of every session, and each listed skill puts its name and description in the skill listing of every session, so an unused tool or skill costs context on every turn.
+`dot_claude/settings-minimal.json` turns off built-in tools and features that this setup does not use by default. The `claude` shell function in `dot_claude/claude.sh` and `dot_config/fish/conf.d/claude.fish` adds it as a `--settings` layer, and `claude-full` starts without it. `syncClaudeAiSkills` stays in `dot_claude/settings.json.tmpl`, so both commands keep it. Each built-in tool puts its schema in the system prompt of every session, and each listed skill puts its name and description in the skill listing of every session, so an unused tool or skill costs context on every turn.
 
 The source is the video [Claude Code's system tools are SO BLOATED](https://www.youtube.com/shorts/oLx4yCbeklQ) by Matt Pocock. The article [How To Kill The Bloat In Claude Code's System Prompt](https://www.aihero.dev/how-to-kill-the-bloat-in-claude-codes-system-prompt) gives the same settings and shows how to measure the tool tokens per request with a logging proxy set in `ANTHROPIC_BASE_URL`. The [`/context-payload`](../../../dot_claude/skills/README.md#context-payload) skill records the same request without a proxy, through the official `OTEL_LOG_RAW_API_BODIES` setting.
 
@@ -68,7 +68,7 @@ To find these skills on Claude Code 2.1.283, two headless sessions listed their 
 
 The `artifact-design`, `artifact-diagramming`, and `artifact-capabilities` skills go with the `Artifact` tool. In the Claude Code 2.1.296 binary, `artifact-design` and `artifact-diagramming` are enabled only when the Artifact feature is on, so `enableArtifact: false` hides them. `artifact-capabilities` has a different check, and the binary does not show if `enableArtifact` affects it. A headless test did not show any of the three skills with `enableArtifact` set to `true` or `false`, so the test does not confirm this.
 
-To hide all three in every session, `dot_claude/settings.json` sets each one to `"off"` in `skillOverrides`. `"off"` hides a skill from the model and from the `/` menu. The key must stay in `settings.json`: Claude Code reads `skillOverrides` only from user, project, and local settings, and ignores it in the `--settings` layer that loads `settings-minimal.json`. As a result, `claude-full` also hides the three skills.
+To hide all three in every session, `dot_claude/settings.json.tmpl` sets each one to `"off"` in `skillOverrides`. `"off"` hides a skill from the model and from the `/` menu. The key must stay in `settings.json`: Claude Code reads `skillOverrides` only from user, project, and local settings, and ignores it in the `--settings` layer that loads `settings-minimal.json`. As a result, `claude-full` also hides the three skills.
 
 The `$comment` key at the top of `settings.json` records this, because JSON has no comment syntax. When you change a skill in `/skills`, Claude Code rewrites `skillOverrides`, and it can also remove the `$comment` key. This was not tested.
 
@@ -112,7 +112,7 @@ Five of these skills need tools that a terminal session here does not have: `doc
 
 ## Turn a feature back on
 
-1. For one session, run `claude-full`. To change the default, remove the tool from `permissions.deny` or the `disable*` key from `dot_claude/settings-minimal.json`, or remove `syncClaudeAiSkills` from `dot_claude/settings.json`.
+1. For one session, run `claude-full`. To change the default, remove the tool from `permissions.deny` or the `disable*` key from `dot_claude/settings-minimal.json`, or remove `syncClaudeAiSkills` from `dot_claude/settings.json.tmpl`.
 2. Run `just chezmoi` to apply the change (see [`.claude/rules/apply.md`](../../../.claude/rules/apply.md) for the host and the devcontainer).
 3. Restart Claude Code.
 

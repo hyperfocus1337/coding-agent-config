@@ -2,7 +2,7 @@
 
 set -e
 
-# Apply the disabled flags from dot_claude/settings.json.
+# Apply the disabled flags from dot_claude/settings.json.tmpl.
 #
 # settings.json owns enable/disable state: chezmoi deploys it to
 # ~/.claude/settings.json, which is the same file `claude plugin disable`
@@ -18,7 +18,7 @@ set -e
 # --- Preflight ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-SETTINGS="$REPO_ROOT/dot_claude/settings.json"
+SETTINGS="$REPO_ROOT/dot_claude/settings.json.tmpl"
 
 for bin in claude jq; do
   if ! command -v "$bin" &>/dev/null; then

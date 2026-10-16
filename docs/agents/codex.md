@@ -36,7 +36,7 @@ Some lines in `tools.md` name things Codex does not have: the Grep and Glob tool
 
 ## Hooks
 
-Codex sends Claude's hook payload with Claude's tool name `Bash`, so the scripts run unchanged. `hooks.json` has the same entries as the `hooks` block in [`dot_claude/settings.json`](../../dot_claude/settings.json):
+Codex sends Claude's hook payload with Claude's tool name `Bash`, so the scripts run unchanged. `hooks.json` has the same entries as the `hooks` block in [`dot_claude/settings.json.tmpl`](../../dot_claude/settings.json.tmpl):
 
 | Event         | Matcher       | Hooks                                                                               |
 | ------------- | ------------- | ----------------------------------------------------------------------------------- |

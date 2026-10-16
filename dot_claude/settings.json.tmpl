@@ -19,7 +19,7 @@
     "sessionUrl": false
   },
   "permissions": {
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "{{ if or (stat `/.dockerenv`) (env `DEVCONTAINER`) }}bypassPermissions{{ else }}auto{{ end }}"
   },
   "model": "opus",
   "hooks": {

@@ -7,7 +7,7 @@ set -e
 # this script only executes it. Rows scoped `project` or `local` are installed
 # per repo by the install-plugins skill, never here.
 #
-# Enable/disable state is NOT here: dot_claude/settings.json owns it and
+# Enable/disable state is NOT here: dot_claude/settings.json.tmpl owns it and
 # disable.sh applies it after this script runs.
 
 # --- Container git config ---

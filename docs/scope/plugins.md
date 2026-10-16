@@ -4,7 +4,7 @@ A plugin installed at user scope adds its skill, command, and agent descriptions
 
 The catalog is read by two consumers. [`scripts/extensions/plugins/install.sh`](../../scripts/extensions/plugins/install.sh) installs every `scope: "user"` row when the machine is set up. The `install-plugins` skill reads the same file to install a plugin into one project. One declaration, two readers, no second list.
 
-The catalog answers where a plugin belongs. It does not answer whether a plugin is enabled: `enabledPlugins` in [`dot_claude/settings.json`](../../dot_claude/settings.json) owns that, and [`plugins/disable.sh`](../../scripts/extensions/plugins/disable.sh) applies its `false` entries after the installs, because installing a disabled plugin re-enables it.
+The catalog answers where a plugin belongs. It does not answer whether a plugin is enabled: `enabledPlugins` in [`dot_claude/settings.json.tmpl`](../../dot_claude/settings.json.tmpl) owns that, and [`plugins/disable.sh`](../../scripts/extensions/plugins/disable.sh) applies its `false` entries after the installs, because installing a disabled plugin re-enables it.
 
 ## Installing
 
