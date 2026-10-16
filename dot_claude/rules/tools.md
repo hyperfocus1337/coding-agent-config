@@ -19,6 +19,7 @@ Which tool to use for search, code edits, documentation, and package work.
 
 - Before you generate code, configuration, or setup steps, resolve the library id with Context7 and fetch the documentation. Do not wait to be asked. "Use c7" means the Context7 MCP server.
 - Do not read a PDF or other binary document directly. Convert it to Markdown with the `markitdown` skill, write the output to the scratchpad directory, and read that instead.
+- The scratchpad directory is `/tmp/agent-scratch`. Create it with `mkdir -p` before the first write. Use it only for files that you alone read: the system deletes temporary files, so a file the user keeps goes next to its source. Other sessions share the directory, so name each file after its source.
 
 **Package and CLI rules:**
 

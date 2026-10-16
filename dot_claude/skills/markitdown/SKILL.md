@@ -18,7 +18,8 @@ Write the Markdown to the scratchpad directory when the conversion only serves y
 Temporary copy for reading:
 
 ```bash
-markitdown report.pdf -o "$SCRATCHPAD/report.md"
+mkdir -p /tmp/agent-scratch
+markitdown report.pdf -o /tmp/agent-scratch/report.md
 ```
 
 Output the user keeps, next to the source:
