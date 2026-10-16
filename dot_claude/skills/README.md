@@ -32,17 +32,11 @@ The four channel skills carry `disable-model-invocation: true`. Start from `inst
 
 ## Context payload
 
-`/context-payload` runs [`capture-request.py`](context-payload/scripts/capture-request.py) and puts its report in the prompt.
-The script records what Claude Code sends, instead of what the files on disk predict.
-It starts an interactive `claude` session in a pseudo-terminal, sends one short prompt, and stops the session after the first response.
-The official `OTEL_LOG_RAW_API_BODIES=file:<dir>` setting writes the full request body to disk, so no logging proxy is necessary.
-A run takes about 6 seconds and sends one request: 17,825 input tokens in this repo, most of them cache reads.
+`/context-payload` runs [`capture-request.py`](context-payload/scripts/capture-request.py) and puts its report in the prompt. The script records what Claude Code sends, not what the files on disk predict: it starts an interactive `claude` session in a pseudo-terminal, sends one short prompt, and stops the session after the first response.
 
-The report ranks tool schemas, system prompt blocks, memory files, and the skill and agent listings.
-The total input tokens come from the response usage and are exact.
-The per-part tokens split that total by character share.
-The skill then names the five largest items you can remove, and the setting that removes each one.
-It edits no file.
+No logging proxy is necessary, because the official `OTEL_LOG_RAW_API_BODIES=file:<dir>` setting writes the full request body to disk. A run takes about 6 seconds and sends one request, which in this repo is 17,825 input tokens, most of them cache reads.
+
+The report ranks tool schemas, system prompt blocks, memory files, and the skill and agent listings by token cost. The total input tokens come from the response usage and are exact, and the per-part tokens split that total by character share. The skill then names the five largest items you can remove and the setting that removes each one, but it does not edit any file.
 
 The new session copies the `--settings` flag of the session that runs the skill, so it measures the same mode: minimal under `claude`, full under `claude-full`. The report prints the copied value on its `Settings:` line. Arguments after `--` go to `claude`, and a `--settings` there replaces the copied one, so `{}` measures the full config from any session:
 
