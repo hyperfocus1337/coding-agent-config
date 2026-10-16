@@ -20,8 +20,8 @@
     "hash": "4288cf1dcaeb44daaa02af5b691988a5a9347cbe9ee37943a909128ee944e05e"
   },
   "install-plugins": {
-    "version": "0.1.3",
-    "hash": "196c1b63d218d25b95e616922f3c3055970d1f045012cfdfbc4a4aa2fad7e930"
+    "version": "0.1.4",
+    "hash": "9586011dbfb13247dba73d3df7f566a68c68be48cb4d7772166feb073f63f840"
   },
   "install-skills": {
     "version": "0.1.4",
