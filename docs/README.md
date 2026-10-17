@@ -64,9 +64,9 @@ The `research/agents/` folder holds the source reading and probes behind [`agent
 
 - [`hook-events.md`](research/agents/hook-events.md) lists every lifecycle event a hook can attach to on each side, 33 for Claude Code and 36 for pi. The two are flexible in opposite directions: pi reaches deeper per event, into the message list and the provider request, while Claude Code fires at more of the points a guardrail cares about and can answer in five ways, three of which need no code.
 
-| File                                                 | Description                                                         |
-| ---------------------------------------------------- | ------------------------------------------------------------------- |
-| [`hook-events.md`](research/agents/hook-events.md)   | Hook lifecycle events in Claude Code and pi, compared (from source) |
+| File                                               | Description                                                         |
+| -------------------------------------------------- | ------------------------------------------------------------------- |
+| [`hook-events.md`](research/agents/hook-events.md) | Hook lifecycle events in Claude Code and pi, compared (from source) |
 
 ### Commands
 
