@@ -59,6 +59,17 @@
       "use_when": "always available"
     },
     {
+      "id": "cache-tax@claude-code-mods",
+      "marketplace": {
+        "source": "karanb192/claude-code-mods"
+      },
+      "url": "https://github.com/karanb192/cache-tax",
+      "scope": "user",
+      "status": "user-keep",
+      "why": "A mod: one hooks module that keeps the one-hour prompt cache warm with /keepwarm and drops a cold send once with its rewrite cost. The cache cost applies in every project. No skills, so no resident tokens, and APM cannot carry a hooks module.",
+      "use_when": "always available"
+    },
+    {
       "id": "iterative-development@prime-radiant-marketplace",
       "marketplace": {
         "source": "prime-radiant-inc/prime-radiant-marketplace"
