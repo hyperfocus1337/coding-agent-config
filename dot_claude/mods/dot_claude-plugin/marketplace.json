@@ -1,0 +1,16 @@
+{
+  "name": "local-mods",
+  "owner": {
+    "name": "hyperfocus1337"
+  },
+  "metadata": {
+    "description": "Claude Code mods kept in this chezmoi source, read from ~/.claude/mods."
+  },
+  "plugins": [
+    {
+      "name": "replay-theater",
+      "source": "./replay-theater",
+      "description": "Step through the file edits Claude made in the last turn, one diff at a time."
+    }
+  ]
+}

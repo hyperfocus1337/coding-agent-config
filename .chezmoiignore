@@ -21,6 +21,8 @@ CODEX.md
 .claude/skills/README.md
 .claude/skills/**/README.md
 .claude/skills/**/test/**
+.claude/mods/README.md
+.claude/mods/**/README.md
 .codex/README.md
 .codex/docs/**
 .codex/hooks/test/**

@@ -179,9 +179,16 @@
     "codex@openai-codex": false,
     "mattpocock-skills@mattpocock": true,
     "pyright-lsp@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true
+    "typescript-lsp@claude-plugins-official": true,
+    "replay-theater@local-mods": true
   },
   "extraKnownMarketplaces": {
+    "local-mods": {
+      "source": {
+        "source": "directory",
+        "path": "{{ .chezmoi.homeDir }}/.claude/mods"
+      }
+    },
     "ast-grep-marketplace": {
       "source": {
         "source": "github",

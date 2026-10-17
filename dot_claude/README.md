@@ -11,6 +11,7 @@ Clone this repo and run `chezmoi apply` (or `just chezmoi` from the repo root) t
 | [`commands/`](commands/README.md)               | Slash commands, invoked as `/<namespace>:<name>`. 30 commands in six namespaces.                   |
 | [`skills/`](skills/README.md)                   | On-demand skills, loaded when invoked rather than at session start. Install routing and task work. |
 | [`hooks/`](hooks/README.md)                     | Shell commands Claude Code runs on tool lifecycle events. One directory per hook.                  |
+| [`mods/`](mods/README.md)                       | Mods, kept as the `local-mods` plugin marketplace. One directory per mod.                          |
 | [`settings.json.tmpl`](docs/settings.md)        | Model, permission mode, hook wiring and timeouts, enabled plugins, marketplaces, status line.      |
 | [`settings-minimal.json`](docs/launch-modes.md) | Denied tools and `disable*` keys, added by the `claude` shell function.                            |
 | [`settings-vanilla.json`](docs/launch-modes.md) | The only settings layer of `claude-vanilla`: attribution off.                                      |
