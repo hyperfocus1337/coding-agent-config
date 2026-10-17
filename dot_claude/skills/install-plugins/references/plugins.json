@@ -46,6 +46,18 @@
       "use_when": "always available"
     },
     {
+      "id": "filetree@claude-code-filetree",
+      "marketplace": {
+        "source": "data-goblin/claude-code-filetree"
+      },
+      "url": "https://github.com/data-goblin/claude-code-filetree",
+      "scope": "user",
+      "status": "user-keep",
+      "requires": ["git"],
+      "why": "A mod: one hooks module that draws a file tree pane with git status and the files Claude touches. No skills, so no resident tokens, and APM cannot carry a hooks module.",
+      "use_when": "always available"
+    },
+    {
       "id": "iterative-development@prime-radiant-marketplace",
       "marketplace": {
         "source": "prime-radiant-inc/prime-radiant-marketplace"
