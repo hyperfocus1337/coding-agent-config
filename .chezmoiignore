@@ -17,6 +17,7 @@ CODEX.md
 .claude/hooks/**/docs/**
 .claude/hooks/**/test/**
 .claude/commands/**/README.md
+.claude/docs/**
 .claude/skills/README.md
 .claude/skills/**/README.md
 .claude/skills/**/test/**

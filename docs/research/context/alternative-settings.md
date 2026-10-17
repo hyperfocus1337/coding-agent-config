@@ -19,7 +19,7 @@ Checked 2026-09-27 against Claude Code 2.1.283 (`claude --help`) and the [settin
 
 List keys such as `permissions.deny` do not follow this rule: Claude Code combines the lists from all files. Because of this, `--settings` can add entries to a list but cannot remove an entry that `~/.claude/settings.json` adds.
 
-This repository uses this rule for its two modes. `~/.claude/settings.json` holds the full config, and `~/.claude/settings-minimal.json` holds only the denied tools and the `disable*` keys. The `claude` function in `~/.claude/claude.sh` and `~/.config/fish/conf.d/claude.fish` adds the minimal file with `--settings`, and `claude-full` runs without it. When a command has more than one `--settings` flag, Claude Code keeps only the last one: a test on 2.1.294 with two inline deny lists kept only the second list.
+This repository uses this rule for its launch modes, which [`dot_claude/docs/launch-modes.md`](../../../dot_claude/docs/launch-modes.md) lists. `~/.claude/settings.json` holds the full config, and `~/.claude/settings-minimal.json` holds only the denied tools and the `disable*` keys. The `claude` function in `~/.claude/claude.sh` and `~/.config/fish/conf.d/claude.fish` adds the minimal file with `--settings`, and `claude-full` runs without it. When a command has more than one `--settings` flag, Claude Code keeps only the last one: a test on 2.1.294 with two inline deny lists kept only the second list.
 
 ## `--setting-sources`
 
