@@ -20,6 +20,9 @@ const state = {
   isOpen: false,
   inBand: false,
   turns: 0,
+  // The hint above the prompt. Off by default; `/replay hint` toggles it,
+  // and $.store keeps the choice across sessions.
+  showHint: false,
 };
 
 function relPath(cwd, path) {
@@ -319,17 +322,29 @@ function replayView($, e, inBand) {
 }
 
 export function register(on, options) {
-  // Slash command: /replay opens the pane.
+  // Slash command: /replay opens the pane; /replay hint [on|off] toggles the
+  // hint above the prompt.
   on("session.start", async ($, e, next) => {
     const r = await next(e);
+    state.showHint = (await $.store.get("showHint")) === true;
     await $.command.register({
       name: "replay",
       description: "Replay Theater: step through the last turn's file edits",
+      argumentHint: "[hint [on|off]]",
     });
     return r;
   });
 
   on("command.run", { command: "replay" }, async ($, e) => {
+    const [sub, value] = e.args.trim().toLowerCase().split(/\s+/);
+    if (sub === "hint") {
+      state.showHint =
+        value === "on" ? true : value === "off" ? false : !state.showHint;
+      await $.store.set("showHint", state.showHint);
+      $.ui.invalidate("ui.render");
+      return { text: `Replay Theater: hint ${state.showHint ? "on" : "off"}` };
+    }
+    if (sub) return { text: "Replay Theater: usage: /replay [hint [on|off]]" };
     const opened = await openReplay($);
     return {
       text: opened
@@ -371,7 +386,7 @@ export function register(on, options) {
   // The band above the prompt: the hint and a button that opens the pane.
   on("ui.render", { component: "AbovePrompt" }, ($, e, next) => {
     if (state.isOpen && state.inBand) return replayView($, e, true);
-    if (!state.replay.length || state.isOpen) return next(e);
+    if (!state.showHint || !state.replay.length || state.isOpen) return next(e);
     const { Box, Text, Button } = $.ui.resolve(e);
     return Box({
       flexDirection: "row",

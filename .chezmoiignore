@@ -23,6 +23,7 @@ CODEX.md
 .claude/skills/**/test/**
 .claude/mods/README.md
 .claude/mods/**/README.md
+.claude/mods/**/test/**
 .codex/README.md
 .codex/docs/**
 .codex/hooks/test/**

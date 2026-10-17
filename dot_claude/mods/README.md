@@ -19,4 +19,8 @@ To change a mod, edit it, bump `version` in its `dot_claude-plugin/plugin.json`,
 
 The `claude plugin` commands reorder the keys in `~/.claude/settings.json`; after you check with `chezmoi diff` that only the order changed, restore it with `chezmoi apply --force ~/.claude/settings.json`.
 
-`.chezmoiignore` keeps each mod's `README.md` in the repo only.
+`.chezmoiignore` keeps each mod's `README.md` and `test/` in the repo only. `claude plugin test` needs a folder with `.claude-plugin/`, so run a mod's tests on a copy of the applied mod:
+
+```bash
+t=$(mktemp -d) && rsync -a ~/.claude/mods/<name>/ "$t/" && rsync -a dot_claude/mods/<name>/test/ "$t/test/" && claude plugin test "$t"
+```

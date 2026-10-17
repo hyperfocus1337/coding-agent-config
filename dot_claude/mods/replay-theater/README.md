@@ -4,7 +4,7 @@ A Claude Code mod that lets you step through the file edits Claude made in the l
 
 ## What this shows
 
-While a turn runs, Replay Theater records each file edit Claude makes (the Edit, Write and MultiEdit tool calls): the file, and the text before and after. When the turn ends, a hint appears above the prompt:
+While a turn runs, Replay Theater records each file edit Claude makes (the Edit, Write and MultiEdit tool calls): the file, and the text before and after. When the turn ends, `/replay` opens the edits. If you turn on the hint with `/replay hint`, it appears above the prompt after each turn with edits:
 
 ```text
 ▶ Replay: 5 edits · /replay  [ Replay ]
@@ -21,9 +21,19 @@ The patterns it demonstrates:
 - A slash command (`/replay`) registered from `session.start` and handled in `command.run`.
 - A `Pane` with `Button` elements and hotkeys, with a fallback to the `AbovePrompt` band.
 
+## Hint
+
+The hint above the prompt is off by default. Toggle it with a subcommand, and Claude Code keeps your choice across sessions in the mod's store:
+
+| Command            | Does                    |
+| ------------------ | ----------------------- |
+| `/replay hint`     | Toggle the hint         |
+| `/replay hint on`  | Show the hint           |
+| `/replay hint off` | Hide the hint (default) |
+
 ## Keys
 
-Open the replay with `/replay`. You can also click the Replay button above the prompt, or press `ctrl+x` then `Tab` to focus it and press Enter. The button has no letter key: a mod's hotkey works only while its band or pane has focus, so a letter typed in the prompt goes into the prompt.
+Open the replay with `/replay`. While the hint shows, you can also click its Replay button, or press `ctrl+x` then `Tab` to focus it and press Enter. The button has no letter key: a mod's hotkey works only while its band or pane has focus, so a letter typed in the prompt goes into the prompt.
 
 The pane takes the keyboard when it opens:
 
