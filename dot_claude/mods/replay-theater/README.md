@@ -42,21 +42,7 @@ These keys differ from upstream, which used `r` to open the replay and `c` to cl
 
 ## Demo
 
-After a rename, the hint above the prompt:
-
-![The Replay hint above the prompt after a turn with five edits](screenshots/replay-theater-hint.png)
-
-The pane, on step 1 of 5:
-
-![The Replay Theater pane showing step 1 of 5](screenshots/replay-theater-pane.png)
-
-A Write step for a new file, capped at 12 lines:
-
-![A Write step for a new file, with the diff capped at 12 lines](screenshots/replay-theater-write.png)
-
-Inline above the prompt in an 80-column terminal:
-
-![The pane drawn inline in an 80-column terminal](screenshots/replay-theater-80-columns.png)
+Screenshots of the hint, the pane, a Write step and an 80-column terminal are in the [upstream `screenshots/` folder](https://github.com/anthropics/claude-code-playground/tree/main/claude-code/mods/replay-theater/screenshots). They show the upstream keys, not the ones in [Keys](#keys).
 
 ## How it was built
 
