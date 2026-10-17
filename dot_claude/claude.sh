@@ -23,4 +23,5 @@
 
 claude() { ENABLE_CLAUDEAI_MCP_SERVERS=false command claude --settings "$HOME/.claude/settings-minimal.json" "$@"; }
 claude-nohooks() { ENABLE_CLAUDEAI_MCP_SERVERS=false command claude --settings "$(jq -c '.disableAllHooks = true' "$HOME/.claude/settings-minimal.json")" "$@"; }
+claude-norules() { CLAUDE_CODE_DISABLE_CLAUDE_MDS=1 claude-nohooks "$@"; }
 claude-full() { env -u ENABLE_CLAUDEAI_MCP_SERVERS claude "$@"; }
