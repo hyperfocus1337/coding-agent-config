@@ -18,8 +18,9 @@
       },
       "url": "https://github.com/astral-sh/claude-code-plugins",
       "scope": "user",
-      "status": "user-keep",
-      "why": "uv, ruff, and ty are the default Python toolchain here. 118 resident tokens for three skills.",
+      "status": "disabled",
+      "requires": ["uvx"],
+      "why": "Ships the ruff, ty, and uv skills plus a ty LSP for .py and .pyi, started through uvx. Disabled for now: its LSP claims .py before pyright-lsp, and one plugin LSP cannot be disabled on its own.",
       "use_when": "any Python work"
     },
     {

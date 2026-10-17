@@ -34,13 +34,13 @@ Both recipes are in the [`justfile`](../../justfile). They read the catalog in t
 
 ## Status values
 
-| Status              | Meaning                                                                                                                                        |
-| :------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------- |
-| `user-keep`         | Belongs at user scope. A session-wide hook, or a tool a global rule points at.                                                                 |
-| `project-candidate` | Should move to a repo that meets its `use_when`.                                                                                               |
-| `local-candidate`   | Personal tooling. Install gitignored, never commit it into someone else's repo.                                                                |
-| `disabled`          | Installed at user scope, then disabled, because its MCP servers would load otherwise. See [disabling-servers.md](../mcp/disabling-servers.md). |
-| `superseded`        | A built-in command or an APM-managed server already covers it. Never install it.                                                               |
+| Status              | Meaning                                                                                                                                               |
+| :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `user-keep`         | Belongs at user scope. A session-wide hook, or a tool a global rule points at.                                                                        |
+| `project-candidate` | Should move to a repo that meets its `use_when`.                                                                                                      |
+| `local-candidate`   | Personal tooling. Install gitignored, never commit it into someone else's repo.                                                                       |
+| `disabled`          | Installed at user scope, then disabled, because its MCP or LSP servers would load otherwise. See [disabling-servers.md](../mcp/disabling-servers.md). |
+| `superseded`        | A built-in command or an APM-managed server already covers it. Never install it.                                                                      |
 
 ## Which channel a plugin belongs to
 
