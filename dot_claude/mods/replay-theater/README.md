@@ -7,7 +7,7 @@ A Claude Code mod that lets you step through the file edits Claude made in the l
 While a turn runs, Replay Theater records each file edit Claude makes (the Edit, Write and MultiEdit tool calls): the file, and the text before and after. When the turn ends, a hint appears above the prompt:
 
 ```text
-▶ Replay: 5 edits (press r)  [ Replay ]
+▶ Replay: 5 edits · /replay  [ Replay ]
 ```
 
 Open it, and a pane shows one edit at a time: the file, the tool, a count of added and removed lines, and a short diff in red and green. A strip of numbered cells shows every step, with the current one highlighted, and the header reads "step 2 of 5". Prev, Next and Close buttons move through the steps.
@@ -20,6 +20,25 @@ The patterns it demonstrates:
 - Grouping work by turn with `turn.start` and `turn.complete`, and skipping subagent turns.
 - A slash command (`/replay`) registered from `session.start` and handled in `command.run`.
 - A `Pane` with `Button` elements and hotkeys, with a fallback to the `AbovePrompt` band.
+
+## Keys
+
+Open the replay with `/replay`. You can also click the Replay button above the prompt, or press `ctrl+x` then `Tab` to focus it and press Enter. The button has no letter key: a mod's hotkey works only while its band or pane has focus, so a letter typed in the prompt goes into the prompt.
+
+The pane takes the keyboard when it opens:
+
+| Key             | Does                                                                              |
+| --------------- | --------------------------------------------------------------------------------- |
+| `n` or `Enter`  | Next step. `Enter` presses the focused button, which is Next when the pane opens. |
+| `p`             | Previous step                                                                     |
+| `1` to `9`      | Jump to that step. Steps 10 and up have no key.                                   |
+| `q` or `Escape` | Close the pane                                                                    |
+| `Tab`           | Move focus to the next button                                                     |
+| `Up` / `Down`   | Scroll the pane when the diff is taller than the pane                             |
+
+The buttons show their keys (`p: ◀ Prev`, `n: Next ▶`, `q: Close`), and the numbered step buttons use their digit. Mouse clicks work too. If you move focus back to the prompt (`ctrl+x` then `Tab`), the keys stop working until you focus the pane again the same way.
+
+These keys differ from upstream, which used `r` to open the replay and `c` to close the pane.
 
 ## Demo
 
@@ -95,18 +114,8 @@ No environment variables or configuration.
    ```
 
 4. Ask Claude for a change that edits files, for example "rename the function greet to welcome everywhere".
-5. When the turn ends, open the replay in one of two ways:
-   - Type `/replay` and press Enter.
-   - Press `ctrl+x` then `Tab` to focus the band above the prompt, then press `r` (or Enter on the Replay button).
-6. In the pane:
-
-   | Key | Does |
-   |---|---|
-   | `n` | Next step |
-   | `p` | Previous step |
-   | `c` or `Escape` | Close the pane |
-
-   Mouse clicks on the buttons work too. The replay stays available until the next turn that edits files. A turn with no edits keeps the previous replay.
+5. When the turn ends, type `/replay` and press Enter.
+6. Step through the edits with the keys in [Keys](#keys). The replay stays available until the next turn that edits files. A turn with no edits keeps the previous replay.
 
 ## Notes / limitations
 
@@ -123,8 +132,8 @@ No environment variables or configuration.
 ## Dependencies
 
 | Name | Version | License (SPDX) | Source |
-| --- | --- | --- | --- |
-| None | | | |
+| ---- | ------- | -------------- | ------ |
+| None |         |                |        |
 
 ## Third-party notices
 
