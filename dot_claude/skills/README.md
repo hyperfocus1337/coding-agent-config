@@ -29,7 +29,7 @@ The four channel skills carry `disable-model-invocation: true`. Start from `inst
 | [`context-payload`](context-payload/)       | Captures the first API request of a new session, and ranks what it costs.                                       |
 | [`prose-cleanup`](prose-cleanup/)           | Scans prose with the `lint-prose` Vale rules, asks which files to fix, and fixes the old alerts.                |
 
-`markitdown` backs the rule in `rules/tools.md` that a binary document is converted before it is read. `organize` declares the skill name `organize-with-comments` and pairs with the `/organize:*` commands, which pick a header style without the prompt.
+`markitdown` backs the rule in `rules/tools.md` that a binary document is converted before it is read. Both `markitdown` and `unlimited-ocr` set `disable-model-invocation`, so the agent asks the user to run `/markitdown` or `/unlimited-ocr`. `organize` declares the skill name `organize-with-comments` and pairs with the `/organize:*` commands, which pick a header style without the prompt.
 
 ## Context payload
 

@@ -2,6 +2,7 @@
 name: unlimited-ocr
 description: OCR a scanned PDF, an image, or a directory of images to Markdown with the Unlimited-OCR model, locally on Apple Silicon. Use when a PDF has no text layer, when markitdown returns little or no text, or when the user asks to OCR or extract the text from a scan, photo, or screenshot.
 argument-hint: <image | directory | pdf> [-o out.md] [flags]
+disable-model-invocation: true
 ---
 
 # unlimited-ocr

@@ -1,6 +1,7 @@
 ---
 name: markitdown
 description: Convert PDF, Office, image, audio, HTML, CSV, JSON, XML, ZIP and EPub files to Markdown with the markitdown CLI. Use before you read a PDF or other binary document, so you read a Markdown copy instead of the raw file. Also use when the user asks to convert a file, a directory, or a glob to Markdown, or says "markitdown", "extract the text from this PDF", or "turn these docx files into markdown".
+disable-model-invocation: true
 ---
 
 # markitdown
@@ -43,4 +44,4 @@ Change the `*.pdf` glob to the file type the target holds: `*.docx`, `*.pptx`, `
 - Without `-o`, markitdown prints to stdout, so `markitdown file.pdf > out.md` also works.
 - Report where each output landed.
 - If `markitdown` is missing, install it with `uv tool install markitdown[all]` or `pip install markitdown[all]`.
-- If the source is a scanned PDF with no text layer, markitdown returns little or nothing. Use the `unlimited-ocr` skill on an Apple Silicon Mac. In other locations, read the pages as images.
+- If the source is a scanned PDF with no text layer, markitdown returns little or nothing. On an Apple Silicon Mac, tell the user to run `/unlimited-ocr <file>`. In other locations, read the pages as images.
