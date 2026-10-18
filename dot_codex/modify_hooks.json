@@ -81,7 +81,7 @@ ours=$(cat <<'EOF'
             "type": "command"
           },
           {
-            "command": "bash \"$HOME/.claude/hooks/enforce-cli-tools/hook.sh\"",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/enforce-cli-tools/command.ts\"",
             "timeout": 5,
             "type": "command"
           },

@@ -211,7 +211,7 @@ The name rule earns its place because a `.pgpass` or a `.netrc` holds a human-ch
 
 `bl_scan` sets the global `bl_report` rather than printing, so it is not called inside a `$( )` substitution where the assignment would be lost in a subshell.
 
-The payload is parsed for the command text only when the first scan comes back clean, so a blocking scan never pays for a `jq` it will not use. `.tool_input.command // .command` covers both hosts: Cursor passes the command flat rather than under `tool_input`. This is the same extraction as `enforce-cli-tools/hook.sh`.
+The payload is parsed for the command text only when the first scan comes back clean, so a blocking scan never pays for a `jq` it will not use. `.tool_input.command // .command` covers both hosts: Cursor passes the command flat rather than under `tool_input`. `enforce-cli-tools/hook.sh` used the same extraction before its move to TypeScript.
 
 Findings in an allowlisted file are dropped before the hook decides, which is what makes `.claude-allow-secrets` cover the content scan as well as the binary scan. One `jq` pass emits the filter key and the display line together, tab-separated, so the filter and the message share a single traversal.
 

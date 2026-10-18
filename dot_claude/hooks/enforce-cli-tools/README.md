@@ -1,12 +1,20 @@
 # enforce-cli-tools
 
-A `PreToolUse` hook that blocks shell commands which run a banned CLI tool and tells Claude which tool to use instead. It ships with `npm → pnpm` and `yarn → pnpm`, but the mapping is data, not code: adding an enforcement is a one-line edit in [`rules`](rules).
+Blocks a shell command that runs a banned CLI tool and tells the model which tool to use instead. It ships with `npm → pnpm` and `yarn → pnpm`. The mapping is data, not code: to add a rule, add one line to [`rules`](rules).
+
+One matcher, [`core.ts`](core.ts), serves four agents through three adapters:
+
+| Agent       | Adapter                                                                                 | Loaded by                                                                                          |
+| ----------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Bash returns `{ deny }` | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
+| pi and omp  | [`pi.ts`](pi.ts): `tool_call` on bash returns `{ block, reason }`                       | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
+| Codex       | [`command.ts`](command.ts): exit code 2 with the message on stderr                      | `PreToolUse` in `dot_codex/modify_hooks.json`                                                      |
+
+The design and the tests behind this layout are in [`docs/hooks-feasibility.md`](../../../docs/hooks-feasibility.md).
 
 ## How it works
 
-The hook is wired to the `Bash` tool in `settings.json`, so it runs before every shell command. It reads the command out of the payload with `jq`, tokenises it, and blocks with exit code 2 if a banned tool is the thing actually being run. Anything else exits 0 immediately.
-
-Matching is **command-position only**, never a substring or word-boundary search over the whole command. Quoted spans are blanked out first, so a separator inside a string cannot be mistaken for one between commands. What is left is split into segments on `&`, `|`, `;`, newlines, and the brackets that open a subshell, a group or a substitution: whatever runs inside `$(...)`, backticks or `{ ...; }` is a command in its own right and is checked as its own segment, wherever it sits in the line. In each segment the hook steps over `VAR=value` assignments and the usual wrappers (`sudo`, `env`, `command`, `builtin`, `exec`, `nohup`, `time`, `timeout`, `nice`, `stdbuf`, `xargs`) plus, once a wrapper has been seen, that wrapper's own flags and their values. It then strips any leading path from the next token and compares it against the rules. So these block:
+The hook checks only the **command position**, never a substring or a word anywhere in the command. It first blanks quoted spans, so a separator in a string cannot split the command. It then splits the rest into segments on `&`, `|`, `;`, newlines, and the brackets that open a subshell, a group or a substitution: what runs inside `$(...)`, backticks or `{ ...; }` is its own command, wherever it sits in the line. In each segment the hook steps over `VAR=value` assignments and the usual wrappers (`sudo`, `env`, `command`, `builtin`, `exec`, `nohup`, `time`, `timeout`, `nice`, `stdbuf`, `xargs`), and after a wrapper also over its flags and their values. It then removes a leading path from the next word and compares it with the rules. These commands block:
 
 ```sh
 npm i                  # plain invocation
@@ -22,7 +30,7 @@ npm i                  # second line
 echo $(npm bin)        # substitution, even as an argument
 ```
 
-and these do not, because the banned name is never in command position:
+These commands pass, because the banned name is never in command position:
 
 ```sh
 rg npm
@@ -33,93 +41,98 @@ cat package-lock.json
 npmrc-check
 ```
 
-A heredoc with a quoted delimiter (`<<'EOF'`, `<<"EOF"`, `<<\EOF`) runs nothing, so its body is dropped before the split: `cat > rules.md <<'EOF'` with a backticked banned name in the text passes. Two gaps remain. An unquoted heredoc body is still split naively, because it can run `$(...)`, so a separator on a line of its text can start a bogus segment and block; the overrides below clear that one. And blanking quoted spans means a banned tool hidden inside one is invisible, so `sh -c 'npm i'` passes. Neither is worth a real shell-word parser yet, which is the upgrade path for both.
+A heredoc with a quoted delimiter (`<<'EOF'`, `<<"EOF"`, `<<\EOF`) runs nothing, so the hook drops its body before the split. Two gaps remain:
 
-Only the **first** violation is reported. One clear message beats a list, and fixing it re-runs the hook anyway.
+- An unquoted heredoc body can run `$(...)`, so the hook still splits it naively. A separator in its text can start a false segment and block. The overrides below clear that case.
+- A banned tool inside a quoted span is invisible, so `sh -c 'npm i'` passes.
 
-## Cost per command
+A real shell-word parser is the upgrade path for both, and neither gap is worth one yet.
 
-This runs ahead of every Bash tool call, so the clean path is kept fork-free. The rules are parsed once at script load, and before anything else the raw payload is scanned for each banned name as a plain substring. If none appears, the hook allows and exits without spawning `jq` or any subshell, which is the case for almost every command.
+The hook reports only the **first** violation. One clear message is better than a list, and the fix runs the hook again.
 
-The substring is deliberately loose, so `pnpm i` and a `npm` inside a commit message both reach `jq` and are then correctly allowed by the real matcher. A word-boundary test was tried and was wrong: the pre-filter sees the payload as raw JSON, so a command like `cd x` followed by `npm i` on the next line carries a `\n` escape whose `n` sits directly in front of the word, and the rule silently stopped applying. Over-matching costs one `jq` fork on the rare command that mentions a banned name; under-matching loses enforcement with no error anywhere.
+## Cost
 
-### Wall clock
+| Agent       | Cost of a call                                                                                                               |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code | The mod runs in the Claude Code process and starts no program. It reads `rules` and the allowlist file on each Bash call.    |
+| pi and omp  | The extension runs in the agent process.                                                                                     |
+| Codex       | `command.ts` starts Node: about 18 ms for each Bash call, against 1.5 ms for the old bash hook (median of 20 runs on Linux). |
 
-Measured over 200 runs per path on Linux with a full payload piped in. Nothing fires for `Read`, `Edit`, `Grep` or any other tool, only `Bash`.
-
-| Path                                         | Cost    | Frequency  |
-| -------------------------------------------- | ------- | ---------- |
-| bare `bash` startup (the floor for any hook) | 0.74 ms | every call |
-| clean command (`ls -la`, `git status`)       | 1.2 ms  | almost all |
-| candidate: payload mentions a banned name    | 4.5 ms  | occasional |
-| blocked command                              | 3.6 ms  | rare       |
-
-So the hook's own marginal cost on the clean path is about **0.5 ms**; the rest is bash starting up, which any command-type hook pays. The candidate path is the `jq` fork. Process startup is slower on macOS, so expect the same shape with larger numbers, which is why the clean path is kept fork-free rather than tuned to a target.
-
-### Tokens
-
-A clean command costs **zero tokens**. Claude Code writes hook stdout to the debug log rather than the transcript on exit 0, and never shows Claude a hook's stderr, so the `{"permission":"allow"}` line is invisible to the model.
-
-A block costs roughly **80 tokens** of stderr (the message is about 320 characters, and grows with the length of the repo path in the override hint), plus the turn spent producing the rejected command and re-emitting the corrected one. Call it a few hundred tokens for a block, against zero for everything else. Both the rejected tool call and the block message stay in the transcript for the rest of the session, so a block is paid once and then carried.
-
-That is the trade chosen over rewriting the command silently: a rewrite would cost nothing and the model would never learn the rule, so it would keep reaching for `npm` all session. The line in `rules/tools.md` is what makes blocks rare in the first place, the hook is the backstop for when the instruction is missed.
+A clean command costs **zero tokens**. A block costs about 80 tokens for the message (about 320 characters, more with a long repo path), plus the turn that produced the rejected command. Both the rejected call and the message stay in the transcript. A silent rewrite would cost nothing, but the model would never learn the rule and would keep reaching for `npm`. The line in `rules/tools.md` makes blocks rare, and the hook catches the cases where the model misses the instruction.
 
 ## The rules
 
-[`rules`](rules) holds one `<banned> <replacement>` pair per line; blank lines and `#` comments are ignored:
+[`rules`](rules) holds one `<banned> <replacement>` pair on each line. Blank lines and `#` comments are ignored:
 
 ```sh
 npm	pnpm
 yarn pnpm
 ```
 
-Add a line to enforce another tool and nothing in `hook.sh` changes. The replacement takes the rest of the line, so multi-word replacements work: `npx	pnpm dlx` blocks `npx create-vite app` and suggests `pnpm dlx create-vite app`. The replacement is used for two things: the "use `X` instead" message, and a suggested command built by swapping the first whole-word occurrence of the banned word, so the model can retry in one turn instead of reconstructing the line. A multi-line command gets no suggestion: the model already has it, and a heredoc would make the hint as long as the script.
+To enforce another tool, add a line. The replacement takes the rest of the line, so it can be several words: `npx	pnpm dlx` blocks `npx create-vite app` and suggests `pnpm dlx create-vite app`. The replacement is used twice: in the message "use `X` instead", and in a suggested command that swaps the first whole-word match of the banned word, so the model can retry in one turn. A multi-line command gets no suggestion, because the model already has it.
 
-If the rules file is missing or empty the hook allows everything, so a half-deployed config never blocks work.
+If the rules file is missing or empty, the hook allows everything, so a half-deployed config never blocks work.
 
 ## Overrides
 
-Both escape hatches name the specific tool that stays allowed, so they never switch the whole hook off.
+Both overrides name the tool that stays allowed, so they never turn the whole hook off.
 
-**1. Per-repo allowlist file.** Create `.claude-allow-cli-tools` in the repo root listing the tools this repo may use, one per line, with `#` comments and blank lines ignored:
+**1. Allowlist file for each repo.** Create `.claude-allow-cli-tools` in the repo root, with one tool on each line. `#` comments and blank lines are ignored:
 
 ```sh
 # .claude-allow-cli-tools
 npm # this client's repo is npm-only, package-lock.json is committed
 ```
 
-It is persistent, survives across sessions, and because it lives in the repo you can commit it so the whole team inherits the exemption. This is the right answer for a repo that genuinely does not use pnpm.
+The file stays across sessions, and you can commit it so the whole team gets the exemption. Use it for a repo that does not use pnpm. The hook reads it from the session's project root: `$.session.root()` in Claude Code, the working directory in pi and omp, and `CLAUDE_PROJECT_DIR` or the payload `cwd` in Codex.
 
-**2. Environment variable.** Set `CLAUDE_ALLOW_CLI_TOOLS` to the tool(s) to exempt, whitespace- or colon-separated:
+**2. Environment variable.** Set `CLAUDE_ALLOW_CLI_TOOLS` to the tools to exempt, separated by whitespace or colons:
 
 ```sh
 CLAUDE_ALLOW_CLI_TOOLS=npm:yarn
 ```
 
-Best for a one-off or session-scoped skip that leaves no trace in the repo. Export it for the rest of a session, or prefix a single command.
+Use it for a one-off or a session that must leave no trace in the repo.
 
-Both are additive and tool-scoped: exempting `npm` leaves every other rule enforced.
+Both overrides add to each other and apply to named tools only: an exemption for `npm` keeps every other rule.
 
 ## Why a hook and not a permissions rule
 
-`settings.json` can already deny commands directly (`"permissions": {"deny": ["Bash(npm:*)"]}`), and its matcher is better than this one: it uses a real parser rather than a textual split. It is deliberately not used here because a deny rule can only say no. It cannot name the replacement, cannot hand back a corrected command, cannot be exempted per repo (deny always wins over allow, so there is no equivalent of `.claude-allow-cli-tools`), and Cursor does not read it at all. Those four are the whole reason this hook exists. If per-repo exemption and Cursor support ever stop mattering, a deny rule plus the line in `rules/tools.md` replaces this directory.
+`settings.json` can deny commands directly (`"permissions": {"deny": ["Bash(npm:*)"]}`), and its matcher uses a real parser. This hook exists because a deny rule can only refuse:
+
+- It cannot name the replacement or suggest a corrected command.
+- It cannot be exempted for one repo: deny always wins over allow, so nothing can do what `.claude-allow-cli-tools` does.
+- pi, omp and Codex do not read it.
+
+If those three points stop mattering, a deny rule plus the line in `rules/tools.md` replaces this directory.
+
+## Failure behavior
+
+The hook fails open in every agent, so a broken hook never blocks work:
+
+- Claude Code skips a mod hook that throws, and the call runs.
+- `pi.ts` catches its own errors, because pi blocks a call when a handler throws.
+- `command.ts` exits 1 on a bad payload. Only exit code 2 blocks.
 
 ## Dependencies
 
-`jq` must be on `$PATH` (`brew install jq` on macOS), but only to confirm a candidate the pre-filter has already flagged: a clean command never invokes it. If it is missing, or the payload carries no command, the hook allows the command rather than blocking it.
+The mod needs none. `pi.ts` and `command.ts` need Node 23.6 or later, which runs `.ts` files without a flag. The Codex entry starts with `command -v node || exit 0`, so a machine without Node is not blocked.
 
-## Editors
-
-The hook targets both Claude Code and Cursor. Claude Code reads the block from exit code 2 and the stderr message; Cursor's `beforeShellExecution` reads stdout, which is always valid JSON (`{"permission":"allow"}` on a pass, `{"permission":"deny", "agent_message":...}` on a block). Cursor also passes the command flat rather than under `tool_input`, which the `jq` filter handles with a fallback. The deny message interpolates only the rule words, never the command, so a quote in the command cannot malform the JSON.
+Codex runs a hook only after you trust its entry. After the change from `hook.sh` to `command.ts`, trust the hooks again in the Codex TUI, on the host and in the devcontainer. See [`docs/agents/codex.md`](../../../docs/agents/codex.md#trust).
 
 ## Tests
 
-`test/test.sh` is a smoke test for the `violation` matcher: it sources `hook.sh` (stopping at the sourcing guard so only the functions load) and asserts that command-position hits block, argument and text mentions pass, and an allowlisted tool is exempt while the others stay enforced. Run `bash test/test.sh`. See [test/README.md](test/README.md).
-
-Nothing runs it automatically: the repo's only workflow publishes skills, and the `justfile` lint and format recipes cover `scripts/` and `templates/` but not `dot_claude/`. It exits non-zero on failure, so wiring it up is a one-line recipe whenever that gap is worth closing.
+`node test/check.ts` checks the matcher and the three adapters. See [test/README.md](test/README.md).
 
 ## Files
 
-- `hook.sh` is the matcher, invoked from `settings.json`. It deploys via chezmoi to `~/.claude/hooks/enforce-cli-tools/`.
-- `rules` is the mapping table, read at runtime from beside `hook.sh`.
-- `test/test.sh` is the matcher smoke test, run by hand (see [Tests](#tests)).
+| File                                    | Deployed to `~/.claude/hooks/enforce-cli-tools/` | Role                                                                                     |
+| --------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `core.ts`                               | Yes                                              | Matcher and block message. No I/O.                                                       |
+| `hooks/register.ts`, `hooks/hooks.json` | Yes                                              | Claude Code mod                                                                          |
+| `dot_claude-plugin/plugin.json`         | Yes, as `.claude-plugin/plugin.json`             | Plugin manifest                                                                          |
+| `pi.ts`                                 | Yes                                              | pi and omp extension                                                                     |
+| `command.ts`                            | Yes                                              | Codex command hook                                                                       |
+| `io.ts`                                 | Yes                                              | Node reads of `rules`, the allowlist file and the variable, for `pi.ts` and `command.ts` |
+| `rules`                                 | Yes                                              | The rules table                                                                          |
+| `README.md`, `test/`                    | No                                               | Kept in the repo by `.chezmoiignore`                                                     |

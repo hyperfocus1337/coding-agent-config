@@ -15,3 +15,5 @@ statusLine:
 personality: default
 commands:
   enableClaudeUser: true
+extensions:
+  - ~/.claude/hooks/enforce-cli-tools/pi.ts

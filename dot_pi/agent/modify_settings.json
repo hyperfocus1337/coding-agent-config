@@ -29,6 +29,9 @@ ours=$(
     "~/.claude/skills",
     "!../../.claude/skills/synced/**"
   ],
+  "extensions": [
+    "~/.claude/hooks/enforce-cli-tools/pi.ts"
+  ],
   "enabledModels": [
     "openrouter/deepseek/deepseek-v4.1-flash",
     "openrouter/deepseek/deepseek-v4-pro",

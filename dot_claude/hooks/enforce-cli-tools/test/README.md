@@ -1,21 +1,25 @@
 # Tests
 
-## test.sh
+## check.ts
 
-Smoke test for the `violation` matcher in `../hook.sh`, the function that decides whether a command is running a banned CLI tool.
-
-Run it:
+Self-check for the matcher in `../core.ts` and for its three adapters. Run it from the hook directory:
 
 ```bash
-bash test.sh
+node test/check.ts
 ```
 
-It sources `../hook.sh` and calls `violation` directly. The hook defines the matcher at the top, then a sourcing guard (`[[ "${BASH_SOURCE[0]}" == "${0}" ]] || return 0`) stops before the hook body, so sourcing loads only the functions without reading stdin or parsing a payload.
+It prints one `FAIL` line for each failed case, then `all pass` or the failure count, and exits non-zero on a failure. `just hooks-check` runs it with the checks of the other hooks.
 
-Each case asserts one command string. Command-position hits must block, covering the plain invocation, wrappers and their arguments (`sudo npm ci`, `CI=1 npm run build`, `timeout 30 npm ci`), a full path (`/usr/local/bin/npm i`), and every way a second command can hide in one line: after `&&`, on the next line, in a subshell, in a `{ ...; }` group, and inside `$(...)` or backticks even as an argument. Mentions in an argument or in text must pass (`rg npm`, `git commit -m 'switch to npm'`, `npmrc-check`), as must a separator inside a quoted string (`git commit -m 'fix; npm bump'`).
+**Matcher cases.** A banned tool in command position must block: the plain call, wrappers and their arguments (`sudo npm ci`, `CI=1 npm run build`, `timeout 30 npm ci`), a full path (`/usr/local/bin/npm i`), and each way a second command can hide in one line: after `&&`, on the next line, in a subshell, in a `{ ...; }` group, and in `$(...)` or backticks. A mention in an argument or in text must pass (`rg npm`, `git commit -m 'switch to npm'`, `npmrc-check`), and so must a separator in a quoted string. A quoted-delimiter heredoc body is text, and an unquoted one can run `$(...)`.
 
-The rest guard things that broke once and would break silently again. One case asserts the shipped `rules` file parsed to two rules, which is what catches a missing trailing newline dropping the last one. Two check the reported mapping, one of them by appending a multi-word rule (`npx` → `pnpm dlx`) to the rule arrays to prove the replacement is not truncated at the first word. Two more set the `allowlist` array directly to confirm an exempt tool passes while the remaining rules stay enforced.
+**Guards.** These cases cover faults that would break enforcement with no error:
 
-Prints `ok`/`FAIL` per case and exits non-zero if any case fails. Nothing runs it automatically today, so run it by hand after touching the tokeniser or the rules format.
+- The shipped `rules` file parses to two rules. A lost last line fails this case.
+- A multi-word replacement (`npx` to `pnpm dlx`) comes back whole.
+- An allowlisted tool passes, and the other rules stay enforced.
 
-The matcher is the only part under test; the payload parsing, override loading and JSON output in the hook body are exercised by piping a payload into `hook.sh` by hand. Add a case here whenever you tune the tokeniser or the `rules` file grows a new shape.
+**Adapters.**
+
+- `command.ts` runs as a child process: it exits 2 with the message on stderr for `npm i`, and it exits 0 with no output for a tool that the repo's `.claude-allow-cli-tools` file allows.
+- `pi.ts` runs with a stub `pi`.
+- `hooks/register.ts` runs with a stub `$` over the real files.

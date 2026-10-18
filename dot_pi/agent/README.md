@@ -36,8 +36,9 @@ The symlink target is relative to the link, not to the home directory: chezmoi w
 | `terminal.showTerminalProgress` | `true`                                                                                | Progress in the terminal title.                                                                     |
 | `packages`                      | `pi-web-access`, `pi-footer`, `pi-context-view`, `@juicesharp/rpiv-ask-user-question` | Web tools, the three-line footer, the context viewer, and structured questions.                     |
 | `skills`                        | `["~/.claude/skills", "!../../.claude/skills/synced/**"]`                             | The Claude Code skills, minus the claude.ai cache. See below.                                       |
+| `extensions`                    | `["~/.claude/hooks/enforce-cli-tools/pi.ts"]`                                         | The `pi.ts` of each hook that has moved to TypeScript. Remove a line to turn that hook off in pi.   |
 
-Extensions need no entry: `~/.pi/agent/extensions/*/index.ts` is a path pi scans on its own.
+The extensions in `extensions/` need no entry: `~/.pi/agent/extensions/*/index.ts` is a path pi scans on its own. A hook's `pi.ts` needs one, because pi resolves the imports of a linked file from the link's folder, not from the hook folder.
 
 ## Footer and context usage
 

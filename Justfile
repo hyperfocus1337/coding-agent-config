@@ -156,6 +156,16 @@ pi-diff:
 [group('pi')]
 pi: pi-apply pi-check
 
+# Run the self-check of each hook in dot_claude/hooks that has a test/check.ts.
+[group('extensions')]
+hooks-check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for check in dot_claude/hooks/*/test/check.ts; do
+      echo "==> ${check}"
+      (cd "${check%/test/check.ts}" && node test/check.ts)
+    done
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Lint & format
 # ──────────────────────────────────────────────────────────────────────────────
