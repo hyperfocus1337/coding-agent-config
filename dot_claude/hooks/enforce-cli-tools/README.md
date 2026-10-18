@@ -116,7 +116,7 @@ The hook fails open in every agent, so a broken hook never blocks work:
 
 ## Dependencies
 
-The mod needs none. `pi.ts` and `command.ts` need Node 23.6 or later, which runs `.ts` files without a flag. The Codex entry starts with `command -v node || exit 0`, so a machine without Node is not blocked.
+The mod needs Claude Code 2.1.296 or later, the oldest version tested. `pi.ts` and `command.ts` need Node 23.6 or later, which runs `.ts` files without a flag. The Codex entry starts with `command -v node || exit 0`, so a machine without Node is not blocked.
 
 Codex runs a hook only after you trust its entry. After the change from `hook.sh` to `command.ts`, trust the hooks again in the Codex TUI, on the host and in the devcontainer. See [`docs/agents/codex.md`](../../../docs/agents/codex.md#trust).
 

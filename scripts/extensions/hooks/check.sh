@@ -20,10 +20,11 @@ for tool in claude node tsc; do
   }
 done
 
-# Claude Code writes its types beside each mod it loads from a
-# CLAUDE_CODE_PLUGIN_DIRS folder, as .claude-plugin/types/, at every load. That
-# copy matches the installed version. Set CLAUDE_CODE_TYPES to a folder that
-# holds claude-code/index.d.ts to skip the search.
+# An interactive Claude Code session writes its types beside each mod it loads
+# from a CLAUDE_CODE_PLUGIN_DIRS folder, as .claude-plugin/types/, at every
+# load. A claude -p run does not. That copy matches the installed version. Set
+# CLAUDE_CODE_TYPES to a folder that holds claude-code/index.d.ts to skip the
+# search.
 if [[ -z ${CLAUDE_CODE_TYPES:-} ]]; then
   for types in "${HOME}"/.claude/hooks/*/.claude-plugin/types; do
     if [[ -f ${types}/claude-code/index.d.ts ]]; then
@@ -35,7 +36,7 @@ fi
 [[ -n ${CLAUDE_CODE_TYPES:-} ]] || {
   {
     echo "Claude Code types not found in ~/.claude/hooks/*/.claude-plugin/types."
-    echo "Run just chezmoi, then start one Claude Code session so it loads the mods."
+    echo "Run just chezmoi, then start one interactive Claude Code session (not claude -p)."
     echo "Or set CLAUDE_CODE_TYPES to a folder that holds claude-code/index.d.ts."
   } >&2
   exit 1
