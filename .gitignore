@@ -5,3 +5,4 @@ assets
 .env
 .envrc
 __pycache__/
+.claude/worktrees/
