@@ -1,8 +1,7 @@
 /**
  * pi and omp extension: blocks a bash call that runs a banned tool, with the
- * block message as the reason. Loaded through the link
- * ~/.pi/agent/extensions/enforce-cli-tools.ts, which omp reads through its
- * link to the pi extensions.
+ * block message as the reason. Loaded through the `extensions` setting of
+ * each agent.
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";

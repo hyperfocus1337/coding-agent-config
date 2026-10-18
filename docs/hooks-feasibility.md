@@ -218,12 +218,12 @@ These changes follow from the facts above. The design doc uses them.
 1. **Load `pi.ts` through settings, not links.** Add `~/.claude/hooks/<hook>/pi.ts` to `extensions` in `dot_pi/agent/modify_settings.json`, and to `extensions` in the omp config. To turn a hook off, remove its line. This replaces the links of Q17.
 2. **Adapters read the variables; cores get values or small functions.** Each adapter reads the environment variables its hook needs, by literal name, and passes the values. A core that only matches text, such as `enforce-cli-tools`, gets values and is pure. A core that must run a program and then decide, such as `lint-all-languages`, gets an `Io` object with `stat`, `read`, and `run`, which the mod adapter writes out with `$.fs` and `$.process` calls inside it. `claude plugin validate` accepts this.
 3. **Keep the `hooks/` folder.** A `"hooks"` field in `plugin.json` can name a file at the plugin root, but you chose on 2026-10-18 to keep the documented default: `hooks/hooks.json` and `hooks/register.ts` in each hook folder.
+4. **Type-check against the installed types, not a copy in the repo.** Claude Code writes its types beside each mod that a session loads from `CLAUDE_CODE_PLUGIN_DIRS`, in `~/.claude/hooks/<hook>/.claude-plugin/types/`, also under `claude -p`. [`scripts/extensions/hooks/check.sh`](../scripts/extensions/hooks/check.sh) extends the `tsconfig.json` in that folder for the mods, and uses the pi types for `pi.ts` and `command.ts`. It also runs `claude plugin validate` on a copy of each mod, which finds a `$` call that `tsc` accepts and the engine refuses. A copy of the types in the repo would need an update after each Claude Code release.
 
 ## Open items
 
 For the design doc:
 
 - The time of a mod hook alone. The debug log gives one time for the whole `tool.call` chain only.
-- How `just hooks-check` type-checks `register.ts`. The engine types are in the `plugin-authoring` skill folder under `/tmp/claude-<uid>/bundled-skills/<version>/`, and in `.claude-plugin/types/` after an interactive load. A copy in the repo needs manual updates.
 - The minimum Claude Code version. The spike used 2.1.302. `claude plugin validate` names 2.1.275 for one-step marketplace installs, which this repo does not use.
 - Whether the two Codex `PreToolUse` hooks stay off. If they go on again, the cutover must trust and enable the new `command.ts` entries in the Codex TUI, and one live Codex turn must confirm the block.
