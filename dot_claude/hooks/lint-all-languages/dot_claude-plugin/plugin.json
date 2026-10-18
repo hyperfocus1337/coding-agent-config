@@ -1,0 +1,5 @@
+{
+  "name": "lint-all-languages",
+  "version": "0.1.0",
+  "description": "Lints the files a Write, Edit, or Bash call changed and hands the errors to the model."
+}
