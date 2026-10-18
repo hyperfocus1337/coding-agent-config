@@ -1,0 +1,5 @@
+{
+  "name": "enforce-cli-tools",
+  "version": "0.1.0",
+  "description": "Blocks a Bash call that runs a banned CLI tool and names the replacement."
+}
