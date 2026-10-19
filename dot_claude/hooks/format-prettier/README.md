@@ -84,7 +84,7 @@ Formatting those files fixes the file, not the commit: the commit still holds th
 | -------------------------- | ---------- |
 | `.md` `.markdown`          | markdown   |
 | `.js` `.jsx` `.mjs` `.cjs` | babel      |
-| `.ts` `.tsx`               | typescript |
+| `.ts` `.tsx` `.mts` `.cts` | typescript |
 | `.json`                    | json       |
 | `.css` `.scss`             | css / scss |
 | `.html`                    | html       |

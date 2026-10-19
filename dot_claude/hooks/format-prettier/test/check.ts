@@ -285,6 +285,11 @@ await check("hint: also for the first commit of a repo", () =>
 fs.writeFileSync(`${outer}/edited.ts`, "const a  =  1\n");
 await quiet("edit: prints nothing", edit(`${outer}/edited.ts`));
 await unchanged("edit formats .ts", `${outer}/edited.ts`, "const a = 1;\n");
+for (const name of ["edited.mts", "edited.cts"]) {
+  fs.writeFileSync(`${outer}/${name}`, "const a  =  1\n");
+  edit(`${outer}/${name}`);
+  await unchanged(`edit formats ${name}`, `${outer}/${name}`, "const a = 1;\n");
+}
 fs.writeFileSync(`${outer}/notes.org`, "| a | bbbb |\n");
 edit(`${outer}/notes.org`);
 await unchanged("edit leaves .org", `${outer}/notes.org`, "| a | bbbb |\n");

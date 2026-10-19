@@ -37,7 +37,7 @@ export interface Call {
 
 /** The extensions Prettier formats after a Write or an Edit. README "Supported extensions". */
 const EDITED =
-  /\.(md|markdown|js|jsx|ts|tsx|mjs|cjs|json|css|scss|html|yml|yaml)$/;
+  /\.(md|markdown|js|jsx|ts|tsx|mts|cts|mjs|cjs|json|css|scss|html|yml|yaml)$/;
 /** The Bash sweep takes Markdown only. README "Bash (markdown sweep)". */
 const MARKDOWN = /\.(md|markdown)$/;
 /** A Markdown path that a command names. */
