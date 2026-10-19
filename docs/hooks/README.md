@@ -19,5 +19,5 @@ Three hooks also run `command.ts` in Claude Code, as a command hook in `settings
 Related research:
 
 - [`research/hooks/event-scoping.md`](../research/hooks/event-scoping.md): which event each format, lint, and type-check hook uses.
-- [`research/agents/hook-events.md`](../research/agents/hook-events.md): every hook event in Claude Code and pi, compared.
+- [`research/hooks/hook-events.md`](../research/hooks/hook-events.md): every hook event in Claude Code, pi, omp, and Codex, and whether the hooks here attach to the right ones.
 - [`agents/codex.md`](../agents/codex.md#hooks): how Codex runs the hooks, `apply-patch.ts`, and hook trust.

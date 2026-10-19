@@ -37,4 +37,4 @@ pi writes model choices, `deviceId`, and `lastChangelogVersion` into `~/.pi/agen
 
 ## Out of scope
 
-Hooks, MCP, subagents, output styles, plan mode, todos, and memory. [`hook-events.md`](../research/agents/hook-events.md) maps pi's extension events onto Claude's hook events; no extension here bridges them.
+MCP, subagents, output styles, plan mode, todos, and memory. The hooks are not part of this setup: each hook in `dot_claude/hooks/` has its own `pi.ts`, see [`docs/hooks/`](../hooks/README.md). [`hook-events.md`](../research/hooks/hook-events.md) compares the events of pi and Claude Code.

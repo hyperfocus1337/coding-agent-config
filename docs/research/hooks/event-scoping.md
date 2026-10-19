@@ -1,6 +1,6 @@
 # Hook event scoping: PostToolUse or Stop
 
-Which event each format, lint, and type-check hook in [`dot_claude/settings.json.tmpl`](../../../dot_claude/settings.json.tmpl) should use, and why. For the full list of events and what each one can change, see [hook events](../agents/hook-events.md).
+Which event each format, lint, and type-check hook in [`dot_claude/settings.json.tmpl`](../../../dot_claude/settings.json.tmpl) should use, and why. For the full list of events and what each one can change, see [hook events](hook-events.md).
 
 Measured on 2026-09-28 from 205 session transcripts in `~/.claude/projects/`, dated 2026-08-30 to 2026-09-27. The sessions have 4,860 Bash, 167 Edit, and 91 Write calls. `lint-prose` was added on 2026-09-26, so it has less data than the other hooks.
 
