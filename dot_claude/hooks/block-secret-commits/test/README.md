@@ -1,17 +1,18 @@
 # Tests
 
-`check.ts` is the end-to-end check for `../command.ts` and `../pi.ts`. Run it from the hook folder:
+`check.ts` is the end-to-end check for `../guard.sh`, `../command.ts`, and `../pi.ts`. Run it from the hook folder:
 
 ```sh
 node test/check.ts
 ```
 
-Each case builds a throwaway git repo in a temporary folder, runs `../command.ts` as a child process with a Bash payload on stdin and `CLAUDE_PROJECT_DIR` set to the repo, and checks the exit code: 0 allows, 2 blocks. It prints one `FAIL` line for each failed case, then `all pass` or the failure count, and exits 1 on a failure.
+Each case builds a throwaway git repo in a temporary folder, runs `../guard.sh` as a child process, as Claude Code does, with a Bash payload on stdin and `CLAUDE_PROJECT_DIR` set to the repo, and checks the exit code: 0 allows, 2 blocks. It prints one `FAIL` line for each failed case, then `all pass` or the failure count, and exits 1 on a failure.
 
 ## Cases that run without betterleaks
 
 - **A binary with no betterleaks on `PATH`** must block. This is the one check that never fails open.
 - **An error in the binary scan** must block. The case gives the core a fake `Io` whose every call throws.
+- **`guard.sh` with no `node`, and with a `node` that exits 1,** must block `git commit` and allow `ls -la`, `git add .git/hooks/commit-msg`, and `git commits`.
 
 If betterleaks is missing, the check prints `skip` for the other cases.
 

@@ -10,14 +10,21 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { check as verdict, type Io } from "../core.ts";
 import extension from "../pi.ts";
 
-const COMMAND = fileURLToPath(new URL("../command.ts", import.meta.url));
+const GUARD = fileURLToPath(new URL("../guard.sh", import.meta.url));
 const tmp = mkdtempSync(join(tmpdir(), "block-secret-commits-test-"));
 process.on("exit", () => rmSync(tmp, { recursive: true, force: true }));
 const gitEnv = {
@@ -65,9 +72,32 @@ function mkrepo(name: string, files: Record<string, string> = {}) {
   return repo;
 }
 
-/** Runs command.ts on a Bash payload, as Claude Code does. */
+/** A folder for PATH that holds the given programs, as links or scripts. */
+function bin(name: string, programs: Record<string, string>) {
+  const folder = join(tmp, name);
+  mkdirSync(folder);
+  for (const [program, target] of Object.entries(programs)) {
+    const path = join(folder, program);
+    if (target.startsWith("#!")) {
+      writeFileSync(path, target);
+      chmodSync(path, 0o755);
+    } else symlinkSync(target, path);
+  }
+  return folder;
+}
+const where = (program: string) =>
+  spawnSync("/bin/sh", ["-c", `command -v ${program}`], {
+    encoding: "utf8",
+  }).stdout.trim();
+const tools = { cat: where("cat"), grep: where("grep") };
+// PATH values: node and no betterleaks; no node; a node that fails.
+const noBetterleaks = `${bin("node-only", { node: process.execPath })}:/usr/bin:/bin`;
+const noNode = bin("no-node", tools);
+const oldNode = bin("old-node", { ...tools, node: "#!/bin/sh\nexit 1\n" });
+
+/** Runs guard.sh on a Bash payload, as Claude Code does. */
 function hook(repo: string, command: string, env: Record<string, string> = {}) {
-  const ran = spawnSync(process.execPath, [COMMAND], {
+  const ran = spawnSync("/bin/sh", [GUARD], {
     input: JSON.stringify({ tool_name: "Bash", tool_input: { command } }),
     env: { ...process.env, CLAUDE_PROJECT_DIR: repo, ...env },
     encoding: "utf8",
@@ -93,9 +123,31 @@ const plainBin = "PK\x03\x04\0\0plain\0payload\n";
 // Without betterleaks the scan cannot judge, so it blocks every added binary.
 await check("binary blocked when betterleaks is unavailable", () =>
   blocks(mkrepo("binnobl", { "archive.dat": plainBin }), "git commit -m x", {
-    PATH: "/usr/bin:/bin",
+    PATH: noBetterleaks,
   }),
 );
+
+// guard.sh blocks a commit when command.ts cannot give a verdict, and lets
+// other commands pass.
+const plain = mkrepo("guard");
+for (const [what, PATH] of [
+  ["node is missing", noNode],
+  ["node fails", oldNode],
+]) {
+  await check(`guard: blocks a commit when ${what}`, () => {
+    const ran = hook(plain, "git commit -m x", { PATH: PATH! });
+    assert.equal(ran.code, 2);
+    assert.match(ran.stderr, /could not scan this commit/);
+  });
+  await check(`guard: allows other commands when ${what}`, () => {
+    for (const command of [
+      "ls -la",
+      "git add .git/hooks/commit-msg",
+      "git commits",
+    ])
+      allows(plain, command, { PATH: PATH! });
+  });
+}
 
 // A fake Io whose every call throws: the binary scan fails closed and the
 // content scan fails open.

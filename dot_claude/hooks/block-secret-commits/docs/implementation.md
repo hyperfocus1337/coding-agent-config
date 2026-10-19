@@ -14,10 +14,18 @@ The two scans run last, binary first and content second. The binary scan usually
 
 `check()` in the core returns a verdict: a block message, and warnings that do not block. Each adapter turns it into the form of its agent:
 
-- **`command.ts`** (Claude Code and Codex): a block is exit 2 with the message on stderr, and the agent gives stderr to the model. A warning goes to stderr with exit 0. stdout stays empty.
+- **`command.ts`** (Claude Code and Codex): a block is exit 2 with the message on stderr, and the agent gives stderr to the model. A warning goes to stderr with exit 0. stdout stays empty. The settings entries run it through `guard.sh`, see [The guard](#the-guard).
 - **`pi.ts`** (pi and omp): a block is `{ block: true, reason }`. A warning is a notification for the user.
 
 The bash hook also printed a JSON verdict for Cursor on stdout. Codex reports any stdout of a command hook as a failed hook and lets the call run (tested on 2026-10-19), so the TypeScript hook prints nothing on stdout. Cursor is not a target any more.
+
+## The guard
+
+Claude Code and Codex block only on exit 2. Each other result lets the call run. So if `command.ts` cannot give a verdict, a commit passes with no scan and no sign. This occurs when `node` is missing from `$PATH`, is older than 23.6 and cannot run a `.ts` file, or when `command.ts` fails, for example on a payload that it cannot parse.
+
+`guard.sh` reads the payload once and passes it to `node command.ts`. It keeps the exit code when it is 0 or 2. For each other exit code, it blocks the call when the raw payload holds a commit, with the same word test as `isCommit()`, and allows other calls. So a broken Node blocks commits only, and the message tells the user to fix `$PATH`. In this state, the raw payload test also blocks a call such as `git log --grep commit`. This is acceptable, because it occurs only while Node is broken.
+
+The guard adds one `sh` start and one `cat` to each Bash call. The cost is too small to measure: 20 calls took 0.42 s with the guard and 0.43 s without it. `grep` runs only when `node` failed.
 
 ## Trigger filter
 

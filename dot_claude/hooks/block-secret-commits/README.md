@@ -4,10 +4,10 @@ A `PreToolUse` hook that blocks a `git commit` which would commit a secret. It r
 
 One scanner, [`core.ts`](core.ts), serves four agents through two adapters:
 
-| Agent              | Adapter                                                                                  | Loaded by                                                                                          |
-| ------------------ | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Claude Code, Codex | [`command.ts`](command.ts), a `PreToolUse` command hook on Bash: exit 2 and stderr block | `settings.json.tmpl` and `dot_codex/modify_hooks.json`                                             |
-| pi and omp         | [`pi.ts`](pi.ts): `tool_call` on bash returns `{ block, reason }`                        | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
+| Agent              | Adapter                                                                                                               | Loaded by                                                                                          |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Claude Code, Codex | [`guard.sh`](guard.sh), a `PreToolUse` command hook on Bash, runs [`command.ts`](command.ts): exit 2 and stderr block | `settings.json.tmpl` and `dot_codex/modify_hooks.json`                                             |
+| pi and omp         | [`pi.ts`](pi.ts): `tool_call` on bash returns `{ block, reason }`                                                     | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
 
 Claude Code runs a command hook and not a mod, because the binary scan copies files, which the mod API cannot do. The design is in [`docs/hooks-design.md`](../../../docs/hooks-design.md#block-secret-commits).
 
@@ -15,7 +15,7 @@ This file describes what the hook does and how to work around it. For why it is 
 
 ## Requirements
 
-The hook needs Node 23.6 or later, which runs `.ts` files without a flag. Without `node` on `$PATH`, the settings entry exits 0, so both checks fail open in Claude Code and Codex.
+The hook needs Node 23.6 or later, which runs `.ts` files without a flag. In Claude Code and Codex, `guard.sh` runs `command.ts`. If `node` is missing from `$PATH`, is older than 23.6, or fails, `guard.sh` blocks each `git commit` with a message that names the problem, and lets other commands pass. An app started from the macOS Dock can get a shorter `$PATH` than your terminal, so this block can occur there first.
 
 Both checks need [betterleaks](https://github.com/betterleaks/betterleaks) on `$PATH`. Without it the betterleaks scan silently does nothing, and the binary scan blocks every newly added binary, because it cannot clear what it cannot read:
 
@@ -165,7 +165,7 @@ This is best for a one-off or session-scoped skip that leaves no trace in the re
 
 ## Tests
 
-`node test/check.ts`, from the hook folder, builds throwaway repos and runs `command.ts` on a Bash payload for each case. It checks the exit code, the block message, and that stdout stays empty. It also checks `pi.ts` with a stub `pi`, and that an error in the binary scan blocks. Most cases need betterleaks and are skipped without it. It prints one `FAIL` line for each failed case, then `all pass` or the failure count. `just hooks-check` runs it with the checks of the other hooks.
+`node test/check.ts`, from the hook folder, builds throwaway repos and runs `guard.sh` on a Bash payload for each case. It checks the exit code, the block message, and that stdout stays empty. It also checks `pi.ts` with a stub `pi`, that an error in the binary scan blocks, and that `guard.sh` blocks a commit when `node` is missing or fails. Most cases need betterleaks and are skipped without it. It prints one `FAIL` line for each failed case, then `all pass` or the failure count. `just hooks-check` runs it with the checks of the other hooks.
 
 Run it after you edit `conf/betterleaks.toml`, because a config error makes the scan fail open with no sign. See [test/README.md](test/README.md).
 
@@ -175,6 +175,7 @@ Run it after you edit `conf/betterleaks.toml`, because a config error makes the 
 | ----------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------ |
 | `core.ts`                     | Yes                                                 | Both scans and the block messages. The adapters pass the file functions. |
 | `io.ts`                       | Yes                                                 | The file and process functions under Node                                |
+| `guard.sh`                    | Yes                                                 | Runs `command.ts`. Blocks a commit when `command.ts` gives no verdict.   |
 | `command.ts`                  | Yes                                                 | Command hook for Claude Code and Codex                                   |
 | `pi.ts`                       | Yes                                                 | pi and omp extension                                                     |
 | `conf/betterleaks.toml`       | Yes                                                 | The rule config that the hook passes with `--config`                     |
