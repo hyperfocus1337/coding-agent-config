@@ -20,8 +20,8 @@
     "hash": "4288cf1dcaeb44daaa02af5b691988a5a9347cbe9ee37943a909128ee944e05e"
   },
   "install-plugins": {
-    "version": "0.1.4",
-    "hash": "9586011dbfb13247dba73d3df7f566a68c68be48cb4d7772166feb073f63f840"
+    "version": "0.1.5",
+    "hash": "b778b822de4dc62fd800c5ae44f299688451384850b81637bc8b11d95f73b5fd"
   },
   "install-skills": {
     "version": "0.1.4",
@@ -32,8 +32,8 @@
     "hash": "cec29f7a83fd44a7c71ed40b797b5abafebf922e7383630453c9d75692670566"
   },
   "markitdown": {
-    "version": "0.1.1",
-    "hash": "f7a16e4929b99e801e3cdc9982526af043bf40ad5e3394c261bc64a2bcadb4fb"
+    "version": "0.1.2",
+    "hash": "b67ae1efc03e73c1d4d4538b9a8acf3ab0cf79397eed57f6772df8212ab795c3"
   },
   "explain-diff": {
     "version": "0.1.0",
@@ -48,7 +48,7 @@
     "hash": "8acd912144726a2b72b334a439021183182962a3967876e74846bc71645c7ef1"
   },
   "unlimited-ocr": {
-    "version": "0.1.0",
-    "hash": "ef38c1e5187acf30b39f2969362b094fba623a5efad60628931ef3f870648c88"
+    "version": "0.1.1",
+    "hash": "12a64edff1fd8e608e13c50ef3f0fe84480361f41304df8f01bc9ff91e29e122"
   }
 }
