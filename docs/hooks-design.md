@@ -16,7 +16,7 @@ Written on 2026-10-18, with Claude Code 2.1.302, pi 1.1.0, omp 18.10.3, Codex 0.
 | `format-org-tables`        | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
 | `format-staged-files`      | Moved to `dot_config/git/hooks/`. Runs for each agent.               |
 | `lint-prose`               | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
-| `type-check-all-languages` | Not started                                                          |
+| `type-check-all-languages` | Moved. Claude Code and Codex run `command.ts`. Live in pi and omp.   |
 | `track-session-changes`    | Not started. Needs an async core and a spike first, see its section. |
 
 ## Rules for a hook folder
@@ -57,7 +57,8 @@ The core takes values or an `Io` object, never `$`, and never reads an environme
 | `command.ts`        | `process.env` through `io.ts`  | `CLAUDE_PROJECT_DIR \|\| payload.cwd \|\| cwd()` | exit 2, message on stderr | exit 2, output on stderr                     |
 
 - **The `$` call-site rule.** In `register.ts`, spell each `$` call where it is used. To give the core an `Io`, write an object literal whose methods spell `$.fs.stat(...)` and `$.process.run(...)` inside them. `claude plugin validate` refuses `$.fs` passed as a value.
-- **Timeouts.** `$.process.run` stops a program after 30 s. Pass `timeoutMs` where today's settings entry gives more, such as 60 s for `type-check-all-languages`.
+- **Timeouts.** `$.process.run` stops a program after 30 s. Pass `timeoutMs` where today's settings entry gives more.
+- **`classic.*` events.** For a Team organization, the built-in `cc-plugin-sec-default` skips each user mod on a `classic.*` event, so such a mod never runs. Use a command hook in `settings.json` for those events. Found in the `type-check-all-languages` cutover.
 - **The `context` field reaches the model after a Write, an Edit, and a Bash call.** Tested live on 2026-10-18. A `claude -p` stream records it only where the model quotes it.
 
 ### Failure behavior
@@ -163,10 +164,11 @@ Same shape as spike 2, on Write and Edit only.
 
 ### type-check-all-languages
 
-- **Mod:** `classic.Stop` returns `{ block: output }`, and does nothing when `e.stop_hook_active` is true. The root comes from `git rev-parse --show-toplevel` in `$.session.cwd()`. `pyrefly check` and `tsc --noEmit` get a `timeoutMs` of 60 s.
-- **pi:** `agent_before_settle` returns `{ entries, continue: true }`, with the errors in an appended entry. pi has no `stop_hook_active`, so the extension keeps a flag for each turn: it continues once, then lets the next stop pass. This is not tested yet.
-- **Codex:** `command.ts` reads `stop_hook_active` from stdin.
-- **Tests:** the hook has none today. Add `test/check.ts` with a fake `run` for pass, fail, and `stop_hook_active`.
+- **Claude Code: a command hook, not a mod.** This design first gave a mod on `classic.Stop`. In the cutover on 2026-10-19, Claude Code 2.1.303 loaded the mod but skipped it: `classic.Stop bypassed by cc-plugin-sec-default (tier user)`. For a Team organization, that built-in plugin sits outermost and skips each user mod on a `classic.*` event, but not on `tool.call`. So the `Stop` entry in `settings.json.tmpl` runs `command.ts`, as for `block-secret-commits`.
+- **pi and omp:** `agent_end` sends the errors with `pi.sendMessage`, with `triggerTurn` and the `followUp` delivery, which starts one more run. pi and omp have no `stop_hook_active`, so the extension keeps a flag: the end of the run that it started passes, and the run after it is checked again. It starts no run after an aborted or failed run, or when omp sets `willContinue`. Tested live on 2026-10-19 in `pi -p` and in an interactive omp. `omp -p` aborts the run as it exits.
+- **Why not `agent_before_settle`:** this design first gave pi's `agent_before_settle` with `{ entries, continue: true }`. In the cutover on 2026-10-19, omp 18.10.3 did not have that event, and its `turn_end` and `agent_end` take no result. `sendMessage` with `triggerTurn` is in both agents.
+- **Codex:** the same `command.ts`, which reads `stop_hook_active` from stdin.
+- **Tests:** `test/check.ts` runs `command.ts` with a stand-in `pyrefly` and `tsc` on `PATH` for pass, fail, no matching files, and `stop_hook_active`, and checks `pi.ts` with a stub. The cases gave the same result on `hook.sh`, except for a path that git quotes, such as `é.py`. The core reads `git -z` output, so that path now counts.
 
 ### track-session-changes
 

@@ -10,3 +10,4 @@
 .claude/hooks/format-staged-files
 .claude/hooks/lint-prose/hook.sh
 .codex/hooks/apply-patch.sh
+.claude/hooks/type-check-all-languages/hook.sh

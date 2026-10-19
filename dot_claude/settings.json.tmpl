@@ -78,7 +78,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "case $(node -p process.features.typescript 2>/dev/null) in strip | transform) ;; *) echo '{\"systemMessage\": \"Node 23.6 or later is not on the PATH of Claude Code, so track-session-changes is off, block-secret-commits blocks each git commit, and git does not format staged files. Put node 23.6 or later on the PATH, then start a new session.\"}' ;; esac",
+            "command": "case $(node -p process.features.typescript 2>/dev/null) in strip | transform) ;; *) echo '{\"systemMessage\": \"Node 23.6 or later is not on the PATH of Claude Code, so type-check-all-languages and track-session-changes are off, block-secret-commits blocks each git commit, and git does not format staged files. Put node 23.6 or later on the PATH, then start a new session.\"}' ;; esac",
             "timeout": 10
           },
           {
@@ -94,7 +94,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/type-check-all-languages/hook.sh\"",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/type-check-all-languages/command.ts\"",
             "timeout": 60
           }
         ]
