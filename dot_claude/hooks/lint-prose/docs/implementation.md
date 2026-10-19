@@ -12,7 +12,7 @@ The paragraph check started as a `.md` branch in [`lint-all-languages`](../../li
 
 1. **Prose and code need different scopes.** A code linter reports on the whole file. A prose rule reports only on the paragraphs a git diff marks as changed. In `lint-all-languages` that logic was prose-only state in a hook that is about code.
 2. **Less complexity in each hook.** `lint-all-languages` keeps one linter per extension and no diff logic. This hook has one input path per case and one linter.
-3. **Room to grow.** More Vale rules come from [`technical-linting-rules.md`](../../../../docs/research/hooks/linting/technical-linting-rules.md). Vale can also lint comments in code files, and a `.py` file in `lint-all-languages` would then need two linters in one branch.
+3. **Room to grow.** More Vale rules come from [`technical-linting-rules.md`](../../../../docs/research/linting/technical-linting-rules.md). Vale can also lint comments in code files, and a `.py` file in `lint-all-languages` would then need two linters in one branch.
 4. **Precedent.** [`format-org-tables`](../../format-org-tables/README.md) is a separate hook for one concern, next to `format-all-languages`.
 
 The cost is a second copy of the payload read and the temp-file skip, about 10 lines.
