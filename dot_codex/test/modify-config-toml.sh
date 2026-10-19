@@ -76,6 +76,28 @@ printf 'export CONTEXT7_API_KEY="envrc-key"\n' >"$src/.envrc"
 run <"$in" >"$out"
 check "key from .envrc" 'rg -A1 -xF "[mcp_servers.context7.env]" "$out" | rg -qx "CONTEXT7_API_KEY = \"envrc-key\""'
 
+# PreToolUse: this repo's groups 0 and 1 turn on, a cmux group and another
+# event stay off, and the trusted_hash stays.
+hooks="$HOME/.codex/hooks.json"
+cat >"$in" <<EOF
+[hooks.state."$hooks:pre_tool_use:0:0"]
+trusted_hash = "sha256:a"
+enabled = false
+
+[hooks.state."$hooks:pre_tool_use:1:0"]
+enabled = false
+
+[hooks.state."$hooks:pre_tool_use:2:0"]
+enabled = false
+
+[hooks.state."$hooks:post_tool_use:0:0"]
+enabled = false
+EOF
+run <"$in" >"$out"
+check "turns on repo PreToolUse hooks" '[ "$(rg -c "enabled = false" "$out")" = 2 ] && rg -A2 -F "pre_tool_use:0:0\"]" "$out" | rg -qx "trusted_hash = \"sha256:a\""'
+check "keeps cmux PreToolUse off" 'rg -A1 -F "pre_tool_use:2:0\"]" "$out" | rg -qx "enabled = false"'
+check "keeps other events off" 'rg -A1 -F "post_tool_use:0:0\"]" "$out" | rg -qx "enabled = false"'
+
 check "root Codex alias keeps the single rule source" '[ -L "$REPO/CODEX.md" ] && [ "$(readlink "$REPO/CODEX.md")" = .claude/rules/apply.md ] && [ -f "$REPO/CODEX.md" ]'
 check "no root AGENTS.md duplicates the rule in pi" '[ ! -e "$REPO/AGENTS.md" ] && [ ! -L "$REPO/AGENTS.md" ]'
 check "chezmoi excludes the project Codex alias" 'rg -qxF "CODEX.md" "$REPO/.chezmoiignore"'

@@ -51,4 +51,17 @@ def merge(current, ours):
 # Empty stdin (no ~/.codex/config.toml yet) parses to an empty document.
 doc = tomlkit.parse(sys.stdin.read())
 merge(doc, OURS)
+
+# ── PreToolUse hooks stay on ──────────────────────────────────────────────────
+# Codex keys the state of a hook by its position: <file>:pre_tool_use:<group>:
+# <handler>. modify_hooks.json puts this repo's 2 PreToolUse groups before the
+# cmux groups, so groups 0 and 1 are ours. A false `enabled` goes; the
+# trusted_hash stays, so a changed hook still asks for trust in Codex.
+ours_pre = re.compile(
+    re.escape(f"{os.environ['HOME']}/.codex/hooks.json") + r":pre_tool_use:[01]:\d+"
+)
+for key, state in doc.get("hooks", {}).get("state", {}).items():
+    if ours_pre.fullmatch(key) and state.get("enabled") is False:
+        del state["enabled"]
+
 sys.stdout.write(tomlkit.dumps(doc))

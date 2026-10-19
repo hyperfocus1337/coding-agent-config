@@ -123,6 +123,7 @@ Stays a command hook in Claude Code (Q20), so it has `command.ts` and `pi.ts`, b
 - **Why not a mod:** the binary scan copies each new binary file to a temporary folder. `$.fs` has no copy, no remove, and no binary write, and it rejects a file over 4 MiB. Node has all of these.
 - **Fails closed for binaries, open for content (Q5).** In `command.ts`, the binary step catches its own errors and exits 2. The content step catches its own errors and exits 0. In `pi.ts`, the content step must catch, because pi blocks on a throw.
 - **Time cap:** each betterleaks run gets its own 4 s cap through the `timeout` option of `spawn`, which kills the child. A capped scan writes "capped" on stderr and allows, as today.
+- **Allow prints nothing:** today the hook prints the Cursor JSON `{"permission":"allow"}` on stdout. Codex reports this output as a failed hook and lets the call run (tested on 2026-10-19). `command.ts` exits 0 with no output.
 - **Inputs, unchanged:** `.claude-allow-secrets`, `CLAUDE_ALLOW_SECRETS`, `conf/betterleaks.toml`, and `.betterleaksignore`.
 - **Tests:** port the 40 assertions of `test.sh` and `test-content.sh` to `test/check.ts`. They build real repositories and need betterleaks.
 
