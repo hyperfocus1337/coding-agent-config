@@ -115,7 +115,7 @@ Each path costs one Node start, about 18 ms. A patch changes 1 to 3 files in mos
 
 Same shape as `enforce-cli-tools`: a pure core, a mod that denies before `next`, and a `pi.ts`. It stays unwired in Codex (feasibility, decisions for each hook).
 
-- **Core:** `violation(command)` returns the message when `commit` is a whole word and the command holds `co-authored-by:\s*claude`, case-insensitive.
+- **Core:** `violation(command)` returns the message when `commit` is a whole word and the command holds `co-authored-by:`, case-insensitive. Any co-author is blocked, so a new agent needs no change.
 - **Dropped, as approved for `enforce-cli-tools`:** the Cursor JSON, the substring pre-filter, and `jq`.
 - **Known gap, unchanged:** `git commit -F <file>` passes, because the message is not in the command.
 

@@ -26,15 +26,18 @@ for (const line of [
   "git commit -m 'fix: x' -m 'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>'",
   "git add a && git commit -m \"$(printf 'fix\\n\\nCo-authored-by: Claude <noreply@anthropic.com>')\"",
   "git -C repo commit --amend -m 'x\n\nco-authored-by: claude code'",
+  // Other agents, and a human: any co-author is blocked.
+  "git commit -m 'fix: x' -m 'Co-authored-by: aider (gpt-5) <noreply@aider.chat>'",
+  "git commit -m 'fix: x' -m 'Co-authored-by: Cursor Agent <cursoragent@cursor.com>'",
+  "git commit -m 'fix: x' -m 'Co-Authored-By: Alice <alice@example.com>'",
 ])
   await check(`blocks ${JSON.stringify(line)}`, () =>
     assert.equal(violation(line), MESSAGE),
   );
 
-// No trailer, another co-author, or no commit as a whole word.
+// No trailer, or no commit as a whole word.
 for (const line of [
   "git commit -m 'fix: x'",
-  "git commit -m 'fix: x' -m 'Co-Authored-By: Alice <alice@example.com>'",
   "git log --grep='Co-Authored-By: Claude'",
   "rg -n 'Co-Authored-By: Claude' .",
   "rg -n 'co-authored-by: claude' committed.txt",

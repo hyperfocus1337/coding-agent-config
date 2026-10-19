@@ -1,6 +1,6 @@
 /**
  * Claude Code mod: denies a Bash call that commits with a
- * `Co-Authored-By: Claude` trailer. Fails open: a hook that throws is skipped
+ * `Co-Authored-By:` trailer. Fails open: a hook that throws is skipped
  * and the call runs, as the command hook did.
  */
 

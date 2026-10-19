@@ -1,6 +1,6 @@
 # block-commit-attribution
 
-Blocks a `git commit` whose message has a `Co-Authored-By: Claude` trailer. The model then removes the trailer and runs the commit again.
+Blocks a `git commit` whose message has a `Co-Authored-By:` trailer, for any co-author. The model then removes the trailer and runs the commit again.
 
 One matcher, [`core.ts`](core.ts), serves three agents through two adapters:
 
@@ -20,7 +20,9 @@ Codex does not run this hook. The design is in [`docs/hooks-design.md`](../../..
 The hook blocks a Bash call when both of these are true, case-insensitive:
 
 - `commit` is a whole word in the command. A letter, a digit, `_`, or `-` next to it makes a different word, so `git log --grep 'Co-Authored-By: Claude'`, `rg ... committed.txt`, and `git commit-tree` pass.
-- The command holds `co-authored-by:` and then `claude`, with only whitespace between them. A trailer for another co-author passes.
+- The command holds `co-authored-by:`. The hook does not read the name after it, so it blocks every agent, also one that does not exist yet, with no list to keep current.
+
+A human co-author is blocked too. In an agent's commit, a human trailer occurs only when you ask for one, or when the agent rewrites a message that already has one. In those cases, commit by hand.
 
 The check reads the whole command, so the hook also blocks a command that commits and only mentions the trailer, for example a `git commit` and a `cat` of a file that holds the trailer, joined with `&&`. To run such a command, split it into two calls.
 

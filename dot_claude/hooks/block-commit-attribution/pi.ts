@@ -1,6 +1,6 @@
 /**
  * pi and omp extension: blocks a bash call that commits with a
- * `Co-Authored-By: Claude` trailer. Loaded through the `extensions` setting of
+ * `Co-Authored-By:` trailer. Loaded through the `extensions` setting of
  * each agent.
  */
 
