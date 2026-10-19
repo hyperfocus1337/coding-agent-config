@@ -2,14 +2,13 @@
 
 A [Codex CLI](https://developers.openai.com/codex/cli) session loads the user-scope configuration from this repository's single copy: `~/.claude/skills`, the scripts in `~/.claude/hooks`, and `CLAUDE.md` with the rules in `~/.claude/rules/`. Symlinks, one hooks file, one wrapper script, and one chezmoi template do it. No hook script or rule moves or changes. The Codex-only `claude-command` skill reads a selected Claude command on demand. Written against Codex CLI 0.160.1.
 
-| Resource                         | How Codex loads it                                                                           | Where                                                                                        |
-| -------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Skills                           | its native user skills directory, a chezmoi symlink `~/.agents/skills` to `~/.claude/skills` | [`dot_agents/symlink_skills`](../../dot_agents/symlink_skills)                               |
-| Hooks                            | `~/.codex/hooks.json`, which calls the scripts in `~/.claude/hooks/`                         | [`dot_codex/modify_hooks.json`](../../dot_codex/modify_hooks.json)                           |
-| File hooks on `apply_patch`      | a wrapper that runs a file hook once per patched file                                        | [`dot_codex/hooks/apply-patch.ts`](../../dot_codex/hooks/apply-patch.ts)                     |
-| `CLAUDE.md` and rules            | `~/.codex/AGENTS.md`, rendered from `CLAUDE.md` and every rule                               | [`dot_codex/AGENTS.md.tmpl`](../../dot_codex/AGENTS.md.tmpl)                                 |
-| Project rules of this repository | `CODEX.md` at the repository root, a configured fallback symlink to `.claude/rules/apply.md` | [`CODEX.md`](../../CODEX.md)                                                                 |
-| Commands                         | an explicit-only adapter skill in `~/.codex/skills/claude-command/`                          | [`dot_codex/skills/claude-command/SKILL.md`](../../dot_codex/skills/claude-command/SKILL.md) |
+| Resource                    | How Codex loads it                                                                           | Where                                                                                        |
+| --------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Skills                      | its native user skills directory, a chezmoi symlink `~/.agents/skills` to `~/.claude/skills` | [`dot_agents/symlink_skills`](../../dot_agents/symlink_skills)                               |
+| Hooks                       | `~/.codex/hooks.json`, which calls the scripts in `~/.claude/hooks/`                         | [`dot_codex/modify_hooks.json`](../../dot_codex/modify_hooks.json)                           |
+| File hooks on `apply_patch` | a wrapper that runs a file hook once per patched file                                        | [`dot_codex/hooks/apply-patch.ts`](../../dot_codex/hooks/apply-patch.ts)                     |
+| `CLAUDE.md` and rules       | `~/.codex/AGENTS.md`, rendered from `CLAUDE.md` and every rule                               | [`dot_codex/AGENTS.md.tmpl`](../../dot_codex/AGENTS.md.tmpl)                                 |
+| Commands                    | an explicit-only adapter skill in `~/.codex/skills/claude-command/`                          | [`dot_codex/skills/claude-command/SKILL.md`](../../dot_codex/skills/claude-command/SKILL.md) |
 
 ## Skills
 
@@ -30,7 +29,6 @@ The lookup code lives in the skill's `scripts/read-command.py`. Run `python3 dot
 Codex reads `~/.codex/AGENTS.md` in every session and `AGENTS.md` files from the repository root down to the working directory. It follows symlinks for both. It has no rules directory and does not open files that an instruction file links to.
 
 - **User scope.** chezmoi renders `dot_codex/AGENTS.md.tmpl` to `~/.codex/AGENTS.md`: `CLAUDE.md`, then each rule in `dot_claude/rules/` except `README.md`. A new rule file needs no template change. A rule with frontmatter is skipped, because Codex has no counterpart to `paths:` scoping. A rule edit reaches Codex on the next `just chezmoi`. The output is 4.4 KB; Codex's default limit is 32 KiB (`project_doc_max_bytes`).
-- **This repository.** `CODEX.md` at the repository root is a symlink to `.claude/rules/apply.md`. The global Codex configuration sets `project_doc_fallback_filenames = ["CODEX.md"]`. Codex checks `AGENTS.override.md`, then `AGENTS.md`, then the fallback, so normal instruction discovery in other repositories is unchanged. `.chezmoiignore` lists `CODEX.md`, so chezmoi does not create `~/CODEX.md`. Pi does not discover `CODEX.md` as an instruction file and loads the rule only through `.claude/rules/`. Claude Code also loads the rule through that directory. With a second project rule, replace the symlink with generated content that combines the unscoped rules. Fallback entries must be filenames, not paths into `.codex/`.
 
 Some lines in `tools.md` name things Codex does not have: the Grep and Glob tools, LSP, and Context7. Codex skips them.
 
@@ -76,7 +74,7 @@ In the devcontainer, Codex's default `workspace-write` sandbox cannot write file
 
 ## Settings
 
-`dot_codex/modify_private_config.toml` is a chezmoi modify script for `~/.codex/config.toml`. It sets `model`, `model_reasoning_effort`, `project_doc_fallback_filenames`, `features.memories`, and the Context7 MCP server in `mcp_servers.context7`. Codex and cmux write to the same file: a trust prompt adds a `projects` entry, hook trust adds a `hooks.state` entry, the TUI adds `tui` keys, and cmux adds hook trust entries between `# cmux-… begin` and `# cmux-… end` marker comments. The script merges the repository keys over the current file: a repository key wins, and a key the repository leaves out stays. Tables merge key by key, and a repository array replaces the current one. To keep a `/model` change, add it to the script; the next apply resets it otherwise.
+`dot_codex/modify_private_config.toml` is a chezmoi modify script for `~/.codex/config.toml`. It sets `model`, `model_reasoning_effort`, `features.memories`, and the Context7 MCP server in `mcp_servers.context7`. Codex and cmux write to the same file: a trust prompt adds a `projects` entry, hook trust adds a `hooks.state` entry, the TUI adds `tui` keys, and cmux adds hook trust entries between `# cmux-… begin` and `# cmux-… end` marker comments. The script merges the repository keys over the current file: a repository key wins, and a key the repository leaves out stays. Tables merge key by key, and a repository array replaces the current one. To keep a `/model` change, add it to the script; the next apply resets it otherwise.
 
 The script is Python with [tomlkit](https://github.com/python-poetry/tomlkit), run through `uv run --script`, so it needs `uv` on `PATH` on the host and in the devcontainer. tomlkit edits the file in place: comments, the cmux markers, key and table order, and string quoting stay, and a value already equal to the repository value is not rewritten. A parser that serializes the whole file again, such as `yq`, drops the cmux end marker and moves `[tui]` behind the cmux tables. The `private_` attribute keeps the file at mode 0600, as Codex writes it. If the script fails, `chezmoi apply` stops and does not change the file.
 

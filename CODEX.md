@@ -1,1 +1,0 @@
-.claude/rules/apply.md

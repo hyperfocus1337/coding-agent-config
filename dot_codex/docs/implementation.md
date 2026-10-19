@@ -14,8 +14,6 @@ The template joins the files when chezmoi applies:
 
 The output is a plain file, not a link, so a rule edit reaches Codex only on the next `just chezmoi`. `CLAUDE.md` holds only its `# Global agent instructions` heading, so the `##` rule headings sit under it. It must not link to the rules: Codex does not load `~/.claude/rules/`, and a model that follows a link reads a rule a second time.
 
-The project rule of this repository takes a different route: `CODEX.md` at the repository root is a symlink to `.claude/rules/apply.md`. `modify_private_config.toml` sets `project_doc_fallback_filenames = ["CODEX.md"]`. Codex follows the link when no `AGENTS.override.md` or `AGENTS.md` exists at that directory level. `.chezmoiignore` lists `CODEX.md`, because the repository root is the chezmoi source and would otherwise render `~/CODEX.md`. Pi does not discover this filename and loads the apply rule only through its Claude rules extension. Claude Code reads `.claude/rules/` directly. This keeps one source file and removes duplicate instruction context without adding deduplication to pi.
-
 ## File hooks: `apply-patch.ts`
 
 ### The problem

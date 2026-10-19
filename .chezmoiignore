@@ -9,7 +9,6 @@ templates
 Justfile
 apm.yml
 README.md
-CODEX.md
 .claude/README.md
 .claude/rules/README.md
 .claude/hooks/README.md

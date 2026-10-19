@@ -24,7 +24,6 @@ check() { # name, command that must succeed
 cat >"$in" <<'EOF'
 model = "drift-model"
 model_reasoning_effort = "low"
-project_doc_fallback_filenames = ["OLD.md"]
 
 notify = ["a", "turn-ended"]
 
@@ -57,8 +56,7 @@ run <"$in" >"$out"
 check "repo model wins" 'rg -qx "model = \"gpt-6.1-sol\"" "$out" && rg -qx "model_reasoning_effort = \"high\"" "$out"'
 check "repo array replaces current" 'rg -qxF "args = [\"-y\", \"@upstash/context7-mcp\"]" "$out" && rg -qx "command = \"npx\"" "$out"'
 check "adds key at end of table" 'rg -A1 -x "js_repl = false" "$out" | rg -qx "memories = true"'
-check "Codex fallback uses CODEX.md" 'rg -qxF "project_doc_fallback_filenames = [\"CODEX.md\"]" "$out"'
-check "changes only repo keys" '[ "$(diff "$in" "$out" | rg -c "^[<>]")" = 10 ]'
+check "changes only repo keys" '[ "$(diff "$in" "$out" | rg -c "^[<>]")" = 8 ]'
 check "keeps cmux markers" 'rg -qx "# cmux-codex-hook-trust-1 end" "$out" && rg -qx "# cmux-codex-hooks-feature-1 end" "$out"'
 check "keeps literal string" 'rg -qxF "SERVICES = '"'"'{\"browser\":\"x\"}'"'"'" "$out"'
 check "keeps table order" '[ "$(rg -n -x "\[tui\]" "$out" | cut -d: -f1)" -lt "$(rg -n -F "[hooks.state.\"/a:stop:1:0\"]" "$out" | cut -d: -f1)" ]'
@@ -66,7 +64,6 @@ check "second apply changes nothing" 'run <"$out" | diff -q "$out" -'
 
 run </dev/null >"$out"
 check "empty stdin gives repo keys only" '! rg -q "tui|projects" "$out" && rg -qx "\[mcp_servers.context7\]" "$out"'
-check "empty stdin adds Codex fallback" 'rg -qxF "project_doc_fallback_filenames = [\"CODEX.md\"]" "$out"'
 
 # Context7 API key: none keeps the current key, else .envrc wins.
 printf '[mcp_servers.context7.env]\nCONTEXT7_API_KEY = "old-key"\n' >"$in"
@@ -97,9 +94,5 @@ run <"$in" >"$out"
 check "turns on repo PreToolUse hooks" '[ "$(rg -c "enabled = false" "$out")" = 2 ] && rg -A2 -F "pre_tool_use:0:0\"]" "$out" | rg -qx "trusted_hash = \"sha256:a\""'
 check "keeps cmux PreToolUse off" 'rg -A1 -F "pre_tool_use:2:0\"]" "$out" | rg -qx "enabled = false"'
 check "keeps other events off" 'rg -A1 -F "post_tool_use:0:0\"]" "$out" | rg -qx "enabled = false"'
-
-check "root Codex alias keeps the single rule source" '[ -L "$REPO/CODEX.md" ] && [ "$(readlink "$REPO/CODEX.md")" = .claude/rules/apply.md ] && [ -f "$REPO/CODEX.md" ]'
-check "no root AGENTS.md duplicates the rule in pi" '[ ! -e "$REPO/AGENTS.md" ] && [ ! -L "$REPO/AGENTS.md" ]'
-check "chezmoi excludes the project Codex alias" 'rg -qxF "CODEX.md" "$REPO/.chezmoiignore"'
 
 exit "$fail"
