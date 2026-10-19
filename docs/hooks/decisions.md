@@ -70,6 +70,10 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 **Decision:** the git `pre-commit` hook moved to `dot_config/git/hooks/format-staged-files/` and runs when any agent variable is set: `CLAUDECODE=1`, `PI_CODING_AGENT=true`, `OMPCODE=1`, or `CODEX_THREAD_ID`. **Why:** before, only `CLAUDECODE=1` counted, so pi and Codex commits were not formatted. **Cost:** about 18 ms for each file and formatter, about 180 ms for a commit of 5 files.
 
+## Advisory hooks turn off through one environment variable
+
+**Decision:** `/toggle-hook` sets `CLAUDE_HOOKS_DISABLE` in the agent process, and each advisory hook reads it on each run. **Why:** a mod can change the environment of Claude Code with `$.env.set`, and an extension can change `process.env` of pi and omp. One variable then reaches the mods, the extensions, and the command hooks, with no state shared between hook folders. A setting in `settings.json` would drift from chezmoi, and stay on after the session. **Cost:** Codex has no extension commands, so it gets the variable at launch only. The guards have no toggle, so that a command cannot turn one off.
+
 ## Behavior that the move dropped
 
 | Change                                                                                     | Reason                                                                             |

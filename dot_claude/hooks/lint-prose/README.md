@@ -63,6 +63,8 @@ Some messages are for you and not for the model: alerts that this session alread
 export CLAUDE_LINT_DISABLE="prose"
 ```
 
+To turn the hook off in a running agent, run `/toggle-hook lint-prose`. See [`toggle-hook`](../toggle-hook/README.md).
+
 To find and fix the old alerts that the hook does not report, run `/prose-cleanup`.
 
 ## Failure behavior

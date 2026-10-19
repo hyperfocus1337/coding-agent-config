@@ -71,7 +71,7 @@ To turn a hook off in one agent, remove its line from that agent's wiring.
 
 ## Add a hook
 
-1. **Code:** write `core.ts`, and `io.ts` and the adapters that the hook needs.
+1. **Code:** write `core.ts`, and `io.ts` and the adapters that the hook needs. An advisory hook, which formats, lints, or checks, also gets a toggle: add `hooksOff` to its `Settings`, fill it from `CLAUDE_HOOKS_DISABLE` in each adapter, return early when the value names the hook, and add the hook name to `HOOKS` in `toggle-hook/core.ts`. A guard gets no toggle.
 2. **Tests:** write `test/check.ts`. Test the core with stub I/O, and each adapter with a stub `$`, a stub pi, or stdin for `command.ts`. `claude plugin test` cannot run a hook that reads a file, see [`platforms.md`](platforms.md#claude-code-mods).
 3. **Wire:** add the entries in the [wiring table](#wiring).
 4. **Docs:** write the hook README (agents table, failure behavior, dependencies, tests, files), and add its row to `dot_claude/hooks/README.md`.

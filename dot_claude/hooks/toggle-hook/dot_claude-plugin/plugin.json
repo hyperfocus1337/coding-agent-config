@@ -1,0 +1,5 @@
+{
+  "name": "toggle-hook",
+  "version": "0.1.0",
+  "description": "Adds /toggle-hook, which turns an advisory hook off or on until you quit."
+}

@@ -46,6 +46,8 @@ export CLAUDE_LINT_DISABLE="yaml,sh"   # skip YAML and shell
 export CLAUDE_LINT_DISABLE="all"       # off
 ```
 
+To turn the whole hook off in a running agent, run `/toggle-hook lint-code`. See [`toggle-hook`](../toggle-hook/README.md).
+
 To _tune_ YAML rather than disable it, edit the bundled configs in [`config/`](config/); the hook passes them with `-c` on each run, so a repo's own `.yamllint` / `.ansible-lint` is ignored and there is nothing to copy per project:
 
 - [`config/dot_yamllint`](config/dot_yamllint), deployed as `.yamllint`, sets the relaxed indentation and line-length rules for plain YAML ([yamllint config docs](https://yamllint.readthedocs.io/en/stable/configuration.html)).
