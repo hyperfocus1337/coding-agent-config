@@ -54,6 +54,15 @@ The `mcp/` folder covers configuring MCP (Model Context Protocol) servers on eac
 | [`enabling/desktop.md`](mcp/enabling/desktop.md)   | Enable MCP servers on desktop                        |
 | [`enabling/web.md`](mcp/enabling/web.md)           | Enable MCP servers on the web (claude.ai/code)       |
 
+## Hooks as mods
+
+Two documents cover the move of the hooks in [`dot_claude/hooks/`](../dot_claude/hooks/README.md) to TypeScript, with one core that Claude Code, pi, omp, and Codex share.
+
+| File                                           | Description                                                            |
+| ---------------------------------------------- | ---------------------------------------------------------------------- |
+| [`hooks-feasibility.md`](hooks-feasibility.md) | The facts, the spikes, and the agreed plan                             |
+| [`hooks-design.md`](hooks-design.md)           | The rules for a hook folder, the design for each hook, and the cutover |
+
 ## Research
 
 The `research/` folder holds investigations into the agent environment and session. These record what was true when measured and can go stale. One subfolder per subject: `agents/` for other coding agents, `commands/` for the git methods behind the slash commands, `context/` for what a session loads and what that costs, `interface/` for the prompt and the terminal around it, and `install/` for how a tool reaches the agent.

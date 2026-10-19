@@ -223,7 +223,4 @@ These changes follow from the facts above. The design doc uses them.
 
 ## Open items
 
-For the design doc:
-
-- The time of a mod hook alone. The debug log gives one time for the whole `tool.call` chain only.
-- Whether the two Codex `PreToolUse` hooks stay off. If they go on again, the cutover must trust and enable the new `command.ts` entries in the Codex TUI, and one live Codex turn must confirm the block.
+None. [`hooks-design.md`](hooks-design.md) took the last two: it gives the measured time of a mod hook, and decision D4 asks whether the two Codex `PreToolUse` hooks stay off.
