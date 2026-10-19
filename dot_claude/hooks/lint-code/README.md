@@ -17,7 +17,7 @@ The core finds the files that the call changed, then runs the linter for the ext
 | Extension                                             | Linter                                                  | Invocation                                | Documentation                                 |
 | ----------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------- | --------------------------------------------- |
 | `.py`                                                 | [ruff](https://github.com/astral-sh/ruff)               | `ruff check --quiet`                      | https://docs.astral.sh/ruff/                  |
-| `.js` `.jsx` `.ts` `.tsx` `.mts` `.cts` `.mjs` `.cjs` | [oxlint](https://github.com/oxc-project/oxc)            | `oxlint`                                  | https://oxc.rs/docs/guide/usage/linter        |
+| `.js` `.jsx` `.ts` `.tsx` `.mts` `.cts` `.mjs` `.cjs` | [oxlint](https://github.com/oxc-project/oxc)            | `oxlint --deny-warnings`                  | https://oxc.rs/docs/guide/usage/linter        |
 | `.sh` `.bash`                                         | [shellcheck](https://github.com/koalaman/shellcheck)    | `shellcheck -S warning`                   | https://www.shellcheck.net/wiki/              |
 | `.yml` `.yaml` (plain)                                | [yamllint](https://github.com/adrienverge/yamllint)     | `yamllint -c config/.yamllint`            | https://yamllint.readthedocs.io/              |
 | `.yml` `.yaml` (Ansible)                              | [ansible-lint](https://github.com/ansible/ansible-lint) | `ansible-lint -c config/.ansible-lint -q` | https://ansible.readthedocs.io/projects/lint/ |
@@ -85,7 +85,7 @@ A Write or an Edit has already run when the hook starts, so the hook cannot bloc
 - **pi and omp:** the extension appends the errors to the result content and marks the result as an error.
 - **Codex:** `command.ts` exits 2. A `PostToolUse` hook reaches the model only with exit code 2. With exit code 0, its output goes to the transcript only.
 
-The hook reports only when a linter exits with a code other than 0. `oxlint` does that only for correctness errors, such as a redeclared binding or a syntax error, and exits 0 for style warnings. If a linter reports too much, change its severity, for example `shellcheck -S error`.
+The hook reports only when a linter exits with a code other than 0. `oxlint` 1.87.0 reports its built-in rules as warnings, also a real bug such as an assignment to a `const`, and exits 0 for warnings. So the hook passes `--deny-warnings`, which makes oxlint exit 1 on a warning. A rule that a project `.oxlintrc.json` sets to `off` stays off. If a linter reports too much, change its severity, for example `shellcheck -S error`.
 
 ## Failure behavior
 

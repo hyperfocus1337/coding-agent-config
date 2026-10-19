@@ -131,10 +131,10 @@ await check("each extension runs its linter", async () => {
   await lint(files, io, settings);
   assert.deepEqual(ran, [
     ["ruff", "check", "--quiet", "a.py"],
-    ["oxlint", "b.tsx"],
-    ["oxlint", "c.cjs"],
-    ["oxlint", "c.mts"],
-    ["oxlint", "c.cts"],
+    ["oxlint", "--deny-warnings", "b.tsx"],
+    ["oxlint", "--deny-warnings", "c.cjs"],
+    ["oxlint", "--deny-warnings", "c.mts"],
+    ["oxlint", "--deny-warnings", "c.cts"],
     ["shellcheck", "-S", "warning", "d.bash"],
     ["yamllint", "-c", "/cfg/.yamllint", "e.yml"],
     ["ansible-lint", "-c", "/cfg/.ansible-lint", "-q", "/r/roles/f.yaml"],

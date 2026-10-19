@@ -116,7 +116,7 @@ async function linter(file: string, io: Io, settings: Settings) {
     case "cjs":
     case "mts":
     case "cts":
-      return disabled("js") ? undefined : ["oxlint", file];
+      return disabled("js") ? undefined : ["oxlint", "--deny-warnings", file];
     case "sh":
     case "bash":
       return disabled("sh") ? undefined : ["shellcheck", "-S", "warning", file];
