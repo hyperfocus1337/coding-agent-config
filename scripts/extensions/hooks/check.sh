@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Check the hooks in dot_claude/hooks that have moved to TypeScript:
 #   1. tsc over each mod (hooks/register.ts) against the Claude Code types,
-#   2. tsc over each pi and Codex adapter (pi.ts, command.ts) against the pi types,
+#   2. tsc over each pi and Codex adapter (pi.ts, command.ts) and the Codex
+#      wrappers in dot_codex/hooks against the pi types,
 #   3. `claude plugin validate` over each mod, which catches what tsc cannot,
 #      such as `$` passed as a value,
-#   4. node over each test/check.ts.
+#   4. node over each test/check.ts and over dot_codex/hooks/test/apply-patch.ts.
 #
 # Both sets of types differ per machine, so the tsconfigs are generated here.
 set -euo pipefail
@@ -12,6 +13,7 @@ shopt -s nullglob
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 HOOKS="${REPO}/dot_claude/hooks"
+CODEX_HOOKS="${REPO}/dot_codex/hooks"
 
 for tool in claude node tsc; do
   command -v "${tool}" >/dev/null || {
@@ -72,7 +74,7 @@ cat >"${WORK}/node.tsconfig.json" <<JSON
     "types": [],
     "paths": { "@earendil-works/pi-coding-agent": ["${PI_PACKAGE}/dist/index.d.ts"] }
   },
-  "include": ["${HOOKS}/*/pi.ts", "${HOOKS}/*/command.ts"]
+  "include": ["${HOOKS}/*/pi.ts", "${HOOKS}/*/command.ts", "${CODEX_HOOKS}/*.ts", "${CODEX_HOOKS}/test/*.ts"]
 }
 JSON
 
@@ -99,3 +101,5 @@ for check in "${HOOKS}"/*/test/check.ts; do
   echo "==> ${check#"${HOOKS}"/}"
   (cd "${check%/test/check.ts}" && node test/check.ts)
 done
+echo "==> dot_codex/hooks/test/apply-patch.ts"
+node "${CODEX_HOOKS}/test/apply-patch.ts"

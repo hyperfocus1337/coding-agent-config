@@ -1,6 +1,6 @@
 # Implementation notes
 
-Why [`AGENTS.md.tmpl`](../AGENTS.md.tmpl) and [`hooks/apply-patch.sh`](../hooks/apply-patch.sh) exist and how they work. [README.md](../README.md) describes the directory; this file is for a person changing them. Written against Codex CLI 0.154.0 and measured on 2026-09-26.
+Why [`AGENTS.md.tmpl`](../AGENTS.md.tmpl) and [`hooks/apply-patch.sh`](../hooks/apply-patch.sh) (and [`hooks/apply-patch.ts`](../hooks/apply-patch.ts)) exist and how they work. [README.md](../README.md) describes the directory; this file is for a person changing them. Written against Codex CLI 0.154.0 and measured on 2026-09-26.
 
 ## Instructions: `AGENTS.md.tmpl`
 
@@ -59,6 +59,16 @@ bash "$HOME/.codex/hooks/apply-patch.sh" "$HOME/.claude/hooks/lint-all-languages
 2. Skip a path that is not a file on disk: a deleted file, or the old side of a move.
 3. For each path, copy the payload, set `tool_name` to `Write` and `tool_input` to `{file_path: <path>}`, and send it to the hook. The hook takes its single-file branch, as under Claude Code. `hook_event_name`, `cwd`, and the other fields stay unchanged.
 4. Return one exit code to Codex. Exit 2 wins, because only 2 blocks the tool result and sends stderr to the model. Otherwise the highest code wins, so a crash (126, 127) still shows as a warning.
+
+### The TypeScript wrapper: `apply-patch.ts`
+
+A hook that moved to TypeScript has a `command.ts`, which `bash` cannot run. [`hooks/apply-patch.ts`](../hooks/apply-patch.ts) does the same 4 steps and starts the hook with `node`:
+
+```sh
+node "$HOME/.codex/hooks/apply-patch.ts" "$HOME/.claude/hooks/lint-all-languages/command.ts"
+```
+
+It reads the payload with no `jq`. Each file costs one Node start, about 18 ms. `apply-patch.sh` stays for the file hooks that are still a `hook.sh`, and goes with the last of them ([`docs/hooks-design.md`](../../docs/hooks-design.md)). [`hooks/test/apply-patch.ts`](../hooks/test/apply-patch.ts) has the same cases as `test.sh`.
 
 ### Why a wrapper and not a hook change
 

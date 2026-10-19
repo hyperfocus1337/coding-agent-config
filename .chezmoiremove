@@ -1,0 +1,5 @@
+# Files that chezmoi once deployed and that the repo no longer has. chezmoi
+# removes each one from the home folder at the next apply. Add the hook.sh of
+# each hook that moves to TypeScript (docs/hooks-design.md, decision D3).
+.claude/hooks/enforce-cli-tools/hook.sh
+.claude/hooks/lint-all-languages/hook.sh
