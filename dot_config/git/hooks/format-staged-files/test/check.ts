@@ -133,6 +133,16 @@ check("commit -a formats the tracked file", () =>
 );
 check("the tree is clean after commit -a", () => assert.equal(dirty(), ""));
 
+// /toggle-hook turns off the agent hooks only, not this commit-time format.
+write("new.md", "*   toggled\n");
+git(["commit", "-q", "-a", "-m", "toggled"], {
+  CLAUDECODE: "1",
+  CLAUDE_HOOKS_DISABLE: "format-prettier",
+});
+check("CLAUDE_HOOKS_DISABLE does not turn off the commit-time format", () =>
+  assert.equal(committed("new.md"), "- toggled\n"),
+);
+
 // A file with unstaged changes stays as staged, and the unstaged part stays out.
 write("new.md", "*   three\n");
 git(["add", "new.md"]);

@@ -79,6 +79,9 @@ for (const rel of staged.stdout.split("\0")) {
   ])
     spawnSync(process.execPath, [`${hooks}/${formatter}/command.ts`], {
       cwd: root,
+      // /toggle-hook turns off the agent hooks only, not this commit-time
+      // format. Node leaves an undefined variable out.
+      env: { ...env, CLAUDE_HOOKS_DISABLE: undefined },
       input: payload,
       stdio: ["pipe", "ignore", "ignore"],
     });

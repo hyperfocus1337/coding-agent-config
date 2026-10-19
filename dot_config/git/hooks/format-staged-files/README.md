@@ -45,6 +45,8 @@ Each agent sets a variable in the processes that it starts. The hook runs when o
 2. For each regular file, it runs the `command.ts` of `format-prettier`, `format-org-tables`, and `format-terraform` with a `PostToolUse` payload that names the file in `tool_input.file_path`. The formatting rules stay in those hooks: the extensions, `.prettierignore`, `--prose-wrap preserve`, and the skip of `/tmp` and `$TMPDIR`.
 3. When a formatter changed the file, it runs `git add` on that file. Git reads the index again after the `pre-commit` hook, so the commit takes the formatted version. It also prints `format-staged-files: reformatted and restaged <path>` to stderr. Git passes this line through, also with `git commit -q`, so the Bash output shows that the commit changed the file.
 
+It runs the formatters without `CLAUDE_HOOKS_DISABLE`, so a formatter that [`/toggle-hook`](../../../../dot_claude/hooks/toggle-hook/README.md) turned off in the agent still formats the commit.
+
 It skips a symlink, and a file that has unstaged changes. A `git add` of that file would also stage the unstaged changes and put them in the commit. The file is committed as staged, and the amend hint of the formatters stays as the fallback for it.
 
 ## Limits
