@@ -55,5 +55,5 @@ In the devcontainer, `claude-vanilla` does not get `bypassPermissions`, because 
 
 - Only shells that load these functions get these modes. The IDE extension, the desktop app, and scripts that start `claude` run in full mode.
 - Claude Code keeps only the last `--settings` flag, so `claude --settings X` replaces the minimal layer.
-- `claude-nohooks`, `claude-norules`, and `claude-vanilla` also turn off the guardrail hooks, such as `block-secret-commits` and `block-commit-attribution`. For full mode without hooks, run `claude-full --settings '{"disableAllHooks": true}'`.
+- `claude-nohooks`, `claude-norules`, and `claude-vanilla` also turn off the guardrail hooks, such as `block-secret-commits` and `block-commit-attribution`. This includes the hooks that run as mods (tested on 2026-10-19). For full mode without hooks, run `claude-full --settings '{"disableAllHooks": true}'`.
 - All modes except `claude-full` set `ENABLE_CLAUDEAI_MCP_SERVERS=false`, which turns off the claude.ai MCP servers. `claude-full` removes the variable, because a `claude-full` started from a `claude` session inherits it.

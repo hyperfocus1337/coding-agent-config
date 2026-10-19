@@ -1,0 +1,5 @@
+{
+  "name": "block-commit-attribution",
+  "version": "0.1.0",
+  "description": "Blocks a git commit whose message has a Co-Authored-By: Claude trailer."
+}

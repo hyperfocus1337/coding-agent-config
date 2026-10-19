@@ -10,7 +10,7 @@ Written on 2026-10-18, with Claude Code 2.1.302, pi 1.1.0, omp 18.10.3, Codex 0.
 | -------------------------- | -------------------------------------------------------------------- |
 | `enforce-cli-tools`        | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
 | `lint-all-languages`       | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
-| `block-commit-attribution` | Not started                                                          |
+| `block-commit-attribution` | Moved. Live in Claude Code, pi, and omp. Not wired in Codex.         |
 | `block-secret-commits`     | Not started                                                          |
 | `format-all-languages`     | Not started                                                          |
 | `format-org-tables`        | Not started                                                          |

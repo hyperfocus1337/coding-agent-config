@@ -3,3 +3,4 @@
 # each hook that moves to TypeScript (docs/hooks-design.md, decision D3).
 .claude/hooks/enforce-cli-tools/hook.sh
 .claude/hooks/lint-all-languages/hook.sh
+.claude/hooks/block-commit-attribution/hook.sh
