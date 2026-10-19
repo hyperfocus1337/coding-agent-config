@@ -1,10 +1,20 @@
 # format-org-tables
 
-A `PostToolUse` and `PostToolUseFailure` hook that realigns [Org mode](https://orgmode.org/) tables after Claude writes a `.org` file, using Emacs in batch mode. This is the single source of truth for the design notes the hook script only points at; `hook.sh` keeps its inline comments short and references the sections below by name.
+Aligns the [Org mode](https://orgmode.org/) tables in the `.org` files that a Write, an Edit, or a Bash call changed, with Emacs in batch mode. This README holds the design notes, and the comments in [`core.ts`](core.ts) name the sections below.
+
+One core, [`core.ts`](core.ts), serves four agents through three adapters:
+
+| Agent       | Adapter                                                                                                   | Loaded by                                                                                          |
+| ----------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash aligns after `next` | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
+| pi and omp  | [`pi.ts`](pi.ts): `tool_result` on write, edit, and bash                                                  | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
+| Codex       | [`command.ts`](command.ts): the amend hint as `hookSpecificOutput` JSON on stdout                         | `PostToolUse` on Bash, and on `apply_patch` through `dot_codex/hooks/apply-patch.ts`               |
+
+The git pre-commit hook [`format-staged-files`](../../../dot_config/git/hooks/format-staged-files/README.md) also runs `command.ts`, once for each staged file.
 
 ## Why this is a separate hook
 
-[`format-all-languages`](../format-all-languages/) covers everything Prettier parses, and Prettier has no Org parser, so `.org` is not in its extension list and never will be. Org table alignment is `org-table-align`, an Emacs function, so the tool, the invocation, and the failure modes share nothing with the Prettier hook. Keeping it standalone means it needs none of that hook's machinery (no git sweep, no markdown/code split, no `--print-width` reasoning) and can be removed by deleting one `settings.json` entry.
+[`format-all-languages`](../format-all-languages/) covers everything Prettier parses, and Prettier has no Org parser, so `.org` is not in its extension list and never will be. Org table alignment is `org-table-align`, an Emacs function, so the tool, the invocation, and the failure modes share nothing with the Prettier hook. Keeping it standalone means it needs none of that hook's machinery (no git sweep, no markdown/code split, no `--print-width` reasoning) and can be turned off alone.
 
 ## The problem it solves
 
@@ -21,11 +31,11 @@ Valid Org, unreadable as plain text. Emacs realigns it on the next manual edit, 
 
 ## Triggers
 
-The hook is wired to three entries in `settings.json`: `Write|Edit|MultiEdit` and `Bash` on `PostToolUse`, and `Bash` again on `PostToolUseFailure`. It tells them apart by whether the tool payload carries `tool_input.file_path`. On both paths, anything that is not an existing `.org` file is a clean skip.
+The hook runs after each Write, Edit, and Bash call. It tells them apart by whether the call names a file: a Write or an Edit names one in `file_path`, a Bash call names none. On both paths, anything that is not an existing `.org` file is a clean skip.
 
-### Write / Edit / MultiEdit (single file)
+### Write and Edit (one file)
 
-The payload names exactly one file in `tool_input.file_path`. The hook aligns that file.
+The call names exactly one file. The hook aligns that file.
 
 ### Bash (the paths the command names)
 
@@ -33,27 +43,25 @@ A Bash call carries no `file_path`, but a shell command (a heredoc, `sed`, a red
 
 So on the Bash matcher the hook takes every `.org` path the command text names, absolute or relative to the session cwd, and aligns those. It asks git nothing, unlike the markdown sweep in [`format-all-languages`](../format-all-languages/README.md), because a command that writes an Org file names the file. A command that rewrites one without naming it (a script it calls, a `find -exec`) is still missed, and that file stays misaligned until the next `Edit` touches it.
 
-Relative paths resolve against the session cwd, so a `cd` elsewhere in the command can resolve one wrong. The `-f` check makes that a silent miss, or at worst a no-op pass over an already aligned file of the same name.
+Relative paths resolve against the session cwd, so a `cd` elsewhere in the command can resolve one wrong. The file check makes that a silent miss, or at worst a no-op pass over an already aligned file of the same name.
 
 A command names a file it only reads as often as one it writes, and aligning a file the command read is an edit nobody asked for: `sed -n '1,20p' config.org > copy.org` names the live configuration and writes a copy. So a named path counts only when its mtime is inside a 120 s window, the test [`lint-all-languages`](../lint-all-languages/README.md) applies for the same reason. A command that writes early and then runs for minutes falls outside the window and is missed; the upgrade is a `PreToolUse` hook that stamps the start time of the matching call.
 
 #### A Bash command that writes a file and then fails
 
-`PostToolUse` fires only after a tool call **succeeds**. A shell command that exits non-zero raises `PostToolUseFailure` instead, which is a separate event with its own wiring. That misses the write-then-verify pattern, which is most of what a shell command does: `cat > notes.md <<'EOF' ... EOF && just fmt-check` writes the file, fails the check, and the alignment pass never ran.
+A shell command that exits with a code other than 0 can still have written a file: `cat > notes.org <<'EOF' ... EOF && just fmt-check` writes the file, then fails the check. Measured on 2026-09-19 with the old command hook, which Claude Code ran only on `PostToolUse`: the exit 0 file came back realigned, the exit 1 file was untouched. The hook then got a second entry on `PostToolUseFailure`.
 
-Measured on 2026-09-19 with two Bash calls writing the same unaligned table, differing only in the exit code: the exit 0 file came back realigned, the exit 1 file was untouched. So the Bash matcher is wired to both events, and the hook code is identical on each: the payload carries `tool_input.command` either way.
+Each adapter now runs on a failed call too. The mod runs after `next` for each result, pi sends `tool_result` for each result, and Codex runs `PostToolUse` also after a Bash command that exits with a code other than 0. An interrupted command counts too: it can leave a half-written file, and `org-table-align` is safe to run on one.
 
-One detail the code does care about. The amend hint below reports through `hookSpecificOutput`, whose `hookEventName` is the discriminant of a per-event schema. A `PostToolUse` literal sent from a `PostToolUseFailure` run does not match that schema, so the hook reads `.hook_event_name` off the payload and echoes it back rather than hardcoding it.
-
-`PostToolUseFailure` also carries `is_interrupt`, so the sweep runs after you interrupt a shell command as well. That is wanted: an interrupted command can leave a half-written file, and org-table-align is safe to run on one.
+`command.ts` sends the amend hint below as `hookSpecificOutput`, whose `hookEventName` is the discriminant of a schema for each event. So it reads `hook_event_name` from the payload and echoes it back, and uses `PostToolUse` only when the payload has none.
 
 #### Write and commit in one command
 
-A single Bash call can write a file, commit it, and push it. Aligning the file afterwards fixes the file, not the commit: the commit still holds the unaligned version, and the working tree is now dirty. Only Claude can amend, so the hook says so, through `hookSpecificOutput.additionalContext` naming the files it changed. In a Claude session, the [`format-staged-files`](../format-staged-files/README.md) pre-commit hook aligns the file before the commit, so this notice appears only when that hook skipped the file: a file with unstaged changes, a `--no-verify` commit, or a session without `CLAUDECODE`. A test of the notice must turn that hook off, or the notice never appears.
+A single Bash call can write a file, commit it, and push it. Aligning the file afterwards fixes the file, not the commit: the commit still holds the unaligned version, and the working tree is now dirty. Only the agent can amend, so the hook tells the model, with a hint that names the files Emacs changed: `context` in the mod, an appended text block in pi, and `hookSpecificOutput.additionalContext` in Codex. In an agent session, the [`format-staged-files`](../../../dot_config/git/hooks/format-staged-files/README.md) pre-commit hook aligns the file before the commit, so this notice appears only when that hook skipped the file: a file with unstaged changes, a `--no-verify` commit, or a machine with no `node` for git. A test of the notice must turn that hook off, or the notice never appears.
 
-Two conditions gate the hint, and both are needed. The file has to be one Emacs itself rewrote, which is a `cksum` of every target before the run against the same list after it. And the file has to be one the last commit holds, which is `git diff-tree --no-commit-id --name-only -r --root HEAD`; `--root` is what makes the first commit of a repo answer, since it has no `HEAD~1`. A file outside a repo answers nothing and does not report.
+Two conditions gate the hint, and both are needed. The file has to be one Emacs itself rewrote, which is a compare of the text of each target before and after the run. And the file has to be one the last commit holds, which is `git diff-tree --no-commit-id --name-only -r --root HEAD`; `--root` is what makes the first commit of a repo answer, since it has no `HEAD~1`. A file outside a repo answers nothing and does not report.
 
-The first condition replaced a `git diff --quiet` test on the working tree, which could not tell the hook's own alignment from a change that was already there. A second session editing the same file, or an unrelated edit of the same file earlier in the session, made the hook report a commit that held nothing to amend, and following the hint would have folded another author's work into Claude's commit.
+The first condition replaced a `git diff --quiet` test on the working tree, which could not tell the hook's own alignment from a change that was already there. A second session editing the same file, or an unrelated edit of the same file earlier in the session, made the hook report a commit that held nothing to amend, and following the hint would have folded another author's work into the agent's commit.
 
 ## One Emacs run for every file
 
@@ -95,21 +103,27 @@ The pass is idempotent. An already-aligned file comes out byte-identical.
 
 ## Files without tables
 
-Before starting Emacs at all, the hook greps the file for a line beginning with `|`. No match means no table, so there is nothing to align and the hook exits: 0.02s instead of 1.4s. Most Org files are prose, so this is the common case. The grep is deliberately loose (a `|` inside an `#+begin_example` block is enough to pass it); it only decides whether starting Emacs is worthwhile, and `org-at-table-p` makes the real per-table decision.
+Before starting Emacs at all, the hook reads the file and looks for a line that starts with `|`. No match means no table, so there is nothing to align and the hook stops: 0.02s instead of 1.4s. Most Org files are prose, so this is the common case. The test is deliberately loose (a `|` inside an `#+begin_example` block is enough to pass it); it only decides whether starting Emacs is worthwhile, and `org-at-table-p` makes the real per-table decision.
 
 ## Throwaway files
 
-A path under `/tmp`, `/var/tmp` or `$TMPDIR` is skipped: Claude's scratchpad lives there, and a file it is about to throw away is not project prose. macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/...`, and the path a payload carries holds that prefix while `$TMPDIR` does not, so both sides of the comparison drop a leading `/private`.
+A path under `/tmp`, `/var/tmp` or `$TMPDIR` is skipped: the scratchpad of the agent lives there, and a file it is about to throw away is not project prose. macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/...`, and the path a payload carries holds that prefix while `$TMPDIR` does not, so both sides of the comparison drop a leading `/private`.
 
 ## `--no-init-file` is required
 
-Without it, Emacs loads the user's full init (Doom, in this setup) on every hook run, and the hook goes from ~1.4s to far past its timeout. With it, only bundled Org loads. The ~1.4s is almost entirely Emacs startup; the alignment work itself is negligible, which is why the `settings.json` timeouts are 5s on the edit matcher and 10s on each Bash matcher, where the file list can be longer.
+Without it, Emacs loads the user's full init (Doom, in this setup) on every hook run, and the hook goes from ~1.4s to far past its timeout. With it, only bundled Org loads. The ~1.4s is almost entirely Emacs startup; the alignment work itself is negligible, which is why the core stops Emacs after 10 s. Codex stops `command.ts` after 10 s, the `timeout` of its entry.
 
-## Never blocks Claude
+## Never blocks
 
-Always exits `0`. A missing `emacs` or `jq` self-disables the hook (the `command -v` checks bail cleanly), and any Emacs failure is swallowed with the file left untouched. A formatter should reshape working files, not reject an edit.
+The hook never blocks a call and never marks a result as an error. A missing `emacs` or a failed Emacs run leaves the file as it is. A formatter should reshape working files, not reject an edit.
 
-Emacs batch runs emit a harmless locale warning on `stderr` (`LANG=… cannot be used, using en_US.UTF-8 instead`); the hook silences `stderr` along with everything else, so it never surfaces as hook noise.
+| Adapter      | On a failure                                                                                  |
+| ------------ | --------------------------------------------------------------------------------------------- |
+| Mod          | Claude Code skips a hook that throws, and the result stands.                                  |
+| `pi.ts`      | The handler catches the error and returns nothing.                                            |
+| `command.ts` | Node exits 1, which Codex shows as a failed hook and does not block. A missing Emacs exits 0. |
+
+Emacs batch runs emit a harmless locale warning on `stderr` (`LANG=… cannot be used, using en_US.UTF-8 instead`); the hook drops the stderr of Emacs, so it never shows as hook noise.
 
 ## Installing Emacs
 
@@ -119,12 +133,36 @@ Any `emacs` on `PATH` works, and Org mode is bundled with it, so there is nothin
 brew install emacs
 ```
 
-Tested against GNU Emacs 30.2. Without Emacs installed the hook is a no-op.
+Tested against GNU Emacs 30.1 and 30.2. Without Emacs installed the hook does nothing.
+
+## Requirements
+
+- **Emacs** on `PATH`, see above.
+- **git**, for the amend hint.
+- **Node 23.6 or later** for `command.ts`, which Codex and `format-staged-files` run. With no `node`, the Codex entry exits 0. The mod and `pi.ts` need no `node` of their own.
 
 ## Tests
 
-`test/test.sh` runs the hook against both matchers with a fixture under `$HOME`, not under `$TMPDIR`, where the hook would skip it: the file an edit names, a file that is not `.org`, a path that does not exist, a second pass over an aligned file, the backup litter, a file in a temp directory, a `|` line inside a block, a `#+TBLFM` formula, a relative and two absolute paths in a command, a command that names no `.org` file, a path the command only read, the amend notice after a commit, and no notice for a file the run left alone. It needs `jq`, `emacs`, and `git`, and skips loudly without them.
-
 ```sh
-bash test/test.sh
+node test/check.ts
 ```
+
+[`test/check.ts`](test/check.ts) runs `command.ts` with the real Emacs and git, in a fixture under `$HOME`, because the hook skips `/tmp` and `$TMPDIR`:
+
+- **A Write or Edit:** the named file, a file that is not `.org`, a path that does not exist, a second pass over an aligned file, no backup files, a file in a temp folder, a `|` line inside a block, a `#+TBLFM` formula, and a link at its raw width.
+- **A Bash call:** a relative and two absolute paths in a command, a command that names no `.org` file, a path that does not exist, and a path the command only read.
+- **The amend hint:** after a commit, and none for a file the run left alone or without a commit.
+- **The adapters:** `pi.ts` and `hooks/register.ts` with stubs over the real files.
+
+The check turns off `format-staged-files` with `GIT_CONFIG_*` variables, and skips with a message when git or Emacs is missing.
+
+## Files
+
+| File                                                             | Role                                                          |
+| ---------------------------------------------------------------- | ------------------------------------------------------------- |
+| [`core.ts`](core.ts)                                             | Finds the files and runs Emacs. No Node imports.              |
+| [`io.ts`](io.ts)                                                 | The file and process functions of the core under Node         |
+| [`command.ts`](command.ts)                                       | The command hook for Codex and `format-staged-files`          |
+| [`pi.ts`](pi.ts)                                                 | The pi and omp extension                                      |
+| [`hooks/register.ts`](hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                           |
+| [`dot_claude-plugin/plugin.json`](dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json` |

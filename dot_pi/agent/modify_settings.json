@@ -33,7 +33,9 @@ ours=$(
     "~/.claude/hooks/enforce-cli-tools/pi.ts",
     "~/.claude/hooks/lint-all-languages/pi.ts",
     "~/.claude/hooks/block-commit-attribution/pi.ts",
-    "~/.claude/hooks/block-secret-commits/pi.ts"
+    "~/.claude/hooks/block-secret-commits/pi.ts",
+    "~/.claude/hooks/format-all-languages/pi.ts",
+    "~/.claude/hooks/format-org-tables/pi.ts"
   ],
   "enabledModels": [
     "openrouter/deepseek/deepseek-v4.1-flash",

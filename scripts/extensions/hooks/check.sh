@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Check the hooks in dot_claude/hooks that have moved to TypeScript:
 #   1. tsc over each mod (hooks/register.ts) against the Claude Code types,
-#   2. tsc over each pi and Codex adapter (pi.ts, command.ts) and the Codex
-#      wrappers in dot_codex/hooks against the pi types,
+#   2. tsc over each pi and Codex adapter (pi.ts, command.ts), the Codex
+#      wrappers in dot_codex/hooks, and the git hooks in dot_config/git/hooks
+#      against the pi types,
 #   3. `claude plugin validate` over each mod, which catches what tsc cannot,
 #      such as `$` passed as a value,
-#   4. node over each test/check.ts and over dot_codex/hooks/test/apply-patch.ts.
+#   4. node over each test/check.ts of both hook folders and over
+#      dot_codex/hooks/test/apply-patch.ts.
 #
 # Both sets of types differ per machine, so the tsconfigs are generated here.
 set -euo pipefail
@@ -14,6 +16,7 @@ shopt -s nullglob
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 HOOKS="${REPO}/dot_claude/hooks"
 CODEX_HOOKS="${REPO}/dot_codex/hooks"
+GIT_HOOKS="${REPO}/dot_config/git/hooks"
 
 for tool in claude node tsc; do
   command -v "${tool}" >/dev/null || {
@@ -74,13 +77,13 @@ cat >"${WORK}/node.tsconfig.json" <<JSON
     "types": [],
     "paths": { "@earendil-works/pi-coding-agent": ["${PI_PACKAGE}/dist/index.d.ts"] }
   },
-  "include": ["${HOOKS}/*/pi.ts", "${HOOKS}/*/command.ts", "${CODEX_HOOKS}/*.ts", "${CODEX_HOOKS}/test/*.ts"]
+  "include": ["${HOOKS}/*/pi.ts", "${HOOKS}/*/command.ts", "${CODEX_HOOKS}/*.ts", "${CODEX_HOOKS}/test/*.ts", "${GIT_HOOKS}/*/main.ts", "${GIT_HOOKS}/*/test/*.ts"]
 }
 JSON
 
 echo "==> tsc mods ($(head -1 "${CLAUDE_CODE_TYPES}/claude-code/index.d.ts" | sed 's|^// ||'))"
 tsc -p "${WORK}/mod.tsconfig.json"
-echo "==> tsc pi and Codex adapters"
+echo "==> tsc pi, Codex, and git adapters"
 tsc -p "${WORK}/node.tsconfig.json"
 
 # validate reads .claude-plugin/, which chezmoi names dot_claude-plugin/ in the
@@ -97,8 +100,8 @@ for manifest in "${HOOKS}"/*/dot_claude-plugin/plugin.json; do
   }
 done
 
-for check in "${HOOKS}"/*/test/check.ts; do
-  echo "==> ${check#"${HOOKS}"/}"
+for check in "${HOOKS}"/*/test/check.ts "${GIT_HOOKS}"/*/test/check.ts; do
+  echo "==> ${check#"${REPO}"/}"
   (cd "${check%/test/check.ts}" && node test/check.ts)
 done
 echo "==> dot_codex/hooks/test/apply-patch.ts"

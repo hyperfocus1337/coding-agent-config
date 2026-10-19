@@ -9,7 +9,7 @@
   },
   "env": {
     "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1",
-    "CLAUDE_CODE_PLUGIN_DIRS": "{{ range $i, $hook := list "enforce-cli-tools" "lint-all-languages" "block-commit-attribution" }}{{ if $i }}:{{ end }}{{ $.chezmoi.homeDir }}/.claude/hooks/{{ $hook }}{{ end }}",
+    "CLAUDE_CODE_PLUGIN_DIRS": "{{ range $i, $hook := list "enforce-cli-tools" "lint-all-languages" "block-commit-attribution" "format-all-languages" "format-org-tables" }}{{ if $i }}:{{ end }}{{ $.chezmoi.homeDir }}/.claude/hooks/{{ $hook }}{{ end }}",
     "CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS": "300000",
     "ENABLE_LSP_TOOL": "1",
     "ENABLE_PROMPT_CACHING_1H": "1"
@@ -47,16 +47,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/format-all-languages/hook.sh\"",
-            "timeout": 20
-          },
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/format-org-tables/hook.sh\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
             "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/track-session-changes/hook.ts\" claude",
             "timeout": 10
           }
@@ -75,16 +65,6 @@
       {
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/format-all-languages/hook.sh\"",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/format-org-tables/hook.sh\"",
-            "timeout": 5
-          },
           {
             "type": "command",
             "command": "bash \"$HOME/.claude/hooks/lint-prose/hook.sh\"",
@@ -124,16 +104,6 @@
       {
         "matcher": "Bash",
         "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/format-all-languages/hook.sh\"",
-            "timeout": 20
-          },
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/format-org-tables/hook.sh\"",
-            "timeout": 10
-          },
           {
             "type": "command",
             "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/track-session-changes/hook.ts\" claude",

@@ -1,6 +1,8 @@
-# Claude Code agent sessions: format staged files before each commit.
-# The hook exits at once outside Claude Code (CLAUDECODE unset).
-# Source: coding-agent-config, dot_claude/hooks/format-staged-files/
+# Agent sessions: format staged files before each commit. The hook exits at
+# once outside an agent (Claude Code, pi, omp, or Codex), and the command
+# exits 0 when node is missing or fails, so it never stops a commit. The
+# value is in quotes, because git reads a `;` outside quotes as a comment.
+# Source: coding-agent-config, dot_config/git/hooks/format-staged-files/
 [hook "claude-format-staged"]
 	event = pre-commit
-	command = bash \"$HOME/.claude/hooks/format-staged-files/hook.sh\"
+	command = "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.config/git/hooks/format-staged-files/main.ts\" || true"

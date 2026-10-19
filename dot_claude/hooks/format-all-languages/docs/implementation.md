@@ -4,6 +4,8 @@ Why the hook is wired to the events it is wired to, and which other events were 
 
 Read from the Claude Code 2.1.278 binary and from the hook itself on 2026-09-19. The Stop-payload behaviour below was run, not reasoned about; the rest is a design argument, not a measurement.
 
+On 2026-10-19 the hook moved from `hook.sh` to TypeScript. In Claude Code it is now a mod on `tool.call`, which runs after each Write, Edit, and Bash result, also a failed one. The sections below name `hook.sh` and the `settings.json` entries of that time. The arguments for each event still hold.
+
 ## Why PostToolUse, and not Stop
 
 [`type-check-all-languages`](../../type-check-all-languages/README.md) moved from `PostToolUse` to `Stop` because it is loud and project-wide: it reran the whole project after every edit and reprinted the same unrelated errors each time. That argument does not carry over to this hook, for two reasons.

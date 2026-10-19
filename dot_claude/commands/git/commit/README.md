@@ -64,7 +64,7 @@ Before that, it runs `git add -N -- <paths>` once: without an index entry, `git 
 
 The method has these limits:
 
-- `git commit-tree` runs no hooks: no `pre-commit`, no `commit-msg`, and no [`format-staged-files`](../../../hooks/format-staged-files/README.md). The `PostToolUse` formatters already ran when the session edited the files, and `parallel` writes no files.
+- `git commit-tree` runs no hooks: no `pre-commit`, no `commit-msg`, and no [`format-staged-files`](../../../../dot_config/git/hooks/format-staged-files/README.md). The `PostToolUse` formatters already ran when the session edited the files, and `parallel` writes no files.
 - `git commit-tree` ignores `commit.gpgSign`. To sign, add `-S` to the `commit-tree` step.
 - `git reset -q -- <paths>` also unstages changes that you staged yourself in those paths. The changes stay in the working tree.
 - The safety holds only while every session that commits uses `parallel`. A session that stages in the shared index can still put the hunks of another session in its commit.

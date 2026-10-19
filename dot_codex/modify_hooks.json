@@ -19,12 +19,12 @@ ours=$(cat <<'EOF'
       {
         "hooks": [
           {
-            "command": "bash \"$HOME/.claude/hooks/format-all-languages/hook.sh\"",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/format-all-languages/command.ts\"",
             "timeout": 20,
             "type": "command"
           },
           {
-            "command": "bash \"$HOME/.claude/hooks/format-org-tables/hook.sh\"",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/format-org-tables/command.ts\"",
             "timeout": 10,
             "type": "command"
           },
@@ -44,12 +44,12 @@ ours=$(cat <<'EOF'
       {
         "hooks": [
           {
-            "command": "bash \"$HOME/.codex/hooks/apply-patch.sh\" \"$HOME/.claude/hooks/format-all-languages/hook.sh\"",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.codex/hooks/apply-patch.ts\" \"$HOME/.claude/hooks/format-all-languages/command.ts\"",
             "timeout": 20,
             "type": "command"
           },
           {
-            "command": "bash \"$HOME/.codex/hooks/apply-patch.sh\" \"$HOME/.claude/hooks/format-org-tables/hook.sh\"",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.codex/hooks/apply-patch.ts\" \"$HOME/.claude/hooks/format-org-tables/command.ts\"",
             "timeout": 10,
             "type": "command"
           },

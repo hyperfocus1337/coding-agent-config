@@ -1,0 +1,5 @@
+{
+  "name": "format-org-tables",
+  "version": "0.1.0",
+  "description": "Aligns the Org tables in the .org files a Write, Edit, or Bash call changed, with batch Emacs."
+}

@@ -5,3 +5,6 @@
 .claude/hooks/lint-all-languages/hook.sh
 .claude/hooks/block-commit-attribution/hook.sh
 .claude/hooks/block-secret-commits/hook.sh
+.claude/hooks/format-all-languages/hook.sh
+.claude/hooks/format-org-tables/hook.sh
+.claude/hooks/format-staged-files

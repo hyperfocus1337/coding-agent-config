@@ -12,9 +12,9 @@ Written on 2026-10-18, with Claude Code 2.1.302, pi 1.1.0, omp 18.10.3, Codex 0.
 | `lint-all-languages`       | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
 | `block-commit-attribution` | Moved. Live in Claude Code, pi, and omp. Not wired in Codex.         |
 | `block-secret-commits`     | Moved. Claude Code and Codex run `command.ts`. Live in pi and omp.   |
-| `format-all-languages`     | Not started                                                          |
-| `format-org-tables`        | Not started                                                          |
-| `format-staged-files`      | Not started. Moves to `dot_config/git/hooks/`.                       |
+| `format-all-languages`     | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
+| `format-org-tables`        | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
+| `format-staged-files`      | Moved to `dot_config/git/hooks/`. Runs for each agent.               |
 | `lint-prose`               | Not started                                                          |
 | `type-check-all-languages` | Not started                                                          |
 | `track-session-changes`    | Not started. Needs an async core and a spike first, see its section. |
@@ -147,7 +147,7 @@ This is a git `pre-commit` hook, not an agent hook. It moves to `dot_config/git/
 - **Agent detection (Q25):** runs when any of these is set: `CLAUDECODE=1`, `PI_CODING_AGENT=true`, `OMPCODE=1`, or `CODEX_THREAD_ID`. Today only `CLAUDECODE=1` counts, so pi and Codex commits are not formatted.
 - **Flow, unchanged:** list the staged files with `git diff --cached --name-only --diff-filter=ACMR -z`, skip symlinks and files with unstaged changes, run both formatters, and `git add` a file that changed. `GIT_INDEX_FILE` and the other git variables pass to each child.
 - **Formatters (Q24):** runs `node ~/.claude/hooks/<formatter>/command.ts` with a Write payload on stdin. That costs about 18 ms for each file and formatter. A commit of 5 files adds about 180 ms.
-- **Wiring:** `dot_config/git/config` changes its `command` to `node "$HOME/.config/git/hooks/format-staged-files/main.ts"`.
+- **Wiring:** `dot_config/git/config` changes its `command` to `node "$HOME/.config/git/hooks/format-staged-files/main.ts"`, behind `command -v node >/dev/null || exit 0` and with `|| true`, so a missing or old `node` never stops a commit.
 
 ### lint-prose
 
