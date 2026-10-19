@@ -14,16 +14,15 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
 The core finds the files that the call changed, then runs the linter for the extension of each file:
 
-| Extension                               | Linter                                                  | Invocation                                | Documentation                                              |
-| --------------------------------------- | ------------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------- |
-| `.py`                                   | [ruff](https://github.com/astral-sh/ruff)               | `ruff check --quiet`                      | https://docs.astral.sh/ruff/                               |
-| `.js` `.jsx` `.ts` `.tsx` `.mjs` `.cjs` | [oxlint](https://github.com/oxc-project/oxc)            | `oxlint`                                  | https://oxc.rs/docs/guide/usage/linter                     |
-| `.sh` `.bash`                           | [shellcheck](https://github.com/koalaman/shellcheck)    | `shellcheck -S warning`                   | https://www.shellcheck.net/wiki/                           |
-| `.yml` `.yaml` (plain)                  | [yamllint](https://github.com/adrienverge/yamllint)     | `yamllint -c config/.yamllint`            | https://yamllint.readthedocs.io/                           |
-| `.yml` `.yaml` (Ansible)                | [ansible-lint](https://github.com/ansible/ansible-lint) | `ansible-lint -c config/.ansible-lint -q` | https://ansible.readthedocs.io/projects/lint/              |
-| `.tf` `.tfvars`                         | [terraform fmt](https://github.com/hashicorp/terraform) | `terraform fmt -check -diff`              | https://developer.hashicorp.com/terraform/cli/commands/fmt |
+| Extension                               | Linter                                                  | Invocation                                | Documentation                                 |
+| --------------------------------------- | ------------------------------------------------------- | ----------------------------------------- | --------------------------------------------- |
+| `.py`                                   | [ruff](https://github.com/astral-sh/ruff)               | `ruff check --quiet`                      | https://docs.astral.sh/ruff/                  |
+| `.js` `.jsx` `.ts` `.tsx` `.mjs` `.cjs` | [oxlint](https://github.com/oxc-project/oxc)            | `oxlint`                                  | https://oxc.rs/docs/guide/usage/linter        |
+| `.sh` `.bash`                           | [shellcheck](https://github.com/koalaman/shellcheck)    | `shellcheck -S warning`                   | https://www.shellcheck.net/wiki/              |
+| `.yml` `.yaml` (plain)                  | [yamllint](https://github.com/adrienverge/yamllint)     | `yamllint -c config/.yamllint`            | https://yamllint.readthedocs.io/              |
+| `.yml` `.yaml` (Ansible)                | [ansible-lint](https://github.com/ansible/ansible-lint) | `ansible-lint -c config/.ansible-lint -q` | https://ansible.readthedocs.io/projects/lint/ |
 
-YAML goes to one of two linters, see [YAML routing](#yaml-routing). A linter that is not installed is skipped, so a linter you do not install does nothing. A linter that exits with a code other than 0 is a failure, and the model gets its output. The mod stops each linter after 30 s, the default of `$.process.run`. Codex stops the whole hook after 15 s.
+YAML goes to one of two linters, see [YAML routing](#yaml-routing). [`format-terraform`](../format-terraform/README.md) formats `.tf` and `.tfvars` files, because `terraform fmt` is a formatter, not a linter. A linter that is not installed is skipped, so a linter you do not install does nothing. A linter that exits with a code other than 0 is a failure, and the model gets its output. The mod stops each linter after 30 s, the default of `$.process.run`. Codex stops the whole hook after 15 s.
 
 ## Bash (the paths the command just wrote)
 
@@ -39,11 +38,11 @@ Every target is linted before the hook exits, so one command reports every file 
 
 ## Turning linters off or tuning them
 
-Set `CLAUDE_LINT_DISABLE` to a space/comma list of keys to skip: `py`, `js`, `sh`, `yaml`, `tf`, or `all` to disable the hook entirely. The hook reads it at run time, so export it in your shell, or set it in `env` in `settings.json`.
+Set `CLAUDE_LINT_DISABLE` to a space/comma list of keys to skip: `py`, `js`, `sh`, `yaml`, or `all` to disable the hook entirely. The hook reads it at run time, so export it in your shell, or set it in `env` in `settings.json`.
 
 ```sh
 export CLAUDE_LINT_DISABLE="yaml"      # stop linting YAML
-export CLAUDE_LINT_DISABLE="yaml,tf"   # skip YAML and Terraform
+export CLAUDE_LINT_DISABLE="yaml,sh"   # skip YAML and shell
 export CLAUDE_LINT_DISABLE="all"       # off
 ```
 

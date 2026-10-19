@@ -128,7 +128,6 @@ await check("each extension runs its linter", async () => {
     ["shellcheck", "-S", "warning", "d.bash"],
     ["yamllint", "-c", "/cfg/.yamllint", "e.yml"],
     ["ansible-lint", "-c", "/cfg/.ansible-lint", "-q", "/r/roles/f.yaml"],
-    ["terraform", "fmt", "-check", "-diff", "g.tfvars"],
   ]);
 });
 await check("ansible by entry-point name and by content", async () => {

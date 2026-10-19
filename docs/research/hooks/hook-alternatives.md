@@ -119,7 +119,6 @@ Prettier cannot format Python, shell, Go, Rust, Terraform, or TOML without a plu
 Notes:
 
 - **oxlint** comes closest to a vendor hook. Its hook fixes and formats, but it exits 0, so in Claude Code the errors that remain do not reach the model ([hooks reference](https://code.claude.com/docs/en/hooks): `PostToolUse` stderr reaches the model only on exit 2). This is a reading of the docs, not a test. oxlint 1.63.0 added `--format=agent`, and from 1.66.0 it picks that format when an agent runs it ([changelog](https://github.com/oxc-project/oxc/blob/main/apps/oxlint/CHANGELOG.md)).
-- **terraform fmt -check is not a linter.** It "formats Terraform configuration file contents so that it matches the canonical format" ([fmt docs](https://developer.hashicorp.com/terraform/cli/commands/fmt)). [tflint](https://github.com/terraform-linters/tflint) is the linter, and `terraform validate` checks consistency but needs `terraform init`. `terraform-ls` reports syntax and validation diagnostics. I found no diagnostic for an unformatted file.
 - No vendor in this table names pi or omp.
 
 ## Codex CLI
@@ -154,17 +153,17 @@ The default server list includes pyright, basedpyright, ty, ruff, `typescript-la
 
 ## Candidates
 
-| Candidate                               | Maintainer          | Agents                     | Trigger                           | Blocks      | It lacks                                                                                         | It adds                                        |
-| --------------------------------------- | ------------------- | -------------------------- | --------------------------------- | ----------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
-| `pyright-lsp`, `typescript-lsp`         | Anthropic           | Claude Code                | Edit and Write, server push       | No          | Bash writes, whole-project check, a block at the stop, pyrefly. `typescript-lsp` needs TS 6      | Errors after each edit, symbol navigation      |
-| `astral` (ty LSP, skills)               | Astral              | Claude Code                | Edit and Write; skills on request | No          | ruff check, a block, Bash writes                                                                 | ty diagnostics                                 |
-| pyrefly Stop hook snippet               | pyrefly (blog)      | Claude Code                | `Stop`                            | Yes, exit 2 | git scoping, loop guard, Codex, pi, omp                                                          | None that the hook here lacks                  |
-| Claude Code docs Prettier hook          | Anthropic (example) | Claude Code                | `PostToolUse` `Edit\|Write`       | No          | Bash sweep, amend hint, `--prose-wrap preserve`, ignore rules, extension filter                  | None                                           |
-| oxc coding-agents hook                  | Oxc                 | Claude Code; Codex as text | `PostToolUse` `Edit\|Write`       | No          | Error report to the model, other languages, Bash writes                                          | `--fix` and oxfmt                              |
-| Ansible MCP `ansible_lint`              | Red Hat (preview)   | Claude Code and others     | Model calls the tool              | No          | Automatic run after an edit                                                                      | Structured findings, `fix`                     |
-| `hashicorp/agent-skills`, terraform MCP | HashiCorp           | Claude Code, Codex         | Skill, or model calls a tool      | No          | Automatic run, local fmt or lint in the MCP server                                               | Registry and style guidance                    |
-| omp built-in LSP                        | omp                 | omp                        | `write` (and `edit` if set)       | No          | pyrefly, oxlint, shellcheck, yamllint, ansible-lint, `fmt -check`, Prettier, a block at the stop | Diagnostics in the tool result, LSP formatting |
-| pi community packages                   | Community           | pi                         | `tool_result`, stop               | Some        | Not read from source                                                                             | Several tools in one package                   |
+| Candidate                               | Maintainer          | Agents                     | Trigger                           | Blocks      | It lacks                                                                                            | It adds                                        |
+| --------------------------------------- | ------------------- | -------------------------- | --------------------------------- | ----------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `pyright-lsp`, `typescript-lsp`         | Anthropic           | Claude Code                | Edit and Write, server push       | No          | Bash writes, whole-project check, a block at the stop, pyrefly. `typescript-lsp` needs TS 6         | Errors after each edit, symbol navigation      |
+| `astral` (ty LSP, skills)               | Astral              | Claude Code                | Edit and Write; skills on request | No          | ruff check, a block, Bash writes                                                                    | ty diagnostics                                 |
+| pyrefly Stop hook snippet               | pyrefly (blog)      | Claude Code                | `Stop`                            | Yes, exit 2 | git scoping, loop guard, Codex, pi, omp                                                             | None that the hook here lacks                  |
+| Claude Code docs Prettier hook          | Anthropic (example) | Claude Code                | `PostToolUse` `Edit\|Write`       | No          | Bash sweep, amend hint, `--prose-wrap preserve`, ignore rules, extension filter                     | None                                           |
+| oxc coding-agents hook                  | Oxc                 | Claude Code; Codex as text | `PostToolUse` `Edit\|Write`       | No          | Error report to the model, other languages, Bash writes                                             | `--fix` and oxfmt                              |
+| Ansible MCP `ansible_lint`              | Red Hat (preview)   | Claude Code and others     | Model calls the tool              | No          | Automatic run after an edit                                                                         | Structured findings, `fix`                     |
+| `hashicorp/agent-skills`, terraform MCP | HashiCorp           | Claude Code, Codex         | Skill, or model calls a tool      | No          | Automatic run, local fmt or lint in the MCP server                                                  | Registry and style guidance                    |
+| omp built-in LSP                        | omp                 | omp                        | `write` (and `edit` if set)       | No          | pyrefly, oxlint, shellcheck, yamllint, ansible-lint, `terraform fmt`, Prettier, a block at the stop | Diagnostics in the tool result, LSP formatting |
+| pi community packages                   | Community           | pi                         | `tool_result`, stop               | Some        | Not read from source                                                                                | Several tools in one package                   |
 
 ## Consequences for the hooks here
 
@@ -178,9 +177,9 @@ The default server list includes pyright, basedpyright, ty, ruff, `typescript-la
 
 The old name `format-all-languages` was not accurate, because the hook runs Prettier on a fixed list of extensions and does no other language. The hook is now `format-prettier`, and its list now has `.mts` and `.cts`, which Prettier formats natively.
 
-**`lint-all-languages`: no candidate replaces it, and only a part could move.** No vendor ships a hook that reports lint errors to the model after an edit. In Claude Code, local `.lsp.json` servers (`ruff server`, `oxlint --lsp`, `bash-language-server start`) would deliver per-file diagnostics after Edit and Write, without a block and without Bash writes. In omp, the built-in ruff, eslint, biome, bash, and terraform-ls servers do the same after `write`. Codex and pi would still need the hook, and no server covers yamllint, ansible-lint, or `terraform fmt -check` in all four agents.
+**`lint-all-languages`: no candidate replaces it, and only a part could move.** No vendor ships a hook that reports lint errors to the model after an edit. In Claude Code, local `.lsp.json` servers (`ruff server`, `oxlint --lsp`, `bash-language-server start`) would deliver per-file diagnostics after Edit and Write, without a block and without Bash writes. In omp, the built-in ruff, eslint, biome, bash, and terraform-ls servers do the same after `write`. Codex and pi would still need the hook, and no server covers yamllint or ansible-lint in all four agents.
 
-The `tf` entry checks format, not lint. Either name it as a format check or add tflint. A split into a per-file "lint" hook and a separate format check is possible, but no external candidate makes that split necessary.
+The `tf` entry checked format, not lint. It is now the [`format-terraform`](../../../dot_claude/hooks/format-terraform/README.md) hook, which runs `terraform fmt` without `-check`, and `lint-all-languages` does not check Terraform.
 
 ## Not verified
 

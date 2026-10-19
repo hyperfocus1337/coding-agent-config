@@ -20,7 +20,7 @@ export interface Io {
 export interface Settings {
   /** The folder of the bundled .yamllint and .ansible-lint. */
   configDir: string;
-  /** CLAUDE_LINT_DISABLE: keys (py js sh yaml tf) or "all", space or comma. */
+  /** CLAUDE_LINT_DISABLE: keys (py js sh yaml) or "all", space or comma. */
   disable?: string;
   /** TMPDIR: files under it are throwaway and not linted. */
   tmpdir?: string;
@@ -34,8 +34,7 @@ export interface Call {
 }
 
 /** A path a Bash command names, by the extensions this hook lints. */
-const NAMED =
-  /[^\s:;|&"'`()<>=]+\.(?:py|jsx?|tsx?|mjs|cjs|sh|bash|ya?ml|tfvars|tf)\b/g;
+const NAMED = /[^\s:;|&"'`()<>=]+\.(?:py|jsx?|tsx?|mjs|cjs|sh|bash|ya?ml)\b/g;
 
 /**
  * The files to lint. A Write or Edit: the one file it names. A Bash call: the
@@ -124,11 +123,6 @@ async function linter(file: string, io: Io, settings: Settings) {
       return (await isAnsible(file, io))
         ? ["ansible-lint", "-c", `${config}/.ansible-lint`, "-q", file]
         : ["yamllint", "-c", `${config}/.yamllint`, file];
-    case "tf":
-    case "tfvars":
-      return disabled("tf")
-        ? undefined
-        : ["terraform", "fmt", "-check", "-diff", file];
   }
   return undefined;
 }

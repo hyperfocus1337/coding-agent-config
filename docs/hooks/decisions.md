@@ -42,6 +42,10 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 **Decision:** `format-prettier` replaces `format-all-languages`, and `lint-all-languages` keeps its name and stays one hook. **Why:** Prettier formats only its own languages, not Python, shell, or Terraform, so "all languages" was not accurate. `lint-all-languages` runs 6 tools, and a split by language would make about 5 copies of the adapters and the test setup, as the type-check split did. **Cost:** a rename changes the Codex hook entries, so you must trust them again in the Codex TUI.
 
+## terraform fmt runs in a format hook, not in the lint hook
+
+**Decision:** `format-terraform` runs `terraform fmt` on each changed `.tf` and `.tfvars` file, and `lint-all-languages` no longer checks Terraform. **Why:** `terraform fmt` is a formatter. As `terraform fmt -check -diff` in the lint hook, it blocked the call and the model fixed the spaces by hand, which cost a turn. As a format hook, it fixes the file and the model gets no message, as with `format-prettier` and `format-org-tables`. **Cost:** a new hook folder with its own adapters and test, about 300 lines that copy `format-org-tables`. Nothing reports a Terraform file that does not parse: `terraform validate` and tflint check a whole module, not one file.
+
 ## track-session-changes runs as a mod
 
 **Decision:** the core is async over an `Io` object, so that Claude Code runs it as a mod. The other option was to keep `node hook.ts` as a command hook. **Why:** the mod took 9 to 30 ms for each side of a Bash call, against 27 to 57 ms for the command hook. **Cost:** the mod runs `git hash-object`, `ln`, `cp -p`, `mv`, `rm -rf`, and `sh -c 'cat >>'` for what `$.fs` cannot do. See [`track-session-changes/docs/implementation.md`](../../dot_claude/hooks/track-session-changes/docs/implementation.md).

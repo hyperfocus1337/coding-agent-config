@@ -41,8 +41,8 @@ Codex sends Claude's hook payload with Claude's tool name `Bash`, so the scripts
 | Event         | Matcher       | Hooks                                                                                           |
 | ------------- | ------------- | ----------------------------------------------------------------------------------------------- |
 | `PreToolUse`  | `Bash`        | `block-secret-commits`, `enforce-cli-tools`                                                     |
-| `PostToolUse` | `Bash`        | `format-prettier`, `format-org-tables`, `lint-all-languages`                                    |
-| `PostToolUse` | `apply_patch` | the same three and `lint-prose`, through `apply-patch.ts`                                       |
+| `PostToolUse` | `Bash`        | `format-prettier`, `format-org-tables`, `format-terraform`, `lint-all-languages`                |
+| `PostToolUse` | `apply_patch` | the same four and `lint-prose`, through `apply-patch.ts`                                        |
 | `Stop`        |               | `type-check-tsc`, `type-check-pyrefly`; Codex sends `stop_hook_active`, so the loop guard works |
 
 Codex has no `PostToolUseFailure` event, and does not need one for Bash: a command that exits non-zero is a successful tool result, so `PostToolUse` fires and the file hooks run (Codex 0.163.0 source, `tools/registry.rs`). A failed `apply_patch` gets no `PostToolUse`. See [`hook-events.md`](../research/hooks/hook-events.md#codex).

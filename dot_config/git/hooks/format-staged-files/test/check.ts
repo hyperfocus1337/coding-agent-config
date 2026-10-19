@@ -5,7 +5,8 @@
  * the check runs this source and not the deployed copy.
  *
  * Run: node test/check.ts, from the hook folder. Needs git and Prettier; the
- * Org case also needs Emacs and skips alone without it.
+ * Org case also needs Emacs, and the Terraform case terraform. Each skips
+ * alone without its program.
  */
 
 import assert from "node:assert/strict";
@@ -42,6 +43,10 @@ for (const [link, target] of [
   [
     ".claude/hooks/format-org-tables",
     `${repo}/dot_claude/hooks/format-org-tables`,
+  ],
+  [
+    ".claude/hooks/format-terraform",
+    `${repo}/dot_claude/hooks/format-terraform`,
   ],
 ]) {
   fs.mkdirSync(path.dirname(`${home}/${link}`), { recursive: true });
@@ -152,6 +157,17 @@ else {
   git(["commit", "-q", "-m", "org"]);
   check("an Org table is committed aligned", () =>
     assert.equal(committed("t.org").split("\n")[0], "| a    | bbbb |"),
+  );
+}
+
+if (spawnSync("terraform", ["version"]).error)
+  console.log("SKIP no terraform on PATH: Terraform case");
+else {
+  write("main.tf", "a   = 1\nbb = 2\n");
+  git(["add", "main.tf"]);
+  git(["commit", "-q", "-m", "tf"]);
+  check("a Terraform file is committed formatted", () =>
+    assert.equal(committed("main.tf"), "a  = 1\nbb = 2\n"),
   );
 }
 

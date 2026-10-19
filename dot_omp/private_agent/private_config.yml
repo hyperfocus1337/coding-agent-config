@@ -22,6 +22,7 @@ extensions:
   - ~/.claude/hooks/block-secret-commits/pi.ts
   - ~/.claude/hooks/format-prettier/pi.ts
   - ~/.claude/hooks/format-org-tables/pi.ts
+  - ~/.claude/hooks/format-terraform/pi.ts
   - ~/.claude/hooks/lint-prose/pi.ts
   - ~/.claude/hooks/type-check-tsc/pi.ts
   - ~/.claude/hooks/type-check-pyrefly/pi.ts

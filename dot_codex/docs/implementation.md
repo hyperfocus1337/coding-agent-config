@@ -20,7 +20,7 @@ The project rule of this repository takes a different route: `CODEX.md` at the r
 
 ### The problem
 
-The file hooks `format-prettier`, `format-org-tables`, `lint-all-languages`, and `lint-prose` must know which file changed. Claude Code tells them. Codex does not.
+The file hooks `format-prettier`, `format-org-tables`, `format-terraform`, `lint-all-languages`, and `lint-prose` must know which file changed. Claude Code tells them. Codex does not.
 
 When Claude Code edits a file, it uses the Write or Edit tool. The hook gets the file path:
 
@@ -42,7 +42,7 @@ Codex has no Write or Edit tool. It edits every file through one tool, `apply_pa
 With no `file_path`, each hook takes its Bash branch, which guesses the files from a shell command:
 
 - `format-prettier` formats only the markdown files that git shows as changed. It skips `src/app.py`.
-- `lint-all-languages` and `format-org-tables` search the text for strings that look like file names. A patch is not a shell command, so they miss files or pick wrong ones.
+- `lint-all-languages`, `format-org-tables`, and `format-terraform` search the text for strings that look like file names. A patch is not a shell command, so they miss files or pick wrong ones.
 - `lint-prose` has no Bash branch, so it checks nothing.
 
 Without the wrapper, most files that Codex edits are not formatted or linted.
