@@ -11,3 +11,6 @@
 .claude/hooks/lint-prose/hook.sh
 .codex/hooks/apply-patch.sh
 .claude/hooks/type-check-all-languages/hook.sh
+.claude/hooks/track-session-changes/hook.ts
+.pi/agent/extensions/track-session-changes
+.omp/agent/extensions/track-session-changes

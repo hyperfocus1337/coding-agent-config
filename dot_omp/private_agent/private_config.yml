@@ -24,3 +24,4 @@ extensions:
   - ~/.claude/hooks/format-org-tables/pi.ts
   - ~/.claude/hooks/lint-prose/pi.ts
   - ~/.claude/hooks/type-check-all-languages/pi.ts
+  - ~/.claude/hooks/track-session-changes/pi.ts

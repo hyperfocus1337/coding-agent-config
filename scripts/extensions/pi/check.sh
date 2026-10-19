@@ -49,8 +49,6 @@ done
 WORK="$(mktemp -d)"
 trap 'rm -rf "${WORK}"' EXIT
 
-# track-session-changes imports ./core.ts, which is the chezmoi link
-# symlink_core.ts in the repository. rootDirs makes tsc find it in the hook.
 cat >"${WORK}/tsconfig.json" <<JSON
 {
   "compilerOptions": {
@@ -62,7 +60,6 @@ cat >"${WORK}/tsconfig.json" <<JSON
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "types": [],
-    "rootDirs": ["${EXTENSIONS}/track-session-changes", "${REPO}/dot_claude/hooks/track-session-changes"],
     "paths": {
       "@earendil-works/pi-coding-agent": ["${PI_TYPES}"],
       "@earendil-works/pi-tui": ["${PI_TUI_TYPES}"]

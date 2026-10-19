@@ -6,18 +6,18 @@ Written on 2026-10-18, with Claude Code 2.1.302, pi 1.1.0, omp 18.10.3, Codex 0.
 
 ## Status
 
-| Hook                       | State                                                                |
-| -------------------------- | -------------------------------------------------------------------- |
-| `enforce-cli-tools`        | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
-| `lint-all-languages`       | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
-| `block-commit-attribution` | Moved. Live in Claude Code, pi, and omp. Not wired in Codex.         |
-| `block-secret-commits`     | Moved. Claude Code and Codex run `command.ts`. Live in pi and omp.   |
-| `format-all-languages`     | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
-| `format-org-tables`        | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
-| `format-staged-files`      | Moved to `dot_config/git/hooks/`. Runs for each agent.               |
-| `lint-prose`               | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
-| `type-check-all-languages` | Moved. Claude Code and Codex run `command.ts`. Live in pi and omp.   |
-| `track-session-changes`    | Not started. Needs an async core and a spike first, see its section. |
+| Hook                       | State                                                              |
+| -------------------------- | ------------------------------------------------------------------ |
+| `enforce-cli-tools`        | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.  |
+| `lint-all-languages`       | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.  |
+| `block-commit-attribution` | Moved. Live in Claude Code, pi, and omp. Not wired in Codex.       |
+| `block-secret-commits`     | Moved. Claude Code and Codex run `command.ts`. Live in pi and omp. |
+| `format-all-languages`     | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.  |
+| `format-org-tables`        | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.  |
+| `format-staged-files`      | Moved to `dot_config/git/hooks/`. Runs for each agent.             |
+| `lint-prose`               | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.  |
+| `type-check-all-languages` | Moved. Claude Code and Codex run `command.ts`. Live in pi and omp. |
+| `track-session-changes`    | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.  |
 
 ## Rules for a hook folder
 
@@ -176,31 +176,43 @@ The largest port. You chose an async core that runs as a mod (feasibility, track
 
 **What the mod API cannot do, and the replacement:**
 
-| Today                                               | Problem in the mod                                    | Replacement                                                                                                             |
-| --------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Blob: `sha1` and `deflateSync`, then a binary write | `$.fs.write` takes text only. No `CompressionStream`. | `git hash-object -w --no-filters --stdin <after path>`: the before text on stdin, the after file by path, one git start |
-| `appendFileSync` of the log                         | No append                                             | `append` in `Io`. The mod runs `sh -c 'cat >> "$1"'` with the line on stdin.                                            |
-| Index snapshot: copy, hard link, `utimes`, rename   | No copy, link, rename, or `utimes`                    | `copy`, `link`, `rename`, `remove` in `Io`. The mod runs `cp -p`, `ln`, `mv`, `rm -rf`.                                 |
-| Prune of call links by `ctime`                      | `$.fs.stat` has no `ctime`                            | Put the creation time in the link name: `calls/<id>.<n>.<ms>.index`                                                     |
-| `pending/<id>` file between Pre and Post            | Not a problem, but not needed                         | The mod and pi keep the pending state in memory across `next`. `command.ts` keeps the file.                             |
-| `diff-files` output up to 64 MiB                    | `$.process.run` keeps 4 MiB of each stream            | On `isStdoutTruncated`, log the paths with an unknown line                                                              |
-| `node:path`, `Buffer`, `process.pid`                | Not in the mod                                        | Small path functions in the core, `TextEncoder`, and `crypto.randomUUID()`                                              |
+| Today                                               | Problem in the mod                                    | Replacement                                                                                                                                                 |
+| --------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Blob: `sha1` and `deflateSync`, then a binary write | `$.fs.write` takes text only. No `CompressionStream`. | `git hash-object -w --stdin --path=<file> <file>`: the before text on stdin, the after file by path, one git start. With the filters of the repo, see below |
+| `appendFileSync` of the log                         | No append                                             | `append` in `Io`. The mod runs `sh -c 'cat >> "$1"'` with the line on stdin.                                                                                |
+| Index snapshot: copy, hard link, `utimes`, rename   | No copy, link, rename, or `utimes`                    | `copy`, `link`, `rename`, `remove` in `Io`. The mod runs `cp -p`, `ln`, `mv`, `rm -rf`.                                                                     |
+| Prune of call links by `ctime`                      | `$.fs.stat` has no `ctime`                            | Put the creation time in the link name: `calls/<id>.<n>.<ms>.index`                                                                                         |
+| `pending/<id>` file between Pre and Post            | Not a problem, but not needed                         | The mod and pi keep the pending state in memory across `next`. `command.ts` keeps the file.                                                                 |
+| `diff-files` output up to 64 MiB                    | `$.process.run` keeps 4 MiB of each stream            | On `isStdoutTruncated`, log the paths with an unknown line                                                                                                  |
+| `node:path`, `Buffer`, `process.pid`                | Not in the mod                                        | Small path functions in the core, `TextEncoder`, and `crypto.randomUUID()`                                                                                  |
 
-**The `Io` of the core:** `read`, `write`, `append`, `exists`, `stat`, `list`, `realpath`, `copy`, `link`, `rename`, `remove`, and `run(argv, { cwd, env, stdin })`. `io.ts` implements them with `node:fs/promises` and `spawn`. The core uses `crypto.subtle.digest("SHA-1")` for the index name, which Node and the mod both have.
+**The `Io` of the core:** `read`, `write`, `append`, `exists`, `mtime`, `list`, `realpath`, `mkdir`, `copy`, `link`, `rename`, `remove`, and `run(argv, { env, stdin })`. `io.ts` implements them with `node:fs/promises` and `spawn`. The core uses `crypto.subtle.digest("SHA-1")` for the index name, which Node and the mod both have. The cutover added `mkdir`: git does not find a repo when the folder in `GIT_OBJECT_DIRECTORY` does not exist. It also named `stat` as `mtime` and dropped the `cwd` of `run`, because the core runs `git -C`.
 
-**Adapters:** the mod hooks `tool.call` on Bash, Write, Edit, and NotebookEdit, and `session.start` for the prune. It calls `beginCall` before `next` and `endCall` in a `finally` after it, so a denied call also cleans up. `pi.ts` replaces the current `dot_pi/agent/extensions/track-session-changes/`. `command.ts` replaces `hook.ts` for Codex.
+**Adapters:** the mod hooks `tool.call` on Bash, Write, Edit, and NotebookEdit, and `session.start` for the prune, after `next`. It calls `beginCall` before `next` and `endCall` after it. On a deny or a throw, `dropCall` in a `finally` removes the index links and logs nothing. `pi.ts` replaces `dot_pi/agent/extensions/track-session-changes/` and the omp link to it. `command.ts` replaces `hook.ts` for Codex.
+
+**Changes found in the cutover on 2026-10-19:**
+
+- **Blob filters.** This design gave `--no-filters`. The cutover lets git apply the filters of the repo instead, through `--path=<file>` and `--stdin-paths`. The blob then gets the ID that `git add` gives, also for `core.autocrlf`, which the old hook did not read. The old hook read the attribute files itself and called git only when they named a filter.
+- **A file outside every repo.** git writes no object outside a repo, so an empty bare repo, `blobs.git` in the session state, takes those writes, with `--no-filters`.
+- **A file git cannot read.** `--stdin-paths` stops at that file, so the core starts git again for the files after it. The old hook lost only the blob of that file, and so does the new one.
+- **Call links.** A link without a time in its name is from the old hook, and the prune deletes it at once.
+
+**Tests:** 42 of the 43 checks of the old `test/check.ts` run against `command.ts`. The check of the in-process blob writer went with the writer. New checks cover a file that git cannot read, a Write outside a repo, and a quoted path with an emoji. 5 checks run the mod with a stub `$`, and the 7 checks of the old pi extension test run `pi.ts` with a stub pi. With `TRACK_HOOK`, all 56 checks also passed against the old `hook.ts`.
+
+**Live on 2026-10-19:** Claude Code (Bash, a failed Bash call, a `cd`, Write, Edit, NotebookEdit, a subagent Bash call, and the prune), `pi -p`, `omp -p`, and `codex exec` with Bash and `apply_patch`. The blob IDs matched `git hash-object` of each file.
 
 **Spike 3, before the port.** These facts decide whether the design holds:
 
-| #   | Check                                                                               | Pass                                                 |
-| --- | ----------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| 1   | `$.process.run` with `stdin` keeps CRLF, a NUL byte, and characters outside the BMP | `hash-object` gives the same id as Node `sha1`       |
-| 2   | Time of the mod for one Bash call, Pre and Post, in a repository with 1,000 files   | Not slower than `node hook.ts` for the same call     |
-| 3   | `$.session.cwd()` in `tool.call` follows a `cd` in an earlier Bash call             | Same folder as the payload `cwd` of the command hook |
-| 4   | `originalFile` and `structuredPatch` in the mod's Edit and Write result             | Same as `tool_response` in the command hook          |
-| 5   | `crypto.subtle.digest("SHA-1")` in the mod                                          | Returns the digest                                   |
+| #   | Check                                                                               | Pass                                                 | Result on 2026-10-19                                                                                                                                                         |
+| --- | ----------------------------------------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `$.process.run` with `stdin` keeps CRLF, a NUL byte, and characters outside the BMP | `hash-object` gives the same id as Node `sha1`       | Pass. Also with `-w`, stdin, and a path in one start: git gives both ids. The stdout of `printf` keeps a NUL, a CR, and an emoji.                                            |
+| 2   | Time of the mod for one Bash call, Pre and Post, in a repository with 1,000 files   | Not slower than `node hook.ts` for the same call     | Pass. For 8 Bash calls, the mod took 14 to 30 ms before the call and 9 to 24 ms after it. `node hook.ts` took 30 to 41 ms before and 27 to 57 ms after, in the same session. |
+| 3   | `$.session.cwd()` in `tool.call` follows a `cd` in an earlier Bash call             | Same folder as the payload `cwd` of the command hook | Pass. After `cd sub`, the next 9 calls gave `sub` in both.                                                                                                                   |
+| 4   | `originalFile` and `structuredPatch` in the mod's Edit and Write result             | Same as `tool_response` in the command hook          | Pass. The whole result is the same for a new Write, a Write over a file, and two Edits. For a CRLF file, both give `originalFile` with LF line ends.                         |
+| 5   | `crypto.subtle.digest("SHA-1")` in the mod                                          | Returns the digest                                   | Pass, in less than 1 ms. `crypto.randomUUID()` also works.                                                                                                                   |
+| 6   | `session.start` in a mod, with `cc-plugin-sec-default` in front                     | The hook runs                                        | Pass. The plugin skips only `classic.*` events.                                                                                                                              |
 
-If check 2 fails, the snapshot runs as one `sh -c` script through `run`, which costs one process start instead of four. If check 1 fails, the mod keeps `command.ts` as a command hook in Claude Code, as `block-secret-commits` does.
+The spike ran in Claude Code 2.1.303. The snapshot as one `sh -c` script took 6 to 10 ms, against 14 to 30 ms for one `$` call per step. Check 2 passed without it, so the port keeps one `Io` function per step, which the tests can replace one by one. If check 2 had failed, the snapshot would run as one `sh -c` script through `run`. If check 1 had failed, the mod would keep `command.ts` as a command hook in Claude Code, as `block-secret-commits` does.
 
 ## Cutover steps for a hook
 

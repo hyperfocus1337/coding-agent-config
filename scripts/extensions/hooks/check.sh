@@ -102,7 +102,7 @@ done
 
 for check in "${HOOKS}"/*/test/check.ts "${GIT_HOOKS}"/*/test/check.ts; do
   echo "==> ${check#"${REPO}"/}"
-  (cd "${check%/test/check.ts}" && node test/check.ts)
+  (cd "${check%/test/check.ts}" && PI_PACKAGE="${PI_PACKAGE}" node test/check.ts)
 done
 echo "==> dot_codex/hooks/test/apply-patch.ts"
 node "${CODEX_HOOKS}/test/apply-patch.ts"

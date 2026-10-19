@@ -1,8 +1,8 @@
 /**
  * Records the files that an agent session changes, one log line per file per
- * tool call. The command hook (`hook.ts`) calls it for Claude Code and Codex,
- * and the pi extension imports it in-process for pi and omp. No dependency and
- * no agent import.
+ * tool call. The adapters pass in the file and process functions (`Io`):
+ * hooks/register.ts (the Claude Code mod), pi.ts (pi and omp), and command.ts
+ * (Codex). No Node import, so the mod can run it.
  *
  * Log: ~/.local/state/agent-changes/<agent>/<session id>.tsv, one line per file:
  * start, end, tool, status (A, M, D), repo, path, line, before, after. The
@@ -16,16 +16,9 @@
  * hook never writes to a repo.
  *
  * State: ~/.cache/track-session-changes/<agent>/<session id>/, with one git
- * index per repo, the repos found so far, and the pending calls with a link to
- * the index of each call.
+ * index per repo, the repos found so far, a link to the index of each running
+ * call, and for command.ts the pending calls.
  */
-
-import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import * as fs from "node:fs";
-import * as os from "node:os";
-import * as path from "node:path";
-import { deflateSync } from "node:zlib";
 
 /** One changed file of one tool call. */
 export interface Change {
@@ -56,47 +49,116 @@ export interface Hunk {
   lines: string[];
 }
 
+/**
+ * The file and process functions of the core. Paths are absolute. A function
+ * that fails returns undefined, false, or [] instead of throwing.
+ */
+export interface Io {
+  /** The text of a file; undefined when it cannot be read. */
+  read(path: string): Promise<string | undefined>;
+  /** Writes a whole file, and makes its folders. */
+  write(path: string, text: string): Promise<void>;
+  /** Appends to a file, and makes its folders. */
+  append(path: string, text: string): Promise<void>;
+  exists(path: string): Promise<boolean>;
+  /** The last change of a file or folder in ms; undefined when missing. */
+  mtime(path: string): Promise<number | undefined>;
+  /** The names in a folder; [] when it is missing. */
+  list(dir: string): Promise<string[]>;
+  /** The path with every link resolved; undefined when missing. */
+  realpath(path: string): Promise<string | undefined>;
+  /** Makes a folder and its parents. */
+  mkdir(path: string): Promise<void>;
+  /** Copies a file, with its times: git trusts the stat data of the index. */
+  copy(from: string, to: string): Promise<boolean>;
+  /** Makes a hard link. */
+  link(from: string, to: string): Promise<boolean>;
+  rename(from: string, to: string): Promise<boolean>;
+  /** Removes a file or a folder tree; nothing when missing. */
+  remove(path: string): Promise<void>;
+  /**
+   * Runs a program with `env` over the environment of the agent and `stdin`
+   * as its input. Drops stderr. `truncated` when the adapter kept only the
+   * first part of stdout. Undefined when the program cannot start.
+   */
+  run(
+    argv: string[],
+    options?: { env?: Record<string, string>; stdin?: string },
+  ): Promise<
+    { exitCode: number; stdout: string; truncated: boolean } | undefined
+  >;
+}
+
+/** The log of one session: the home folder, the agent, and the session id. */
+export interface Where {
+  home: string;
+  agent: string;
+  session: string;
+}
+
 const DAY = 24 * 60 * 60 * 1000;
 /** A log or a state directory that was not written for this long is deleted. */
 const KEEP = 30 * DAY;
 /** A pending call this old lost its end event, for example a denied call. */
 const KEEP_PENDING = DAY;
-/** The patch output of a call with many changed files can be large. */
-const MAX_PATCH = 64 * 1024 * 1024;
 
 // ── Paths ─────────────────────────────────────────────────────────────────────
 
-const logRoot = () => path.join(os.homedir(), ".local/state/agent-changes");
-const stateRoot = () => path.join(os.homedir(), ".cache/track-session-changes");
+/** `path` with `.` and `..` folded, and no empty part. */
+function normalize(path: string): string {
+  const parts: string[] = [];
+  for (const part of path.split("/"))
+    if (part === "..") parts.pop();
+    else if (part !== "" && part !== ".") parts.push(part);
+  return `/${parts.join("/")}`;
+}
+/** `file` against the absolute folder `dir`, as `path.resolve` does. */
+export const resolve = (dir: string, file: string) =>
+  normalize(file.startsWith("/") ? file : `${dir}/${file}`);
+const dirname = (path: string) =>
+  path.slice(0, Math.max(path.lastIndexOf("/"), 0)) || "/";
 
-export const logFile = (agent: string, session: string) =>
-  path.join(logRoot(), agent, `${session}.tsv`);
-const stateDir = (agent: string, session: string) =>
-  path.join(stateRoot(), agent, session);
-const objectsDir = (agent: string, session: string) =>
-  path.join(logRoot(), agent, session, "objects");
+const logRoot = (home: string) => `${home}/.local/state/agent-changes`;
+const stateRoot = (home: string) => `${home}/.cache/track-session-changes`;
+
+export const logFile = ({ home, agent, session }: Where) =>
+  `${logRoot(home)}/${agent}/${session}.tsv`;
+const stateDir = ({ home, agent, session }: Where) =>
+  `${stateRoot(home)}/${agent}/${session}`;
+const objectsDir = ({ home, agent, session }: Where) =>
+  `${logRoot(home)}/${agent}/${session}/objects`;
 
 /** An agent, session, or call id becomes a file name, so it must not be a path. */
 const safeName = (...names: string[]) =>
   names.every((name) => /^[\w.-]+$/.test(name) && !/^\.+$/.test(name));
 
+/** The SHA-1 of the UTF-8 of `text`, in hex. */
+async function sha1(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-1",
+    new TextEncoder().encode(text),
+  );
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/** Makes `dir` unless it is there: a `$.fs.exists` costs less than a `mkdir`. */
+async function ensureDir(io: Io, dir: string) {
+  if (!(await io.exists(dir))) await io.mkdir(dir);
+}
+
 // ── Git ───────────────────────────────────────────────────────────────────────
 
-function git(
+/** The stdout of a git command in `top`; undefined when it fails. */
+async function git(
+  io: Io,
   top: string,
   args: string[],
   env: Record<string, string> = {},
-  input?: string | Buffer,
-  maxBuffer?: number,
-): string | undefined {
-  const run = spawnSync("git", ["-C", top, ...args], {
-    encoding: "utf8",
-    env: { ...process.env, ...env },
-    input,
-    maxBuffer,
-    stdio: ["pipe", "pipe", "ignore"],
-  });
-  return run.status === 0 ? run.stdout : undefined;
+): Promise<{ stdout: string; truncated: boolean } | undefined> {
+  const ran = await io.run(["git", "-C", top, ...args], { env });
+  return ran?.exitCode === 0 ? ran : undefined;
 }
 
 /** A git work tree, with the object directory and the index of the repo. */
@@ -112,16 +174,15 @@ interface Repo {
  * would resolve them, and then a Bash path would not match the tool path of
  * the same file.
  */
-function repoAt(dir: string): Repo | undefined {
-  while (!fs.existsSync(dir) && path.dirname(dir) !== dir)
-    dir = path.dirname(dir);
-  const out = git(dir, [
+async function repoAt(io: Io, dir: string): Promise<Repo | undefined> {
+  while (!(await io.exists(dir)) && dirname(dir) !== dir) dir = dirname(dir);
+  const out = await git(io, dir, [
     ...["rev-parse", "--show-cdup", "--path-format=absolute"],
     ...["--git-path", "objects", "--git-path", "index"],
   ]);
-  const [cdup, objects, index] = out?.split("\n") ?? [];
+  const [cdup = "", objects, index] = out?.stdout.split("\n") ?? [];
   if (!objects || !index) return undefined;
-  return { top: path.resolve(dir, cdup), objects, index };
+  return { top: resolve(dir, cdup), objects, index };
 }
 
 /**
@@ -132,22 +193,23 @@ function repoAt(dir: string): Repo | undefined {
  * `git init` there counts. The result maps each of `dirs` to its repo,
  * undefined outside a repo.
  */
-function cachedRepos(
+async function cachedRepos(
+  io: Io,
   state: string,
   dirs: string[],
-): Map<string, Repo | undefined> {
+): Promise<Map<string, Repo | undefined>> {
   if (dirs.length === 0) return new Map();
-  const file = path.join(state, "repos.json");
+  const file = `${state}/repos.json`;
   let cache: Record<string, Repo> = {};
   try {
-    cache = JSON.parse(fs.readFileSync(file, "utf8")) as Record<string, Repo>;
+    cache = JSON.parse((await io.read(file)) ?? "{}") as Record<string, Repo>;
   } catch {
-    // No cache yet.
+    // A broken cache is rebuilt.
   }
-  const holds = (dir: string, { top }: Repo) => {
-    if (!fs.existsSync(path.join(top, ".git"))) return false;
-    for (; dir !== top; dir = path.dirname(dir))
-      if (dir === path.dirname(dir) || fs.existsSync(path.join(dir, ".git")))
+  const holds = async (dir: string, { top }: Repo) => {
+    if (!(await io.exists(`${top}/.git`))) return false;
+    for (; dir !== top; dir = dirname(dir))
+      if (dir === dirname(dir) || (await io.exists(`${dir}/.git`)))
         return false;
     return true;
   };
@@ -155,18 +217,18 @@ function cachedRepos(
   const repos = new Map<string, Repo | undefined>();
   for (const dir of dirs) {
     if (repos.has(dir)) continue;
-    let repo = cache[dir] && holds(dir, cache[dir]) ? cache[dir] : undefined;
+    const known = cache[dir];
+    let repo = known && (await holds(dir, known)) ? known : undefined;
     if (!repo) {
-      repo = repoAt(dir);
+      repo = await repoAt(io, dir);
       if (repo) [cache[dir], changed] = [repo, true];
     }
     repos.set(dir, repo);
   }
   if (changed) {
-    fs.mkdirSync(state, { recursive: true });
-    const tmp = `${file}.${process.pid}.${Date.now()}`;
-    fs.writeFileSync(tmp, JSON.stringify(cache));
-    fs.renameSync(tmp, file);
+    const tmp = `${file}.${crypto.randomUUID()}`;
+    await io.write(tmp, JSON.stringify(cache));
+    if (!(await io.rename(tmp, file))) await io.remove(tmp);
   }
   return repos;
 }
@@ -181,107 +243,80 @@ function cachedRepos(
  */
 const objectEnv = (objects: string, state: string, repo: Repo) => ({
   GIT_OBJECT_DIRECTORY: objects,
-  GIT_ALTERNATE_OBJECT_DIRECTORIES: `${repo.objects}:${path.join(state, "objects")}`,
+  GIT_ALTERNATE_OBJECT_DIRECTORIES: `${repo.objects}:${state}/objects`,
 });
 
 // ── Blobs ─────────────────────────────────────────────────────────────────────
 
 /**
- * Writes `data` as a loose blob to the object directory `objects`, in-process,
- * and returns its ID. A git start would cost 10 ms or more per blob.
+ * Writes blobs to the session objects with `git hash-object -w`, in one git
+ * start, and returns their IDs: `old` (the text of `file` before a call) first,
+ * then `file` on disk. In a repo, git applies the filters of the attributes
+ * to both, as `git add` does. Outside a repo, git writes no object, so a bare
+ * repo in the session state takes the write, with no filters. An ID is
+ * undefined when git fails.
  */
-export function writeBlob(objects: string, data: Buffer): string {
-  const header = Buffer.from(`blob ${data.length}\0`);
-  const id = createHash("sha1").update(header).update(data).digest("hex");
-  const file = path.join(objects, id.slice(0, 2), id.slice(2));
-  if (!fs.existsSync(file)) {
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    const tmp = `${file}.${process.pid}.tmp`;
-    fs.writeFileSync(tmp, deflateSync(Buffer.concat([header, data])), {
-      mode: 0o444,
-    });
-    fs.renameSync(tmp, file);
+async function storeBlobs(
+  io: Io,
+  where: Where,
+  repo: Repo | undefined,
+  file: string,
+  { old, after }: { old?: string; after: boolean },
+): Promise<{ before?: string; after?: string }> {
+  if (old === undefined && !after) return {};
+  const objects = objectsDir(where);
+  const state = stateDir(where);
+  await ensureDir(io, objects);
+  let argv: string[];
+  let env: Record<string, string>;
+  if (repo) {
+    argv = ["git", "-C", repo.top, "hash-object", "-w", `--path=${file}`];
+    env = objectEnv(objects, state, repo);
+  } else {
+    const bare = `${state}/blobs.git`;
+    if (!(await io.exists(bare)))
+      await io.run(["git", "init", "-q", "--bare", "--template=", bare]);
+    argv = ["git", `--git-dir=${bare}`, "hash-object", "-w", "--no-filters"];
+    env = { GIT_OBJECT_DIRECTORY: objects };
   }
-  return id;
+  if (old !== undefined) argv.push("--stdin");
+  if (after) argv.push(file);
+  const ran = await io.run(argv, { env, stdin: old ?? "" });
+  if (ran?.exitCode !== 0) return {};
+  const ids = ran.stdout.split("\n");
+  return old === undefined
+    ? { after: ids[0] }
+    : { before: ids[0], after: after ? ids[1] : undefined };
 }
 
 /**
- * The text of the attribute files that apply to `file` in `repo`: the
- * `.gitattributes` of each directory from the top down, `info/attributes`,
- * and the global file. A missing file adds nothing.
+ * Writes the files of a repo on disk as blobs, in one git start, and maps each
+ * path to its ID. git stops at a file that it cannot read, so the files after
+ * it go in one more start. A path with a newline gets no ID.
  */
-function attributes(repo: Repo, file: string): string {
-  const files = [
-    path.join(path.dirname(repo.objects), "info", "attributes"),
-    path.join(
-      process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config"),
-      "git",
-      "attributes",
-    ),
-  ];
-  for (let dir = path.dirname(file); ; dir = path.dirname(dir)) {
-    files.push(path.join(dir, ".gitattributes"));
-    if (dir === repo.top || dir === path.dirname(dir)) break;
+async function storeFiles(
+  io: Io,
+  where: Where,
+  repo: Repo,
+  files: string[],
+): Promise<Map<string, string>> {
+  const objects = objectsDir(where);
+  const env = objectEnv(objects, stateDir(where), repo);
+  await ensureDir(io, objects);
+  const ids = new Map<string, string>();
+  let rest = files.filter((file) => !file.includes("\n"));
+  while (rest.length) {
+    const ran = await io.run(
+      ["git", "-C", repo.top, "hash-object", "-w", "--stdin-paths"],
+      { env, stdin: rest.map((file) => `${file}\n`).join("") },
+    );
+    if (!ran) break;
+    const found = ran.stdout.split("\n").filter(Boolean);
+    found.forEach((id, i) => ids.set(rest[i] ?? "", id));
+    if (ran.exitCode === 0) break;
+    rest = rest.slice(found.length + 1);
   }
-  return files
-    .map((name) => {
-      try {
-        return fs.readFileSync(name, "utf8");
-      } catch {
-        return "";
-      }
-    })
-    .join("\n");
-}
-
-/**
- * Stores `data`, the text of `file` in `repo`, as a blob and returns its ID.
- * git applies the clean filter of the attributes when it hashes a file, and an
- * in-process write does not. So when an attribute file names a filter, or
- * names an end of line conversion and `data` holds a CR, `git hash-object`
- * writes the blob. An attribute file that names them for other paths only
- * costs that git start too.
- */
-function storeBlob(
-  objects: string,
-  state: string,
-  data: Buffer,
-  repo: Repo | undefined,
-  file: string,
-): string | undefined {
-  const text = repo ? attributes(repo, file) : "";
-  if (
-    !repo ||
-    !(
-      /\b(filter|ident|working-tree-encoding)\b/.test(text) ||
-      (/\b(text|eol|crlf)\b/.test(text) && data.includes(13))
-    )
-  )
-    return writeBlob(objects, data);
-  fs.mkdirSync(objects, { recursive: true });
-  const id = git(
-    repo.top,
-    ["hash-object", "-w", "--stdin", `--path=${path.relative(repo.top, file)}`],
-    objectEnv(objects, state, repo),
-    data,
-  )?.trim();
-  return id || undefined;
-}
-
-/** Stores the file on disk as a blob. Undefined when it cannot be read. */
-function storeFile(
-  objects: string,
-  state: string,
-  repo: Repo | undefined,
-  file: string,
-): string | undefined {
-  let data: Buffer;
-  try {
-    data = fs.readFileSync(file);
-  } catch {
-    return undefined;
-  }
-  return storeBlob(objects, state, data, repo, file);
+  return ids;
 }
 
 /**
@@ -290,48 +325,35 @@ function storeFile(
  * repo, so `git add -A` hashes only the files whose stat changed since the
  * last call. It stores their blobs, so the end of the call can diff them.
  */
-function snapshot(
-  objects: string,
-  state: string,
+async function snapshot(
+  io: Io,
+  where: Where,
   repo: Repo,
   link: string,
-): boolean {
-  const index = path.join(
-    state,
-    "index",
-    createHash("sha1").update(repo.top).digest("hex"),
-  );
-  const env = objectEnv(objects, state, repo);
-  fs.mkdirSync(path.dirname(index), { recursive: true });
-  fs.mkdirSync(env.GIT_OBJECT_DIRECTORY, { recursive: true });
+): Promise<boolean> {
+  const state = stateDir(where);
+  const objects = objectsDir(where);
+  const index = `${state}/index/${await sha1(repo.top)}`;
+  await ensureDir(io, `${state}/index`);
+  await ensureDir(io, objects);
   // Parallel calls share the index, so work on a copy and rename it back.
-  const tmp = `${index}.${process.pid}.${Date.now()}`;
+  const tmp = `${index}.${crypto.randomUUID()}`;
+  let renamed = false;
   try {
-    const from = fs.existsSync(index) ? index : repo.index;
-    if (fs.existsSync(from)) {
-      fs.copyFileSync(from, tmp);
-      // git trusts the stat data of an entry older than the index file, so
-      // the copy keeps the time of the original.
-      const { atime, mtime } = fs.statSync(from);
-      fs.utimesSync(tmp, atime, mtime);
-    }
-    const indexEnv = { ...env, GIT_INDEX_FILE: tmp };
-    if (git(repo.top, ["add", "-A"], indexEnv) === undefined) return false;
+    const from = (await io.exists(index)) ? index : repo.index;
+    if ((await io.exists(from)) && !(await io.copy(from, tmp))) return false;
+    const env = { ...objectEnv(objects, state, repo), GIT_INDEX_FILE: tmp };
+    if (!(await git(io, repo.top, ["add", "-A"], env))) return false;
     // A repo with no file has no index, and git reads a missing link as empty.
-    if (!fs.existsSync(tmp)) return true;
+    if (!(await io.exists(tmp))) return true;
     // git replaces the index file on each write, so the link keeps this one.
-    fs.mkdirSync(path.dirname(link), { recursive: true });
-    try {
-      fs.linkSync(tmp, link);
-    } catch {
-      fs.copyFileSync(tmp, link);
-      const { atime, mtime } = fs.statSync(tmp);
-      fs.utimesSync(link, atime, mtime);
-    }
-    fs.renameSync(tmp, index);
+    await ensureDir(io, dirname(link));
+    if (!(await io.link(tmp, link)) && !(await io.copy(tmp, link)))
+      return false;
+    renamed = await io.rename(tmp, index);
     return true;
   } finally {
-    fs.rmSync(tmp, { force: true });
+    if (!renamed) await io.remove(tmp);
   }
 }
 
@@ -349,19 +371,23 @@ export function headerPath(header: string): string {
     f: 12,
     r: 13,
   };
+  const encoder = new TextEncoder();
   const bytes: number[] = [];
   for (let i = 1; i < rest.length && rest[i] !== '"'; i++) {
+    const next = rest[i + 1] ?? "";
     if (rest[i] !== "\\") {
-      bytes.push(...Buffer.from(rest[i]));
-    } else if (/[0-7]/.test(rest[i + 1])) {
+      const char = String.fromCodePoint(rest.codePointAt(i) ?? 0);
+      bytes.push(...encoder.encode(char));
+      i += char.length - 1;
+    } else if (/[0-7]/.test(next)) {
       bytes.push(parseInt(rest.slice(i + 1, i + 4), 8));
       i += 3;
     } else {
       i++;
-      bytes.push(escapes[rest[i]] ?? rest.charCodeAt(i));
+      bytes.push(escapes[next] ?? next.charCodeAt(0));
     }
   }
-  return Buffer.from(bytes).toString("utf8").slice(2);
+  return new TextDecoder().decode(new Uint8Array(bytes)).slice(2);
 }
 
 /** The first changed line of a `-U0` hunk. A pure deletion (`+c,0`) sits after line c. */
@@ -374,18 +400,22 @@ export function hunkLine(header: string): number | undefined {
 /**
  * The files that differ between the index of a call and the work tree, with
  * the first changed line and the blobs of each. `git status` gives the paths
- * and the before blobs in one process, and a patch runs only when a tracked
- * file changed. The after blobs are written in-process.
+ * and the before blobs in one process, one `hash-object` writes the after
+ * blobs, and a patch runs only when a tracked file changed.
  */
-function diffCall(
-  objects: string,
-  state: string,
+async function diffCall(
+  io: Io,
+  where: Where,
   repo: Repo,
   link: string,
-): Change[] {
+): Promise<Change[]> {
   const { top } = repo;
-  const env = { ...objectEnv(objects, state, repo), GIT_INDEX_FILE: link };
-  const status = git(
+  const env = {
+    ...objectEnv(objectsDir(where), stateDir(where), repo),
+    GIT_INDEX_FILE: link,
+  };
+  const status = await git(
+    io,
     top,
     [
       ...["--no-optional-locks", "status", "--porcelain=v2", "-z"],
@@ -394,37 +424,41 @@ function diffCall(
     env,
   );
   if (!status) return [];
+  const entries = status.stdout.split("\0");
+  // The last entry of a cut output can be cut too.
+  if (status.truncated) entries.pop();
   const changes: Change[] = [];
-  for (const entry of status.split("\0")) {
+  for (const entry of entries) {
     // `1 XY sub mH mI mW hH hI path`: Y is the work tree against the index,
     // and hI the blob of the file in the index of the call.
     // T, a type change such as a file that became a symlink, counts as M.
     // A nested repo shows as an untracked directory, `? dir/`, and is left out.
     const fields = entry.split(" ");
-    const add = (status: Change["status"], file: string, before?: string) => {
-      const full = path.join(top, file);
+    const add = (status: Change["status"], file: string, before?: string) =>
       changes.push({
         status,
-        path: full,
+        path: resolve(top, file),
         line: status === "A" ? 1 : undefined,
         repo: top,
         before: before && !/^0+$/.test(before) ? before : undefined,
-        after:
-          status === "D" ? undefined : storeFile(objects, state, repo, full),
       });
-    };
-    if (entry.startsWith("1 ") && fields[1][1] !== ".")
-      add(
-        fields[1][1] === "D" ? "D" : "M",
-        fields.slice(8).join(" "),
-        fields[7],
-      );
+    const xy = fields[1] ?? "";
+    if (entry.startsWith("1 ") && xy[1] !== ".")
+      add(xy[1] === "D" ? "D" : "M", fields.slice(8).join(" "), fields[7]);
     else if (entry.startsWith("? ") && !entry.endsWith("/"))
       add("A", entry.slice(2));
   }
+  const ids = await storeFiles(
+    io,
+    where,
+    repo,
+    changes.filter((change) => change.status !== "D").map(({ path }) => path),
+  );
+  for (const change of changes) change.after = ids.get(change.path);
   if (!changes.some((change) => change.status === "M")) return changes;
-  // The patch only adds the lines. When it fails or is too large, the paths still count.
-  const patch = git(
+  // The patch only adds the lines. When it fails or is cut, the paths still count.
+  const patch = await git(
+    io,
     top,
     [
       ...["-c", "core.quotePath=false", "diff-files", "--no-ext-diff"],
@@ -432,13 +466,12 @@ function diffCall(
       ...["--src-prefix=a/", "--dst-prefix=b/", "-p", "-U0"],
     ],
     env,
-    undefined,
-    MAX_PATCH,
   );
+  if (!patch || patch.truncated) return changes;
   const lines = new Map<string, number | undefined>();
   let file: string | undefined;
-  for (const text of patch?.split("\n") ?? []) {
-    if (text.startsWith("diff --git ")) file = path.join(top, headerPath(text));
+  for (const text of patch.stdout.split("\n")) {
+    if (text.startsWith("diff --git ")) file = resolve(top, headerPath(text));
     else if (file !== undefined && text.startsWith("@@ ") && !lines.has(file))
       lines.set(file, hunkLine(text));
   }
@@ -450,20 +483,21 @@ function diffCall(
 // ── Log ───────────────────────────────────────────────────────────────────────
 
 /** Appends one line per change to the session log, in one write. */
-function append(
-  agent: string,
-  session: string,
+async function append(
+  io: Io,
+  where: Where,
   tool: string,
   start: Date,
   end: Date,
   changes: Change[],
 ) {
   if (changes.length === 0) return;
-  const repos = cachedRepos(
-    stateDir(agent, session),
+  const repos = await cachedRepos(
+    io,
+    stateDir(where),
     changes
       .filter((change) => change.repo === undefined)
-      .map((change) => path.dirname(change.path)),
+      .map((change) => dirname(change.path)),
   );
   const text = changes.map((change) => {
     const fields = [
@@ -471,7 +505,7 @@ function append(
       end.toISOString(),
       tool,
       change.status,
-      change.repo ?? repos.get(path.dirname(change.path))?.top ?? "",
+      change.repo ?? repos.get(dirname(change.path))?.top ?? "",
       change.path,
       change.line ?? "",
       change.before ?? "",
@@ -479,24 +513,17 @@ function append(
     ];
     return `${fields.join("\t")}\n`;
   });
-  const log = logFile(agent, session);
-  fs.mkdirSync(path.dirname(log), { recursive: true });
-  fs.appendFileSync(log, text.join(""));
+  await io.append(logFile(where), text.join(""));
 }
 
 /** The repos that the session log names: the repos the session changed so far. */
-function touchedRepos(agent: string, session: string): string[] {
-  let text: string;
-  try {
-    text = fs.readFileSync(logFile(agent, session), "utf8");
-  } catch {
-    return [];
-  }
+async function touchedRepos(io: Io, where: Where): Promise<string[]> {
+  const text = (await io.read(logFile(where))) ?? "";
   return [
     ...new Set(
       text
         .split("\n")
-        .map((line) => line.split("\t")[4])
+        .map((line) => line.split("\t")[4] ?? "")
         .filter(Boolean),
     ),
   ];
@@ -598,7 +625,7 @@ export function rebuildOriginal(
     let [low, high] = [0, starts.length - 1];
     while (low < high) {
       const mid = (low + high + 1) >> 1;
-      if (starts[mid] <= offset) low = mid;
+      if ((starts[mid] ?? 0) <= offset) low = mid;
       else high = mid - 1;
     }
     return low + 1;
@@ -606,7 +633,7 @@ export function rebuildOriginal(
   const ranges = hunks.map((hunk) => {
     const count =
       hunk.newLines ?? hunk.lines.filter((line) => line[0] !== "-").length;
-    return [hunk.newStart, hunk.newStart + Math.max(count, 1) - 1];
+    return [hunk.newStart, hunk.newStart + Math.max(count, 1) - 1] as const;
   });
   const overlaps = (from: number, to: number) =>
     ranges.some(([first, last]) => lineOf(from) <= last && lineOf(to) >= first);
@@ -654,86 +681,159 @@ export function rebuildOriginal(
  * snapshot. The file on disk is the after blob of a change, and its `old` text
  * the before blob.
  */
-export function recordFiles(
-  agent: string,
-  session: string,
+export async function recordFiles(
+  io: Io,
+  where: Where,
   tool: string,
   start: Date,
   end: Date,
   changes: Change[],
 ) {
-  if (!safeName(agent, session)) return;
-  const state = stateDir(agent, session);
-  const objects = objectsDir(agent, session);
-  const repos = cachedRepos(
-    state,
-    changes.map((change) => path.dirname(change.path)),
+  if (!safeName(where.agent, where.session)) return;
+  const repos = await cachedRepos(
+    io,
+    stateDir(where),
+    changes.map((change) => dirname(change.path)),
   );
   for (const change of changes) {
-    const repo = repos.get(path.dirname(change.path));
+    const repo = repos.get(dirname(change.path));
     change.repo ??= repo?.top ?? "";
-    if (change.status !== "D")
-      change.after ??= storeFile(objects, state, repo, change.path);
-    if (change.status !== "A" && change.old !== undefined)
-      change.before ??= storeBlob(
-        objects,
-        state,
-        Buffer.from(change.old),
-        repo,
-        change.path,
-      );
+    const blobs = await storeBlobs(io, where, repo, change.path, {
+      old:
+        change.status === "A" || change.before !== undefined
+          ? undefined
+          : change.old,
+      after: change.status !== "D" && change.after === undefined,
+    });
+    change.after ??= blobs.after;
+    change.before ??= blobs.before;
   }
-  append(agent, session, tool, start, end, changes);
+  await append(io, where, tool, start, end, changes);
+}
+
+/** The result of a Claude Code Edit, Write, or NotebookEdit. */
+export interface ToolResult extends Edit {
+  type?: string;
+  filePath?: string;
+  structuredPatch?: Hunk[];
+  originalFile?: string | null;
+  error?: string;
+  original_file?: string;
+  updated_file?: string;
+}
+
+/**
+ * Logs a Claude Code Edit, Write, or NotebookEdit from its result. `file` is
+ * the path of the input, against `cwd`; the call ran from `start` to `end`.
+ */
+export async function recordTool(
+  io: Io,
+  where: Where,
+  tool: string,
+  file: string | undefined,
+  result: ToolResult | undefined,
+  cwd: string,
+  start: Date,
+  end: Date,
+) {
+  // A NotebookEdit result holds the file text before and after the call. The
+  // after blob comes from the file on disk, because `updated_file` can format
+  // the JSON in another way.
+  if (tool === "NotebookEdit") {
+    if (!file || !result || result.error || result.original_file === undefined)
+      return;
+    const line = changedLine(
+      result.original_file ?? "",
+      result.updated_file ?? "",
+    );
+    const path = resolve(cwd, file);
+    return recordFiles(io, where, tool, start, end, [
+      { status: "M", path, line, old: result.original_file },
+    ]);
+  }
+
+  // A successful Edit or Write returns structuredPatch. A failed one returns an error string.
+  file ??= result?.filePath;
+  if (
+    (tool !== "Edit" && tool !== "Write") ||
+    !file ||
+    !result?.structuredPatch
+  )
+    return;
+  const status = result.type === "create" ? "A" : "M";
+  const path = resolve(cwd, file);
+  // The text before the call: `originalFile`, else a rebuild of the Edit.
+  const after = status === "M" ? await io.read(path) : undefined;
+  const original =
+    after === undefined
+      ? undefined
+      : (result.originalFile ??
+        (tool === "Edit"
+          ? rebuildOriginal(
+              after.replace(/\r\n/g, "\n"),
+              result,
+              result.structuredPatch,
+            )
+          : undefined));
+  await recordFiles(io, where, tool, start, end, [
+    {
+      status,
+      path,
+      line: patchLine(result.structuredPatch),
+      old:
+        original === undefined || after === undefined
+          ? undefined
+          : lineEndings(original, after),
+    },
+  ]);
 }
 
 // ── Tools without a path: Bash and apply_patch ────────────────────────────────
 
-interface Pending {
+/** The snapshots of a running call: its start, and the index link of each repo. */
+export interface Pending {
   start: string;
   repos: (Repo & { link: string })[];
 }
 
 /**
  * Snapshots the repos that a call can change, before it runs: the repo of
- * `cwd`, the repos of `paths`, and the repos the session changed so far.
+ * `cwd`, the repos of `paths`, and the repos the session changed so far. The
+ * adapter keeps the result until the end of the call. A link name holds its
+ * time, which the prune reads.
  */
-export function beginCall(
-  agent: string,
-  session: string,
-  callId: string,
+export async function beginCall(
+  io: Io,
+  where: Where,
   cwd: string,
   paths: string[] = [],
-) {
-  if (!safeName(agent, session, callId)) return;
-  const state = stateDir(agent, session);
-  const objects = objectsDir(agent, session);
-  const dirs = [cwd, ...paths.map((file) => path.dirname(file))];
+): Promise<Pending | undefined> {
+  if (!safeName(where.agent, where.session)) return undefined;
+  const state = stateDir(where);
+  const dirs = [cwd, ...paths.map(dirname)];
   const repos = new Map<string, Repo>();
-  for (const repo of cachedRepos(state, [
-    ...dirs,
-    ...touchedRepos(agent, session),
-  ]).values()) {
+  for (const repo of (
+    await cachedRepos(io, state, [...dirs, ...(await touchedRepos(io, where))])
+  ).values()) {
     if (!repo) continue;
     // One repo can have two names, such as /tmp and /private/tmp on macOS.
-    const real = fs.realpathSync(repo.top);
+    const real = (await io.realpath(repo.top)) ?? repo.top;
     if (!repos.has(real)) repos.set(real, repo);
   }
   const pending: Pending = { start: new Date().toISOString(), repos: [] };
+  const id = crypto.randomUUID();
   for (const repo of repos.values()) {
-    const link = path.join(
-      state,
-      "calls",
-      `${callId}.${pending.repos.length}.index`,
-    );
-    if (snapshot(objects, state, repo, link))
+    const n = pending.repos.length;
+    const link = `${state}/calls/${id}.${n}.${Date.now()}.index`;
+    if (await snapshot(io, where, repo, link))
       pending.repos.push({ ...repo, link });
   }
-  if (pending.repos.length === 0) return;
-  fs.mkdirSync(path.join(state, "pending"), { recursive: true });
-  fs.writeFileSync(
-    path.join(state, "pending", callId),
-    JSON.stringify(pending),
-  );
+  return pending.repos.length ? pending : undefined;
+}
+
+/** Removes the index links of a call that did not run, such as a denied call. */
+export async function dropCall(io: Io, pending: Pending | undefined) {
+  for (const { link } of pending?.repos ?? []) await io.remove(link);
 }
 
 /**
@@ -743,43 +843,44 @@ export function beginCall(
  * outside the snapshot repos gets line 1 for A and no line for M, and no
  * before blob.
  */
-export function endCall(
-  agent: string,
-  session: string,
-  callId: string,
+export async function endCall(
+  io: Io,
+  where: Where,
+  pending: Pending | undefined,
   tool: string,
   named?: Change[],
 ) {
-  if (!safeName(agent, session, callId)) return;
-  const state = stateDir(agent, session);
-  const objects = objectsDir(agent, session);
-  const file = path.join(state, "pending", callId);
-  let pending: Pending | undefined;
-  try {
-    pending = JSON.parse(fs.readFileSync(file, "utf8")) as Pending;
-    fs.rmSync(file, { force: true });
-  } catch {
-    pending = undefined;
-  }
+  if (!safeName(where.agent, where.session)) return;
   const end = new Date();
   const start = pending ? new Date(pending.start) : end;
   const changes: Change[] = [];
   for (const { link, ...repo } of pending?.repos ?? []) {
-    changes.push(...diffCall(objects, state, repo, link));
-    fs.rmSync(link, { force: true });
+    changes.push(...(await diffCall(io, where, repo, link)));
+    await io.remove(link);
   }
-  if (!named) return append(agent, session, tool, start, end, changes);
+  if (!named) return append(io, where, tool, start, end, changes);
   const found = new Map(changes.map((change) => [change.path, change]));
   for (const change of named) {
     const snap = found.get(change.path);
     change.before ??= snap?.before;
     if (change.status === "D") continue;
     change.line ??= snap?.line ?? (change.status === "A" ? 1 : undefined);
-    change.after ??=
-      snap?.after ?? storeFile(objects, state, undefined, change.path);
+    change.after ??= snap?.after;
+    change.after ??= (
+      await storeBlobs(io, where, undefined, change.path, { after: true })
+    ).after;
   }
-  append(agent, session, tool, start, end, named);
+  await append(io, where, tool, start, end, named);
 }
+
+/**
+ * The file that holds a pending call between two runs of command.ts.
+ * Undefined for an id that is not a safe file name.
+ */
+export const pendingFile = (where: Where, callId: string) =>
+  safeName(where.agent, where.session, callId)
+    ? `${stateDir(where)}/pending/${callId}`
+    : undefined;
 
 /**
  * The files of a Codex apply_patch call. Relative paths resolve against `cwd`.
@@ -793,76 +894,70 @@ export function patchFiles(patch: string, cwd: string): Change[] {
     "Move to": "A",
   };
   const changes: Change[] = [];
-  for (const [, verb, file] of patch.matchAll(
+  for (const [, verb = "", file = ""] of patch.matchAll(
     /^\*\*\* (Add File|Update File|Delete File|Move to): (.+)$/gm,
   )) {
-    const status = statuses[verb];
-    if (verb === "Move to" && changes.length)
-      changes[changes.length - 1].status = "D";
-    changes.push({ status, path: path.resolve(cwd, file.trim()) });
+    const last = changes.at(-1);
+    if (verb === "Move to" && last) last.status = "D";
+    changes.push({
+      status: statuses[verb] ?? "M",
+      path: resolve(cwd, file.trim()),
+    });
   }
   return changes;
 }
 
 // ── Prune ─────────────────────────────────────────────────────────────────────
 
-const mtime = (file: string, kind: "mtimeMs" | "ctimeMs" = "mtimeMs") => {
-  try {
-    return fs.statSync(file)[kind];
-  } catch {
-    return 0;
-  }
-};
-const entries = (dir: string) => {
-  try {
-    return fs.readdirSync(dir).map((name) => path.join(dir, name));
-  } catch {
-    return [];
-  }
-};
-
 /**
  * Deletes the logs and the session state of all agents that were not written
  * for 30 days, and pending calls older than one day. The objects of a session
  * go when both its log and its state are gone. A snapshot renames a file
- * in index/, and a call adds and removes one in pending/, so the newest mtime
- * of the session directory and these two is its last use. The index of a call
- * in calls/ is a link that keeps the mtime of the index, so its age is the
- * ctime, which the link sets.
+ * in index/, and command.ts adds and removes one in pending/, so the newest
+ * mtime of the session directory and these two is its last use. The index of
+ * a call in calls/ is a link that keeps the mtime of the index, so its age is
+ * the time in its name. A link with no time in its name is from before the
+ * mod, and goes at once.
  */
-export function prune(now = Date.now()) {
-  for (const agent of entries(logRoot()))
-    for (const log of entries(agent))
-      if (log.endsWith(".tsv") && now - mtime(log) > KEEP)
-        fs.rmSync(log, { force: true });
-  for (const agent of entries(stateRoot()))
-    for (const session of entries(agent)) {
-      const used = Math.max(
-        ...["", "index", "pending"].map((sub) =>
-          mtime(path.join(session, sub)),
-        ),
-      );
-      if (now - used > KEEP)
-        fs.rmSync(session, { recursive: true, force: true });
-      else
-        for (const [sub, kind] of [
-          ["pending", "mtimeMs"],
-          ["calls", "ctimeMs"],
-        ] as const)
-          for (const call of entries(path.join(session, sub)))
-            if (now - mtime(call, kind) > KEEP_PENDING)
-              fs.rmSync(call, { force: true });
+export async function prune(io: Io, home: string, now = Date.now()) {
+  const age = async (path: string) => now - ((await io.mtime(path)) ?? 0);
+  for (const agent of await io.list(logRoot(home)))
+    for (const name of await io.list(`${logRoot(home)}/${agent}`)) {
+      const log = `${logRoot(home)}/${agent}/${name}`;
+      if (name.endsWith(".tsv") && (await age(log)) > KEEP)
+        await io.remove(log);
+    }
+  for (const agent of await io.list(stateRoot(home)))
+    for (const name of await io.list(`${stateRoot(home)}/${agent}`)) {
+      const session = `${stateRoot(home)}/${agent}/${name}`;
+      const ages = [
+        await age(session),
+        await age(`${session}/index`),
+        await age(`${session}/pending`),
+      ];
+      if (Math.min(...ages) > KEEP) {
+        await io.remove(session);
+        continue;
+      }
+      for (const call of await io.list(`${session}/pending`))
+        if ((await age(`${session}/pending/${call}`)) > KEEP_PENDING)
+          await io.remove(`${session}/pending/${call}`);
+      for (const call of await io.list(`${session}/calls`)) {
+        const made = Number(/\.(\d+)\.index$/.exec(call)?.[1] ?? 0);
+        if (now - made > KEEP_PENDING)
+          await io.remove(`${session}/calls/${call}`);
+      }
     }
   // containers/ holds the logs of each container, which its own prune keeps.
-  for (const agent of entries(logRoot()))
-    if (path.basename(agent) !== "containers")
-      for (const dir of entries(agent)) {
-        const session = path.basename(dir);
+  for (const agent of await io.list(logRoot(home)))
+    if (agent !== "containers")
+      for (const session of await io.list(`${logRoot(home)}/${agent}`)) {
+        const dir = `${logRoot(home)}/${agent}/${session}`;
         if (
-          fs.existsSync(path.join(dir, "objects")) &&
-          !fs.existsSync(`${dir}.tsv`) &&
-          !fs.existsSync(stateDir(path.basename(agent), session))
+          (await io.exists(`${dir}/objects`)) &&
+          !(await io.exists(`${dir}.tsv`)) &&
+          !(await io.exists(stateDir({ home, agent, session })))
         )
-          fs.rmSync(dir, { recursive: true, force: true });
+          await io.remove(dir);
       }
 }

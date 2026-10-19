@@ -96,7 +96,7 @@ Because both `PreToolUse` hooks are off, a live Codex test of `command.ts` would
 | `lint-all-languages`       | Send lint errors to the model after a write or a Bash call | Spike 2: `context` on the `tool.call` result                                                              | Spike 2: `tool_result` with `isError`                               | Parity test: `test.sh` and one file for each linter |
 | `lint-prose`               | Send Vale errors to the model after a write                | API, same as spike 2                                                                                      | API, same as spike 2                                                | API, through `apply-patch.ts`                       |
 | `type-check-all-languages` | Block a stop once per turn                                 | Fail for a Team organization: `cc-plugin-sec-default` skips user mods on `classic.*`. Use a command hook. | API: `agent_end` and `sendMessage` with `triggerTurn`, with a guard | API                                                 |
-| `track-session-changes`    | Log changed files, with git blobs                          | Needs a rewrite of the core, see below                                                                    | Works today                                                         | Works today                                         |
+| `track-session-changes`    | Log changed files, with git blobs                          | Moved on 2026-10-19: `tool.call` and `session.start`, with the core over `$`                              | Moved: `pi.ts` on `tool_call` and `tool_result`                     | `command.ts`                                        |
 
 ## Spike: enforce-cli-tools
 
@@ -199,7 +199,7 @@ Q5 requires approval by name. You approved these changes on 2026-10-18:
 | `lint-all-languages`       | Mod                                                 | `pi.ts`    | `command.ts` | Spike 2 done: `context` on the `tool.call` result          |
 | `lint-prose`               | Mod                                                 | `pi.ts`    | `command.ts` | Same shape as spike 2                                      |
 | `type-check-all-languages` | `command.ts`, not the planned mod on `classic.Stop` | `pi.ts`    | `command.ts` | Moved on 2026-10-19, see the design doc                    |
-| `track-session-changes`    | Mod                                                 | `pi.ts`    | `command.ts` | Async rewrite of the core, see below                       |
+| `track-session-changes`    | Mod                                                 | `pi.ts`    | `command.ts` | Moved on 2026-10-19, see the design doc                    |
 | `format-staged-files`      | Not an agent hook                                   |            |              | Moves to `dot_config/git/hooks/`                           |
 
 ### track-session-changes

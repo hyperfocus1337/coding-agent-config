@@ -1,0 +1,5 @@
+{
+  "name": "track-session-changes",
+  "version": "0.1.0",
+  "description": "Logs each file that a Bash, Write, Edit, or NotebookEdit call changed, with the git blobs before and after it."
+}
