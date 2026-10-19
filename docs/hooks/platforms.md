@@ -1,0 +1,65 @@
+# Hook platforms
+
+What the hook API of each agent can and cannot do, as the hooks use it. Tested from 2026-10-18 to 2026-10-19 with Claude Code 2.1.302 and 2.1.303, pi 1.1.0, omp 18.10.3, Codex 0.162.1, and Node 26.11.1.
+
+## Claude Code mods
+
+Source: the `plugin-authoring` skill (`reference.md` and `types/claude-code.d.ts`), and live tests.
+
+| Topic          | Fact                                                                                                                                                                                                                                                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status         | The types file says "EARLY ACCESS: this surface may change between releases without notice".                                                                                                                                                                                                                |
+| Plugin shape   | `.claude-plugin/plugin.json`, plus a hooks file that names one module. The module exports `register(on, options)`. The hooks file is `hooks/hooks.json` by default. A `"hooks"` field in `plugin.json` names another file.                                                                                  |
+| Imports        | The module imports other files of the plugin with `import` declarations, also from a parent folder, such as `../core.ts`. `import()` is refused.                                                                                                                                                            |
+| Runtime        | No Node: no `node:` modules and no `require`. Files and processes go through `$`: `$.fs.read`, `$.fs.stat` (with `mtimeMs`, no `ctime`), `$.process.run(argv)` (no shell, default timeout 30 s, output capped at 4 MiB for each stream), `$.env.get`, `$.session.root()`, `$.session.cwd()`, `$.ui.notify`. |
+| `$.fs` limits  | Text only. No append, copy, link, rename, remove, or binary write. A read of a file over 4 MiB is refused. Run a program through `$.process.run` for these.                                                                                                                                                 |
+| Web APIs       | `crypto.subtle.digest` and `crypto.randomUUID()` work. `CompressionStream` does not exist.                                                                                                                                                                                                                  |
+| Call-site rule | Each `$` call must be spelled `$.noun.call(...)` where it is used. `claude plugin validate` refuses a helper that takes `$.fs` as a value, but accepts a function that spells `$.fs.stat(path)` inside it.                                                                                                  |
+| Environment    | `$.env.get` takes a string literal only. `claude plugin validate` lists the names that a module reads.                                                                                                                                                                                                      |
+| Events         | `tool.call` wraps a tool call: `{ deny }` before `next` refuses it, and the result of `next` gives the output, also of a failed Bash call. `context` on the result reaches the model after a Write, an Edit, and a Bash call. `session.start` runs. `turn.complete` cannot block.                           |
+| `classic.*`    | Every settings-hook event is also available as `classic.<Event>`. For a Team organization, the built-in `cc-plugin-sec-default` skips each user mod on a `classic.*` event (`classic.Stop bypassed by cc-plugin-sec-default (tier user)`). It does not skip `tool.call` or `session.start`.                 |
+| Failure        | A hook that throws, times out, or returns a wrong shape is skipped, and the tool runs. A `.catch` that returns `{ deny }` makes it fail closed. A module that does not load has no `.catch`.                                                                                                                |
+| Time budget    | 10 s of the hook's own time. Time spent in `next` or in a `$` call does not count.                                                                                                                                                                                                                          |
+| Loading        | `--plugin-dir`, or `CLAUDE_CODE_PLUGIN_DIRS` (several paths, separated by `:`), also from the `env` block of a settings file. An interactive session reloads a changed file with no restart.                                                                                                                |
+| Order          | Managed settings hooks run first, then hooks modules, then the other settings hooks.                                                                                                                                                                                                                        |
+| Tests          | `claude plugin test` runs without file, network, or process access. A hook that reads its rules file cannot run there.                                                                                                                                                                                      |
+| Types          | The engine writes its types to `.claude-plugin/types/` when an interactive session loads a mod from a folder that the user owns. A `claude -p` run does not write them.                                                                                                                                     |
+| Minimum        | 2.1.296, the oldest version tested. The changelog mod entries start at 2.1.288. In 2.1.292, a fix made `tool.call` hooks see the arguments after Claude Code repairs misnamed parameters. No `plugin.json` field sets a minimum version.                                                                    |
+
+## pi and omp
+
+| Topic                   | pi 1.1.0                                                                                                                                  | omp 18.10.3                                                                                                                                                      |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime                 | Node with jiti                                                                                                                            | Bun                                                                                                                                                              |
+| Block a call            | `tool_call` returns `{ block: true, reason }`. A handler that throws blocks the call.                                                     | Same                                                                                                                                                             |
+| Feedback after a call   | `tool_result` returns `{ content, isError }`                                                                                              | Same                                                                                                                                                             |
+| Continue after a stop   | `turn_end` or `agent_before_settle` returns `{ continue: true }`. `pi.sendMessage` with `triggerTurn` from `agent_end` also starts a run. | No `agent_before_settle`, and `turn_end` and `agent_end` take no result. `pi.sendMessage` with `triggerTurn` starts a run. `omp -p` aborts that run as it exits. |
+| A message for the user  | `ctx.ui.notify` shows it on the screen of the session                                                                                     | Same                                                                                                                                                             |
+| Load from a link        | Fails: pi resolves the imports of a linked file from the folder of the link, so `./core.ts` is not found.                                 | Not tested                                                                                                                                                       |
+| Load from the real path | `-e <path>`, or the `extensions` setting                                                                                                  | `--hook=<path>`, or the `extensions` setting                                                                                                                     |
+| Settings entry          | `extensions` in `~/.pi/agent/settings.json`, a `string[]` of files or folders. `~` works.                                                 | `extensions` in `~/.omp/agent/config.yml`. `~` works.                                                                                                            |
+| Session id              | `ctx.sessionManager.getSessionId()`                                                                                                       | Same                                                                                                                                                             |
+| Session variables       | `PI_CODING_AGENT=true` and `AI_AGENT=pi`, set at start-up                                                                                 | `OMPCODE=1` and `CLAUDECODE=1`, set in the shell of the bash tool                                                                                                |
+
+## Codex
+
+Codex 0.162.1 runs command hooks only. [`agents/codex.md`](../agents/codex.md#hooks) gives the wiring, `apply-patch.ts`, and hook trust.
+
+| Topic             | Fact                                                                                                                                                                                           |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Block a call      | Exit code 2 with the reason on stderr. A `hookSpecificOutput.permissionDecision` JSON form also exists.                                                                                        |
+| stdout            | Codex rejects stdout JSON that it does not recognize ("hook returned invalid pre-tool-use JSON output"), reports the hook as failed, and lets the call run. A hook that allows prints nothing. |
+| Failed commands   | Codex has no `PostToolUseFailure` event.                                                                                                                                                       |
+| Stop              | The `Stop` payload has `stop_hook_active`.                                                                                                                                                     |
+| Session variables | A shell command sees `CODEX_THREAD_ID` (the session id) and `CODEX_CI=1`.                                                                                                                      |
+
+## Cost
+
+| Path                                          | Time                                                       |
+| --------------------------------------------- | ---------------------------------------------------------- |
+| One `$` call in a mod                         | About 1 ms. The first calls of a session take up to 15 ms. |
+| One `$.process.run` in a mod                  | 2 to 5 ms                                                  |
+| The `enforce-cli-tools` matcher               | 0.03 ms                                                    |
+| One `command.ts` run (Node start, warm cache) | About 18 ms                                                |
+
+A mod and a pi extension start no program, so their cost is the `$` calls and the programs that the hook runs. Each `command.ts` run costs one Node start, so a Codex `apply_patch` costs one start for each file and hook. `track-session-changes/docs/implementation.md` gives the measured cost of the largest mod.

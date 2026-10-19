@@ -9,7 +9,7 @@ One scanner, [`core.ts`](core.ts), serves four agents through two adapters:
 | Claude Code, Codex | [`guard.sh`](guard.sh), a `PreToolUse` command hook on Bash, runs [`command.ts`](command.ts): exit 2 and stderr block | `settings.json.tmpl` and `dot_codex/modify_hooks.json`                                             |
 | pi and omp         | [`pi.ts`](pi.ts): `tool_call` on bash returns `{ block, reason }`                                                     | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
 
-Claude Code runs a command hook and not a mod, because the binary scan copies files, which the mod API cannot do. The design is in [`docs/hooks-design.md`](../../../docs/hooks-design.md#block-secret-commits).
+Claude Code runs a command hook and not a mod, because the binary scan copies files, which the mod API cannot do. See [`docs/hooks/decisions.md`](../../../docs/hooks/decisions.md#block-secret-commits-is-a-command-hook-in-claude-code).
 
 This file describes what the hook does and how to work around it. For why it is built this way, see [docs/implementation.md](docs/implementation.md). For the measurements behind each decision and the alternatives that were tested and rejected, see [docs/research.md](docs/research.md).
 

@@ -1,6 +1,6 @@
 # Implementation notes
 
-How [`core.ts`](../core.ts) takes a snapshot and finds the first changed line, how each adapter calls it, and what it costs. [README.md](../README.md) describes what the hook does for a user. This file is for a person who changes the code. Measured on 2026-10-14 with node 26.10.0, git 2.55.0 and 2.56.0, Claude Code, and Codex CLI 0.160.1. The core became async over an `Io` on 2026-10-19, so that Claude Code runs it as a mod, see [`docs/hooks-design.md`](../../../../docs/hooks-design.md#track-session-changes).
+How [`core.ts`](../core.ts) takes a snapshot and finds the first changed line, how each adapter calls it, and what it costs. [README.md](../README.md) describes what the hook does for a user. This file is for a person who changes the code. Measured on 2026-10-14 with node 26.10.0, git 2.55.0 and 2.56.0, Claude Code, and Codex CLI 0.160.1. The core became async over an `Io` on 2026-10-19, so that Claude Code runs it as a mod, see [`docs/hooks/decisions.md`](../../../../docs/hooks/decisions.md#track-session-changes-runs-as-a-mod).
 
 ## Payloads
 

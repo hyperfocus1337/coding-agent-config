@@ -60,7 +60,7 @@ node "$HOME/.codex/hooks/apply-patch.ts" "$HOME/.claude/hooks/lint-all-languages
 3. For each path, copy the payload, set `tool_name` to `Write` and `tool_input` to `{file_path: <path>}`, and send it to the hook, which the wrapper starts with `node`. The hook takes its single-file branch, as under Claude Code. `hook_event_name`, `cwd`, and the other fields stay unchanged.
 4. Return one exit code to Codex. Exit 2 wins, because only 2 blocks the tool result and sends stderr to the model. Otherwise the highest code wins, so a crash (126, 127) still shows as a warning.
 
-The wrapper reads the payload with no `jq`. Each file costs one Node start, about 18 ms. Until 2026-10-19 a shell version, `apply-patch.sh`, ran the `hook.sh` files. It went with `lint-prose`, the last file hook that moved to TypeScript ([`docs/hooks-design.md`](../../docs/hooks-design.md)).
+The wrapper reads the payload with no `jq`. Each file costs one Node start, about 18 ms. Until 2026-10-19 a shell version, `apply-patch.sh`, ran the `hook.sh` files. It went with `lint-prose`, the last file hook that moved to TypeScript ([`docs/hooks/`](../../docs/hooks/README.md)).
 
 ### Why a wrapper and not a hook change
 

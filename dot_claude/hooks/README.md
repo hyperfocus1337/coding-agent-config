@@ -1,10 +1,8 @@
 # hooks
 
-Hooks are shell commands Claude Code runs on session lifecycle events, for example after every `Write`/`Edit`, before a `Bash` call, or when Claude finishes responding. Each hook is one directory here holding its TypeScript code and its own README. `settings.json` in the parent directory wires them to events and caps each one with a timeout.
+Hooks run on agent events, for example after each `Write` or `Edit`, before a `Bash` call, or when the agent stops. Each hook is one folder here, with its TypeScript code and its own README.
 
-Each hook has moved to a TypeScript core with an adapter for each agent: a Claude Code mod, a pi and omp extension, and a Codex command hook. [`docs/hooks-feasibility.md`](../../docs/hooks-feasibility.md) records the plan and the tests, and [`docs/hooks-design.md`](../../docs/hooks-design.md) gives the design for each hook and the cutover steps.
-
-A moved hook is its own plugin folder, which `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl` loads. `enforce-cli-tools`, `lint-all-languages`, `block-commit-attribution`, `block-secret-commits`, `format-all-languages`, `format-org-tables`, `lint-prose`, `type-check-all-languages`, and `track-session-changes` have moved. `block-secret-commits` and `type-check-all-languages` run as command hooks in Claude Code, not as mods. A moved hook needs Claude Code 2.1.296 or later, the oldest version tested.
+Each hook has one TypeScript core with an adapter for each agent: a Claude Code mod, a pi and omp extension, and a Codex command hook. `block-secret-commits` and `type-check-all-languages` run as command hooks in Claude Code, not as mods. A mod needs Claude Code 2.1.296 or later, the oldest version tested. [`docs/hooks/`](../../docs/hooks/README.md) gives the design, the rules to write a hook, the API facts of each agent, and the decisions.
 
 `just hooks-check` type-checks the moved hooks, validates each mod with `claude plugin validate`, and runs the `test/check.ts` of each hook that has one. It reads the Claude Code types that the engine writes into `~/.claude/hooks/<hook>/.claude-plugin/types/`, so run it after `just chezmoi` and one interactive Claude Code session. A `claude -p` run does not write them.
 

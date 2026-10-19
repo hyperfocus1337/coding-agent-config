@@ -54,14 +54,16 @@ The `mcp/` folder covers configuring MCP (Model Context Protocol) servers on eac
 | [`enabling/desktop.md`](mcp/enabling/desktop.md)   | Enable MCP servers on desktop                        |
 | [`enabling/web.md`](mcp/enabling/web.md)           | Enable MCP servers on the web (claude.ai/code)       |
 
-## Hooks as mods
+## Hooks
 
-Two documents cover the move of the hooks in [`dot_claude/hooks/`](../dot_claude/hooks/README.md) to TypeScript, with one core that Claude Code, pi, omp, and Codex share.
+The `hooks/` folder gives the design of the hooks in [`dot_claude/hooks/`](../dot_claude/hooks/README.md): one TypeScript core for each hook, which Claude Code, pi, omp, and Codex share through an adapter for each agent.
 
-| File                                           | Description                                                            |
-| ---------------------------------------------- | ---------------------------------------------------------------------- |
-| [`hooks-feasibility.md`](hooks-feasibility.md) | The facts, the spikes, and the agreed plan                             |
-| [`hooks-design.md`](hooks-design.md)           | The rules for a hook folder, the design for each hook, and the cutover |
+| File                                 | Description                                              |
+| ------------------------------------ | -------------------------------------------------------- |
+| [`README.md`](hooks/README.md)       | The core and the 3 adapters, and where each one is wired |
+| [`authoring.md`](hooks/authoring.md) | The rules for a hook folder, and the steps to add a hook |
+| [`platforms.md`](hooks/platforms.md) | What the hook API of each agent can and cannot do        |
+| [`decisions.md`](hooks/decisions.md) | Why the hooks are built this way                         |
 
 ## Research
 

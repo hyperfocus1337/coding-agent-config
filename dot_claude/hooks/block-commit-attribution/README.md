@@ -9,7 +9,7 @@ One matcher, [`core.ts`](core.ts), serves three agents through two adapters:
 | Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Bash returns `{ deny }` | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
 | pi and omp  | [`pi.ts`](pi.ts): `tool_call` on bash returns `{ block, reason }`                       | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
 
-Codex does not run this hook. The design is in [`docs/hooks-design.md`](../../../docs/hooks-design.md#block-commit-attribution).
+Codex does not run this hook. See [`docs/hooks/decisions.md`](../../../docs/hooks/decisions.md#the-move-added-no-hook-to-codex).
 
 ## Why a hook
 

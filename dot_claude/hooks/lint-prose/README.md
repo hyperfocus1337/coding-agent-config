@@ -47,7 +47,7 @@ A Write or an Edit has already run when the hook starts, so the hook cannot undo
 
 ## Messages for you
 
-Some messages are for you and not for the model: alerts that this session already reported, a Vale failure, and a missing Vale config. The model does not get them, because they are not about text that it can fix (decision D2 in [`docs/hooks-design.md`](../../../docs/hooks-design.md#decisions)):
+Some messages are for you and not for the model: alerts that this session already reported, a Vale failure, and a missing Vale config. The model does not get them, because they are not about text that it can fix (see [`docs/hooks/decisions.md`](../../../docs/hooks/decisions.md#messages-for-the-user-go-to-a-notification)):
 
 | Agent       | Where the message goes                                                                                                              |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |

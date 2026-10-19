@@ -10,7 +10,7 @@ One matcher, [`core.ts`](core.ts), serves four agents through three adapters:
 | pi and omp  | [`pi.ts`](pi.ts): `tool_call` on bash returns `{ block, reason }`                       | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
 | Codex       | [`command.ts`](command.ts): exit code 2 with the message on stderr                      | `PreToolUse` in `dot_codex/modify_hooks.json`                                                      |
 
-The design and the tests behind this layout are in [`docs/hooks-feasibility.md`](../../../docs/hooks-feasibility.md).
+The design behind this layout is in [`docs/hooks/`](../../../docs/hooks/README.md).
 
 ## How it works
 
