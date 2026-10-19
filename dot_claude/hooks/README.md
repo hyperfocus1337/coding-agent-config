@@ -31,7 +31,7 @@ Each hook has one TypeScript core with an adapter for each agent: a Claude Code 
 
 **Self-disable when a tool is missing.** A hook checks for its linter, formatter, or scanner and exits 0 when the tool is absent, so a fresh machine is never blocked on an uninstalled dependency.
 
-**Dependencies.** Every shell hook parses the payload with [`jq`](https://jqlang.github.io/jq/), so `jq` must be on `$PATH` (`brew install jq` on macOS). Per-hook tools are listed in the table above and installed as described in each hook's README.
+**Dependencies.** Each command hook needs `node` 23.6 or later, which runs a `.ts` file. pi and omp run `pi.ts` in their own runtime. The tools of each hook are in the table above, and each hook README tells how to install them.
 
 **A missing `node` gives a warning.** A command entry that runs a `.ts` file starts with `command -v node >/dev/null || exit 0`, so a machine with no `node` does not get an error on each call. Then the hook does not run, so a `SessionStart` entry in Claude Code and in Codex checks once for each session that `node` can run a `.ts` file (`process.features.typescript`). If it cannot, the entry prints a `systemMessage`, which both agents show as a warning, with the list of hooks that are off. `block-secret-commits` does not exit 0: its `guard.sh` blocks each `git commit` instead. pi and omp load `pi.ts` in their own runtime and need no `node` on `PATH`.
 
