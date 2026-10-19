@@ -51,7 +51,7 @@ It skips a symlink, and a file that has unstaged changes. A `git add` of that fi
 
 - One formatter run for each file and formatter. A Node start costs about 20 ms, and Prettier about 0.4 s for each run, so a commit of 30 files adds about 13 s.
 - Config-based hooks need a recent git. An older git ignores the `hook.*` entries and shows no error. The test fails its first check on such a git.
-- The linters do not run here. `lint-all-languages` and `lint-prose` check whole files, so a linter at `pre-commit` would stop commits because of problems that were in the file before.
+- The linters do not run here. `lint-code` and `lint-prose` check whole files, so a linter at `pre-commit` would stop commits because of problems that were in the file before.
 
 ## Test
 

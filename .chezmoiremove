@@ -2,7 +2,7 @@
 # removes each one from the home folder at the next apply. Add each file that
 # the repo stops deploying (docs/hooks/decisions.md).
 .claude/hooks/enforce-cli-tools/hook.sh
-.claude/hooks/lint-all-languages/hook.sh
+.claude/hooks/lint-all-languages
 .claude/hooks/block-commit-attribution/hook.sh
 .claude/hooks/block-secret-commits/hook.sh
 .claude/hooks/format-all-languages

@@ -1,5 +1,5 @@
 /**
- * The lint-all-languages logic: finds the files a tool call changed and lints
+ * The lint-code logic: finds the files a tool call changed and lints
  * each by its extension. The adapters pass in the file and process functions,
  * because a mod reaches them only through `$`.
  *

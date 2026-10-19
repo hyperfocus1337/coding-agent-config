@@ -94,7 +94,7 @@ Any other extension is a clean skip, so the hook never invokes Prettier for file
 
 ## Throwaway files
 
-A path under `/tmp`, `/var/tmp` or `$TMPDIR` is skipped on both paths: the scratchpad of the agent lives there, and a file it is about to throw away is not project code. macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/...`, and the path a payload carries holds that prefix while `$TMPDIR` does not, so both sides of the comparison drop a leading `/private`. [`lint-all-languages`](../lint-all-languages/README.md) and [`format-org-tables`](../format-org-tables/README.md) skip the same paths.
+A path under `/tmp`, `/var/tmp` or `$TMPDIR` is skipped on both paths: the scratchpad of the agent lives there, and a file it is about to throw away is not project code. macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/...`, and the path a payload carries holds that prefix while `$TMPDIR` does not, so both sides of the comparison drop a leading `/private`. [`lint-code`](../lint-code/README.md) and [`format-org-tables`](../format-org-tables/README.md) skip the same paths.
 
 ## Prose wrapping
 
@@ -104,7 +104,7 @@ Everything is formatted with `--prose-wrap preserve`, so Prettier keeps the line
 
 ## Never blocks
 
-Unlike `lint-all-languages`, this hook never blocks a call and never marks a result as an error. A missing Prettier, a parse error, or any other failure leaves the file as it is. A formatter should reshape working code, not reject an edit.
+Unlike `lint-code`, this hook never blocks a call and never marks a result as an error. A missing Prettier, a parse error, or any other failure leaves the file as it is. A formatter should reshape working code, not reject an edit.
 
 | Adapter      | On a failure                                                                                     |
 | ------------ | ------------------------------------------------------------------------------------------------ |
@@ -122,7 +122,7 @@ The core stops Prettier after 20 s. Codex stops `command.ts` after 20 s, the `ti
 
 ## Installing Prettier
 
-The hook calls the `prettier` binary directly (like `lint-all-languages` calls its linters), so any Prettier on `PATH` works, global, yarn-global, or a project `node_modules/.bin` on `PATH`. It never triggers a network install. Install it whichever way suits you:
+The hook calls the `prettier` binary directly (like `lint-code` calls its linters), so any Prettier on `PATH` works, global, yarn-global, or a project `node_modules/.bin` on `PATH`. It never triggers a network install. Install it whichever way suits you:
 
 ```sh
 pnpm install -g prettier

@@ -50,7 +50,7 @@ The hook never blocks a call and never marks a result as an error. A missing `te
 | `pi.ts`      | The handler catches the error and returns nothing.                                                |
 | `command.ts` | Node exits 1, which Codex shows as a failed hook and does not block. A missing terraform exits 0. |
 
-The hook drops the stderr of `terraform fmt`, so a parse error does not show as hook output. `lint-all-languages` does not check Terraform, so nothing reports the parse error to the model. `terraform validate` or tflint can do that, but both check a whole module folder and `validate` needs `terraform init`.
+The hook drops the stderr of `terraform fmt`, so a parse error does not show as hook output. `lint-code` does not check Terraform, so nothing reports the parse error to the model. `terraform validate` or tflint can do that, but both check a whole module folder and `validate` needs `terraform init`.
 
 ## Requirements
 

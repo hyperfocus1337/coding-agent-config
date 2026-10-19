@@ -8,11 +8,11 @@ On 2026-10-19 the hook moved from `hook.sh` to TypeScript: a Claude Code mod, a 
 
 ## Why a separate hook
 
-The paragraph check started as a `.md` branch in [`lint-all-languages`](../../lint-all-languages/README.md). It moved here for these reasons:
+The paragraph check started as a `.md` branch in [`lint-code`](../../lint-code/README.md). It moved here for these reasons:
 
-1. **Prose and code need different scopes.** A code linter reports on the whole file. A prose rule reports only on the paragraphs a git diff marks as changed. In `lint-all-languages` that logic was prose-only state in a hook that is about code.
-2. **Less complexity in each hook.** `lint-all-languages` keeps one linter per extension and no diff logic. This hook has one input path per case and one linter.
-3. **Room to grow.** More Vale rules come from [`technical-linting-rules.md`](../../../../docs/research/linting/technical-linting-rules.md). Vale can also lint comments in code files, and a `.py` file in `lint-all-languages` would then need two linters in one branch.
+1. **Prose and code need different scopes.** A code linter reports on the whole file. A prose rule reports only on the paragraphs a git diff marks as changed. In `lint-code` that logic was prose-only state in a hook that is about code.
+2. **Less complexity in each hook.** `lint-code` keeps one linter per extension and no diff logic. This hook has one input path per case and one linter.
+3. **Room to grow.** More Vale rules come from [`technical-linting-rules.md`](../../../../docs/research/linting/technical-linting-rules.md). Vale can also lint comments in code files, and a `.py` file in `lint-code` would then need two linters in one branch.
 4. **Precedent.** [`format-org-tables`](../../format-org-tables/README.md) is a separate hook for one concern, next to `format-prettier`.
 
 The cost is a second copy of the payload read and the temp-file skip, about 10 lines.
@@ -88,7 +88,7 @@ To find the files a command wrote, the hook must compare the disk before and aft
 
 ## Why it blocks
 
-An `error` alert makes Vale exit 1, and the hook then exits 2. A `PostToolUse` hook reaches the model only when it exits 2. On exit 0 its output goes to the transcript, and Claude never sees it. [`lint-all-languages`](../../lint-all-languages/README.md#how-the-model-sees-the-errors) gives the full reason.
+An `error` alert makes Vale exit 1, and the hook then exits 2. A `PostToolUse` hook reaches the model only when it exits 2. On exit 0 its output goes to the transcript, and Claude never sees it. [`lint-code`](../../lint-code/README.md#how-the-model-sees-the-errors) gives the full reason.
 
 Vale exits 2 when it fails, for example on a rule it cannot load or on input it cannot parse. `check.sh` passes that code through, and the hook then exits 1 with `lint-prose: Vale failed` and Vale's error. Exit 1 shows the message to the user and does not block. The error is not in the prose, so a block would tell Claude to fix text that is correct.
 

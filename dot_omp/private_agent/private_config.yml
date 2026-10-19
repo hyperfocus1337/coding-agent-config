@@ -17,7 +17,7 @@ commands:
   enableClaudeUser: true
 extensions:
   - ~/.claude/hooks/enforce-cli-tools/pi.ts
-  - ~/.claude/hooks/lint-all-languages/pi.ts
+  - ~/.claude/hooks/lint-code/pi.ts
   - ~/.claude/hooks/block-commit-attribution/pi.ts
   - ~/.claude/hooks/block-secret-commits/pi.ts
   - ~/.claude/hooks/format-prettier/pi.ts

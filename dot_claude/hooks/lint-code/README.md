@@ -1,4 +1,4 @@
-# lint-all-languages
+# lint-code
 
 Lints each file that a Write, an Edit, or a Bash call changed, with the linter for its extension, and gives the errors to the model.
 
@@ -107,13 +107,13 @@ Codex runs a hook only after you trust its entry. After the change from `hook.sh
 
 ## Files
 
-| File                                             | Deployed to `~/.claude/hooks/lint-all-languages/` | Role                                                               |
-| ------------------------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------ |
-| `core.ts`                                        | Yes                                               | Finds the files, picks the linter, and runs it through an `Io`     |
-| `hooks/register.ts`, `hooks/hooks.json`          | Yes                                               | Claude Code mod                                                    |
-| `dot_claude-plugin/plugin.json`                  | Yes, as `.claude-plugin/plugin.json`              | Plugin manifest                                                    |
-| `pi.ts`                                          | Yes                                               | pi and omp extension                                               |
-| `command.ts`                                     | Yes                                               | Codex command hook                                                 |
-| `io.ts`                                          | Yes                                               | The `Io` and the settings under Node, for `pi.ts` and `command.ts` |
-| `config/dot_yamllint`, `config/dot_ansible-lint` | Yes, as `.yamllint` and `.ansible-lint`           | Linter configs                                                     |
-| `README.md`, `test/`                             | No                                                | Kept in the repo by `.chezmoiignore`                               |
+| File                                             | Deployed to `~/.claude/hooks/lint-code/` | Role                                                               |
+| ------------------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------ |
+| `core.ts`                                        | Yes                                      | Finds the files, picks the linter, and runs it through an `Io`     |
+| `hooks/register.ts`, `hooks/hooks.json`          | Yes                                      | Claude Code mod                                                    |
+| `dot_claude-plugin/plugin.json`                  | Yes, as `.claude-plugin/plugin.json`     | Plugin manifest                                                    |
+| `pi.ts`                                          | Yes                                      | pi and omp extension                                               |
+| `command.ts`                                     | Yes                                      | Codex command hook                                                 |
+| `io.ts`                                          | Yes                                      | The `Io` and the settings under Node, for `pi.ts` and `command.ts` |
+| `config/dot_yamllint`, `config/dot_ansible-lint` | Yes, as `.yamllint` and `.ansible-lint`  | Linter configs                                                     |
+| `README.md`, `test/`                             | No                                       | Kept in the repo by `.chezmoiignore`                               |

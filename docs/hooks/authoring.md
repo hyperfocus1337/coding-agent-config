@@ -25,7 +25,7 @@ A hook that has no Claude Code mod, such as `block-secret-commits`, has no `hook
 The core takes values or an `Io` object. It never takes `$` and never reads an environment variable.
 
 - **A pure core** matches text and returns a result. `enforce-cli-tools` and `block-commit-attribution` are pure.
-- **An `Io` core** must run a program or read a file before it can decide. It gets an `Io` object with only the functions it needs, for example `stat`, `read`, and `run`. `lint-all-languages/core.ts` is the model.
+- **An `Io` core** must run a program or read a file before it can decide. It gets an `Io` object with only the functions it needs, for example `stat`, `read`, and `run`. `lint-code/core.ts` is the model.
 - **Each `Io` function returns `undefined` for "missing"** (a file that does not exist, a program that is not installed) instead of throwing. The core then applies the "self-disable when a tool is missing" convention in one place.
 - **All `Io` functions are async,** because the mod has no synchronous I/O. The Node side wraps `node:fs/promises` and `spawn`.
 

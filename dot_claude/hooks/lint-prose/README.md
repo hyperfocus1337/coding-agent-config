@@ -57,7 +57,7 @@ Some messages are for you and not for the model: alerts that this session alread
 
 ## Settings
 
-`CLAUDE_LINT_DISABLE` turns the hook off when its list holds `prose` or `all`. `all` also turns off `lint-all-languages`. The hook reads it at run time, so export it in your shell, or set it in `env` in `settings.json`.
+`CLAUDE_LINT_DISABLE` turns the hook off when its list holds `prose` or `all`. `all` also turns off `lint-code`. The hook reads it at run time, so export it in your shell, or set it in `env` in `settings.json`.
 
 ```sh
 export CLAUDE_LINT_DISABLE="prose"

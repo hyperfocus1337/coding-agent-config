@@ -1,6 +1,6 @@
 # Official alternatives to the format, lint, and type-check hooks
 
-Can an official or maintained hook, plugin, or integration replace [`type-check-tsc`](../../../dot_claude/hooks/type-check-tsc/README.md), [`type-check-pyrefly`](../../../dot_claude/hooks/type-check-pyrefly/README.md), [`format-prettier`](../../../dot_claude/hooks/format-prettier/README.md), or [`lint-all-languages`](../../../dot_claude/hooks/lint-all-languages/README.md) in Claude Code, Codex, pi, and omp?
+Can an official or maintained hook, plugin, or integration replace [`type-check-tsc`](../../../dot_claude/hooks/type-check-tsc/README.md), [`type-check-pyrefly`](../../../dot_claude/hooks/type-check-pyrefly/README.md), [`format-prettier`](../../../dot_claude/hooks/format-prettier/README.md), or [`lint-code`](../../../dot_claude/hooks/lint-code/README.md) in Claude Code, Codex, pi, and omp?
 
 Read on 2026-10-19. "Local" means the installed copy in the devcontainer. Nothing was installed, enabled, or run as a live agent test.
 
@@ -103,7 +103,7 @@ Prettier publishes no agent hook, Claude Code plugin, MCP server, or agent docs 
 | YAML `.yml` `.yaml`                                  | Yes                |
 | GraphQL `.graphql` `.gql`, Handlebars `.hbs`         | No                 |
 
-Prettier cannot format Python, shell, Go, Rust, Terraform, or TOML without a plugin ([plugins page](https://prettier.io/docs/plugins)). The plugins for shell, Rust, and TOML are community plugins. The prettier org's own Python plugin is archived. So the old name `format-all-languages` was not accurate: the hook formats the Prettier languages in one list. The hook is now `format-prettier`, and it also formats `.mts` and `.cts`, which `type-check-tsc` and `lint-all-languages` both handle.
+Prettier cannot format Python, shell, Go, Rust, Terraform, or TOML without a plugin ([plugins page](https://prettier.io/docs/plugins)). The plugins for shell, Rust, and TOML are community plugins. The prettier org's own Python plugin is archived. So the old name `format-all-languages` was not accurate: the hook formats the Prettier languages in one list. The hook is now `format-prettier`, and it also formats `.mts` and `.cts`, which `type-check-tsc` and `lint-code` both handle.
 
 ## Linters
 
@@ -177,9 +177,9 @@ The default server list includes pyright, basedpyright, ty, ruff, `typescript-la
 
 The old name `format-all-languages` was not accurate, because the hook runs Prettier on a fixed list of extensions and does no other language. The hook is now `format-prettier`, and its list now has `.mts` and `.cts`, which Prettier formats natively.
 
-**`lint-all-languages`: no candidate replaces it, and only a part could move.** No vendor ships a hook that reports lint errors to the model after an edit. In Claude Code, local `.lsp.json` servers (`ruff server`, `oxlint --lsp`, `bash-language-server start`) would deliver per-file diagnostics after Edit and Write, without a block and without Bash writes. In omp, the built-in ruff, eslint, biome, bash, and terraform-ls servers do the same after `write`. Codex and pi would still need the hook, and no server covers yamllint or ansible-lint in all four agents.
+**`lint-code`: no candidate replaces it, and only a part could move.** No vendor ships a hook that reports lint errors to the model after an edit. In Claude Code, local `.lsp.json` servers (`ruff server`, `oxlint --lsp`, `bash-language-server start`) would deliver per-file diagnostics after Edit and Write, without a block and without Bash writes. In omp, the built-in ruff, eslint, biome, bash, and terraform-ls servers do the same after `write`. Codex and pi would still need the hook, and no server covers yamllint or ansible-lint in all four agents.
 
-The `tf` entry checked format, not lint. It is now the [`format-terraform`](../../../dot_claude/hooks/format-terraform/README.md) hook, which runs `terraform fmt` without `-check`, and `lint-all-languages` does not check Terraform.
+The old name `lint-all-languages` was not accurate either, because the hook lints Python, JS/TS, shell, and YAML. The hook is now `lint-code`, which pairs with `lint-prose`. The `tf` entry checked format, not lint. It is now the [`format-terraform`](../../../dot_claude/hooks/format-terraform/README.md) hook, which runs `terraform fmt` without `-check`, and `lint-code` does not check Terraform.
 
 ## Not verified
 

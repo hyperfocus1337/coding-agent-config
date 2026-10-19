@@ -45,7 +45,7 @@ So on the Bash matcher the hook takes every `.org` path the command text names, 
 
 Relative paths resolve against the session cwd, so a `cd` elsewhere in the command can resolve one wrong. The file check makes that a silent miss, or at worst a no-op pass over an already aligned file of the same name.
 
-A command names a file it only reads as often as one it writes, and aligning a file the command read is an edit nobody asked for: `sed -n '1,20p' config.org > copy.org` names the live configuration and writes a copy. So a named path counts only when its mtime is inside a 120 s window, the test [`lint-all-languages`](../lint-all-languages/README.md) applies for the same reason. A command that writes early and then runs for minutes falls outside the window and is missed; the upgrade is a `PreToolUse` hook that stamps the start time of the matching call.
+A command names a file it only reads as often as one it writes, and aligning a file the command read is an edit nobody asked for: `sed -n '1,20p' config.org > copy.org` names the live configuration and writes a copy. So a named path counts only when its mtime is inside a 120 s window, the test [`lint-code`](../lint-code/README.md) applies for the same reason. A command that writes early and then runs for minutes falls outside the window and is missed; the upgrade is a `PreToolUse` hook that stamps the start time of the matching call.
 
 #### A Bash command that writes a file and then fails
 
