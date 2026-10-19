@@ -118,7 +118,7 @@ The core stops Prettier after 20 s. Codex stops `command.ts` after 20 s, the `ti
 
 - **Prettier** on `PATH`, see below.
 - **git**, for the Bash sweep and the amend hint.
-- **Node 23.6 or later** for `command.ts`, which Codex and `format-staged-files` run. With no `node`, the Codex entry exits 0. The mod and `pi.ts` need no `node` of their own.
+- **Node 23.6 or later** for `command.ts`, which Codex and `format-staged-files` run. With no `node`, the Codex entry exits 0, and the `SessionStart` check of Codex shows a warning. The mod and `pi.ts` need no `node` of their own.
 
 ## Installing Prettier
 

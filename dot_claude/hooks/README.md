@@ -33,6 +33,8 @@ The hooks move one at a time to a TypeScript core with an adapter for each agent
 
 **Dependencies.** Every shell hook parses the payload with [`jq`](https://jqlang.github.io/jq/), so `jq` must be on `$PATH` (`brew install jq` on macOS). Per-hook tools are listed in the table above and installed as described in each hook's README.
 
+**A missing `node` gives a warning.** A command entry that runs a `.ts` file starts with `command -v node >/dev/null || exit 0`, so a machine with no `node` does not get an error on each call. Then the hook does not run, so a `SessionStart` entry in Claude Code and in Codex checks once for each session that `node` can run a `.ts` file (`process.features.typescript`). If it cannot, the entry prints a `systemMessage`, which both agents show as a warning, with the list of hooks that are off. `block-secret-commits` does not exit 0: its `guard.sh` blocks each `git commit` instead. pi and omp load `pi.ts` in their own runtime and need no `node` on `PATH`.
+
 **Per-repo escape hatches.** `block-secret-commits` reads `.claude-allow-secrets` and `.betterleaksignore`; `enforce-cli-tools` reads `.claude-allow-cli-tools`. Both also accept an environment variable for a one-off override. See the hook README for the exact names.
 
 **A test that commits turns off `format-staged-files`.** In an agent session, an agent variable such as `CLAUDECODE=1` is set, so `git commit` in a fixture repository under `$HOME` starts the global pre-commit hook. The hook formats the fixture before the commit, so the commit does not hold the text that the test wrote. Put these lines in each test that commits, before the first commit. They turn off only this hook and keep the other global settings:

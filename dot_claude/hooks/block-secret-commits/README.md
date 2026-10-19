@@ -15,7 +15,7 @@ This file describes what the hook does and how to work around it. For why it is 
 
 ## Requirements
 
-The hook needs Node 23.6 or later, which runs `.ts` files without a flag. In Claude Code and Codex, `guard.sh` runs `command.ts`. If `node` is missing from `$PATH`, is older than 23.6, or fails, `guard.sh` blocks each `git commit` with a message that names the problem, and lets other commands pass. An app started from the macOS Dock can get a shorter `$PATH` than your terminal, so this block can occur there first.
+The hook needs Node 23.6 or later, which runs `.ts` files without a flag. In Claude Code and Codex, `guard.sh` runs `command.ts`. If `node` is missing from `$PATH`, is older than 23.6, or fails, `guard.sh` blocks each `git commit` with a message that names the problem, and lets other commands pass. An app started from the macOS Dock can get a shorter `$PATH` than your terminal, so this block can occur there first. The `SessionStart` check of each agent also warns at the start of the session, see [the hooks README](../README.md#shared-conventions).
 
 Both checks need [betterleaks](https://github.com/betterleaks/betterleaks) on `$PATH`. Without it the betterleaks scan silently does nothing, and the binary scan blocks every newly added binary, because it cannot clear what it cannot read:
 
