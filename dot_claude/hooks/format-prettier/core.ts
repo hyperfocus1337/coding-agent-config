@@ -1,5 +1,5 @@
 /**
- * The format-all-languages logic: finds the files a tool call changed and
+ * The format-prettier logic: finds the files a tool call changed and
  * formats them with one Prettier run. Never blocks: a missing Prettier or a
  * parse error leaves the files as they are. The adapters pass in the file and
  * process functions, because a mod reaches them only through `$`.

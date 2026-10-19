@@ -4,7 +4,7 @@ A git `pre-commit` hook that formats the staged files before a commit made in an
 
 ## Why it exists
 
-The formatters [`format-all-languages`](../../../../dot_claude/hooks/format-all-languages/README.md) and [`format-org-tables`](../../../../dot_claude/hooks/format-org-tables/README.md) run after a tool call ends. When one Bash command writes a file and commits it, the commit already holds the unformatted text by the time the formatters run. The formatters then tell the model to amend.
+The formatters [`format-prettier`](../../../../dot_claude/hooks/format-prettier/README.md) and [`format-org-tables`](../../../../dot_claude/hooks/format-org-tables/README.md) run after a tool call ends. When one Bash command writes a file and commits it, the commit already holds the unformatted text by the time the formatters run. The formatters then tell the model to amend.
 
 In 205 sessions from 2026-08-30 to 2026-09-27, this occurred approximately 60 times, in at least 5 repositories. See [hook event scoping](../../../../docs/research/hooks/event-scoping.md). A `pre-commit` hook runs inside `git commit`, after the command wrote the file and before git writes the commit, so the commit gets the formatted file.
 
@@ -42,7 +42,7 @@ Each agent sets a variable in the processes that it starts. The hook runs when o
 ## What it does
 
 1. It lists the staged files with `git diff --cached`: added, copied, modified, and renamed files. For `git commit -a` and `git commit <path>`, git builds a temporary index and sets `GIT_INDEX_FILE`, so the list holds the files that this commit takes.
-2. For each regular file, it runs the `command.ts` of `format-all-languages` and of `format-org-tables` with a `PostToolUse` payload that names the file in `tool_input.file_path`. The formatting rules stay in those two hooks: the extensions, `.prettierignore`, `--prose-wrap preserve`, and the skip of `/tmp` and `$TMPDIR`.
+2. For each regular file, it runs the `command.ts` of `format-prettier` and of `format-org-tables` with a `PostToolUse` payload that names the file in `tool_input.file_path`. The formatting rules stay in those two hooks: the extensions, `.prettierignore`, `--prose-wrap preserve`, and the skip of `/tmp` and `$TMPDIR`.
 3. When a formatter changed the file, it runs `git add` on that file. Git reads the index again after the `pre-commit` hook, so the commit takes the formatted version. It also prints `format-staged-files: reformatted and restaged <path>` to stderr. Git passes this line through, also with `git commit -q`, so the Bash output shows that the commit changed the file.
 
 It skips a symlink, and a file that has unstaged changes. A `git add` of that file would also stage the unstaged changes and put them in the commit. The file is committed as staged, and the amend hint of the formatters stays as the fallback for it.

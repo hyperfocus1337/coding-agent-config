@@ -14,7 +14,7 @@ The git pre-commit hook [`format-staged-files`](../../../dot_config/git/hooks/fo
 
 ## Why this is a separate hook
 
-[`format-all-languages`](../format-all-languages/) covers everything Prettier parses, and Prettier has no Org parser, so `.org` is not in its extension list and never will be. Org table alignment is `org-table-align`, an Emacs function, so the tool, the invocation, and the failure modes share nothing with the Prettier hook. Keeping it standalone means it needs none of that hook's machinery (no git sweep, no markdown/code split, no `--print-width` reasoning) and can be turned off alone.
+[`format-prettier`](../format-prettier/) formats the Prettier languages in its extension list, and Prettier has no Org parser, so `.org` is not in its extension list and never will be. Org table alignment is `org-table-align`, an Emacs function, so the tool, the invocation, and the failure modes share nothing with the Prettier hook. Keeping it standalone means it needs none of that hook's machinery (no git sweep, no markdown/code split, no `--print-width` reasoning) and can be turned off alone.
 
 ## The problem it solves
 
@@ -41,7 +41,7 @@ The call names exactly one file. The hook aligns that file.
 
 A Bash call carries no `file_path`, but a shell command (a heredoc, `sed`, a redirect) writes `.org` files often enough to matter. This hook used to skip them all: a literate Emacs configuration written through heredocs kept two misaligned tables until they were found by hand.
 
-So on the Bash matcher the hook takes every `.org` path the command text names, absolute or relative to the session cwd, and aligns those. It asks git nothing, unlike the markdown sweep in [`format-all-languages`](../format-all-languages/README.md), because a command that writes an Org file names the file. A command that rewrites one without naming it (a script it calls, a `find -exec`) is still missed, and that file stays misaligned until the next `Edit` touches it.
+So on the Bash matcher the hook takes every `.org` path the command text names, absolute or relative to the session cwd, and aligns those. It asks git nothing, unlike the markdown sweep in [`format-prettier`](../format-prettier/README.md), because a command that writes an Org file names the file. A command that rewrites one without naming it (a script it calls, a `find -exec`) is still missed, and that file stays misaligned until the next `Edit` touches it.
 
 Relative paths resolve against the session cwd, so a `cd` elsewhere in the command can resolve one wrong. The file check makes that a silent miss, or at worst a no-op pass over an already aligned file of the same name.
 

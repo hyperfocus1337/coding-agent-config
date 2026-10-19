@@ -38,6 +38,10 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 **Decision:** `type-check-tsc` and `type-check-pyrefly` replace `type-check-all-languages`. Each hook has its own copy of the git lookup, `io.ts`, and the adapters. **Why:** the name tells which checker runs, you turn off one checker by removing one entry, and each checker gets its own 60 s limit. The two checkers shared only the changed-file lookup, about 15 lines. **Cost:** about 100 lines that are the same in both hooks and must stay the same by hand. A shared module was rejected because no hook imports from another hook. **Why not Python for pyrefly:** a Python hook can only be a command hook, so pi and omp would lose the check, and the hooks would need a second runtime. [`hook-alternatives.md`](../research/hooks/hook-alternatives.md) found no official hook that replaces either one.
 
+## Each hook name says which tool runs
+
+**Decision:** `format-prettier` replaces `format-all-languages`, and `lint-all-languages` keeps its name and stays one hook. **Why:** Prettier formats only its own languages, not Python, shell, or Terraform, so "all languages" was not accurate. `lint-all-languages` runs 6 tools, and a split by language would make about 5 copies of the adapters and the test setup, as the type-check split did. **Cost:** a rename changes the Codex hook entries, so you must trust them again in the Codex TUI.
+
 ## track-session-changes runs as a mod
 
 **Decision:** the core is async over an `Io` object, so that Claude Code runs it as a mod. The other option was to keep `node hook.ts` as a command hook. **Why:** the mod took 9 to 30 ms for each side of a Bash call, against 27 to 57 ms for the command hook. **Cost:** the mod runs `git hash-object`, `ln`, `cp -p`, `mv`, `rm -rf`, and `sh -c 'cat >>'` for what `$.fs` cannot do. See [`track-session-changes/docs/implementation.md`](../../dot_claude/hooks/track-session-changes/docs/implementation.md).

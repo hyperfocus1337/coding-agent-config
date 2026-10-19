@@ -19,7 +19,7 @@ ours=$(cat <<'EOF'
       {
         "hooks": [
           {
-            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/format-all-languages/command.ts\"",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/format-prettier/command.ts\"",
             "timeout": 20,
             "type": "command"
           },
@@ -44,7 +44,7 @@ ours=$(cat <<'EOF'
       {
         "hooks": [
           {
-            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.codex/hooks/apply-patch.ts\" \"$HOME/.claude/hooks/format-all-languages/command.ts\"",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.codex/hooks/apply-patch.ts\" \"$HOME/.claude/hooks/format-prettier/command.ts\"",
             "timeout": 20,
             "type": "command"
           },
@@ -108,7 +108,7 @@ ours=$(cat <<'EOF'
       {
         "hooks": [
           {
-            "command": "case $(node -p process.features.typescript 2>/dev/null) in strip | transform) ;; *) echo '{\"systemMessage\": \"Node 23.6 or later is not on the PATH of Codex, so enforce-cli-tools, lint-all-languages, lint-prose, type-check-tsc, type-check-pyrefly, format-all-languages, format-org-tables, and track-session-changes are off, block-secret-commits blocks each git commit, and git does not format staged files. Put node 23.6 or later on the PATH, then start a new session.\"}' ;; esac",
+            "command": "case $(node -p process.features.typescript 2>/dev/null) in strip | transform) ;; *) echo '{\"systemMessage\": \"Node 23.6 or later is not on the PATH of Codex, so enforce-cli-tools, lint-all-languages, lint-prose, type-check-tsc, type-check-pyrefly, format-prettier, format-org-tables, and track-session-changes are off, block-secret-commits blocks each git commit, and git does not format staged files. Put node 23.6 or later on the PATH, then start a new session.\"}' ;; esac",
             "timeout": 10,
             "type": "command"
           },

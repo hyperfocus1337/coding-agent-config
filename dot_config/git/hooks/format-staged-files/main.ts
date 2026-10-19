@@ -1,6 +1,6 @@
 /**
  * Git pre-commit hook, not an agent hook: formats the staged files through
- * the command.ts of format-all-languages and format-org-tables, then stages
+ * the command.ts of format-prettier and format-org-tables, then stages
  * the result, so the commit holds the formatted text. A Bash command that
  * writes a file and commits it in one call gets past the PostToolUse
  * formatters, which run after the commit. ~/.config/git/config sets this hook
@@ -46,7 +46,7 @@ const read = (file: string) => {
 // build a temporary index, get the files they are about to commit. Each
 // child gets the git variables through the environment.
 // shortcut: one formatter run for each file, about 0.4 s each for Prettier.
-// The upgrade is a list mode in format-all-languages, so one Prettier run
+// The upgrade is a list mode in format-prettier, so one Prettier run
 // takes every file.
 const staged = git(
   "diff",
@@ -71,7 +71,7 @@ for (const rel of staged.stdout.split("\0")) {
     cwd: root,
     tool_input: { file_path: file },
   });
-  for (const formatter of ["format-all-languages", "format-org-tables"])
+  for (const formatter of ["format-prettier", "format-org-tables"])
     spawnSync(process.execPath, [`${hooks}/${formatter}/command.ts`], {
       cwd: root,
       input: payload,

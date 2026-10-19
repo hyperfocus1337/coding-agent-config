@@ -38,10 +38,7 @@ const tmp = fs.mkdtempSync(path.join(os.homedir(), ".format-staged-test."));
 const home = `${tmp}/home`;
 for (const [link, target] of [
   [".config/git/hooks/format-staged-files", here],
-  [
-    ".claude/hooks/format-all-languages",
-    `${repo}/dot_claude/hooks/format-all-languages`,
-  ],
+  [".claude/hooks/format-prettier", `${repo}/dot_claude/hooks/format-prettier`],
   [
     ".claude/hooks/format-org-tables",
     `${repo}/dot_claude/hooks/format-org-tables`,

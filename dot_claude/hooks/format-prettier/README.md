@@ -1,4 +1,4 @@
-# format-all-languages
+# format-prettier
 
 Formats the files that a Write, an Edit, or a Bash call changed with [Prettier](https://prettier.io/), by extension. This README holds the design notes, and the comments in [`core.ts`](core.ts) name the sections below. For why the hook runs after each call and not at the end of a turn, see [docs/implementation.md](docs/implementation.md).
 
