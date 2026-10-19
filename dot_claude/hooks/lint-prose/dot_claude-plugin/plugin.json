@@ -1,0 +1,5 @@
+{
+  "name": "lint-prose",
+  "version": "0.1.0",
+  "description": "Lints the prose in the file a Write or Edit call changed with Vale and hands the alerts to the model."
+}

@@ -4,6 +4,8 @@ Why the hook is built the way it is, and what each rule counts in each format. [
 
 The format behavior below was run on Vale 3.23.0, not reasoned about: Markdown, Org, and HTML on 2026-09-27, and plain text on 2026-10-04.
 
+On 2026-10-19 the hook moved from `hook.sh` to TypeScript: a Claude Code mod, a pi and omp extension, and a `command.ts` for Codex. The logic and the cases stayed the same. Where this file says that the hook blocks, the mod adds `context`, `pi.ts` marks the result as an error, and `command.ts` exits 2. Where it says exit 1, the mod and `pi.ts` send a notification ([README](../README.md#messages-for-you)).
+
 ## Why a separate hook
 
 The paragraph check started as a `.md` branch in [`lint-all-languages`](../../lint-all-languages/README.md). It moved here for these reasons:
@@ -25,7 +27,7 @@ All rules live in [`dot_config/vale/styles/Writing/`](../../../../dot_config/val
 
 `ParagraphLength` is a Vale `occurrence` check with `max: 5`. It counts sentence ends: a `.`, `!`, or `?` before white space or the end of the text. A lookbehind keeps abbreviations such as "e.g.", "i.e.", "etc.", and "vs." from ending a sentence.
 
-To add a rule, add a YAML file to `dot_config/vale/styles/Writing/`, add a row to the table above, and add a pass case and a fail case to `test/test.sh`. Vale exits 1 only on an `error` alert, so a rule at `warning` or `suggestion` never blocks and Claude never sees it. See [Why it blocks](#why-it-blocks).
+To add a rule, add a YAML file to `dot_config/vale/styles/Writing/`, add a row to the table above, and add a pass case and a fail case to `test/check.ts`. Vale exits 1 only on an `error` alert, so a rule at `warning` or `suggestion` never blocks and Claude never sees it. See [Why it blocks](#why-it-blocks).
 
 ## What each format counts
 
@@ -61,7 +63,7 @@ The filter reads `git diff -U0` for the file and collects the changed line numbe
 | A tracked file                               | `HEAD`               |
 | Outside git, an untracked file, first commit | Nothing: every alert |
 
-The diff against `HEAD` also holds changes from before the session. Those are uncommitted work, so their alerts are still useful. A tight list with no blank lines is one span, so a change to one item keeps the alerts of every long item in that list. The upgrade is to find item boundaries, and the trade-off has a `shortcut:` comment in `hook.sh`.
+The diff against `HEAD` also holds changes from before the session. Those are uncommitted work, so their alerts are still useful. A tight list with no blank lines is one span, so a change to one item keeps the alerts of every long item in that list. The upgrade is to find item boundaries, and the trade-off has a `shortcut:` comment in `core.ts`.
 
 The hook has no switch to report the whole file. For a session that cleans up old paragraphs, use the [`prose-cleanup`](../../../skills/prose-cleanup/SKILL.md) skill, which runs `check.sh` without the filter.
 
@@ -69,7 +71,7 @@ The hook has no switch to report the whole file. For a session that cleans up ol
 
 The changed-paragraph filter still lets one alert block many times. A long paragraph with an uncommitted change blocks on each later edit to the same file, also an edit to another paragraph. When the hook still ran on Bash, `git add`, `git commit`, and `git log` each named the same file, and one long paragraph blocked 4 times in a row.
 
-So each alert blocks once per session. After a block, the hook adds a line to `$TMPDIR/lint-prose-<session_id>` for each alert: the file path, the rule, and the `cksum` of the paragraph text. When a later check finds an alert with that line in the record, the hook lists it under `lint-prose: blocked on before in this session` and exits 1. The user sees it, and Claude does not get a block.
+So each alert blocks once per session. After a block, the hook adds a line to `$TMPDIR/lint-prose-<session_id>` for each alert: a JSON array of the file path, the rule, and the paragraph text. When a later check finds an alert with that line in the record, the hook lists it under `lint-prose: blocked on before in this session` and sends it to the user only, not to Claude. The mod's `$.fs` has no append, so the hook reads the record and writes it back. Two calls at once in one session can then drop a line, and that alert blocks once more.
 
 The key holds the paragraph text, not the line number, for two reasons:
 
@@ -86,7 +88,7 @@ To find the files a command wrote, the hook must compare the disk before and aft
 
 ## Why it blocks
 
-An `error` alert makes Vale exit 1, and the hook then exits 2. A `PostToolUse` hook reaches the model only when it exits 2. On exit 0 its output goes to the transcript, and Claude never sees it. [`lint-all-languages`](../../lint-all-languages/README.md#why-it-blocks) gives the full reason.
+An `error` alert makes Vale exit 1, and the hook then exits 2. A `PostToolUse` hook reaches the model only when it exits 2. On exit 0 its output goes to the transcript, and Claude never sees it. [`lint-all-languages`](../../lint-all-languages/README.md#how-the-model-sees-the-errors) gives the full reason.
 
 Vale exits 2 when it fails, for example on a rule it cannot load or on input it cannot parse. `check.sh` passes that code through, and the hook then exits 1 with `lint-prose: Vale failed` and Vale's error. Exit 1 shows the message to the user and does not block. The error is not in the prose, so a block would tell Claude to fix text that is correct.
 

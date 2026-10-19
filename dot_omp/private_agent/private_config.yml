@@ -22,3 +22,4 @@ extensions:
   - ~/.claude/hooks/block-secret-commits/pi.ts
   - ~/.claude/hooks/format-all-languages/pi.ts
   - ~/.claude/hooks/format-org-tables/pi.ts
+  - ~/.claude/hooks/lint-prose/pi.ts

@@ -6,7 +6,7 @@ A [Codex CLI](https://developers.openai.com/codex/cli) session loads the user-sc
 | -------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Skills                           | its native user skills directory, a chezmoi symlink `~/.agents/skills` to `~/.claude/skills` | [`dot_agents/symlink_skills`](../../dot_agents/symlink_skills)                               |
 | Hooks                            | `~/.codex/hooks.json`, which calls the scripts in `~/.claude/hooks/`                         | [`dot_codex/modify_hooks.json`](../../dot_codex/modify_hooks.json)                           |
-| File hooks on `apply_patch`      | a wrapper that runs a file hook once per patched file                                        | [`dot_codex/hooks/apply-patch.sh`](../../dot_codex/hooks/apply-patch.sh)                     |
+| File hooks on `apply_patch`      | a wrapper that runs a file hook once per patched file                                        | [`dot_codex/hooks/apply-patch.ts`](../../dot_codex/hooks/apply-patch.ts)                     |
 | `CLAUDE.md` and rules            | `~/.codex/AGENTS.md`, rendered from `CLAUDE.md` and every rule                               | [`dot_codex/AGENTS.md.tmpl`](../../dot_codex/AGENTS.md.tmpl)                                 |
 | Project rules of this repository | `CODEX.md` at the repository root, a configured fallback symlink to `.claude/rules/apply.md` | [`CODEX.md`](../../CODEX.md)                                                                 |
 | Commands                         | an explicit-only adapter skill in `~/.codex/skills/claude-command/`                          | [`dot_codex/skills/claude-command/SKILL.md`](../../dot_codex/skills/claude-command/SKILL.md) |
@@ -42,7 +42,7 @@ Codex sends Claude's hook payload with Claude's tool name `Bash`, so the scripts
 | ------------- | ------------- | ----------------------------------------------------------------------------------- |
 | `PreToolUse`  | `Bash`        | `block-secret-commits`, `enforce-cli-tools`                                         |
 | `PostToolUse` | `Bash`        | `format-all-languages`, `format-org-tables`, `lint-all-languages`                   |
-| `PostToolUse` | `apply_patch` | the same three and `lint-prose`, through `apply-patch.sh`                           |
+| `PostToolUse` | `apply_patch` | the same three and `lint-prose`, through `apply-patch.ts`                           |
 | `Stop`        |               | `type-check-all-languages`; Codex sends `stop_hook_active`, so the loop guard works |
 
 Codex has no `PostToolUseFailure` event. Under Codex, the file hooks do not run after a Bash command that writes a file and then exits non-zero.
@@ -55,7 +55,7 @@ On each apply, the script writes the entries above and keeps every group from th
 
 ### `apply_patch`
 
-Codex edits files through `apply_patch`. Its payload holds the patch text in `tool_input.command` and has no `tool_input.file_path`. Without the wrapper, the file hooks take their Bash branch, which formats markdown only. `apply-patch.sh <hook>` reads the `*** Add File:`, `*** Update File:`, and `*** Move to:` lines, runs the hook once per file with a `Write` payload, and exits with the highest exit code. An exit code of 2 reaches the model, as under Claude Code.
+Codex edits files through `apply_patch`. Its payload holds the patch text in `tool_input.command` and has no `tool_input.file_path`. Without the wrapper, the file hooks take their Bash branch, which formats markdown only. `apply-patch.ts <command.ts>` reads the `*** Add File:`, `*** Update File:`, and `*** Move to:` lines, runs the hook once per file with a `Write` payload, and exits with the highest exit code. An exit code of 2 reaches the model, as under Claude Code.
 
 ### Trust
 

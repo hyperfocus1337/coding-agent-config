@@ -15,7 +15,7 @@ Written on 2026-10-18, with Claude Code 2.1.302, pi 1.1.0, omp 18.10.3, Codex 0.
 | `format-all-languages`     | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
 | `format-org-tables`        | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
 | `format-staged-files`      | Moved to `dot_config/git/hooks/`. Runs for each agent.               |
-| `lint-prose`               | Not started                                                          |
+| `lint-prose`               | Moved. Live in Claude Code, pi, and omp. Codex runs `command.ts`.    |
 | `type-check-all-languages` | Not started                                                          |
 | `track-session-changes`    | Not started. Needs an async core and a spike first, see its section. |
 
@@ -158,7 +158,8 @@ Same shape as spike 2, on Write and Edit only.
 - **Core:** maps each Vale alert to its paragraph, keeps the alerts in paragraphs that git reports as changed, and drops the alerts that this session already reported. The `git diff -U0` hunk parse and the paragraph map become pure functions.
 - **Vale:** keeps `bash ~/.config/vale/scripts/check.sh <file>` as one `run` call, because the `prose-cleanup` skill uses the same script.
 - **Session state:** `${TMPDIR}/lint-prose-<session id>` as today. The mod gets the id from `$.session.id()`, pi from `ctx.sessionManager.getSessionId()`, and Codex from the payload. `$.fs` has no append, so the core reads the file and writes it back with the new lines.
-- **Messages for you, not the model:** today exit 1 shows a message to you without blocking: Vale failed, the Vale config is missing, or every alert was a repeat. A mod and a pi extension have no such channel, so they send these messages as a notification (decision D2).
+- **Messages for you, not the model:** `hook.sh` showed a message to you with exit 1, which does not block: Vale failed, the Vale config is missing, or every alert was a repeat. A mod and a pi extension have no such channel, so they send these messages as a notification (decision D2). Tested on 2026-10-19: `$.ui.notify` writes a native notification (OSC 777, title `lint-prose`) and nothing in the transcript. `ctx.ui.notify` shows the message on the pi screen.
+- **Codex:** the `apply_patch` entry runs `command.ts` through `apply-patch.ts`. That removes `dot_codex/hooks/apply-patch.sh`, because `lint-prose` was its last user.
 
 ### type-check-all-languages
 

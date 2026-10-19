@@ -1,6 +1,6 @@
 # Implementation notes
 
-Why [`AGENTS.md.tmpl`](../AGENTS.md.tmpl) and [`hooks/apply-patch.sh`](../hooks/apply-patch.sh) (and [`hooks/apply-patch.ts`](../hooks/apply-patch.ts)) exist and how they work. [README.md](../README.md) describes the directory; this file is for a person changing them. Written against Codex CLI 0.154.0 and measured on 2026-09-26.
+Why [`AGENTS.md.tmpl`](../AGENTS.md.tmpl) and [`hooks/apply-patch.ts`](../hooks/apply-patch.ts) exist and how they work. [README.md](../README.md) describes the directory; this file is for a person changing them. Written against Codex CLI 0.154.0 and measured on 2026-09-26.
 
 ## Instructions: `AGENTS.md.tmpl`
 
@@ -16,7 +16,7 @@ The output is a plain file, not a link, so a rule edit reaches Codex only on the
 
 The project rule of this repository takes a different route: `CODEX.md` at the repository root is a symlink to `.claude/rules/apply.md`. `modify_private_config.toml` sets `project_doc_fallback_filenames = ["CODEX.md"]`. Codex follows the link when no `AGENTS.override.md` or `AGENTS.md` exists at that directory level. `.chezmoiignore` lists `CODEX.md`, because the repository root is the chezmoi source and would otherwise render `~/CODEX.md`. Pi does not discover this filename and loads the apply rule only through its Claude rules extension. Claude Code reads `.claude/rules/` directly. This keeps one source file and removes duplicate instruction context without adding deduplication to pi.
 
-## File hooks: `apply-patch.sh`
+## File hooks: `apply-patch.ts`
 
 ### The problem
 
@@ -49,30 +49,22 @@ Without the wrapper, most files that Codex edits are not formatted or linted.
 
 ### What the wrapper does
 
-`hooks.json` calls the wrapper once per file hook on the `apply_patch` matcher, with the hook script as the argument:
-
-```sh
-bash "$HOME/.codex/hooks/apply-patch.sh" "$HOME/.claude/hooks/lint-all-languages/hook.sh"
-```
-
-1. Read the patch text from `tool_input.command`. Take the paths on the `*** Add File:`, `*** Update File:`, and `*** Move to:` lines. Resolve a relative path against the payload's `cwd`.
-2. Skip a path that is not a file on disk: a deleted file, or the old side of a move.
-3. For each path, copy the payload, set `tool_name` to `Write` and `tool_input` to `{file_path: <path>}`, and send it to the hook. The hook takes its single-file branch, as under Claude Code. `hook_event_name`, `cwd`, and the other fields stay unchanged.
-4. Return one exit code to Codex. Exit 2 wins, because only 2 blocks the tool result and sends stderr to the model. Otherwise the highest code wins, so a crash (126, 127) still shows as a warning.
-
-### The TypeScript wrapper: `apply-patch.ts`
-
-A hook that moved to TypeScript has a `command.ts`, which `bash` cannot run. [`hooks/apply-patch.ts`](../hooks/apply-patch.ts) does the same 4 steps and starts the hook with `node`:
+`hooks.json` calls the wrapper once per file hook on the `apply_patch` matcher, with the `command.ts` of the hook as the argument:
 
 ```sh
 node "$HOME/.codex/hooks/apply-patch.ts" "$HOME/.claude/hooks/lint-all-languages/command.ts"
 ```
 
-It reads the payload with no `jq`. Each file costs one Node start, about 18 ms. `apply-patch.sh` stays for the file hooks that are still a `hook.sh`, and goes with the last of them ([`docs/hooks-design.md`](../../docs/hooks-design.md)). [`hooks/test/apply-patch.ts`](../hooks/test/apply-patch.ts) has the same cases as `test.sh`.
+1. Read the patch text from `tool_input.command`. Take the paths on the `*** Add File:`, `*** Update File:`, and `*** Move to:` lines. Resolve a relative path against the payload's `cwd`.
+2. Skip a path that is not a file on disk: a deleted file, or the old side of a move.
+3. For each path, copy the payload, set `tool_name` to `Write` and `tool_input` to `{file_path: <path>}`, and send it to the hook, which the wrapper starts with `node`. The hook takes its single-file branch, as under Claude Code. `hook_event_name`, `cwd`, and the other fields stay unchanged.
+4. Return one exit code to Codex. Exit 2 wins, because only 2 blocks the tool result and sends stderr to the model. Otherwise the highest code wins, so a crash (126, 127) still shows as a warning.
+
+The wrapper reads the payload with no `jq`. Each file costs one Node start, about 18 ms. Until 2026-10-19 a shell version, `apply-patch.sh`, ran the `hook.sh` files. It went with `lint-prose`, the last file hook that moved to TypeScript ([`docs/hooks-design.md`](../../docs/hooks-design.md)).
 
 ### Why a wrapper and not a hook change
 
-The Claude Code hooks stay unchanged and do not need to know about Codex. All Codex-specific logic is in one file under `~/.codex/`. A second Codex tool that edits files needs a change here only.
+The hooks stay unchanged and do not need to know about Codex. All Codex-specific logic is in one file under `~/.codex/`. A second Codex tool that edits files needs a change here only.
 
 ### Constraints
 
@@ -83,4 +75,4 @@ The Claude Code hooks stay unchanged and do not need to know about Codex. All Co
 
 ### Test
 
-[`hooks/test/test.sh`](../hooks/test/test.sh) runs the wrapper against a stub hook. It covers Add, Update, Delete, and Move lines, a relative path with a space, the exit code rules, a patch with no file lines, and a missing hook argument.
+[`hooks/test/apply-patch.ts`](../hooks/test/apply-patch.ts) runs the wrapper against a stub hook. It covers Add, Update, Delete, and Move lines, a relative path with a space, the exit code rules, a patch with no file lines, and a missing hook argument.

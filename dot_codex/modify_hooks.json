@@ -59,7 +59,7 @@ ours=$(cat <<'EOF'
             "type": "command"
           },
           {
-            "command": "bash \"$HOME/.codex/hooks/apply-patch.sh\" \"$HOME/.claude/hooks/lint-prose/hook.sh\"",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.codex/hooks/apply-patch.ts\" \"$HOME/.claude/hooks/lint-prose/command.ts\"",
             "timeout": 15,
             "type": "command"
           },
@@ -108,7 +108,7 @@ ours=$(cat <<'EOF'
       {
         "hooks": [
           {
-            "command": "case $(node -p process.features.typescript 2>/dev/null) in strip | transform) ;; *) echo '{\"systemMessage\": \"Node 23.6 or later is not on the PATH of Codex, so enforce-cli-tools, lint-all-languages, format-all-languages, format-org-tables, and track-session-changes are off, block-secret-commits blocks each git commit, and git does not format staged files. Put node 23.6 or later on the PATH, then start a new session.\"}' ;; esac",
+            "command": "case $(node -p process.features.typescript 2>/dev/null) in strip | transform) ;; *) echo '{\"systemMessage\": \"Node 23.6 or later is not on the PATH of Codex, so enforce-cli-tools, lint-all-languages, lint-prose, format-all-languages, format-org-tables, and track-session-changes are off, block-secret-commits blocks each git commit, and git does not format staged files. Put node 23.6 or later on the PATH, then start a new session.\"}' ;; esac",
             "timeout": 10,
             "type": "command"
           },
