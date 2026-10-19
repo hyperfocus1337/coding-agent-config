@@ -13,7 +13,7 @@
 
 import { readFileSync } from "node:fs";
 import { check } from "./core.ts";
-import { nodeIo } from "./io.ts";
+import { nodeIo, nodeSettings } from "./io.ts";
 
 const payload = JSON.parse(readFileSync(0, "utf8")) as {
   cwd?: unknown;
@@ -21,7 +21,7 @@ const payload = JSON.parse(readFileSync(0, "utf8")) as {
 };
 if (payload.stop_hook_active !== true) {
   const cwd = typeof payload.cwd === "string" ? payload.cwd : process.cwd();
-  const errors = await check(cwd, nodeIo());
+  const errors = await check(cwd, nodeIo(), nodeSettings());
   if (errors !== undefined) {
     process.stderr.write(errors);
     process.exitCode = 2;

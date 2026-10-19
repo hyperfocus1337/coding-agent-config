@@ -3,7 +3,7 @@
  */
 
 import { spawn } from "node:child_process";
-import type { Io } from "./core.ts";
+import type { Io, Settings } from "./core.ts";
 
 /** How long one program may run: a type checker can take long. */
 const TIMEOUT_MS = 60_000;
@@ -30,4 +30,8 @@ export function nodeIo(): Io {
         );
       }),
   };
+}
+
+export function nodeSettings(): Settings {
+  return { hooksOff: process.env.CLAUDE_HOOKS_DISABLE };
 }

@@ -31,6 +31,8 @@ export interface Settings {
   tmpdir?: string;
   /** The Vale config and scripts/check.sh: ~/.config/vale, or LINT_PROSE_VALE_DIR. */
   valeDir: string;
+  /** CLAUDE_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
+  hooksOff?: string;
 }
 
 /** What to say: `block` goes to the model, `notice` to the user only. */
@@ -108,6 +110,8 @@ export async function check(
   io: Io,
   settings: Settings,
 ): Promise<Result> {
+  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("lint-prose"))
+    return {};
   const disable = ` ${(settings.disable ?? "").replaceAll(",", " ")} `;
   if (disable.includes(" all ") || disable.includes(" prose ")) return {};
   if (

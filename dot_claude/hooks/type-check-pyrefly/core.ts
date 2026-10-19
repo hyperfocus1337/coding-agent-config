@@ -21,8 +21,19 @@ export interface Io {
   ): Promise<{ exitCode: number; stdout: string; stderr: string } | undefined>;
 }
 
+export interface Settings {
+  /** CLAUDE_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
+  hooksOff?: string;
+}
+
 /** Type-checks the repository that holds `cwd`; the errors, or undefined. */
-export async function check(cwd: string, io: Io): Promise<string | undefined> {
+export async function check(
+  cwd: string,
+  io: Io,
+  settings: Settings,
+): Promise<string | undefined> {
+  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("type-check-pyrefly"))
+    return undefined;
   // Outside a work tree there is nothing to compare, so skip. Run from the
   // root, so pyrefly sees the same scope as the changed-path list.
   const top = await io.run(["git", "rev-parse", "--show-toplevel"], cwd);

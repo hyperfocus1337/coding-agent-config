@@ -42,5 +42,6 @@ export function nodeSettings(): Settings {
     disable: env.CLAUDE_LINT_DISABLE,
     tmpdir: env.TMPDIR,
     valeDir: env.LINT_PROSE_VALE_DIR || `${env.HOME}/.config/vale`,
+    hooksOff: env.CLAUDE_HOOKS_DISABLE,
   };
 }

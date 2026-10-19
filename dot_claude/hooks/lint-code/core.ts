@@ -24,6 +24,8 @@ export interface Settings {
   disable?: string;
   /** TMPDIR: files under it are throwaway and not linted. */
   tmpdir?: string;
+  /** CLAUDE_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
+  hooksOff?: string;
 }
 
 /** The tool call: a Write or Edit names a file, a Bash call a command. */
@@ -51,6 +53,8 @@ export async function targets(
   settings: Settings,
   now = Date.now(),
 ): Promise<string[]> {
+  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("lint-code"))
+    return [];
   const candidates: string[] = [];
   if (call.filePath) candidates.push(call.filePath);
   else

@@ -25,6 +25,8 @@ export interface Io {
 export interface Settings {
   /** TMPDIR: files under it are throwaway and not formatted. */
   tmpdir?: string;
+  /** CLAUDE_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
+  hooksOff?: string;
 }
 
 /** The tool call: a Write or Edit names a file, a Bash call a command. */
@@ -101,6 +103,8 @@ export async function format(
   io: Io,
   settings: Settings,
 ): Promise<string | undefined> {
+  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("format-terraform"))
+    return undefined;
   const dirty: string[] = [];
   for (const file of await targets(call, io, settings)) {
     // One run for each file: a file that does not parse makes terraform fmt

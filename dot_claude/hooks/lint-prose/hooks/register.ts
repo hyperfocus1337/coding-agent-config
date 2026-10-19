@@ -43,6 +43,7 @@ export const register: Register = (on) => {
         tmpdir: await $.env.get("TMPDIR"),
         valeDir:
           (await $.env.get("LINT_PROSE_VALE_DIR")) || `${home}/.config/vale`,
+        hooksOff: await $.env.get("CLAUDE_HOOKS_DISABLE"),
       },
     );
     if (notice) await $.ui.notify(notice).catch(() => undefined);

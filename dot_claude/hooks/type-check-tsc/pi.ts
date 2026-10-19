@@ -11,7 +11,7 @@
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { check } from "./core.ts";
-import { nodeIo } from "./io.ts";
+import { nodeIo, nodeSettings } from "./io.ts";
 
 export default function (pi: ExtensionAPI) {
   // True after this extension started a run: its end passes.
@@ -31,7 +31,7 @@ export default function (pi: ExtensionAPI) {
     )
       return;
     try {
-      const errors = await check(ctx.cwd, nodeIo());
+      const errors = await check(ctx.cwd, nodeIo(), nodeSettings());
       if (errors === undefined) return;
       continued = true;
       pi.sendMessage(

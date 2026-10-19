@@ -27,6 +27,8 @@ export interface Io {
 export interface Settings {
   /** TMPDIR: files under it are throwaway and not aligned. */
   tmpdir?: string;
+  /** CLAUDE_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
+  hooksOff?: string;
 }
 
 /** The tool call: a Write or Edit names a file, a Bash call a command. */
@@ -123,6 +125,8 @@ export async function align(
   io: Io,
   settings: Settings,
 ): Promise<string | undefined> {
+  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("format-org-tables"))
+    return undefined;
   const files = await targets(call, io, settings);
   if (!files.length) return undefined;
   // The hint names only the files that Emacs itself changed, so keep the

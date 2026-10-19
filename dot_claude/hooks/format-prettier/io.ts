@@ -37,5 +37,8 @@ export function nodeIo(): Io {
 }
 
 export function nodeSettings(): Settings {
-  return { tmpdir: process.env.TMPDIR };
+  return {
+    tmpdir: process.env.TMPDIR,
+    hooksOff: process.env.CLAUDE_HOOKS_DISABLE,
+  };
 }

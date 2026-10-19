@@ -12,6 +12,7 @@ import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { check as lintProse } from "../core.ts";
 import { register } from "../hooks/register.ts";
 import extension from "../pi.ts";
 
@@ -74,6 +75,28 @@ async function expect(
 }
 
 const long = "One. Two. Three. Four. Five. Six, the last sentence here.";
+
+// --- CLAUDE_HOOKS_DISABLE ---
+
+await check(
+  "CLAUDE_HOOKS_DISABLE that names the hook: nothing runs",
+  async () =>
+    assert.deepEqual(
+      await lintProse(
+        "/x/a.md",
+        "s",
+        new Proxy(
+          {},
+          { get: () => () => assert.fail("the hook ran") },
+        ) as never,
+        {
+          valeDir: "/x",
+          hooksOff: "lint-code lint-prose",
+        },
+      ),
+      {},
+    ),
+);
 
 // --- Markdown ---
 const longMd = write(

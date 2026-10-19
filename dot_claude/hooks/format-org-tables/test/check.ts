@@ -13,6 +13,7 @@ import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { align } from "../core.ts";
 import { register } from "../hooks/register.ts";
 import extension from "../pi.ts";
 
@@ -216,6 +217,26 @@ unaligned(`${repo}/quiet.org`);
 ran = bash(repo, `cat > ${repo}/quiet.org <<'EOF'\nEOF`);
 await quiet("hint: none without a commit", ran);
 await aligned("a file written with no commit", `${repo}/quiet.org`);
+
+// --- CLAUDE_HOOKS_DISABLE ---
+
+await check(
+  "CLAUDE_HOOKS_DISABLE that names the hook: nothing runs",
+  async () =>
+    assert.equal(
+      await align(
+        { filePath: "/x/a.org", cwd: "/x" },
+        new Proxy(
+          {},
+          { get: () => () => assert.fail("the hook ran") },
+        ) as never,
+        {
+          hooksOff: "lint-code format-org-tables",
+        },
+      ),
+      undefined,
+    ),
+);
 
 // --- pi.ts and hooks/register.ts, with stubs over the real files ---
 

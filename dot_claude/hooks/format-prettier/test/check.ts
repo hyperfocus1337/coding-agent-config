@@ -13,6 +13,7 @@ import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { format } from "../core.ts";
 import { register } from "../hooks/register.ts";
 import extension from "../pi.ts";
 
@@ -303,6 +304,26 @@ edit(scratch);
 await unchanged("edit leaves a temp file", scratch, RAW);
 fs.rmSync(scratch);
 await quiet("edit: a file that does not exist", edit(`${outer}/gone.md`));
+
+// --- CLAUDE_HOOKS_DISABLE ---
+
+await check(
+  "CLAUDE_HOOKS_DISABLE that names the hook: nothing runs",
+  async () =>
+    assert.equal(
+      await format(
+        { filePath: "/x/a.md", cwd: "/x" },
+        new Proxy(
+          {},
+          { get: () => () => assert.fail("the hook ran") },
+        ) as never,
+        {
+          hooksOff: "lint-code format-prettier",
+        },
+      ),
+      undefined,
+    ),
+);
 
 // --- pi.ts and hooks/register.ts, with stubs over the real files ---
 

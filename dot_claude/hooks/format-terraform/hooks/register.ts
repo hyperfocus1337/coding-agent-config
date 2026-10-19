@@ -34,6 +34,7 @@ export const register: Register = (on) => {
         : { filePath: e.file_path, cwd };
     const hint = await format(call, io, {
       tmpdir: await $.env.get("TMPDIR"),
+      hooksOff: await $.env.get("CLAUDE_HOOKS_DISABLE"),
     });
     if (!hint) return ran;
     return { ...ran, context: [...(ran.context ?? []), hint] };

@@ -175,6 +175,14 @@ await expect(
 await check("stop_hook_active: nothing started", () =>
   assert.equal(started(), ""),
 );
+await expect(
+  "CLAUDE_HOOKS_DISABLE that names the hook lets the stop pass",
+  run(repo, {}, { CLAUDE_HOOKS_DISABLE: "lint-code,type-check-tsc" }),
+  0,
+);
+await check("CLAUDE_HOOKS_DISABLE: nothing started", () =>
+  assert.equal(started(), ""),
+);
 const gitDir = path.dirname(
   spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout,
 );

@@ -13,6 +13,7 @@ import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { format } from "../core.ts";
 import { register } from "../hooks/register.ts";
 import extension from "../pi.ts";
 
@@ -178,6 +179,26 @@ unformatted(`${repo}/quiet.tf`);
 ran = bash(repo, `touch ${repo}/quiet.tf`);
 await quiet("hint: none without a commit", ran);
 await formatted("a file written with no commit", `${repo}/quiet.tf`);
+
+// --- CLAUDE_HOOKS_DISABLE ---
+
+await check(
+  "CLAUDE_HOOKS_DISABLE that names the hook: nothing runs",
+  async () =>
+    assert.equal(
+      await format(
+        { filePath: "/x/a.tf", cwd: "/x" },
+        new Proxy(
+          {},
+          { get: () => () => assert.fail("the hook ran") },
+        ) as never,
+        {
+          hooksOff: "lint-code format-terraform",
+        },
+      ),
+      undefined,
+    ),
+);
 
 // --- pi.ts and hooks/register.ts, with stubs over the real files ---
 

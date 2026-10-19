@@ -179,6 +179,20 @@ await check(
   },
 );
 
+await check("CLAUDE_HOOKS_DISABLE that names the hook: no targets", async () =>
+  assert.deepEqual(
+    await targets(
+      { filePath: "/x/a.py", cwd: "/x" },
+      new Proxy({}, { get: () => () => assert.fail("the hook ran") }) as never,
+      {
+        configDir: "/x",
+        hooksOff: "lint-prose,lint-code",
+      },
+    ),
+    [],
+  ),
+);
+
 // --- command.ts, with the real shellcheck (the test.sh cases) ---
 
 const tmp = fs.mkdtempSync(path.join(os.homedir(), ".lint-hook-check-"));
