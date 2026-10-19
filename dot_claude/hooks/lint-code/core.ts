@@ -34,7 +34,8 @@ export interface Call {
 }
 
 /** A path a Bash command names, by the extensions this hook lints. */
-const NAMED = /[^\s:;|&"'`()<>=]+\.(?:py|jsx?|tsx?|mjs|cjs|sh|bash|ya?ml)\b/g;
+const NAMED =
+  /[^\s:;|&"'`()<>=]+\.(?:py|jsx?|tsx?|mjs|cjs|mts|cts|sh|bash|ya?ml)\b/g;
 
 /**
  * The files to lint. A Write or Edit: the one file it names. A Bash call: the
@@ -113,6 +114,8 @@ async function linter(file: string, io: Io, settings: Settings) {
     case "tsx":
     case "mjs":
     case "cjs":
+    case "mts":
+    case "cts":
       return disabled("js") ? undefined : ["oxlint", file];
     case "sh":
     case "bash":

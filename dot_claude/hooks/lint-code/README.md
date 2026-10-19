@@ -14,13 +14,13 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
 The core finds the files that the call changed, then runs the linter for the extension of each file:
 
-| Extension                               | Linter                                                  | Invocation                                | Documentation                                 |
-| --------------------------------------- | ------------------------------------------------------- | ----------------------------------------- | --------------------------------------------- |
-| `.py`                                   | [ruff](https://github.com/astral-sh/ruff)               | `ruff check --quiet`                      | https://docs.astral.sh/ruff/                  |
-| `.js` `.jsx` `.ts` `.tsx` `.mjs` `.cjs` | [oxlint](https://github.com/oxc-project/oxc)            | `oxlint`                                  | https://oxc.rs/docs/guide/usage/linter        |
-| `.sh` `.bash`                           | [shellcheck](https://github.com/koalaman/shellcheck)    | `shellcheck -S warning`                   | https://www.shellcheck.net/wiki/              |
-| `.yml` `.yaml` (plain)                  | [yamllint](https://github.com/adrienverge/yamllint)     | `yamllint -c config/.yamllint`            | https://yamllint.readthedocs.io/              |
-| `.yml` `.yaml` (Ansible)                | [ansible-lint](https://github.com/ansible/ansible-lint) | `ansible-lint -c config/.ansible-lint -q` | https://ansible.readthedocs.io/projects/lint/ |
+| Extension                                             | Linter                                                  | Invocation                                | Documentation                                 |
+| ----------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------- | --------------------------------------------- |
+| `.py`                                                 | [ruff](https://github.com/astral-sh/ruff)               | `ruff check --quiet`                      | https://docs.astral.sh/ruff/                  |
+| `.js` `.jsx` `.ts` `.tsx` `.mts` `.cts` `.mjs` `.cjs` | [oxlint](https://github.com/oxc-project/oxc)            | `oxlint`                                  | https://oxc.rs/docs/guide/usage/linter        |
+| `.sh` `.bash`                                         | [shellcheck](https://github.com/koalaman/shellcheck)    | `shellcheck -S warning`                   | https://www.shellcheck.net/wiki/              |
+| `.yml` `.yaml` (plain)                                | [yamllint](https://github.com/adrienverge/yamllint)     | `yamllint -c config/.yamllint`            | https://yamllint.readthedocs.io/              |
+| `.yml` `.yaml` (Ansible)                              | [ansible-lint](https://github.com/ansible/ansible-lint) | `ansible-lint -c config/.ansible-lint -q` | https://ansible.readthedocs.io/projects/lint/ |
 
 YAML goes to one of two linters, see [YAML routing](#yaml-routing). [`format-terraform`](../format-terraform/README.md) formats `.tf` and `.tfvars` files, because `terraform fmt` is a formatter, not a linter. A linter that is not installed is skipped, so a linter you do not install does nothing. A linter that exits with a code other than 0 is a failure, and the model gets its output. The mod stops each linter after 30 s, the default of `$.process.run`. Codex stops the whole hook after 15 s.
 

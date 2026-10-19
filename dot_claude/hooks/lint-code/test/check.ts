@@ -87,12 +87,18 @@ await check(
   },
 );
 await check("bash: fresh named files, relative to cwd, once each", async () => {
-  const { io } = stub({ "/r/new.sh": 5, "/r/old.sh": 500, "/abs/x.ts": 0 });
+  const { io } = stub({
+    "/r/new.sh": 5,
+    "/r/old.sh": 500,
+    "/abs/x.ts": 0,
+    "/abs/y.mts": 0,
+  });
   const command =
-    "cat > new.sh && bash new.sh && grep x old.sh && touch /abs/x.ts README.md";
+    "cat > new.sh && bash new.sh && grep x old.sh && touch /abs/x.ts /abs/y.mts README.md";
   assert.deepEqual(await targets({ command, cwd: "/r" }, io, settings, NOW), [
     "/r/new.sh",
     "/abs/x.ts",
+    "/abs/y.mts",
   ]);
 });
 await check("bash: a command that names no source file", async () => {
@@ -113,6 +119,8 @@ await check("each extension runs its linter", async () => {
     "a.py",
     "b.tsx",
     "c.cjs",
+    "c.mts",
+    "c.cts",
     "d.bash",
     "e.yml",
     "/r/roles/f.yaml",
@@ -125,6 +133,8 @@ await check("each extension runs its linter", async () => {
     ["ruff", "check", "--quiet", "a.py"],
     ["oxlint", "b.tsx"],
     ["oxlint", "c.cjs"],
+    ["oxlint", "c.mts"],
+    ["oxlint", "c.cts"],
     ["shellcheck", "-S", "warning", "d.bash"],
     ["yamllint", "-c", "/cfg/.yamllint", "e.yml"],
     ["ansible-lint", "-c", "/cfg/.ansible-lint", "-q", "/r/roles/f.yaml"],
