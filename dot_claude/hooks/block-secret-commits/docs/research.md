@@ -1,6 +1,6 @@
 # Research notes
 
-Measurements, comparisons and rejected alternatives behind `hook.sh`. [implementation.md](implementation.md) states each decision and links here for the evidence; this file holds the numbers and the options that lost. [../README.md](../README.md) describes the behaviour for a user of the hook.
+Measurements, comparisons and rejected alternatives behind the hook. The bash hook took most of them, before the move to TypeScript. [implementation.md](implementation.md) states each decision and links here for the evidence; this file holds the numbers and the options that lost. [../README.md](../README.md) describes the behaviour for a user of the hook.
 
 Every measurement was taken on the installed hook with betterleaks 1.7.4. A number here is a record of one run on one machine, not a guarantee. Re-measure before you rely on a figure in a new decision.
 

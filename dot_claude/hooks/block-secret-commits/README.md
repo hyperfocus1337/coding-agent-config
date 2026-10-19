@@ -2,9 +2,20 @@
 
 A `PreToolUse` hook that blocks a `git commit` which would commit a secret. It runs two checks: a **betterleaks scan** over the staged diff, which catches a secret value pasted into an ordinary file and a file whose name alone marks it as a secret, and a **binary scan** that rescans newly added binary files, which the staged diff cannot show. It is a safety net for an accidental `git add .`, not a replacement for a good `.gitignore`.
 
+One scanner, [`core.ts`](core.ts), serves four agents through two adapters:
+
+| Agent              | Adapter                                                                                  | Loaded by                                                                                          |
+| ------------------ | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Claude Code, Codex | [`command.ts`](command.ts), a `PreToolUse` command hook on Bash: exit 2 and stderr block | `settings.json.tmpl` and `dot_codex/modify_hooks.json`                                             |
+| pi and omp         | [`pi.ts`](pi.ts): `tool_call` on bash returns `{ block, reason }`                        | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
+
+Claude Code runs a command hook and not a mod, because the binary scan copies files, which the mod API cannot do. The design is in [`docs/hooks-design.md`](../../../docs/hooks-design.md#block-secret-commits).
+
 This file describes what the hook does and how to work around it. For why it is built this way, see [docs/implementation.md](docs/implementation.md). For the measurements behind each decision and the alternatives that were tested and rejected, see [docs/research.md](docs/research.md).
 
 ## Requirements
+
+The hook needs Node 23.6 or later, which runs `.ts` files without a flag. Without `node` on `$PATH`, the settings entry exits 0, so both checks fail open in Claude Code and Codex.
 
 Both checks need [betterleaks](https://github.com/betterleaks/betterleaks) on `$PATH`. Without it the betterleaks scan silently does nothing, and the binary scan blocks every newly added binary, because it cannot clear what it cannot read:
 
@@ -22,11 +33,9 @@ curl -sL https://github.com/betterleaks/betterleaks/releases/download/v1.7.4/bet
 
 Check the [releases page](https://github.com/betterleaks/betterleaks/releases) for the current version and your architecture, because the version appears in both the tag and the filename.
 
-The betterleaks scan also needs `jq`. Without it that scan does nothing, the same as a missing binary.
-
 ## What it does
 
-The hook is wired to the `Bash` tool in `settings.json`, so it runs before every shell command. It exits immediately unless the command is a `git ... commit`, so an ordinary command costs about 1 ms.
+The hook runs before every shell command. It stops at once unless the command is a `git ... commit`. In Claude Code and Codex, the Node start costs about 25 ms for each shell command. In pi and omp, the extension is already loaded, so the cost is less than 1 ms.
 
 ### Commit only, not `git add`
 
@@ -73,15 +82,15 @@ Both checks read the index, so they see only what the commit would add. A secret
 
 ### When a check cannot run
 
-The betterleaks scan **fails open**: a missing `betterleaks` or `jq`, a directory that is not a git repository, a scanner error, a config that fails to parse, or a scan past its 4 s cap all allow the commit. Only a real finding blocks. The binary scan does the opposite and blocks whatever it cannot clear, so the two checks fail in opposite directions by design.
+The betterleaks scan **fails open**: a missing `betterleaks`, an error in the scan code, a directory that is not a git repository, a scanner error, a config that fails to parse, or a scan past its 4 s cap all allow the commit. Only a real finding blocks. The binary scan does the opposite and blocks whatever it cannot clear, so the two checks fail in opposite directions by design.
 
 A capped scan prints a warning to stderr naming the command to run by hand. It is the one fail-open path you cannot infer from a clean run.
 
-A config error is fatal to betterleaks rather than a warning, so a typo in `conf/betterleaks.toml` disables the whole scan silently. **Run `bash test/test.sh` after editing that file.**
+A config error is fatal to betterleaks rather than a warning, so a typo in `conf/betterleaks.toml` disables the whole scan silently. **Run `node test/check.ts` after you edit that file.**
 
 ### Cost
 
-About 1 ms on a non-git command, which is the case that runs before every shell command. A commit pays for the scan. Full table in [docs/research.md](docs/research.md#cost).
+About 25 ms on a command that is not a commit, in Claude Code and Codex: this is the Node start. A commit also pays for the scan. Full table in [docs/research.md](docs/research.md#cost).
 
 ## The name ruleset
 
@@ -126,13 +135,16 @@ One entry clears one secret on one line, so a file holding five secrets needs fi
 
 ### 3. Per-repo allowlist file (a binary scan block)
 
-Create a `.claude-allow-secrets` file in the repo root listing the file(s) you intend to commit, one per line. An entry matches either a repo-relative path or a bare basename, and `#` comments and blank lines are ignored:
+Create a `.claude-allow-secrets` file in the repo root listing the file(s) you intend to commit, one per line. An entry matches either a repo-relative path or a bare basename. The hook ignores blank lines and lines that start with `#`. A `#` after a path is part of the entry, so put a comment on its own line:
 
 ```sh
 # .claude-allow-secrets
-test/fixtures/keystore.p12 # a keystore fixture the binary scan blocks
-build/assets.bin           # a blob betterleaks cannot clear
-.pgpass                    # bare basename: any file named .pgpass, anywhere
+# A keystore fixture that the binary scan blocks.
+test/fixtures/keystore.p12
+# A blob that betterleaks cannot clear.
+build/assets.bin
+# A bare basename: each file named .pgpass, in any folder.
+.pgpass
 ```
 
 This list is the only mechanism that covers the binary scan, because that scan reports no stable fingerprint to write down. See [Why this list exists at all](docs/implementation.md#why-this-list-exists-at-all).
@@ -153,22 +165,19 @@ This is best for a one-off or session-scoped skip that leaves no trace in the re
 
 ## Tests
 
-`test/test.sh` covers the binary scan and the `secret-filename` rule. `test/test-content.sh` covers the content scan, the `git commit -a` handling, and the block-message text. Both build throwaway repos and assert the hook's exit code; both skip with exit 0 when betterleaks or `jq` is missing.
+`node test/check.ts`, from the hook folder, builds throwaway repos and runs `command.ts` on a Bash payload for each case. It checks the exit code, the block message, and that stdout stays empty. It also checks `pi.ts` with a stub `pi`, and that an error in the binary scan blocks. Most cases need betterleaks and are skipped without it. It prints one `FAIL` line for each failed case, then `all pass` or the failure count. `just hooks-check` runs it with the checks of the other hooks.
 
-```sh
-bash test/test.sh
-bash test/test-content.sh
-```
-
-Run both after editing `conf/betterleaks.toml`, because a config error makes the scan fail open silently.
-
-See [test/README.md](test/README.md).
+Run it after you edit `conf/betterleaks.toml`, because a config error makes the scan fail open with no sign. See [test/README.md](test/README.md).
 
 ## Files
 
-- `hook.sh` is the hook, invoked from `settings.json`. It deploys via chezmoi to `~/.claude/hooks/block-secret-commits/`.
-- `conf/betterleaks.toml` is the rule config the hook passes with `--config`. It deploys alongside `hook.sh`, which resolves it relative to its own path.
-- `docs/implementation.md` carries the reasoning behind each decision, so `hook.sh` and this file stay readable. Not deployed; it is a source-tree document.
-- `docs/research.md` carries the measurements, the comparisons, and the alternatives that were tested and rejected, so `implementation.md` stays readable. Not deployed either.
-- `test/test.sh` is the name-rule and binary-scan test (see [Tests](#tests)).
-- `test/test-content.sh` is the content-scan test (see [Tests](#tests)).
+| File                          | Deployed to `~/.claude/hooks/block-secret-commits/` | Role                                                                     |
+| ----------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------ |
+| `core.ts`                     | Yes                                                 | Both scans and the block messages. The adapters pass the file functions. |
+| `io.ts`                       | Yes                                                 | The file and process functions under Node                                |
+| `command.ts`                  | Yes                                                 | Command hook for Claude Code and Codex                                   |
+| `pi.ts`                       | Yes                                                 | pi and omp extension                                                     |
+| `conf/betterleaks.toml`       | Yes                                                 | The rule config that the hook passes with `--config`                     |
+| `README.md`, `docs/`, `test/` | No                                                  | Kept in the repo by `.chezmoiignore`                                     |
+
+[`docs/implementation.md`](docs/implementation.md) gives the reason for each decision. [`docs/research.md`](docs/research.md) holds the measurements and the alternatives that were tested and rejected.

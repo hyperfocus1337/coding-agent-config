@@ -1,51 +1,60 @@
 # Tests
 
-## test.sh
+`check.ts` is the end-to-end check for `../command.ts` and `../pi.ts`. Run it from the hook folder:
 
-End-to-end test for the two name-based checks in `../hook.sh`: the binary scan, and the `secret-filename` rule in `../conf/betterleaks.toml`.
-
-Run it:
-
-```bash
-bash test.sh
+```sh
+node test/check.ts
 ```
 
-Like `test-content.sh`, it cannot source the hook. Each case builds a throwaway git repo under `mktemp -d`, pipes a `PreToolUse` JSON payload into `../hook.sh` as a subprocess with `CLAUDE_PROJECT_DIR` pointed at that repo, and asserts the exit code: 0 allows, 2 blocks.
+Each case builds a throwaway git repo in a temporary folder, runs `../command.ts` as a child process with a Bash payload on stdin and `CLAUDE_PROJECT_DIR` set to the repo, and checks the exit code: 0 allows, 2 blocks. It prints one `FAIL` line for each failed case, then `all pass` or the failure count, and exits 1 on a failure.
 
-Six cases cover the binary scan, and they run unconditionally because that scan needs only git and bash. A newly added binary file must block, and the block message must name it. A binary named `we ird".p12` must block too, which is what proves the `-z` parsing survives a space and a quote. An ordinary text file must allow, because git can diff it and betterleaks can therefore read it. A modified tracked binary must allow, because `--diff-filter=A` covers added files only. Both allowlist forms must exempt a binary.
+## Cases that run without betterleaks
 
-The fixtures embed a literal NUL byte. That is what makes git report the blob as binary, and it is the same test betterleaks uses to skip the file, so the equivalence the check rests on is exercised rather than assumed.
+- **A binary with no betterleaks on `PATH`** must block. This is the one check that never fails open.
+- **An error in the binary scan** must block. The case gives the core a fake `Io` whose every call throws.
 
-Five cases cover the name rule. One stages a file for each of the 35 sample names, asserts the commit blocks, and then asserts every one of those names appears in the block message, so a rule that silently stops matching cannot pass on the exit code alone. Add a name to the `names()` list whenever you tune the `path` pattern in `../conf/betterleaks.toml`. A second case stages the templates (`.env.example`, `.env.sample`, `.env.template`, `.env.dist`) together with ordinary files and the deliberately permitted `id_rsa.pub`, `server.crt`, and `notes.gpg`, and asserts they all pass. A third asserts `.claude-allow-secrets` exempts a secret name. A fourth asserts a repo carrying its own `.betterleaks.toml` keeps it, so the shipped rules stop applying.
+If betterleaks is missing, the check prints `skip` for the other cases.
 
-These five skip if `betterleaks` or `jq` is missing, matching the hook's fail-open behavior; the binary cases have already run by then.
+## Binary scan
 
-Run this file after any edit to `../conf/betterleaks.toml`. A config error is fatal to betterleaks rather than a warning, so a bad pattern makes the whole scan fail open with no visible sign.
+- An ordinary binary and a GIF must allow.
+- A binary that holds a secret under the name `payload.dat` must block, and the message must name the file.
+- A secret inside a `.png` and inside a `.pdf` must block. The default config exempts these extensions, so they block only because the hook scans a copy with a neutral name.
+- A binary named `we ird".dat` must block, which proves that the `-z` parse keeps a space and a quote.
+- A modified tracked binary must allow, because `--diff-filter=A` covers added files only.
+- `.claude-allow-secrets` and `CLAUDE_ALLOW_SECRETS` must each exempt a binary.
 
-## test-content.sh
+The fixtures hold a NUL byte. That makes git report the blob as binary, which is the same test that betterleaks uses to skip the file, so the check exercises this match.
 
-End-to-end test for the betterleaks content check in `../hook.sh`, the `scan_content` function that blocks a secret value pasted into an ordinary file.
+## Name rule
 
-Run it:
+- One repo stages a file for each of the 39 secret names. The commit must block, and each name must appear in the message, so a rule that stops to match cannot pass on the exit code alone. Add a name to the `names` list when you change the `path` pattern in `../conf/betterleaks.toml`.
+- The templates (`.env.example` and the others), ordinary files, `id_rsa.pub`, `server.crt`, and `notes.gpg` must allow.
+- `.claude-allow-secrets` must exempt `.env`.
+- A repo with its own `.betterleaks.toml` keeps it, so the shipped name rule does not apply.
 
-```bash
-bash test-content.sh
-```
+Run the check after each edit to `../conf/betterleaks.toml`. A config error stops betterleaks, and the scan then fails open with no sign.
 
-It cannot source the hook, because `scan_content` needs a real repo and a real payload. So each case builds a throwaway git repo under `mktemp -d`, pipes a `PreToolUse` JSON payload into `../hook.sh` as a subprocess with `CLAUDE_PROJECT_DIR` pointed at that repo, and asserts the exit code: 0 allows, 2 blocks.
+## Content scan
 
-The cases cover a staged secret on commit (blocks), the same secret on `git add` (allows, because the check is commit-only), clean staged content, an empty stage, an unstaged secret, a directory that is not a git repository (fails open), and an unrelated command.
+- A staged secret blocks a commit, and does not block `git add`.
+- `git add hooks/block-secret-commits/test` and `git add .git/hooks/commit-msg` must allow: `commit` in a path is not the subcommand. `git -C . commit` must block.
+- Clean content, an empty stage, an unstaged secret, a folder that is not a repo, and an unrelated command must allow.
+- The message must name the rule, file, and line, give the fingerprint, keep the secret value out, offer `.betterleaksignore`, and mark `.claude-allow-secrets` as the last resort.
+- stdout must stay empty on a block and on an allow, because Codex reports any stdout as a failed hook.
 
-Three cases guard the trigger filter, which decides whether a command counts as a commit. A `git add hooks/block-secret-commits/test` and a `git add .git/hooks/commit-msg` must allow: the word `commit` is inside a path, not the subcommand, and treating it as the subcommand runs the content check against an index the command has not written yet. `git -C . commit -m wip` must still block, because a `git` flag between the two words does not stop it from being a commit.
+## git commit -a
 
-Four cases cover `git commit -a`, which stages tracked edits after the hook runs: `-am`, `-a -m`, `--all`, and a bare `-a` must each block on a secret sitting unstaged in a tracked file. Three more guard the flag test from the other side, because a false match costs an extra scan and can block a commit that carries no secret: the same repo without `-a` must allow, `git commit -m "add -a flag"` must allow because the `-a` there is message text and not a flag, and `git commit --allow-empty` must allow because it only looks like `--all`.
+- `-am`, `-a -m`, `--all`, and a bare `-a` must each block on a secret in a tracked file that is not staged.
+- The same repo must allow `git commit -m wip`, `git commit -m "add -a flag"`, and `git commit --allow-empty`.
 
-Four cases cover the allowlist: a file exempted by path, by bare basename, and through `CLAUDE_ALLOW_SECRETS` must all allow, and a second file that is not exempted must still block.
+## Allowlist
 
-Five cases assert the text of the block message, not just the exit code. A broken report filter still exits 2, so the exit code alone cannot tell a useful block from one whose finding list failed to render. These assert that the message names the rule, file and line, that it carries the fingerprint for `.betterleaksignore`, that `jq` did not error while formatting, that the fix list offers `.betterleaksignore`, and that it marks `.claude-allow-secrets` as the last resort. The last two pin the order the fix list recommends, which the fingerprint assertion cannot see: that fingerprint comes from the finding line, not from the fix list.
+- A path, a basename, and `CLAUDE_ALLOW_SECRETS` must each exempt a content finding.
+- A second file that is not in the list must still block.
 
-Prints `ok`/`FAIL` per case and exits non-zero if any case fails.
+## pi.ts
 
-If `betterleaks` or `jq` is missing the script prints `skip` and exits 0. That matches the hook's own fail-open behavior: the content check needs both tools, so with either one absent it does nothing and there is nothing to assert. The script also needs `jq` itself, to build payloads that contain quotes.
+A stub `pi` keeps the `tool_call` handler. A staged secret must return `{ block: true }` with the finding in the reason. Clean content and other tools must return nothing.
 
-The secrets in the fixtures are randomly generated strings shaped like a GitHub token. They are not real credentials and match no live account.
+The secrets in the fixtures are random strings shaped like a GitHub token. They match no live account.

@@ -4,3 +4,4 @@
 .claude/hooks/enforce-cli-tools/hook.sh
 .claude/hooks/lint-all-languages/hook.sh
 .claude/hooks/block-commit-attribution/hook.sh
+.claude/hooks/block-secret-commits/hook.sh

@@ -1,4 +1,4 @@
-# betterleaks rules for block-secret-commits/hook.sh.
+# betterleaks rules for the block-secret-commits hook (core.ts).
 #
 # The hook passes this file with --config, but only when the repository defines
 # no config of its own. A repo that carries a .betterleaks.toml or .gitleaks.toml
