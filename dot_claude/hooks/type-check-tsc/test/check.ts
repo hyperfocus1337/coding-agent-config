@@ -1,8 +1,7 @@
 /**
  * Self-check for ../core.ts and its adapters: the cases through command.ts
- * in a real git repository, and the pi adapter with a stub. A
- * stand-in pyrefly and tsc on PATH pass, fail, or match no files, as
- * FAKE_PYREFLY and FAKE_TSC say, and log each start to FAKE_LOG.
+ * in a real git repository, and the pi adapter with a stub. A stand-in tsc
+ * on PATH passes or fails, as FAKE_TSC says, and logs each start to FAKE_LOG.
  *
  * Run: node test/check.ts, from the hook directory. Needs git.
  */
@@ -29,23 +28,13 @@ async function check(what: string, run: () => void | Promise<void>) {
 // Under the temp folder, so the global format-staged-files hook skips the
 // fixture commits. The real path, because git prints the real root.
 const tmp = fs.realpathSync(
-  fs.mkdtempSync(path.join(os.tmpdir(), "type-check-test.")),
+  fs.mkdtempSync(path.join(os.tmpdir(), "type-check-tsc-test.")),
 );
 const write = (file: string, text: string) => {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, text);
 };
 const bin = `${tmp}/bin`;
-write(
-  `${bin}/pyrefly`,
-  `#!/bin/sh
-echo pyrefly >>"$FAKE_LOG"
-case "\${FAKE_PYREFLY:-pass}" in
-fail) echo "pyrefly error in $PWD"; exit 1 ;;
-nomatch) echo " WARN No Python files matched pattern(s)" >&2; exit 1 ;;
-esac
-`,
-);
 write(
   `${bin}/tsc`,
   `#!/bin/sh
@@ -54,7 +43,6 @@ echo tsc >>"$FAKE_LOG"
 exit 0
 `,
 );
-fs.chmodSync(`${bin}/pyrefly`, 0o755);
 fs.chmodSync(`${bin}/tsc`, 0o755);
 const log = `${tmp}/log`;
 const started = () => (fs.existsSync(log) ? fs.readFileSync(log, "utf8") : "");
@@ -63,7 +51,6 @@ const env = {
   ...process.env,
   PATH: `${bin}:${process.env.PATH}`,
   FAKE_LOG: log,
-  FAKE_PYREFLY: "fail",
   FAKE_TSC: "fail",
 };
 
@@ -107,7 +94,7 @@ const git = (cwd: string, ...args: string[]) => {
 };
 const repo = `${tmp}/repo`;
 write(`${repo}/README.md`, "Base.\n");
-write(`${repo}/src/old.py`, "x = 1\n");
+write(`${repo}/src/old.ts`, "let x = 1;\n");
 git(repo, "init", "-q");
 git(repo, "add", ".");
 git(
@@ -127,71 +114,59 @@ function fresh(files: Record<string, string> = {}) {
   for (const [name, text] of Object.entries(files))
     write(`${repo}/${name}`, text);
 }
+const tsconfig = { "tsconfig.json": "{}\n" };
 const failed = "Type check failed. Fix the errors above, then stop.";
 
-// --- Python ---
+// --- Checks ---
 fresh();
-await expect("no change starts no checker", run(repo), 0);
-await check("no change: nothing started", () => assert.equal(started(), ""));
-fresh({ "src/old.py": "x = 2\n" });
-await expect(
-  "a changed .py file with errors blocks",
-  run(repo),
-  2,
-  `pyrefly error in ${repo}\n${failed}\n`,
+await expect("no change starts no tsc", run(repo), 0);
+fresh(tsconfig);
+await expect("a new tsconfig.json alone starts no tsc", run(repo), 0);
+await check("no .ts change: nothing started", () =>
+  assert.equal(started(), ""),
 );
-fresh({ "new.py": "y = 1\n" });
-await expect("an untracked .py file starts pyrefly", run(repo), 2, failed);
-fresh({ "src/é.py": "y = 1\n" });
-await expect("a path that git quotes still counts", run(repo), 2, failed);
-fresh({ "src/old.py": "x = 2\n" });
-await expect(
-  "pyrefly that passes does not block",
-  run(repo, {}, { FAKE_PYREFLY: "pass" }),
-  0,
-);
-await check("pyrefly that passes: it started", () =>
-  assert.equal(started(), "pyrefly\n"),
-);
-await expect(
-  "pyrefly that matches no files does not block",
-  run(repo, {}, { FAKE_PYREFLY: "nomatch" }),
-  0,
-);
-fresh();
-fs.rmSync(`${repo}/src/old.py`);
-await expect("a deleted .py file starts no checker", run(repo), 0);
-fresh({ "src/old.py": "x = 2\n" });
-await expect(
-  "the checkers run from the root, not the session folder",
-  run(`${repo}/src`),
-  2,
-  `pyrefly error in ${repo}\n`,
-);
-
-// --- TypeScript ---
-fresh({ "a.ts": "let a = 1;\n" });
+fresh({ "src/old.ts": "let x = 2;\n" });
 await expect("a .ts file without tsconfig.json starts no tsc", run(repo), 0);
 await check("no tsconfig.json: nothing started", () =>
   assert.equal(started(), ""),
 );
-fresh({ "a.ts": "let a = 1;\n", "tsconfig.json": "{}\n" });
+fresh({ ...tsconfig, "src/old.ts": "let x = 2;\n" });
 await expect(
-  "a .ts file with tsconfig.json and errors blocks",
+  "a changed .ts file with errors blocks",
   run(repo),
   2,
   `tsc error in ${repo}\n${failed}\n`,
 );
-fresh({ "a.ts": "", "tsconfig.json": "{}\n", "b.py": "" });
+for (const name of ["new.tsx", "new.mts", "new.cts"]) {
+  fresh({ ...tsconfig, [name]: "" });
+  await expect(`an untracked ${name} file starts tsc`, run(repo), 2, failed);
+}
+fresh({ ...tsconfig, "src/é.ts": "" });
+await expect("a path that git quotes still counts", run(repo), 2, failed);
+fresh({ ...tsconfig, "src/old.ts": "let x = 2;\n" });
 await expect(
-  "both checkers report in one stop",
-  run(repo),
+  "tsc that passes does not block",
+  run(repo, {}, { FAKE_TSC: "pass" }),
+  0,
+);
+await check("tsc that passes: it started", () =>
+  assert.equal(started(), "tsc\n"),
+);
+fresh(tsconfig);
+fs.rmSync(`${repo}/src/old.ts`);
+await expect("a deleted .ts file starts no tsc", run(repo), 0);
+fresh({ ...tsconfig, "a.py": "" });
+await expect("a .py file starts no tsc", run(repo), 0);
+fresh({ ...tsconfig, "src/old.ts": "let x = 2;\n" });
+await expect(
+  "tsc runs from the root, not the session folder",
+  run(`${repo}/src`),
   2,
-  `pyrefly error in ${repo}\ntsc error in ${repo}\n${failed}\n`,
+  `tsc error in ${repo}\n`,
 );
 
 // --- Skips ---
-fresh({ "src/old.py": "x = 2\n" });
+fresh({ ...tsconfig, "src/old.ts": "let x = 2;\n" });
 await expect(
   "stop_hook_active lets the stop pass",
   run(repo, { stop_hook_active: true }),
@@ -204,14 +179,16 @@ const gitDir = path.dirname(
   spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout,
 );
 await expect(
-  "a missing checker is skipped",
+  "a missing tsc is skipped",
   run(repo, {}, { PATH: `${gitDir}:/usr/bin:/bin` }),
   0,
 );
-write(`${tmp}/plain/a.py`, "x = 1\n");
+write(`${tmp}/plain/a.ts`, "");
+write(`${tmp}/plain/tsconfig.json`, "{}\n");
 await expect("a folder outside git is skipped", run(`${tmp}/plain`), 0);
 const first = `${tmp}/first`;
-write(`${first}/a.py`, "x = 1\n");
+write(`${first}/a.ts`, "");
+write(`${first}/tsconfig.json`, "{}\n");
 git(first, "init", "-q");
 await expect(
   "before the first commit, untracked files count",
@@ -224,7 +201,7 @@ await expect(
 
 const saved = { ...process.env };
 Object.assign(process.env, env);
-fresh({ "src/old.py": "x = 2\n" });
+fresh({ ...tsconfig, "src/old.ts": "let x = 2;\n" });
 
 type Handler = (event: unknown, ctx: unknown) => Promise<unknown>;
 let piHandler: Handler | undefined;
@@ -246,7 +223,7 @@ const end = (stopReason = "stop", extra: object = {}) =>
 await check("pi.ts: sends the errors and starts a run", async () => {
   await end();
   assert.equal(sent.length, 1);
-  assert.ok(sent[0]?.content.includes(`pyrefly error in ${repo}`));
+  assert.ok(sent[0]?.content.includes(`tsc error in ${repo}`));
   assert.deepEqual(sent[0]?.options, {
     triggerTurn: true,
     deliverAs: "followUp",

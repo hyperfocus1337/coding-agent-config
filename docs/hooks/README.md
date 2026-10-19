@@ -8,7 +8,7 @@ Each hook in [`dot_claude/hooks/`](../../dot_claude/hooks/README.md) has one Typ
 | pi and omp  | `pi.ts`             | An extension, in process       | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
 | Codex       | `command.ts`        | A command hook, one Node start | `dot_codex/modify_hooks.json`                                                                      |
 
-Two hooks also run `command.ts` in Claude Code, as a command hook in `settings.json.tmpl`: `block-secret-commits` and `type-check-all-languages`. The mod API cannot do what they need, see [`decisions.md`](decisions.md). `format-staged-files` is not an agent hook. It is a git `pre-commit` hook in [`dot_config/git/hooks/`](../../dot_config/git/hooks/format-staged-files/README.md) that runs the `command.ts` of the two formatter hooks.
+Three hooks also run `command.ts` in Claude Code, as a command hook in `settings.json.tmpl`: `block-secret-commits`, `type-check-tsc`, and `type-check-pyrefly`. The mod API cannot do what they need, see [`decisions.md`](decisions.md). `format-staged-files` is not an agent hook. It is a git `pre-commit` hook in [`dot_config/git/hooks/`](../../dot_config/git/hooks/format-staged-files/README.md) that runs the `command.ts` of the two formatter hooks.
 
 | File                           | Read it when                                         |
 | ------------------------------ | ---------------------------------------------------- |

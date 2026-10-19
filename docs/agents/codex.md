@@ -38,12 +38,12 @@ Some lines in `tools.md` name things Codex does not have: the Grep and Glob tool
 
 Codex sends Claude's hook payload with Claude's tool name `Bash`, so the scripts run unchanged. `hooks.json` has the same entries as the `hooks` block in [`dot_claude/settings.json.tmpl`](../../dot_claude/settings.json.tmpl):
 
-| Event         | Matcher       | Hooks                                                                               |
-| ------------- | ------------- | ----------------------------------------------------------------------------------- |
-| `PreToolUse`  | `Bash`        | `block-secret-commits`, `enforce-cli-tools`                                         |
-| `PostToolUse` | `Bash`        | `format-all-languages`, `format-org-tables`, `lint-all-languages`                   |
-| `PostToolUse` | `apply_patch` | the same three and `lint-prose`, through `apply-patch.ts`                           |
-| `Stop`        |               | `type-check-all-languages`; Codex sends `stop_hook_active`, so the loop guard works |
+| Event         | Matcher       | Hooks                                                                                           |
+| ------------- | ------------- | ----------------------------------------------------------------------------------------------- |
+| `PreToolUse`  | `Bash`        | `block-secret-commits`, `enforce-cli-tools`                                                     |
+| `PostToolUse` | `Bash`        | `format-all-languages`, `format-org-tables`, `lint-all-languages`                               |
+| `PostToolUse` | `apply_patch` | the same three and `lint-prose`, through `apply-patch.ts`                                       |
+| `Stop`        |               | `type-check-tsc`, `type-check-pyrefly`; Codex sends `stop_hook_active`, so the loop guard works |
 
 Codex has no `PostToolUseFailure` event. Under Codex, the file hooks do not run after a Bash command that writes a file and then exits non-zero.
 

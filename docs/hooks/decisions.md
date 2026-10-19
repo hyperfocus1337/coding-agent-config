@@ -30,9 +30,13 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 **Decision:** Claude Code runs `command.ts` through `guard.sh`, not a mod. **Why:** the binary scan copies each new binary file to a temporary folder, and `$.fs` has no copy, no remove, and no binary write, and refuses a file over 4 MiB. Review this when the mod API leaves early access.
 
-## type-check-all-languages is a command hook in Claude Code
+## type-check-tsc and type-check-pyrefly are command hooks in Claude Code
 
-**Decision:** the `Stop` entry in `settings.json.tmpl` runs `command.ts`. **Why:** a mod on `classic.Stop` loaded but did not run, because `cc-plugin-sec-default` skips user mods on `classic.*` events for a Team organization. In pi and omp, `agent_end` sends the errors with `pi.sendMessage` and `triggerTurn`, because omp has no `agent_before_settle`.
+**Decision:** the `Stop` entries in `settings.json.tmpl` run the `command.ts` of each hook. **Why:** a mod on `classic.Stop` loaded but did not run, because `cc-plugin-sec-default` skips user mods on `classic.*` events for a Team organization. In pi and omp, `agent_end` sends the errors with `pi.sendMessage` and `triggerTurn`, because omp has no `agent_before_settle`.
+
+## One hook for each type checker
+
+**Decision:** `type-check-tsc` and `type-check-pyrefly` replace `type-check-all-languages`. Each hook has its own copy of the git lookup, `io.ts`, and the adapters. **Why:** the name tells which checker runs, you turn off one checker by removing one entry, and each checker gets its own 60 s limit. The two checkers shared only the changed-file lookup, about 15 lines. **Cost:** about 100 lines that are the same in both hooks and must stay the same by hand. A shared module was rejected because no hook imports from another hook. **Why not Python for pyrefly:** a Python hook can only be a command hook, so pi and omp would lose the check, and the hooks would need a second runtime. [`hook-alternatives.md`](../research/hooks/hook-alternatives.md) found no official hook that replaces either one.
 
 ## track-session-changes runs as a mod
 

@@ -8,7 +8,7 @@ On 2026-10-19 the hook moved from `hook.sh` to TypeScript. In Claude Code it is 
 
 ## Why PostToolUse, and not Stop
 
-[`type-check-all-languages`](../../type-check-all-languages/README.md) moved from `PostToolUse` to `Stop` because it is loud and project-wide: it reran the whole project after every edit and reprinted the same unrelated errors each time. That argument does not carry over to this hook, for two reasons.
+[`type-check-all-languages`](../../type-check-tsc/README.md) (now `type-check-tsc` and `type-check-pyrefly`) moved from `PostToolUse` to `Stop` because it is loud and project-wide: it reran the whole project after every edit and reprinted the same unrelated errors each time. That argument does not carry over to this hook, for two reasons.
 
 **It costs almost no context.** The hook always exits 0 and writes nothing to stderr. The only thing it ever adds to the context window is the amend hint, and that fires only when one Bash call both writes and commits a markdown file. Running it 40 times in one turn costs 40 Prettier invocations and close to zero context.
 

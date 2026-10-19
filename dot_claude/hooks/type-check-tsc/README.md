@@ -1,6 +1,6 @@
-# type-check-all-languages
+# type-check-tsc
 
-Type-checks the whole project once, when the agent stops, and gives the errors to the model, so it fixes them.
+Runs `tsc --noEmit` on the whole project once, when the agent stops, and gives the errors to the model, so it fixes them. [`type-check-pyrefly`](../type-check-pyrefly/README.md) is the same hook for Python.
 
 One core, [`core.ts`](core.ts), serves four agents through two adapters:
 
@@ -15,24 +15,17 @@ The design gave Claude Code a mod on `classic.Stop`. In a live test on 2026-10-1
 
 ## How it works
 
-A stop carries no file path, so the hook asks git what changed: `git diff --name-only HEAD` plus the untracked files, without deleted files. The hook first finds the repository root, because the session folder can be a subdirectory. From a subdirectory, the changed-path list covers the whole repository, but a checker sees only that subdirectory. The hook picks the checkers by the extensions in that list:
-
-| Extension                  | Checker                         | Also needs      |
-| -------------------------- | ------------------------------- | --------------- |
-| `.py`                      | [pyrefly](https://pyrefly.org/) |                 |
-| `.ts` `.tsx` `.mts` `.cts` | `tsc --noEmit`                  | `tsconfig.json` |
-
-Each checker runs at the root, on the whole project, because a type checker needs the whole project. The changed-path list only decides which checker starts. When both languages changed, both checkers run, so one stop reports every language.
+A stop carries no file path, so the hook asks git what changed: `git diff --name-only HEAD` plus the untracked files, without deleted files. The hook first finds the repository root, because the session folder can be a subdirectory. From a subdirectory, the changed-path list covers the whole repository, but `tsc` sees only that subdirectory. `tsc` starts only when the list holds a `.ts`, `.tsx`, `.mts`, or `.cts` file and the root holds a `tsconfig.json`. It then runs at the root, on the whole project, because a type checker needs the whole project.
 
 The hook skips these cases with no output:
 
 - A folder that is not in a git work tree.
-- A checker that is not on `PATH`.
-- `tsc` when the root has no `tsconfig.json`. Without one, `tsc` prints its whole help text and exits 1.
-- pyrefly that exits 1 with `No Python files matched`. Its config then matches no files, which is not a type error.
-- A checker that runs for more than 60 s. Each checker has its own limit.
+- No changed TypeScript file.
+- `tsc` that is not on `PATH`.
+- A root with no `tsconfig.json`. Without one, `tsc` prints its whole help text and exits 1.
+- `tsc` that runs for more than 60 s.
 
-A git diff also holds work from before the session, so an old type error in a changed language blocks too. The code marks this with a `shortcut:` comment.
+A git diff also holds work from before the session, so an old type error blocks too. The code marks this with a `shortcut:` comment.
 
 ## Why a stop and not each edit
 
@@ -42,7 +35,7 @@ The other file hooks run after each Write or Edit, because they act on the one f
 
 ## How the model sees the errors
 
-- **Claude Code and Codex:** `command.ts` exits 2 with the errors on stderr, which blocks the stop. The model continues with the errors.
+- **Claude Code and Codex:** `command.ts` exits 2 with the errors on stderr, which blocks the stop. The model continues with the errors. When `type-check-pyrefly` also blocks the same stop, the model gets both outputs.
 - **pi and omp:** `pi.ts` sends the errors as a message that the model reads, and the message starts one more run. `omp -p` aborts that run when it exits, so in omp the check reaches the model only in an interactive session. `pi -p` runs it.
 
 ## The loop guard
@@ -62,28 +55,22 @@ The hook fails open in every agent, so a broken check never keeps the agent work
 
 ## Dependencies
 
-Python type checking needs [pyrefly](https://pyrefly.org/):
-
-```sh
-uv tool install pyrefly
-```
-
 `tsc` usually comes from the `typescript` dev dependency of each project. The hook runs `tsc` from `PATH`, and skips it when it is not there.
 
 `pi.ts` and `command.ts` need Node 23.6 or later, which runs `.ts` files without a flag. The Claude Code and Codex entries start with `command -v node || exit 0`, so a machine without Node is not blocked. The `SessionStart` check then gives a warning, see [A missing `node` gives a warning](../README.md#shared-conventions).
 
-Codex runs a hook only after you trust its entry. After the change from `hook.sh` to `command.ts`, trust the hooks again in the Codex TUI, on the host and in the devcontainer. See [`docs/agents/codex.md`](../../../docs/agents/codex.md#trust).
+Codex runs a hook only after you trust its entry. After a hook entry changes, trust the hooks again in the Codex TUI, on the host and in the devcontainer. See [`docs/agents/codex.md`](../../../docs/agents/codex.md#trust).
 
 ## Tests
 
-`node test/check.ts` runs `command.ts` in a git repository with a stand-in `pyrefly` and `tsc` on `PATH`, which pass, fail, or match no files. It covers each checker, a path that git quotes, the root from a subdirectory, the loop guard, a missing checker, a folder outside git, and a repository with no commit. It also checks the pi adapter with a stub. It needs `git`. `just hooks-check` runs it.
+`node test/check.ts` runs `command.ts` in a git repository with a stand-in `tsc` on `PATH`, which passes or fails. It covers each TypeScript extension, a missing `tsconfig.json`, a path that git quotes, the root from a subdirectory, the loop guard, a missing `tsc`, a folder outside git, and a repository with no commit. It also checks the pi adapter with a stub. It needs `git`. `just hooks-check` runs it.
 
 ## Files
 
-| File                 | Deployed to `~/.claude/hooks/type-check-all-languages/` | Role                                                                   |
-| -------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `core.ts`            | Yes                                                     | Finds the changed languages and runs their checkers                    |
-| `pi.ts`              | Yes                                                     | pi and omp extension                                                   |
-| `command.ts`         | Yes                                                     | Claude Code and Codex command hook                                     |
-| `io.ts`              | Yes                                                     | The `Io` under Node, with the 60 s limit, for `pi.ts` and `command.ts` |
-| `README.md`, `test/` | No                                                      | Kept in the repo by `.chezmoiignore`                                   |
+| File                 | Deployed to `~/.claude/hooks/type-check-tsc/` | Role                                                                   |
+| -------------------- | --------------------------------------------- | ---------------------------------------------------------------------- |
+| `core.ts`            | Yes                                           | Finds a changed TypeScript file and runs `tsc`                         |
+| `pi.ts`              | Yes                                           | pi and omp extension                                                   |
+| `command.ts`         | Yes                                           | Claude Code and Codex command hook                                     |
+| `io.ts`              | Yes                                           | The `Io` under Node, with the 60 s limit, for `pi.ts` and `command.ts` |
+| `README.md`, `test/` | No                                            | Kept in the repo by `.chezmoiignore`                                   |

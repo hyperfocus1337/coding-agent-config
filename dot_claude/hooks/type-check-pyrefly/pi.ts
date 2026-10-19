@@ -1,7 +1,7 @@
 /**
- * pi and omp extension: type-checks the project when a run ends. On errors it
- * sends them to the model as a follow-up message that starts one more run, so
- * the model fixes them. The end of that run passes without a check: pi and
+ * pi and omp extension: runs pyrefly on the project when a run ends. On
+ * errors it sends them to the model as a follow-up message that starts one
+ * more run, so the model fixes them. The end of that run passes without a check: pi and
  * omp have no `stop_hook_active`, so this flag is the loop guard. Loaded
  * through the `extensions` setting of each agent.
  *
@@ -36,7 +36,7 @@ export default function (pi: ExtensionAPI) {
       continued = true;
       pi.sendMessage(
         {
-          customType: "type-check-all-languages",
+          customType: "type-check-pyrefly",
           content: errors,
           display: true,
         },
