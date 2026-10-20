@@ -41,7 +41,7 @@ async function run(agent: string, payload: Payload) {
     tool_use_id: callId = "",
     tool_name: tool = "",
   } = payload;
-  const cwd = payload.cwd ?? process.cwd();
+  const cwd = payload.cwd || process.cwd();
   if (!session) return;
   const io = nodeIo();
   const where: Where = { home: homedir(), agent, session };

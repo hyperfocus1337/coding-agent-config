@@ -32,12 +32,13 @@ The core takes values or an `Io` object. It never takes `$` and never reads an e
 
 ## The adapters
 
-| Adapter             | Reads the environment with     | Project root                                     | Blocks with               | Feedback after a call                        |
-| ------------------- | ------------------------------ | ------------------------------------------------ | ------------------------- | -------------------------------------------- |
-| `hooks/register.ts` | `$.env.get("NAME")`, a literal | `$.session.root()`                               | `{ deny }` before `next`  | `{ ...ran, context: [...] }` after `next`    |
-| `pi.ts`, `omp.ts`   | `process.env` through `io.ts`  | `ctx.cwd`                                        | `{ block: true, reason }` | `tool_result` returns `{ content, isError }` |
-| `command.ts`        | `process.env` through `io.ts`  | `CLAUDE_PROJECT_DIR \|\| payload.cwd \|\| cwd()` | Exit 2, message on stderr | Exit 2, output on stderr                     |
+| Adapter             | Reads the environment with     | Working directory        | Blocks with               | Feedback after a call                        |
+| ------------------- | ------------------------------ | ------------------------ | ------------------------- | -------------------------------------------- |
+| `hooks/register.ts` | `$.env.get("NAME")`, a literal | `$.session.cwd()`        | `{ deny }` before `next`  | `{ ...ran, context: [...] }` after `next`    |
+| `pi.ts`, `omp.ts`   | `process.env` through `io.ts`  | `ctx.cwd`                | `{ block: true, reason }` | `tool_result` returns `{ content, isError }` |
+| `command.ts`        | `process.env` through `io.ts`  | `payload.cwd \|\| cwd()` | Exit 2, message on stderr | Exit 2, output on stderr                     |
 
+- **The guards use the project root,** not the working directory, so that they find the `.agent-allow-*` file of the repo from a subfolder: `$.session.root()` in the mod, and `CLAUDE_PROJECT_DIR || payload.cwd || cwd()` in `command.ts`. pi and omp give only `ctx.cwd`.
 - **The `$` call-site rule.** In `register.ts`, spell each `$` call where it is used. To give the core an `Io`, write an object literal whose methods spell `$.fs.stat(...)` and `$.process.run(...)` inside them. `claude plugin validate` refuses `$.fs` passed as a value.
 - **Empty means unset.** Use `||`, not `??`, for an environment fallback. Bash `${VAR:-default}` also falls back on an empty value.
 - **Timeouts.** `$.process.run` stops a program after 30 s. Pass `timeoutMs` where the hook needs more or less.
