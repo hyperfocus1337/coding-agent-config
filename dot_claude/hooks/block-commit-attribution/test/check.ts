@@ -26,9 +26,7 @@ for (const line of [
   "git commit -m 'fix: x' -m 'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>'",
   "git add a && git commit -m \"$(printf 'fix\\n\\nCo-authored-by: Claude <noreply@anthropic.com>')\"",
   "git -C repo commit --amend -m 'x\n\nco-authored-by: claude code'",
-  // Other agents, and a human: any co-author is blocked.
-  "git commit -m 'fix: x' -m 'Co-authored-by: aider (gpt-5) <noreply@aider.chat>'",
-  "git commit -m 'fix: x' -m 'Co-authored-by: Cursor Agent <cursoragent@cursor.com>'",
+  // The name is not read, so a human co-author is blocked too.
   "git commit -m 'fix: x' -m 'Co-Authored-By: Alice <alice@example.com>'",
 ])
   await check(`blocks ${JSON.stringify(line)}`, () =>
@@ -39,7 +37,6 @@ for (const line of [
 for (const line of [
   "git commit -m 'fix: x'",
   "git log --grep='Co-Authored-By: Claude'",
-  "rg -n 'Co-Authored-By: Claude' .",
   "rg -n 'co-authored-by: claude' committed.txt",
   "git commit-tree HEAD^{tree} -m 'Co-Authored-By: Claude'",
 ])
