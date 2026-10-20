@@ -160,12 +160,13 @@ await check("pi.ts: the command sets process.env and the status", async () => {
   await command?.handler("type-check-tsc", ctx);
   assert.equal("CLAUDE_HOOKS_DISABLE" in process.env, false);
 });
-await check("pi.ts: completes the hook names and all", () =>
-  assert.deepEqual(
-    command?.getArgumentCompletions("type").map((item) => item.value),
-    ["type-check-tsc", "type-check-pyrefly"],
-  ),
-);
+await check("pi.ts: completes the hook names and all", () => {
+  const complete = (prefix: string) =>
+    command?.getArgumentCompletions(prefix).map((item) => item.value);
+  assert.deepEqual(complete("type"), ["type-check-tsc", "type-check-pyrefly"]);
+  assert.deepEqual(complete(" a"), ["all"]);
+  assert.deepEqual(complete(""), [...HOOKS, "all"]);
+});
 
 if (failures) {
   console.error(`${failures} failed`);
