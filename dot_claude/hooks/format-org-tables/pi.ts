@@ -17,14 +17,14 @@ import { nodeIo, nodeSettings } from "./io.ts";
 export default function (pi: ExtensionAPI) {
   pi.on("tool_result", (event, ctx) => {
     if (!["write", "edit", "bash"].includes(event.toolName)) return;
-    const input = event.input as { path?: unknown; command?: unknown };
-    const command =
-      typeof input.command === "string" ? input.command : undefined;
+    const { path, command } = event.input;
     const calls: Call[] =
       event.toolName === "bash"
-        ? [{ command, cwd: ctx.cwd }]
-        : typeof input.path === "string"
-          ? [{ filePath: absolute(input.path, ctx.cwd), cwd: ctx.cwd }]
+        ? typeof command === "string"
+          ? [{ command, cwd: ctx.cwd }]
+          : []
+        : typeof path === "string"
+          ? [{ filePath: absolute(path, ctx.cwd), cwd: ctx.cwd }]
           : [];
     return alignCalls(calls, event.content);
   });

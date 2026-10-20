@@ -5,8 +5,8 @@
  * failed run leaves the files as they are. The adapters pass in the file and
  * process functions, because a mod reaches them only through `$`.
  *
- * Adapters: hooks/register.ts (Claude Code mod), pi.ts (pi and omp),
- * command.ts (Codex, and the format-staged-files pre-commit hook).
+ * Adapters: hooks/register.ts (Claude Code mod), pi.ts (pi and omp), omp.ts
+ * (omp only), command.ts (Codex, and the format-staged-files pre-commit hook).
  * Design notes: README.md.
  */
 
@@ -17,11 +17,11 @@ export interface Io {
   ): Promise<{ kind: "file" | "dir" | "other"; mtimeMs: number } | undefined>;
   /** The text of a file; undefined if it cannot be read. */
   read(path: string): Promise<string | undefined>;
-  /** The exit code and stdout; undefined when the program cannot start. */
+  /** The stdout of a program; undefined when it cannot start. */
   run(
     argv: string[],
     options: { cwd: string; env?: Record<string, string>; timeoutMs?: number },
-  ): Promise<{ exitCode: number; stdout: string } | undefined>;
+  ): Promise<{ stdout: string } | undefined>;
 }
 
 export interface Settings {
@@ -60,10 +60,6 @@ const ELISP = `
           (goto-char (org-table-end))))
       (save-buffer))))`;
 
-/** Whether a command commits: the hint then checks the last commit. */
-const commits = (call: Call) =>
-  !call.filePath && (call.command ?? "").includes("git commit");
-
 /**
  * A file under /tmp, /var/tmp, or TMPDIR is a scratch file, not project
  * prose. macOS resolves /tmp to /private/tmp, so both sides drop that prefix.
@@ -87,31 +83,24 @@ function throwaway(file: string, settings: Settings): boolean {
  * with a line that starts with `|` counts, which keeps Emacs out of the
  * common case. README "Files without tables".
  */
-export async function targets(
+async function targets(
   call: Call,
   io: Io,
   settings: Settings,
-  now = Date.now(),
 ): Promise<string[]> {
-  const candidates: string[] = [];
-  if (call.filePath) candidates.push(call.filePath);
-  else
-    for (const [named] of (call.command ?? "").matchAll(NAMED)) {
-      const path = named.startsWith("/") ? named : `${call.cwd}/${named}`;
-      const stat = await io.stat(path);
-      if (stat?.kind === "file" && now - stat.mtimeMs <= 120_000)
-        candidates.push(path);
-    }
+  const named = call.filePath
+    ? [call.filePath]
+    : [...(call.command ?? "").matchAll(NAMED)].map(([path]) =>
+        path.startsWith("/") ? path : `${call.cwd}/${path}`,
+      );
   const kept: string[] = [];
-  for (const file of candidates)
-    if (
-      file.endsWith(".org") &&
-      !throwaway(file, settings) &&
-      !kept.includes(file) &&
-      (await io.stat(file))?.kind === "file" &&
-      /^[ \t]*\|/m.test((await io.read(file)) ?? "")
-    )
-      kept.push(file);
+  for (const file of new Set(named)) {
+    if (!file.endsWith(".org") || throwaway(file, settings)) continue;
+    const stat = await io.stat(file);
+    if (stat?.kind !== "file") continue;
+    if (!call.filePath && Date.now() - stat.mtimeMs > 120_000) continue;
+    if (/^[ \t]*\|/m.test((await io.read(file)) ?? "")) kept.push(file);
+  }
   return kept;
 }
 
@@ -129,9 +118,10 @@ export async function align(
     return undefined;
   const files = await targets(call, io, settings);
   if (!files.length) return undefined;
-  // The hint names only the files that Emacs itself changed, so keep the
-  // text from before the run.
-  const watched = commits(call) ? files : [];
+  // Only a command that commits gets the hint, and the hint names only the
+  // files that Emacs itself changed, so keep the text from before the run.
+  const watched =
+    !call.filePath && call.command?.includes("git commit") ? files : [];
   const before = await Promise.all(watched.map((file) => io.read(file)));
   // One Emacs for all files: the 1.4 s is the start of Emacs. --no-init-file
   // keeps the user's init out. README "One Emacs run for every file".

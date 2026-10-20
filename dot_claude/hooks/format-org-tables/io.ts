@@ -32,7 +32,7 @@ export function nodeIo(): Io {
         // A program that cannot start (not installed, or a cwd that does not
         // exist) counts as missing.
         child.on("error", () => resolve(undefined));
-        child.on("close", (code) => resolve({ exitCode: code ?? 1, stdout }));
+        child.on("close", () => resolve({ stdout }));
       }),
   };
 }

@@ -153,6 +153,7 @@ node test/check.ts
 - **A Write or Edit:** the named file, a file that is not `.org`, a path that does not exist, a second pass over an aligned file, no backup files, a file in a temp folder, a `|` line inside a block, a `#+TBLFM` formula, and a link at its raw width.
 - **A Bash call:** a relative and two absolute paths in a command, a command that names no `.org` file, a path that does not exist, and a path the command only read.
 - **The amend hint:** after a commit, and none for a file the run left alone or without a commit.
+- **`CLAUDE_HOOKS_DISABLE`:** a value that names the hook stops the core before it reads a file.
 - **The adapters:** `pi.ts`, `omp.ts`, and `hooks/register.ts` with stubs over the real files.
 
 The check turns off `format-staged-files` with `GIT_CONFIG_*` variables, and skips with a message when git or Emacs is missing.

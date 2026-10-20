@@ -71,8 +71,9 @@ const RAW = "| a | bbbbbbbbbbbb |\n|---+---|\n| ccccccccccccccc | d |\n";
 const unaligned = (file: string) => fs.writeFileSync(file, RAW);
 const read = (file: string) => fs.readFileSync(file, "utf8");
 /** Aligned: the first cell is padded to the width of the widest one. */
+const isAligned = (file: string) => assert.match(read(file), /^\| a {2}/);
 const aligned = (what: string, file: string) =>
-  check(`align ${what}`, () => assert.match(read(file), /^\| a {2}/));
+  check(`align ${what}`, () => isAligned(file));
 const untouched = (what: string, file: string) =>
   check(`skip ${what}`, () => assert.match(read(file), /^\| a \| b/));
 const quiet = (what: string, ran: ReturnType<typeof hookRun>) =>
@@ -221,20 +222,14 @@ await aligned("a file written with no commit", `${repo}/quiet.org`);
 
 // --- CLAUDE_HOOKS_DISABLE ---
 
+const noIo = new Proxy({}, { get: () => () => assert.fail("the hook ran") });
 await check(
   "CLAUDE_HOOKS_DISABLE that names the hook: nothing runs",
   async () =>
     assert.equal(
-      await align(
-        { filePath: "/x/a.org", cwd: "/x" },
-        new Proxy(
-          {},
-          { get: () => () => assert.fail("the hook ran") },
-        ) as never,
-        {
-          hooksOff: "lint-code format-org-tables",
-        },
-      ),
+      await align({ filePath: "/x/a.org", cwd: "/x" }, noIo as never, {
+        hooksOff: "lint-code format-org-tables",
+      }),
       undefined,
     ),
 );
@@ -253,7 +248,7 @@ await check("pi.ts: aligns the file of an edit", async () => {
     { cwd: repo },
   );
   assert.equal(result, undefined);
-  assert.match(read(`${repo}/pi.org`), /^\| a {2}/);
+  isAligned(`${repo}/pi.org`);
 });
 unaligned(`${repo}/pi-commit.org`);
 git(repo, "add", "-A");
@@ -282,8 +277,8 @@ await check("omp.ts: aligns each file of a multi-file edit", async () => {
   unaligned(`${repo}/omp-a.org`);
   unaligned(`${repo}/omp-b.org`);
   await omp("edit", { paths: ["omp-a.org", "omp-b.org"] });
-  assert.match(read(`${repo}/omp-a.org`), /^\| a {2}/);
-  assert.match(read(`${repo}/omp-b.org`), /^\| a {2}/);
+  isAligned(`${repo}/omp-a.org`);
+  isAligned(`${repo}/omp-b.org`);
 });
 await check("omp.ts: aligns the files of an applied ast_edit", async () => {
   unaligned(`${repo}/omp-ast.org`);
@@ -301,7 +296,7 @@ await check("omp.ts: aligns the files of an applied ast_edit", async () => {
       },
     },
   );
-  assert.match(read(`${repo}/omp-ast.org`), /^\| a {2}/);
+  isAligned(`${repo}/omp-ast.org`);
 });
 await check("omp.ts: leaves the calls of pi.ts alone", async () => {
   unaligned(`${repo}/omp-pi.org`);
@@ -340,11 +335,7 @@ const stub$ = {
         encoding: "utf8",
       });
       if (done.error) throw done.error;
-      return {
-        exitCode: done.status ?? 1,
-        stdout: done.stdout,
-        stderr: done.stderr,
-      };
+      return { stdout: done.stdout };
     },
   },
 };
@@ -359,7 +350,7 @@ await check("register.ts: aligns the file and passes the result", async () => {
     ),
     result,
   );
-  assert.match(read(`${repo}/mod.org`), /^\| a {2}/);
+  isAligned(`${repo}/mod.org`);
 });
 unaligned(`${repo}/mod-commit.org`);
 git(repo, "add", "-A");
