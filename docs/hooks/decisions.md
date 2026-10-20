@@ -36,7 +36,7 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 ## type-check-tsc and type-check-pyrefly are command hooks in Claude Code
 
-**Decision:** the `Stop` entries in `settings.json.tmpl` run the `command.ts` of each hook. **Why:** a mod on `classic.Stop` loaded but did not run, because `cc-plugin-sec-default` skips user mods on `classic.*` events for a Team organization. In pi and omp, `agent_end` sends the errors with `pi.sendMessage` and `triggerTurn`, because omp has no `agent_before_settle`.
+**Decision:** the `Stop` entries in `settings.json.tmpl` run the `command.ts` of each hook. **Why:** a mod on `classic.Stop` loaded but did not run, because `cc-plugin-sec-default` skips user mods on `classic.*` events for a Team organization. In pi, `agent_end` sends the errors with `pi.sendMessage` and `triggerTurn`, and pi waits for `agent_end` to finish. omp does not wait for `agent_end`, so `omp.ts` returns the errors from `session_stop`, which omp waits for.
 
 ## One hook for each type checker
 
