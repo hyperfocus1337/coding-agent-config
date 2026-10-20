@@ -15,7 +15,7 @@ The git pre-commit hook [`format-staged-files`](../../../dot_config/git/hooks/fo
 
 ## Triggers
 
-The hook runs after each Write, Edit, and Bash call. It tells them apart by whether the call names a file: a Write or an Edit names one in `file_path`, a Bash call names none. [Why PostToolUse, and not Stop](docs/implementation.md#why-posttooluse-and-not-stop) says why the turn-level events are wrong for a formatter.
+The hook runs after each Write, Edit, and Bash call. It tells them apart by whether the call names a file: a Write or an Edit names one in `file_path`, a Bash call names none. [Why after each call, and not Stop](docs/implementation.md#why-after-each-call-and-not-stop) says why the turn-level events are wrong for a formatter.
 
 ### Write and Edit (one file)
 
@@ -27,7 +27,7 @@ A Bash tool call carries no `file_path`, but a shell command (`sed`, `perl`, `ec
 
 The sweep is deliberately **markdown-only**. The edit path formats every supported extension because the edit is the point; the Bash path does not, because reformatting every changed `.ts`/`.css`/`.json` on _every_ shell command would fight edits still in progress. Markdown table drift is the specific problem worth a repo-wide pass; the rest is not.
 
-The cost of that choice is that a non-markdown file written by a shell command stays unformatted until an `Edit` touches it. [The gap the current wiring leaves](docs/implementation.md#the-gap-the-current-wiring-leaves) records when that matters and what would close it.
+The cost of that choice is that a non-markdown file written by a shell command stays unformatted until an `Edit` touches it. [The gap that format-staged-files closes](docs/implementation.md#the-gap-that-format-staged-files-closes) records when that matters and what closes it.
 
 #### Markdown the command names
 

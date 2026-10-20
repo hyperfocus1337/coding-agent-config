@@ -1,54 +1,44 @@
 # Implementation notes
 
-Why the hook is wired to the events it is wired to, and which other events were considered and rejected. [README.md](../README.md) describes the behaviour for a user of the hook; this file is for a person changing it.
+Why the hook runs after each tool call, and which other events were considered and rejected. [README.md](../README.md) describes the behaviour for a user of the hook; this file is for a person changing it.
 
-Read from the Claude Code 2.1.278 binary and from the hook itself on 2026-09-19. The Stop-payload behaviour below was run, not reasoned about; the rest is a design argument, not a measurement.
+| Agent       | Wiring                                                                               |
+| ----------- | ------------------------------------------------------------------------------------ |
+| Claude Code | `hooks/register.ts`, a mod on `tool.call` for Write, Edit, and Bash, after `next`    |
+| pi, omp     | `pi.ts` on `tool_result`; omp also loads `omp.ts` for the omp calls                  |
+| Codex       | `command.ts` on `PostToolUse`, and through `dot_codex/hooks/apply-patch.ts` on edits |
 
-On 2026-10-19 the hook moved from `hook.sh` to TypeScript. In Claude Code it is now a mod on `tool.call`, which runs after each Write, Edit, and Bash result, also a failed one. The sections below name `hook.sh` and the `settings.json` entries of that time. The arguments for each event still hold.
+The hook moved from `hook.sh` to TypeScript on 2026-10-19. The measurements below were made on 2026-09-19 with `hook.sh` and Claude Code 2.1.278. The arguments still hold.
 
-## Why PostToolUse, and not Stop
+## Why after each call, and not Stop
 
 [`type-check-all-languages`](../../type-check-tsc/README.md) (now `type-check-tsc` and `type-check-pyrefly`) moved from `PostToolUse` to `Stop` because it is loud and project-wide: it reran the whole project after every edit and reprinted the same unrelated errors each time. That argument does not carry over to this hook, for two reasons.
 
-**It costs almost no context.** The hook always exits 0 and writes nothing to stderr. The only thing it ever adds to the context window is the amend hint, and that fires only when one Bash call both writes and commits a markdown file. Running it 40 times in one turn costs 40 Prettier invocations and close to zero context.
+**It costs almost no context.** The hook writes nothing for the model, except the amend hint. That hint comes only when one Bash call both writes and commits a Markdown file. 40 calls in one turn cost 40 Prettier runs and close to zero context.
 
-**It has to run per edit, not per turn.** Claude reads a file back after it writes it. If formatting waits until the turn ends, Claude works all turn against content that does not match what lands on disk, and the table alignment it wants while editing a table never happens while it is editing the table.
+**It has to run per edit, not per turn.** The model reads a file back after it writes it. If formatting waits until the turn ends, the model works all turn against content that does not match what lands on disk, and the table alignment it wants while editing a table never happens while it is editing the table.
 
-One argument does favour deferring: formatting a file directly after a Write makes Claude's cached view of that file stale, which produces a "changed on disk" notice and can make a following `Edit` miss on `old_string`. Under `--prose-wrap preserve` the rewrites are small, so a miss needs Claude to target the exact line Prettier touched. Seeing formatted content while working is worth more than avoiding that.
+One argument does favour deferring: formatting a file directly after a Write makes the model's cached view of that file stale, which produces a "changed on disk" notice and can make a following `Edit` miss on `old_string`. Under `--prose-wrap preserve` the rewrites are small, so a miss needs the model to target the exact line Prettier touched. Seeing formatted content while working is worth more than avoiding that.
 
-## Wiring it to Stop as-is does nothing
+A turn end has no tool call, so `format` would get neither a file path nor a command. A `Stop` wiring needs new code, not only a new entry.
 
-Worth knowing before anyone tries it. The script branches on whether `tool_input.file_path` is present. A `Stop` payload has neither `tool_input.file_path` nor `tool_input.command`, so the hook takes the Bash branch, reads `.cwd`, finds no command text, and sweeps the session repo with `ext_filter='md|markdown'`.
+## The gap that format-staged-files closes
 
-Measured with a Stop-shaped payload on 2026-09-19: exit 0, and no work beyond a markdown sweep the Bash matcher already performs. A third wiring on `Stop` would pay for a duplicate pass and close no gap. Closing the gap below needs a change to the script, not only to `settings.json`.
+The Bash sweep is Markdown-only on purpose, for the reason the README gives under [Bash (markdown sweep)](../README.md#bash-markdown-sweep): reformatting every changed `.ts`, `.css`, and `.json` on every shell command would fight edits still in progress.
 
-## The gap the current wiring leaves
+The cost of that choice is that a non-Markdown file written by a shell heredoc, by `jq`, or by a script stays unformatted until an `Edit` touches it. It is a real case, not a hypothetical one: a `jq ... | sponge dot_claude/settings.json` edit in this repo is exactly it. Such a file only hurts when it reaches a commit, and until then the next `Edit` fixes it for free.
 
-The Bash sweep is markdown-only on purpose, for the reason the README gives under [Bash (markdown sweep)](../README.md#bash-markdown-sweep): reformatting every changed `.ts`, `.css`, and `.json` on every shell command would fight edits still in progress.
+The [`format-staged-files`](../../../../dot_config/git/hooks/format-staged-files/README.md) git hook closes the gap. In an agent session it runs `command.ts` on each staged file before git writes the commit, with the full extension set. This also covers the case that a check before the Bash call cannot: in `cat > README.md <<'EOF' ... && git commit -am docs`, the file exists only after the call starts. The amend hint stays for a commit that skips the git hook, such as `git commit --no-verify`.
 
-The cost of that choice is that a non-markdown file written by a shell heredoc, by `jq`, or by a script stays unformatted until an `Edit` touches it. It is a real case, not a hypothetical one: a `jq ... | sponge dot_claude/settings.json` edit in this repo is exactly it, and it stayed Prettier-clean only because jq's two-space output happens to match Prettier's.
+## Why a failed Bash call is formatted too
 
-An unformatted file of this kind only hurts when it reaches a commit. Until then the next `Edit` fixes it for free.
-
-## The option that would close it
-
-A third wiring, `PreToolUse` on the Bash matcher, matching the same `git commit` string the script already looks for, formatting the changed files with the full extension set before the commit is made. It would also delete code: the cksum-before, the `HEAD~1` diff, and the `additionalContext` block in the "Report a commit that needs amending" section all exist because the hook sees the commit only after the fact.
-
-It does not close the whole case. At `PreToolUse` the heredoc in `cat > README.md <<'EOF' ... && git commit -am docs` has not run yet, so there is nothing to format and the amend hint still has to catch that one afterwards. See [Write and commit in one command](../README.md#write-and-commit-in-one-command).
-
-Not built. The payoff is one narrow case against a second wiring and a second code path, so it waits for a stale non-markdown commit to actually cause a problem.
-
-## Why PostToolUseFailure is wired too
-
-`PostToolUse` fires only after a tool call succeeds. A Bash command that exits non-zero raises `PostToolUseFailure`, a separate event that needs its own entry in `settings.json`.
+A `PostToolUse` command hook fires only after a tool call succeeds. A Bash command that exits non-zero raises `PostToolUseFailure`, a separate event.
 
 Measured on 2026-09-19. Two Bash calls wrote the same unaligned table to a literal path and differed only in the exit code. The exit 0 file came back column-aligned; the exit 1 file was untouched. The gap covers the write-then-verify shape, which is most of what a shell command does here: the file is written, a later step in the chain fails, and the formatting never ran on the file that is about to be edited again.
 
-The fix was wiring, not logic. The failure payload carries `tool_name`, `tool_input`, and `error`, so `tool_input.command` is present and the sweep is identical on both events. Only the amend hint needed a change: `hookEventName` is the discriminant of a per-event `hookSpecificOutput` schema, so a hardcoded `PostToolUse` literal sent from a failure run does not validate. The hook reads `.hook_event_name` and echoes it back.
+The mod on `tool.call` gets the result of each call after `next`, a failed one too, so Claude Code needs no second entry. A half-written file from an interrupted command is still a file worth formatting, and a Prettier failure on one is ignored.
 
-The event also carries `is_interrupt`, so the sweep now runs after an interrupted shell command. A half-written file is still a file worth formatting, and Prettier failing on one is already swallowed.
-
-The `Write|Edit|MultiEdit` matcher is deliberately not wired to the failure event: a failed edit wrote nothing.
+`command.ts` still echoes `hook_event_name` back as `hookEventName`, because `hookSpecificOutput` must name the event that fired, or the output is invalid.
 
 ## Events that do not apply
 
@@ -56,4 +46,4 @@ The `Write|Edit|MultiEdit` matcher is deliberately not wired to the failure even
 
 `PostToolBatch` fires once after a batch of parallel tool calls resolves, so it would merge several sweeps into one. The sweep is already cheap and idempotent, so this buys speed, not correctness.
 
-`async: true` on the existing Bash matcher would move the sweep off the critical path. It is the wrong trade here: the hook would then rewrite files while Claude is already reading them.
+An `async: true` command hook would move the sweep off the critical path. It is the wrong trade here: the hook would then rewrite files while the model is already reading them.
