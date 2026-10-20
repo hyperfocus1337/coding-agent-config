@@ -67,19 +67,17 @@ The `hooks/` folder gives the design of the hooks in [`dot_claude/hooks/`](../do
 
 ## Research
 
-The `research/` folder holds investigations into the agent environment and session. These record what was true when measured and can go stale. One subfolder per subject: `hooks/` for the hook events of each agent and the scoping of the hooks, `commands/` for the git methods behind the slash commands, `context/` for what a session loads and what that costs, `interface/` for the prompt and the terminal around it, and `install/` for how a tool reaches the agent.
+The `research/` folder holds investigations into the agent environment and session. These record what was true when measured and can go stale. One subfolder per subject: `hooks/` for the scoping of the hooks and their alternatives, `commands/` for the git methods behind the slash commands, `context/` for what a session loads and what that costs, `interface/` for the prompt and the terminal around it, and `install/` for how a tool reaches the agent.
 
 ### Hooks
 
 The `research/hooks/` folder holds the source reading, tests, and transcript counts behind the hooks in [`dot_claude/hooks/`](../dot_claude/hooks/README.md). [`hooks/`](hooks/README.md) gives the design that follows from them.
 
-- [`hook-events.md`](research/hooks/hook-events.md) lists every event a hook can attach to in Claude Code (settings hooks and mods), pi, omp, and Codex, and checks that the hooks here attach to the right ones. Each agent has the 4 points the hooks use. The gap is two omp tools that change files and that no hook matches: `ast_edit` and `eval`.
 - [`event-scoping.md`](research/hooks/event-scoping.md) measures, from 205 Claude Code transcripts, whether each format, lint, and type-check hook runs after each tool call or at the stop.
 
-| File                                                  | Description                                                                                     |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| [`hook-events.md`](research/hooks/hook-events.md)     | Hook events in Claude Code, pi, omp, and Codex, and the scoping of the hooks here (from source) |
-| [`event-scoping.md`](research/hooks/event-scoping.md) | After each tool call or at the stop: the event for each per-file and whole-project hook         |
+| File                                                  | Description                                                                             |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| [`event-scoping.md`](research/hooks/event-scoping.md) | After each tool call or at the stop: the event for each per-file and whole-project hook |
 
 ### Commands
 

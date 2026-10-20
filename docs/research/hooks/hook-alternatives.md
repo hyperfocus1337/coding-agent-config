@@ -19,7 +19,7 @@ Read on 2026-10-19. "Local" means the installed copy in the devcontainer. Nothin
 | pi                                                                                                     | 1.3.0 (local)                                              | `@earendil-works/pi-coding-agent` `docs/`, `examples/`, `CHANGELOG.md`, `dist/`                                                                |
 | omp                                                                                                    | 18.12.2 (local)                                            | The binary strings, checked against [`can1357/oh-my-pi@v18.12.2`](https://github.com/can1357/oh-my-pi/tree/v18.12.2)                           |
 
-For the hook events and mechanisms of each agent, see [hook events](hook-events.md) and [hook platforms](../../hooks/platforms.md). This page does not repeat them.
+For the hook events and mechanisms of each agent, see [hook platforms](../../hooks/platforms.md). This page does not repeat them.
 
 ## Claude Code
 
