@@ -4,8 +4,8 @@
  * in scratch git repos, as an agent runs it. The mod and pi.ts run with stubs
  * over the real files.
  *
- * Run: node test/check.ts, from the hook directory. TRACK_HOOK runs the hook
- * runs against another command hook, such as the old hook.ts.
+ * Run: node test/check.ts, from the hook directory. TRACK_HOOK runs the
+ * command.ts cases against another command hook, such as the old hook.ts.
  */
 
 import assert from "node:assert/strict";
@@ -44,25 +44,14 @@ async function check(what: string, run: () => unknown): Promise<void> {
 
 // ── Parsers ───────────────────────────────────────────────────────────────────
 
-await check("Edit: new start plus the context lines before the change", () => {
+await check("Edit and Write: new start plus the context lines before", () => {
   // The structuredPatch of a real Edit of line 3, from the probe of 2026-10-14.
-  const hunk = {
-    newStart: 1,
-    lines: [" one", " two", "-three", "+THREE", " four", " five"],
-  };
-  assert.equal(patchLine([hunk]), 3);
-});
-
-await check("Write that appends: the first + line", () => {
-  assert.equal(
-    patchLine([
-      { newStart: 3, lines: [" THREE", " four", " five", "+", "+six"] },
-    ]),
-    6,
-  );
-});
-
-await check("Write that creates a file has no hunks: line 1", () => {
+  const edit = [" one", " two", "-three", "+THREE", " four", " five"];
+  assert.equal(patchLine([{ newStart: 1, lines: edit }]), 3);
+  // A Write that appends: the first + line.
+  const append = [" THREE", " four", " five", "+", "+six"];
+  assert.equal(patchLine([{ newStart: 3, lines: append }]), 6);
+  // A Write that creates a file has no hunks: line 1.
   assert.equal(patchLine([]), 1);
 });
 
@@ -250,23 +239,70 @@ function fire(payload: Record<string, unknown>, agent = "claude") {
     env: { ...process.env, HOME: home },
   });
 }
-let calls = 0;
-/** One Bash call: PreToolUse, the change, then the end event. */
+let ids = 0;
+/** One Bash call, or `opts.tool`: PreToolUse, the change, then the end event. */
 function bash(
   cwd: string,
   change: () => void,
-  opts: { session?: string; end?: string; agent?: string } = {},
+  opts: { session?: string; end?: string; agent?: string } & {
+    tool?: string;
+    input?: Record<string, unknown>;
+  } = {},
 ) {
   const base = {
     session_id: opts.session ?? "s1",
-    tool_use_id: `t${++calls}`,
-    tool_name: "Bash",
+    tool_use_id: `t${++ids}`,
+    tool_name: opts.tool ?? "Bash",
+    tool_input: opts.input,
     cwd,
   };
   fire({ ...base, hook_event_name: "PreToolUse" }, opts.agent);
   change();
   fire({ ...base, hook_event_name: opts.end ?? "PostToolUse" }, opts.agent);
 }
+/** One Codex apply_patch call of `command`. */
+const applyPatch = (
+  session: string,
+  cwd: string,
+  command: string,
+  change: () => void,
+) =>
+  bash(cwd, change, {
+    session,
+    agent: "codex",
+    tool: "apply_patch",
+    input: { command },
+  });
+/** The PostToolUse of a tool that names its file, such as Edit or Write. */
+const post = (
+  session: string,
+  tool: string,
+  cwd: string,
+  input: Record<string, unknown>,
+  response: unknown,
+) =>
+  fire({
+    session_id: session,
+    tool_use_id: `x${++ids}`,
+    hook_event_name: "PostToolUse",
+    tool_name: tool,
+    cwd,
+    tool_input: input,
+    tool_response: response,
+  });
+/** A Write that creates `file`. */
+const create = (session: string, cwd: string, file: string) =>
+  post(
+    session,
+    "Write",
+    cwd,
+    { file_path: file },
+    {
+      type: "create",
+      filePath: file,
+      structuredPatch: [],
+    },
+  );
 /**
  * The log lines after the last `clear`. The log must stay, because the hook
  * reads the touched repos from it.
@@ -296,11 +332,12 @@ const lines = (n: number) =>
 
 const r1 = repo("r1", { "tracked.txt": lines(10), "gone.txt": "b\n" });
 const objectCount = () =>
-  Number(
-    execFileSync("bash", ["-c", "find .git/objects -type f | wc -l"], {
-      cwd: r1,
-    }),
-  );
+  fs
+    .readdirSync(path.join(r1, ".git/objects"), {
+      recursive: true,
+      withFileTypes: true,
+    })
+    .filter((entry) => entry.isFile()).length;
 const repoObjects = objectCount();
 
 await check("Bash: add, modify with its line, delete", () => {
@@ -412,18 +449,13 @@ await check(
 );
 
 const r2 = repo("r2", { "a.txt": lines(5) });
-const r3 = repo("r3", { "a.txt": lines(5) });
+// r3 is a repo that the session never changed.
+repo("r3", { "a.txt": lines(5) });
 
 await check("Edit: line from structuredPatch, start from duration_ms", () => {
   clear();
   sh(r2, "perl -i -pe 's/^l3$/THREE/' a.txt");
-  const hunk = {
-    oldStart: 1,
-    oldLines: 5,
-    newStart: 1,
-    newLines: 5,
-    lines: [" l1", " l2", "-l3", "+THREE", " l4", " l5"],
-  };
+  const patch = [hunk(1, 1, [" l1", " l2", "-l3", "+THREE", " l4", " l5"])];
   fire({
     session_id: "s1",
     tool_use_id: "e1",
@@ -432,7 +464,7 @@ await check("Edit: line from structuredPatch, start from duration_ms", () => {
     cwd: r1,
     duration_ms: 1500,
     tool_input: { file_path: `${r2}/a.txt` },
-    tool_response: { filePath: `${r2}/a.txt`, structuredPatch: [hunk] },
+    tool_response: { filePath: `${r2}/a.txt`, structuredPatch: patch },
   });
   assert.deepEqual(logged(), [`Edit\tM\t${r2}\t${r2}/a.txt\t3`]);
   const [start, end] = rows()[0].split("\t");
@@ -456,21 +488,9 @@ await check(
   () => {
     clear();
     const file = path.join(tmp, "plain", "b.txt");
-    const base = { session_id: "s1", hook_event_name: "PostToolUse", cwd: r1 };
-    fire({
-      ...base,
-      tool_use_id: "w1",
-      tool_name: "Write",
-      tool_input: { file_path: file },
-      tool_response: { type: "create", filePath: file, structuredPatch: [] },
-    });
-    fire({
-      ...base,
-      tool_use_id: "e2",
-      tool_name: "Edit",
-      tool_input: { file_path: file },
-      tool_response: "Error: String to replace not found",
-    });
+    create("s1", r1, file);
+    const error = "Error: String to replace not found";
+    post("s1", "Edit", r1, { file_path: file }, error);
     assert.deepEqual(logged(), [`Write\tA\t\t${file}\t1`]);
   },
 );
@@ -479,28 +499,15 @@ await check("NotebookEdit: the first changed line of the file text", () => {
   clear();
   const file = `${r2}/n.ipynb`;
   // The payload shape of a probe on 2026-10-14. A failed call sends no event.
-  const base = {
-    session_id: "s1",
-    hook_event_name: "PostToolUse",
-    tool_name: "NotebookEdit",
-    cwd: r1,
-    tool_input: { notebook_path: file, cell_id: "c1", new_source: "x" },
-  };
-  fire({
-    ...base,
-    tool_use_id: "n1",
-    tool_response: {
-      error: "",
-      notebook_path: file,
-      original_file: '{\n "cells": [\n  "a"\n ]\n}\n',
-      updated_file: '{\n "cells": [\n  "x"\n ]\n}\n',
-    },
+  const input = { notebook_path: file, cell_id: "c1", new_source: "x" };
+  post("s1", "NotebookEdit", r1, input, {
+    error: "",
+    notebook_path: file,
+    original_file: '{\n "cells": [\n  "a"\n ]\n}\n',
+    updated_file: '{\n "cells": [\n  "x"\n ]\n}\n',
   });
-  fire({
-    ...base,
-    tool_use_id: "n2",
-    tool_response: { error: "Cell not found", notebook_path: file },
-  });
+  const error = { error: "Cell not found", notebook_path: file };
+  post("s1", "NotebookEdit", r1, input, error);
   assert.deepEqual(logged(), [`NotebookEdit\tM\t${r2}\t${file}\t3`]);
 });
 
@@ -522,19 +529,12 @@ await check(
       "+o",
       "*** End Patch",
     ].join("\n");
-    const base = {
-      session_id: "c1",
-      tool_use_id: "call_1",
-      tool_name: "apply_patch",
-      cwd: cx,
-      tool_input: { command },
-    };
-    fire({ ...base, hook_event_name: "PreToolUse" }, "codex");
-    sh(
-      cx,
-      `perl -i -pe 's/^l4$/four/' u.txt; mkdir sub; echo n >sub/n.txt; rm d.txt; echo o >${outside}; echo s >stray.txt`,
+    applyPatch("c1", cx, command, () =>
+      sh(
+        cx,
+        `perl -i -pe 's/^l4$/four/' u.txt; mkdir sub; echo n >sub/n.txt; rm d.txt; echo o >${outside}; echo s >stray.txt`,
+      ),
     );
-    fire({ ...base, hook_event_name: "PostToolUse" }, "codex");
     assert.deepEqual(logged("c1", "codex"), [
       `apply_patch\tM\t${cx}\t${cx}/u.txt\t4`,
       `apply_patch\tA\t${cx}\t${cx}/sub/n.txt\t1`,
@@ -616,15 +616,7 @@ await check("Write outside a repo: the blob through the bare repo", () => {
   const file = path.join(tmp, "plain", "w.txt");
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, "loose\n");
-  fire({
-    session_id: "b0",
-    tool_use_id: `x${++calls}`,
-    hook_event_name: "PostToolUse",
-    tool_name: "Write",
-    cwd: r1,
-    tool_input: { file_path: file },
-    tool_response: { type: "create", filePath: file, structuredPatch: [] },
-  });
+  create("b0", r1, file);
   assert.deepEqual(blobs("b0"), [["", blobId("loose\n")]]);
   assert.equal(blobText(blobId("loose\n"), "b0", r1), "loose\n");
 });
@@ -671,21 +663,14 @@ await check(
 );
 
 const rt = repo("rt", { "e.txt": "a\nb\n" });
-const edit = (
-  session: string,
-  file: string,
-  response: Record<string, unknown>,
-  tool = "Edit",
-) =>
-  fire({
-    session_id: session,
-    tool_use_id: `x${++calls}`,
-    hook_event_name: "PostToolUse",
-    tool_name: tool,
-    cwd: rt,
-    tool_input: { file_path: file },
-    tool_response: { filePath: file, ...response },
-  });
+const edit = (session: string, file: string, response: object) =>
+  post(
+    session,
+    "Edit",
+    rt,
+    { file_path: file },
+    { filePath: file, ...response },
+  );
 
 await check(
   "Edit: before from originalFile, after from the file on disk",
@@ -734,22 +719,20 @@ await check(
 await check("Write that creates, and NotebookEdit: their blobs", () => {
   const file = path.join(rt, "w.txt");
   fs.writeFileSync(file, "w\n");
-  edit("b5", file, { type: "create", structuredPatch: [] }, "Write");
+  create("b5", rt, file);
   const notebook = path.join(rt, "n.ipynb");
   fs.writeFileSync(notebook, '{"cells": ["x"]}\n');
-  fire({
-    session_id: "b5",
-    tool_use_id: `x${++calls}`,
-    hook_event_name: "PostToolUse",
-    tool_name: "NotebookEdit",
-    cwd: rt,
-    tool_input: { notebook_path: notebook },
-    tool_response: {
+  post(
+    "b5",
+    "NotebookEdit",
+    rt,
+    { notebook_path: notebook },
+    {
       error: "",
       original_file: '{"cells": ["a"]}\n',
       updated_file: '{\n "cells": ["x"]\n}\n',
     },
-  });
+  );
   assert.deepEqual(blobs("b5"), [
     ["", blobId("w\n")],
     [blobId('{"cells": ["a"]}\n'), blobId('{"cells": ["x"]}\n')],
@@ -760,15 +743,7 @@ await check("a repo whose attributes convert CRLF: the blob of git", () => {
   const ra = repo("ra", { ".gitattributes": "*.txt text\n" });
   const file = path.join(ra, "c.txt");
   fs.writeFileSync(file, "a\r\n");
-  fire({
-    session_id: "b6",
-    tool_use_id: `x${++calls}`,
-    hook_event_name: "PostToolUse",
-    tool_name: "Write",
-    cwd: ra,
-    tool_input: { file_path: file },
-    tool_response: { type: "create", filePath: file, structuredPatch: [] },
-  });
+  create("b6", ra, file);
   const id = execFileSync("git", ["hash-object", "c.txt"], { cwd: ra })
     .toString()
     .trim();
@@ -783,16 +758,9 @@ await check(
     const cy = repo("cy", { "u.txt": "u\n" });
     const command =
       "*** Begin Patch\n*** Update File: u.txt\n@@\n-u\n+U\n*** End Patch";
-    const base = {
-      session_id: "c2",
-      tool_use_id: "call_2",
-      tool_name: "apply_patch",
-      cwd: cy,
-      tool_input: { command },
-    };
-    fire({ ...base, hook_event_name: "PreToolUse" }, "codex");
-    fs.writeFileSync(path.join(cy, "u.txt"), "U\n");
-    fire({ ...base, hook_event_name: "PostToolUse" }, "codex");
+    applyPatch("c2", cy, command, () =>
+      fs.writeFileSync(path.join(cy, "u.txt"), "U\n"),
+    );
     assert.deepEqual(blobs("c2", "codex"), [[blobId("u\n"), blobId("U\n")]]);
   },
 );
@@ -1123,27 +1091,35 @@ const realHome = process.env.HOME;
 process.env.HOME = home;
 const pr = repo("pr", { "f.txt": "a\nb\nc\n" });
 type Handler = (event: Record<string, unknown>, ctx: unknown) => Promise<void>;
+/**
+ * Loads pi.ts or omp.ts with a stub pi. The result runs one tool call:
+ * tool_call, the change, then a successful tool_result with the `result` fields.
+ */
 function load(title: "pi" | "omp", session: string) {
   const handlers = new Map<string, Handler>();
   (title === "pi" ? extension : ompExtension)({
     on: (name: string, handler: Handler) => handlers.set(name, handler),
   } as never);
   const ctx = { cwd: pr, sessionManager: { getSessionId: () => session } };
-  return (name: string, event: Record<string, unknown>) =>
-    handlers.get(name)?.(event, ctx);
+  return async (
+    toolName: string,
+    input: Record<string, unknown>,
+    change = () => {},
+    result: Record<string, unknown> = {},
+    toolCallId = `c${++ids}`,
+  ) => {
+    await handlers.get("tool_call")?.({ toolName, toolCallId, input }, ctx);
+    change();
+    const event = { toolName, toolCallId, input, isError: false, ...result };
+    await handlers.get("tool_result")?.(event, ctx);
+  };
 }
 
 await check("pi bash: a call ID with | and / still snapshots", async () => {
-  const fire = load("pi", "p1");
-  const id = "call_x|fc_y/1";
-  await fire("tool_call", { toolName: "bash", toolCallId: id, input: {} });
-  sh(pr, "printf 'a\\nB\\nc\\n' > f.txt && printf 'new\\n' > n.txt");
-  await fire("tool_result", {
-    toolName: "bash",
-    toolCallId: id,
-    input: {},
-    isError: false,
-  });
+  const call = load("pi", "p1");
+  const change = () =>
+    sh(pr, "printf 'a\\nB\\nc\\n' > f.txt && printf 'new\\n' > n.txt");
+  await call("bash", {}, change, {}, "call_x|fc_y/1");
   assert.deepEqual(logged("p1", "pi"), [
     `bash\tM\t${pr}\t${pr}/f.txt\t2`,
     `bash\tA\t${pr}\t${pr}/n.txt\t1`,
@@ -1153,24 +1129,14 @@ await check("pi bash: a call ID with | and / still snapshots", async () => {
 await check(
   "pi write: create gives line 1, update the first changed line, no change no line",
   async () => {
-    const fire = load("pi", "p2");
-    const write = async (id: string, file: string, text: string) => {
-      await fire("tool_call", {
-        toolName: "write",
-        toolCallId: id,
-        input: { path: file, content: text },
-      });
-      fs.writeFileSync(path.join(pr, file), text);
-      await fire("tool_result", {
-        toolName: "write",
-        toolCallId: id,
-        input: {},
-        isError: false,
-      });
-    };
-    await write("w1", "w.txt", "one\ntwo\n");
-    await write("w2", "w.txt", "one\ntwo\nthree\n");
-    await write("w3", "w.txt", "one\ntwo\nthree\n");
+    const call = load("pi", "p2");
+    const write = (file: string, text: string) =>
+      call("write", { path: file, content: text }, () =>
+        fs.writeFileSync(path.join(pr, file), text),
+      );
+    await write("w.txt", "one\ntwo\n");
+    await write("w.txt", "one\ntwo\nthree\n");
+    await write("w.txt", "one\ntwo\nthree\n");
     assert.deepEqual(logged("p2", "pi"), [
       `write\tA\t${pr}\t${pr}/w.txt\t1`,
       `write\tM\t${pr}\t${pr}/w.txt\t3`,
@@ -1183,31 +1149,10 @@ await check(
 );
 
 await check("omp: its own log, and a failed edit logs nothing", async () => {
-  const fire = load("omp", "p3");
-  await fire("tool_call", {
-    toolName: "edit",
-    toolCallId: "e1",
-    input: { path: "f.txt" },
-  });
-  await fire("tool_result", {
-    toolName: "edit",
-    toolCallId: "e1",
-    input: {},
-    isError: true,
-    details: undefined,
-  });
-  await fire("tool_call", {
-    toolName: "edit",
-    toolCallId: "e2",
-    input: { path: "f.txt" },
-  });
-  await fire("tool_result", {
-    toolName: "edit",
-    toolCallId: "e2",
-    input: { path: "f.txt" },
-    isError: false,
-    details: { op: "update", path: `${pr}/f.txt`, firstChangedLine: 2 },
-  });
+  const call = load("omp", "p3");
+  await call("edit", { path: "f.txt" }, undefined, { isError: true });
+  const details = { op: "update", path: `${pr}/f.txt`, firstChangedLine: 2 };
+  await call("edit", { path: "f.txt" }, undefined, { details });
   assert.deepEqual(logged("p3", "omp"), [`edit\tM\t${pr}\t${pr}/f.txt\t2`]);
   assert.deepEqual(logged("p3", "pi"), []);
 });
@@ -1215,28 +1160,20 @@ await check("omp: its own log, and a failed edit logs nothing", async () => {
 await check(
   "omp edit of two files: each file read at the call is its before",
   async () => {
-    const fire = load("omp", "p4");
+    const call = load("omp", "p4");
     fs.writeFileSync(path.join(pr, "g.txt"), "g\n");
-    await fire("tool_call", {
-      toolName: "edit",
-      toolCallId: "e3",
-      input: { paths: ["f.txt", "g.txt"] },
-    });
     const f = fs.readFileSync(path.join(pr, "f.txt"), "utf8");
-    fs.writeFileSync(path.join(pr, "f.txt"), "F\n");
-    fs.writeFileSync(path.join(pr, "g.txt"), "G\n");
-    await fire("tool_result", {
-      toolName: "edit",
-      toolCallId: "e3",
-      input: { paths: ["f.txt", "g.txt"] },
-      isError: false,
-      details: {
-        perFileResults: [
-          { path: `${pr}/f.txt`, op: "update", firstChangedLine: 1 },
-          { path: `${pr}/g.txt`, op: "update", firstChangedLine: 1 },
-        ],
-      },
-    });
+    const change = () => {
+      fs.writeFileSync(path.join(pr, "f.txt"), "F\n");
+      fs.writeFileSync(path.join(pr, "g.txt"), "G\n");
+    };
+    const details = {
+      perFileResults: [
+        { path: `${pr}/f.txt`, op: "update", firstChangedLine: 1 },
+        { path: `${pr}/g.txt`, op: "update", firstChangedLine: 1 },
+      ],
+    };
+    await call("edit", { paths: ["f.txt", "g.txt"] }, change, { details });
     assert.deepEqual(blobs("p4", "omp"), [
       [blobId(f), blobId("F\n")],
       [blobId("g\n"), blobId("G\n")],
@@ -1247,25 +1184,14 @@ await check(
 await check(
   "omp eval and ast_edit apply: a git snapshot around the call",
   async () => {
-    const fire = load("omp", "p5");
-    const around = async (id: string, toolName: string, input: object) => {
-      await fire("tool_call", { toolName, toolCallId: id, input });
-      return () =>
-        fire("tool_result", {
-          toolName,
-          toolCallId: id,
-          input,
-          isError: false,
-        });
-    };
-    let done = await around("v1", "eval", { language: "py", code: "x" });
-    fs.writeFileSync(path.join(pr, "eval.txt"), "e\n");
-    await done();
-    done = await around("r1", "write", { path: "xd://resolve" });
-    fs.writeFileSync(path.join(pr, "f.txt"), "R\n");
-    await done();
-    done = await around("x1", "write", { path: "xd://lsp" });
-    await done();
+    const call = load("omp", "p5");
+    await call("eval", { language: "py", code: "x" }, () =>
+      fs.writeFileSync(path.join(pr, "eval.txt"), "e\n"),
+    );
+    await call("write", { path: "xd://resolve" }, () =>
+      fs.writeFileSync(path.join(pr, "f.txt"), "R\n"),
+    );
+    await call("write", { path: "xd://lsp" });
     assert.deepEqual(logged("p5", "omp"), [
       `eval\tA\t${pr}\t${pr}/eval.txt\t1`,
       `write\tM\t${pr}\t${pr}/f.txt\t1`,

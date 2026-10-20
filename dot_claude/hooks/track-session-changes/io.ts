@@ -54,11 +54,9 @@ export function nodeIo(): Io {
     },
     copy: (from, to) =>
       ok(
-        (async () => {
-          await copyFile(from, to);
-          const { atime, mtime } = await stat(from);
-          await utimes(to, atime, mtime);
-        })(),
+        copyFile(from, to)
+          .then(() => stat(from))
+          .then(({ atime, mtime }) => utimes(to, atime, mtime)),
       ),
     link: (from, to) => ok(link(from, to)),
     rename: (from, to) => ok(rename(from, to)),

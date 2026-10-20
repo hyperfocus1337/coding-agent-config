@@ -121,7 +121,7 @@ const dirname = (path: string) =>
 const logRoot = (home: string) => `${home}/.local/state/agent-changes`;
 const stateRoot = (home: string) => `${home}/.cache/track-session-changes`;
 
-export const logFile = ({ home, agent, session }: Where) =>
+const logFile = ({ home, agent, session }: Where) =>
   `${logRoot(home)}/${agent}/${session}.tsv`;
 const stateDir = ({ home, agent, session }: Where) =>
   `${stateRoot(home)}/${agent}/${session}`;
@@ -428,20 +428,20 @@ async function diffCall(
   // The last entry of a cut output can be cut too.
   if (status.truncated) entries.pop();
   const changes: Change[] = [];
+  const add = (status: Change["status"], file: string, before?: string) =>
+    changes.push({
+      status,
+      path: resolve(top, file),
+      line: status === "A" ? 1 : undefined,
+      repo: top,
+      before: before && !/^0+$/.test(before) ? before : undefined,
+    });
   for (const entry of entries) {
     // `1 XY sub mH mI mW hH hI path`: Y is the work tree against the index,
     // and hI the blob of the file in the index of the call.
     // T, a type change such as a file that became a symlink, counts as M.
     // A nested repo shows as an untracked directory, `? dir/`, and is left out.
     const fields = entry.split(" ");
-    const add = (status: Change["status"], file: string, before?: string) =>
-      changes.push({
-        status,
-        path: resolve(top, file),
-        line: status === "A" ? 1 : undefined,
-        repo: top,
-        before: before && !/^0+$/.test(before) ? before : undefined,
-      });
     const xy = fields[1] ?? "";
     if (entry.startsWith("1 ") && xy[1] !== ".")
       add(xy[1] === "D" ? "D" : "M", fields.slice(8).join(" "), fields[7]);
@@ -764,27 +764,21 @@ export async function recordTool(
   const path = resolve(cwd, file);
   // The text before the call: `originalFile`, else a rebuild of the Edit.
   const after = status === "M" ? await io.read(path) : undefined;
-  const original =
-    after === undefined
-      ? undefined
-      : (result.originalFile ??
-        (tool === "Edit"
-          ? rebuildOriginal(
-              after.replace(/\r\n/g, "\n"),
-              result,
-              result.structuredPatch,
-            )
-          : undefined));
+  let old: string | undefined;
+  if (after !== undefined) {
+    const original =
+      result.originalFile ??
+      (tool === "Edit"
+        ? rebuildOriginal(
+            after.replace(/\r\n/g, "\n"),
+            result,
+            result.structuredPatch,
+          )
+        : undefined);
+    if (original !== undefined) old = lineEndings(original, after);
+  }
   await recordFiles(io, where, tool, start, end, [
-    {
-      status,
-      path,
-      line: patchLine(result.structuredPatch),
-      old:
-        original === undefined || after === undefined
-          ? undefined
-          : lineEndings(original, after),
-    },
+    { status, path, line: patchLine(result.structuredPatch), old },
   ]);
 }
 
@@ -920,16 +914,18 @@ export function patchFiles(patch: string, cwd: string): Change[] {
  * mod, and goes at once.
  */
 export async function prune(io: Io, home: string, now = Date.now()) {
+  const logs = logRoot(home);
+  const states = stateRoot(home);
   const age = async (path: string) => now - ((await io.mtime(path)) ?? 0);
-  for (const agent of await io.list(logRoot(home)))
-    for (const name of await io.list(`${logRoot(home)}/${agent}`)) {
-      const log = `${logRoot(home)}/${agent}/${name}`;
+  for (const agent of await io.list(logs))
+    for (const name of await io.list(`${logs}/${agent}`)) {
+      const log = `${logs}/${agent}/${name}`;
       if (name.endsWith(".tsv") && (await age(log)) > KEEP)
         await io.remove(log);
     }
-  for (const agent of await io.list(stateRoot(home)))
-    for (const name of await io.list(`${stateRoot(home)}/${agent}`)) {
-      const session = `${stateRoot(home)}/${agent}/${name}`;
+  for (const agent of await io.list(states))
+    for (const name of await io.list(`${states}/${agent}`)) {
+      const session = `${states}/${agent}/${name}`;
       const ages = [
         await age(session),
         await age(`${session}/index`),
@@ -949,10 +945,10 @@ export async function prune(io: Io, home: string, now = Date.now()) {
       }
     }
   // containers/ holds the logs of each container, which its own prune keeps.
-  for (const agent of await io.list(logRoot(home)))
+  for (const agent of await io.list(logs))
     if (agent !== "containers")
-      for (const session of await io.list(`${logRoot(home)}/${agent}`)) {
-        const dir = `${logRoot(home)}/${agent}/${session}`;
+      for (const session of await io.list(`${logs}/${agent}`)) {
+        const dir = `${logs}/${agent}/${session}`;
         if (
           (await io.exists(`${dir}/objects`)) &&
           !(await io.exists(`${dir}.tsv`)) &&

@@ -30,7 +30,8 @@ interface Payload {
   cwd?: string;
   duration_ms?: number;
   tool_input?: { file_path?: string; command?: string; notebook_path?: string };
-  tool_response?: ToolResult;
+  /** A string for a failed call: an error, or "" in Codex. */
+  tool_response?: ToolResult | string;
 }
 
 async function run(agent: string, payload: Payload) {

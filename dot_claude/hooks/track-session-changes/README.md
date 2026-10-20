@@ -46,7 +46,7 @@ A line with 7 fields has no `before` and `after`. A blob ID is empty also when t
 
 A failed Bash call logs its changes, because a command that fails can still write files. A tool that names its files also logs a file outside every repo and a git-ignored file. A failed Edit, Write, NotebookEdit, pi `edit`, or pi `write` logs nothing. In Claude Code, a call that another hook denies logs nothing. A pi `write` that leaves the file as it was logs nothing.
 
-An omp edit can change several files, delete a file, or move one. A delete logs `D`, and a move logs the old path as `D` and the new path as `A`. Other tools that write files, for example an omp `ast_edit` or a tool of another extension, are not logged.
+An omp edit can change several files, delete a file, or move one. A delete logs `D`, and a move logs the old path as `D` and the new path as `A`. An omp `ast_edit` changes files only when a `write` to `xd://resolve` applies its preview, and the snapshot of that write logs them. Other tools that write files, for example a tool of another extension, are not logged.
 
 ## Blobs
 

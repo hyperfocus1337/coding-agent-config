@@ -14,7 +14,6 @@ import {
   prune,
   recordTool,
   type Io,
-  type Pending,
   type ToolResult,
 } from "../core.ts";
 
@@ -69,8 +68,8 @@ const modIo = ($: EngineInterface): Io => ({
     if (path.startsWith("/") && path.split("/").length > 3)
       await ok($.process.run(["rm", "-rf", path]));
   },
-  run: (argv, options = {}) =>
-    $.process.run(argv, { env: options.env, stdin: options.stdin }).then(
+  run: (argv, options) =>
+    $.process.run(argv, options).then(
       (ran) => ({
         exitCode: ran.exitCode,
         stdout: ran.stdout,
@@ -107,11 +106,9 @@ export const register: Register = (on) => {
       if (!call) return next(e);
 
       if (e.tool === "Bash") {
-        const pending: Pending | undefined = await beginCall(
-          io,
-          call.where,
-          call.cwd,
-        ).catch(() => undefined);
+        const pending = await beginCall(io, call.where, call.cwd).catch(
+          () => undefined,
+        );
         let ran;
         try {
           ran = await next(e);
