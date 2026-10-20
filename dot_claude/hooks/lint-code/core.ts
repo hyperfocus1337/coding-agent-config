@@ -3,8 +3,8 @@
  * each by its extension. The adapters pass in the file and process functions,
  * because a mod reaches them only through `$`.
  *
- * Adapters: hooks/register.ts (Claude Code mod), pi.ts (pi and omp),
- * command.ts (Codex command hook).
+ * Adapters: hooks/register.ts (Claude Code mod), pi.ts and omp.ts (pi and
+ * omp), command.ts (Codex command hook).
  */
 
 export interface Io {
@@ -28,7 +28,10 @@ export interface Settings {
   hooksOff?: string;
 }
 
-/** The tool call: a Write or Edit names a file, a Bash call a command. */
+/**
+ * The tool call: a Write or Edit names a file, a Bash call a command. A
+ * relative path resolves against cwd.
+ */
 export interface Call {
   filePath?: string;
   command?: string;
@@ -55,31 +58,22 @@ export async function targets(
 ): Promise<string[]> {
   if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("lint-code"))
     return [];
-  const candidates: string[] = [];
-  if (call.filePath) candidates.push(call.filePath);
-  else
-    for (const [named] of (call.command ?? "").matchAll(NAMED)) {
-      const path = named.startsWith("/") ? named : `${call.cwd}/${named}`;
-      const stat = await io.stat(path);
-      if (stat?.isFile && now - stat.mtimeMs <= 120_000) candidates.push(path);
-    }
+  const named = call.filePath
+    ? [call.filePath]
+    : [...(call.command ?? "").matchAll(NAMED)].map(([path]) => path);
   // Scratch and temp files are not project code. macOS resolves /tmp to
   // /private/tmp, so both sides drop that prefix.
   const tmpdir = (settings.tmpdir || "/nonexistent").replace(/^\/private/, "");
-  const kept: string[] = [];
-  for (const file of candidates) {
+  const kept = new Set<string>();
+  for (const path of named) {
+    const file = path.startsWith("/") ? path : `${call.cwd}/${path}`;
     const plain = file.replace(/^\/private/, "");
-    if (
-      plain.startsWith("/tmp/") ||
-      plain.startsWith("/var/tmp/") ||
-      plain.startsWith(tmpdir) ||
-      kept.includes(file) ||
-      !(await io.stat(file))?.isFile
-    )
-      continue;
-    kept.push(file);
+    if (/^\/(var\/)?tmp\//.test(plain) || plain.startsWith(tmpdir)) continue;
+    const stat = await io.stat(file);
+    if (stat?.isFile && (call.filePath || now - stat.mtimeMs <= 120_000))
+      kept.add(file);
   }
-  return kept;
+  return [...kept];
 }
 
 /**
@@ -87,27 +81,21 @@ export async function targets(
  * only runs on these; other YAML goes to yamllint.
  */
 async function isAnsible(file: string, io: Io): Promise<boolean> {
-  if (
+  return (
     /\/(roles|tasks|handlers|playbooks|group_vars|host_vars|molecule)\//.test(
       file,
+    ) ||
+    /(^|\/)(site|playbook|main|requirements)\.ya?ml$/.test(file) ||
+    /^\s*(- )?(hosts|tasks|roles|ansible\.builtin\.):/m.test(
+      await io.read(file).catch(() => ""),
     )
-  )
-    return true;
-  if (
-    /^(site|playbook|main|requirements)\.ya?ml$/.test(
-      file.split("/").pop() ?? "",
-    )
-  )
-    return true;
-  const text = await io.read(file).catch(() => "");
-  return /^\s*(- )?(hosts|tasks|roles|ansible\.builtin\.):/m.test(text);
+  );
 }
 
 /** The linter for a file, or undefined when its key is disabled. */
 async function linter(file: string, io: Io, settings: Settings) {
-  const off = ` ${(settings.disable ?? "").replaceAll(",", " ")} `;
-  const disabled = (key: string) =>
-    off.includes(" all ") || off.includes(` ${key} `);
+  const off = (settings.disable ?? "").split(/[ ,]+/);
+  const disabled = (key: string) => off.includes("all") || off.includes(key);
   const config = settings.configDir;
   switch (file.split(".").pop()) {
     case "py":

@@ -15,7 +15,7 @@
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { Call } from "./core.ts";
-import { absolute, lintCalls } from "./pi.ts";
+import { lintCalls } from "./pi.ts";
 
 export default function (omp: ExtensionAPI) {
   omp.on("tool_result", (event, ctx) =>
@@ -45,13 +45,13 @@ const strings = (value: unknown) =>
     : [];
 
 /** The calls of an omp tool result that ./pi.ts does not lint. */
-export function ompCalls(
+function ompCalls(
   tool: string,
   input: Record<string, unknown>,
   details: unknown,
   cwd: string,
 ): Call[] {
-  const file = (path: string): Call => ({ filePath: absolute(path, cwd), cwd });
+  const file = (filePath: string): Call => ({ filePath, cwd });
   if (tool === "eval")
     return typeof input.code === "string" ? [{ command: input.code, cwd }] : [];
   if (tool === "edit")

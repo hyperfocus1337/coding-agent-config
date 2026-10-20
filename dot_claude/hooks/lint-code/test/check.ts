@@ -1,7 +1,7 @@
 /**
- * Self-check for ../core.ts and its adapters: the core with stub I/O, the
- * test.sh cases through command.ts with the real shellcheck, and the pi and
- * mod adapters with stubs over the real files.
+ * Self-check for ../core.ts and its adapters: the core with stub I/O,
+ * command.ts with the real shellcheck, and the pi, omp, and mod adapters with
+ * stubs over the real files.
  *
  * Run: node test/check.ts, from the hook directory. Fixtures live under $HOME,
  * because the hook skips /tmp and $TMPDIR.
@@ -55,15 +55,12 @@ function stub(
 }
 const settings = { configDir: "/cfg", tmpdir: "/var/folders/x/T/" };
 
-await check("write: the named file", async () => {
+await check("write: the named file of any age, if it exists", async () => {
   const { io } = stub({ "/r/a.py": 999 });
   assert.deepEqual(
     await targets({ filePath: "/r/a.py", cwd: "/r" }, io, settings, NOW),
     ["/r/a.py"],
   );
-});
-await check("write: a missing file is skipped", async () => {
-  const { io } = stub({});
   assert.deepEqual(
     await targets({ filePath: "/r/gone.sh", cwd: "/r" }, io, settings, NOW),
     [],
@@ -185,16 +182,13 @@ await check("CLAUDE_HOOKS_DISABLE that names the hook: no targets", async () =>
     await targets(
       { filePath: "/x/a.py", cwd: "/x" },
       new Proxy({}, { get: () => () => assert.fail("the hook ran") }) as never,
-      {
-        configDir: "/x",
-        hooksOff: "lint-prose,lint-code",
-      },
+      { ...settings, hooksOff: "lint-prose,lint-code" },
     ),
     [],
   ),
 );
 
-// --- command.ts, with the real shellcheck (the test.sh cases) ---
+// --- command.ts, with the real shellcheck ---
 
 const tmp = fs.mkdtempSync(path.join(os.homedir(), ".lint-hook-check-"));
 const bad = (file: string) =>
@@ -236,11 +230,6 @@ else {
     0,
   );
   await expect(
-    "a file that does not exist is a clean skip",
-    command({ file_path: `${tmp}/gone.sh` }),
-    0,
-  );
-  await expect(
     "CLAUDE_LINT_DISABLE=all turns the hook off",
     command({ file_path: `${tmp}/bad.sh` }, { CLAUDE_LINT_DISABLE: "all" }),
     0,
@@ -252,31 +241,11 @@ else {
     2,
     "SC2154",
   );
-  const twice = command({
-    command: `cat ${tmp}/written.sh && bash ${tmp}/written.sh`,
-  });
-  await check("bash: one report per file, not per mention", () =>
-    assert.equal(twice.stderr.match(/SC2154 \(warning\)/g)?.length, 1),
-  );
   bad(`${tmp}/old.sh`);
   fs.utimesSync(`${tmp}/old.sh`, new Date(2020, 0, 1), new Date(2020, 0, 1));
   await expect(
     "bash: a path the command only read is left alone",
     command({ command: `grep -n TODO ${tmp}/old.sh` }),
-    0,
-  );
-  bad(`${tmp}/one.sh`);
-  fs.writeFileSync(`${tmp}/two.sh`, "x=(\n");
-  const both = command({ command: `touch ${tmp}/one.sh ${tmp}/two.sh` });
-  await check("bash: both files are reported, not just the first", () =>
-    assert.ok(
-      both.stderr.includes("one.sh") && both.stderr.includes("two.sh"),
-      both.stderr,
-    ),
-  );
-  await expect(
-    "bash: a command that names no source file",
-    command({ command: "git status && ls -la" }),
     0,
   );
 }

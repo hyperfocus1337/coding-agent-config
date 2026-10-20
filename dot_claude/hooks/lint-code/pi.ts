@@ -16,23 +16,17 @@ import { nodeIo, nodeSettings } from "./io.ts";
 
 export default function (pi: ExtensionAPI) {
   pi.on("tool_result", (event, ctx) => {
-    if (!["write", "edit", "bash"].includes(event.toolName)) return;
-    const input = event.input as { path?: unknown; command?: unknown };
-    const command =
-      typeof input.command === "string" ? input.command : undefined;
+    const { command, path } = event.input;
+    const { cwd } = ctx;
     const calls: Call[] =
-      event.toolName === "bash"
-        ? [{ command, cwd: ctx.cwd }]
-        : typeof input.path === "string"
-          ? [{ filePath: absolute(input.path, ctx.cwd), cwd: ctx.cwd }]
+      event.toolName === "bash" && typeof command === "string"
+        ? [{ command, cwd }]
+        : ["write", "edit"].includes(event.toolName) && typeof path === "string"
+          ? [{ filePath: path, cwd }]
           : [];
-    return lintCalls(calls, event.content, ctx.cwd);
+    return lintCalls(calls, event.content, cwd);
   });
 }
-
-/** A tool path against the session folder. */
-export const absolute = (file: string, cwd: string) =>
-  file.startsWith("/") ? file : `${cwd}/${file}`;
 
 /**
  * Lints the files of `calls`. Returns `content` with the linter output
@@ -48,11 +42,10 @@ export async function lintCalls(
   try {
     const io = nodeIo(cwd);
     const settings = nodeSettings();
-    const found: string[] = [];
+    const found = new Set<string>();
     for (const call of calls)
-      for (const file of await targets(call, io, settings))
-        if (!found.includes(file)) found.push(file);
-    const output = await lint(found, io, settings);
+      for (const file of await targets(call, io, settings)) found.add(file);
+    const output = await lint([...found], io, settings);
     if (output === undefined) return;
     return {
       content: [...content, { type: "text", text: `Lint errors:\n${output}` }],
