@@ -84,10 +84,12 @@ register(
   {} as never,
 );
 const env = new Map<string, string>();
-const commands: unknown[] = [];
+const commands: { name: string }[] = [];
 const statuses: (string | undefined)[] = [];
 const stub$ = {
-  command: { register: async (spec: unknown) => void commands.push(spec) },
+  command: {
+    register: async (spec: { name: string }) => void commands.push(spec),
+  },
   env: {
     get: async (name: string) => env.get(name),
     set: async (name: string, value: string | undefined) => {
@@ -104,7 +106,7 @@ const run = (args: string) =>
 await check("mod: session.start registers the command", async () => {
   env.set("CLAUDE_HOOKS_DISABLE", "lint-code");
   await hooks.get("session.start")?.(stub$, {}, async () => ({}));
-  assert.equal((commands[0] as { name: string }).name, "toggle-hook");
+  assert.equal(commands[0]?.name, "toggle-hook");
   assert.equal(statuses.at(-1), "hooks off: lint-code");
 });
 await check("mod: the command sets the variable and the status", async () => {
@@ -122,7 +124,6 @@ await check("mod: a denied write says so", async () => {
 
 // --- pi.ts, with a stub pi ---
 
-const saved = process.env.CLAUDE_HOOKS_DISABLE;
 delete process.env.CLAUDE_HOOKS_DISABLE;
 type Command = {
   getArgumentCompletions: (prefix: string) => { value: string }[];
@@ -161,8 +162,6 @@ await check("pi.ts: completes the hook names and all", () =>
   ),
 );
 
-if (saved === undefined) delete process.env.CLAUDE_HOOKS_DISABLE;
-else process.env.CLAUDE_HOOKS_DISABLE = saved;
 if (failures) {
   console.error(`${failures} failed`);
   process.exitCode = 1;
