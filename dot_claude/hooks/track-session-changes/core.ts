@@ -134,9 +134,11 @@ const safeName = (...names: string[]) =>
 
 /** The SHA-1 of the UTF-8 of `text`, in hex. */
 async function sha1(text: string): Promise<string> {
+  // TextEncoder always returns an ArrayBuffer view. The cast says so for the
+  // test program, where the Claude Code TextEncoder meets the Node digest.
   const digest = await crypto.subtle.digest(
     "SHA-1",
-    new TextEncoder().encode(text),
+    new TextEncoder().encode(text) as Uint8Array<ArrayBuffer>,
   );
   return [...new Uint8Array(digest)]
     .map((byte) => byte.toString(16).padStart(2, "0"))

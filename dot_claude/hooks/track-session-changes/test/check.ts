@@ -391,7 +391,9 @@ await check(
 );
 
 await check("the log line has the call window in UTC with milliseconds", () => {
-  const [start, end] = fs.readFileSync(logOf("s1"), "utf8").split("\t");
+  const [start = "", end = ""] = fs
+    .readFileSync(logOf("s1"), "utf8")
+    .split("\t");
   assert.match(start, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
   assert.ok(start <= end);
 });
@@ -427,7 +429,7 @@ await check(
     ov("ob", "b1", "PostToolUse");
     const files = (session: string) =>
       logged(session)
-        .map((line) => path.basename(line.split("\t")[3]))
+        .map((line) => path.basename(line.split("\t")[3]!))
         .sort();
     assert.deepEqual(files("oa"), ["new.txt", "x.txt", "y.txt"]);
     assert.deepEqual(files("ob"), ["new.txt", "y.txt"]);
@@ -469,7 +471,7 @@ await check("Edit: line from structuredPatch, start from duration_ms", () => {
     tool_response: { filePath: `${r2}/a.txt`, structuredPatch: patch },
   });
   assert.deepEqual(logged(), [`Edit\tM\t${r2}\t${r2}/a.txt\t3`]);
-  const [start, end] = rows()[0].split("\t");
+  const [start = "", end = ""] = rows()[0]!.split("\t");
   assert.equal(Date.parse(end) - Date.parse(start), 1500);
   // The next tool call in r2 finds the repo with no rev-parse.
   const cache = fs.readFileSync(path.join(stateOf("s1"), "repos.json"), "utf8");
@@ -631,7 +633,7 @@ await check("Bash: the blobs before and after each file, readable", () => {
   const by = new Map(
     rows("b1").map((line) => {
       const fields = line.split("\t");
-      return [path.basename(fields[5]), fields.slice(7)];
+      return [path.basename(fields[5]!), fields.slice(7)];
     }),
   );
   assert.deepEqual(by.get("m.txt"), [blobId("one\n"), blobId("two\n")]);

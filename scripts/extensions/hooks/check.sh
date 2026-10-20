@@ -4,9 +4,11 @@
 #   2. tsc over each pi, omp, and Codex adapter (pi.ts, omp.ts, command.ts),
 #      the Codex wrappers in dot_codex/hooks, and the git hooks in
 #      dot_config/git/hooks against the pi types,
-#   3. `claude plugin validate` over each mod, which catches what tsc cannot,
+#   3. tsc over each test/check.ts in dot_claude/hooks against both sets of
+#      types, because a test imports the mod and the pi adapter,
+#   4. `claude plugin validate` over each mod, which catches what tsc cannot,
 #      such as `$` passed as a value,
-#   4. node over each test/check.ts of both hook folders and over
+#   5. node over each test/check.ts of both hook folders and over
 #      dot_codex/hooks/test/apply-patch.ts.
 #
 # A failed step does not stop the later steps. The script lists the failed
@@ -93,9 +95,22 @@ cat >"${WORK}/node.tsconfig.json" <<JSON
 }
 JSON
 
+# The tests run in Node and import the mods, so they need both sets of types.
+cat >"${WORK}/test.tsconfig.json" <<JSON
+{
+  "extends": "${WORK}/node.tsconfig.json",
+  "compilerOptions": {
+    "typeRoots": ["${CLAUDE_CODE_TYPES}"],
+    "types": ["claude-code", "claude-code-tools", "claude-code-mcp"]
+  },
+  "include": ["${HOOKS}/*/test/*.ts"]
+}
+JSON
+
 step "tsc mods ($(head -1 "${CLAUDE_CODE_TYPES}/claude-code/index.d.ts" | sed 's|^// ||'))" \
   tsc -p "${WORK}/mod.tsconfig.json"
 step "tsc pi, omp, Codex, and git adapters" tsc -p "${WORK}/node.tsconfig.json"
+step "tsc hook tests" tsc -p "${WORK}/test.tsconfig.json"
 
 # validate reads .claude-plugin/, which chezmoi names dot_claude-plugin/ in the
 # repository, so it runs on a copy.
