@@ -192,7 +192,7 @@ A `$` call costs about 1 ms, and a `$.process.run` 2 to 5 ms. The mod starts no 
 
 ## pi and omp
 
-A probe extension logged the events of one bash call and one edit in pi and in omp on 2026-10-14, with pi 1.1.0 and omp 18.8.7. Both send `tool_call` before the tool runs and `tool_result` after it, with the same `toolCallId`. Both give `ctx.sessionManager.getSessionId()` and `ctx.cwd`. So one `pi.ts` serves both agents.
+A probe extension logged the events of one bash call and one edit in pi and in omp on 2026-10-14, with pi 1.1.0 and omp 18.8.7. Both send `tool_call` before the tool runs and `tool_result` after it, with the same `toolCallId`. Both give `ctx.sessionManager.getSessionId()` and `ctx.cwd`. So `pi.ts` holds one `track` for both agents, and each agent passes its `Tools`: `pi.ts` for pi, and [`omp.ts`](../omp.ts) for omp, which omp loads in place of `pi.ts`.
 
 | Item                     | pi 1.1.0                                       | omp 18.8.7                                                               |
 | ------------------------ | ---------------------------------------------- | ------------------------------------------------------------------------ |
@@ -205,13 +205,13 @@ A probe extension logged the events of one bash call and one edit in pi and in o
 | `ctx.cwd` in `/tmp`      | `/private/tmp/...`                             | `/tmp/...`                                                               |
 | `session_start` `reason` | `startup`, `reload`, `new`, `resume`, `fork`   | Not set                                                                  |
 
-The `op` of an omp edit is `create`, `update`, or `delete`. For a move, `path` is the new path and `sourcePath` the old one. The log directory needs the agent name, and both agents load the same file, so `pi.ts` reads `process.title`. A pi call ID holds `|` and `/`, so `pi.ts` keys its calls in memory by the ID and never uses it as a file name.
+The `op` of an omp edit is `create`, `update`, or `delete`. For a move, `path` is the new path and `sourcePath` the old one. The log directory needs the agent name, which `Tools` gives. `omp.ts` reads the omp edit details with its own `editFiles`, because one edit must give one record, and a second handler cannot change the record of the first. A pi call ID holds `|` and `/`, so `pi.ts` keys its calls in memory by the ID and never uses it as a file name.
 
-| Tool    | Line                                                                                                                                                 |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bash`  | `beginCall` at `tool_call` and `endCall` at `tool_result`, as for a Claude Code Bash call                                                            |
-| `edit`  | `firstChangedLine` of the details. pi has no path in the details, so the input `path` resolves against `ctx.cwd`, with `@` stripped and `~` expanded |
-| `write` | `tool_call` reads the old file into memory. `tool_result` reads the new file, and `changedLine` of `core.ts` gives the first line that differs       |
+| Tool    | Line                                                                                                                                                                                              |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bash`  | `beginCall` at `tool_call` and `endCall` at `tool_result`, as for a Claude Code Bash call. omp does the same for `eval`, and for a `write` to `xd://resolve`, which applies an `ast_edit` preview |
+| `edit`  | `firstChangedLine` of the details. pi has no path in the details, so the input `path` resolves against `ctx.cwd`, with `@` stripped and `~` expanded                                              |
+| `write` | `tool_call` reads the old file into memory. `tool_result` reads the new file, and `changedLine` of `core.ts` gives the first line that differs                                                    |
 
 For the before blobs, `tool_call` of an `edit` or a `write` reads each file that `path` or `paths` of the input names into memory, and `recordFiles` stores the text of each changed file as its before blob. The file is raw from disk, so the CRLF rule for `originalFile` does not apply. The write line reads the file after the result, not the `content` input, because omp can format a file after it writes it. A file that did not exist before gets `A` and line 1.
 
@@ -221,6 +221,6 @@ For the before blobs, `tool_call` of an `edit` or a `write` reads each file that
 
 For the blobs, it checks the before and after blobs of a Bash call, a file that git cannot read, an Edit with and without `originalFile`, a CRLF file and a file with mixed line endings, a Write that creates in and outside a repo, a NotebookEdit and `apply_patch`, the blob of git in a repo whose attributes convert CRLF, and the prune of the session objects. The rebuild checks cover an equal text before the hunk, tabs, an occurrence that reaches past its hunk, `replaceAll`, an empty `newString`, and a patch that does not fit.
 
-The mod runs with a stub `$` over the real files: a Bash call, a denied call, a call that throws, an Edit, a failed Edit, a NotebookEdit, and the prune at `session.start`. `pi.ts` runs with a stub pi: `editFiles` with the details of real pi and omp edits, a bash call with a pi call ID, a write that creates, updates, and leaves a file as it was, an omp edit, a failed edit, and the before blobs of an omp edit of two files. The last check reads the installed pi package at `PI_PACKAGE`.
+The mod runs with a stub `$` over the real files: a Bash call, a denied call, a call that throws, an Edit, a failed Edit, a NotebookEdit, and the prune at `session.start`. `pi.ts` and `omp.ts` run with a stub pi: the edit parsers with the details of real pi and omp edits, a bash call with a pi call ID, a write that creates, updates, and leaves a file as it was, an omp edit, a failed edit, the before blobs of an omp edit of two files, and the git snapshot around an omp `eval` and a `write` to `xd://resolve`. The last check reads the installed pi package at `PI_PACKAGE`.
 
 With `TRACK_HOOK=<path>`, the `command.ts` cases run against another command hook. On 2026-10-19 all 56 checks passed against the `hook.ts` from before the mod.

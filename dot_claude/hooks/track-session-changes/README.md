@@ -4,11 +4,12 @@ A hook that logs each file a session changes, with the tool, the call window, th
 
 One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
-| Agent       | Adapter                                                                            | Loaded by                                                                                          |
-| ----------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts): a mod on `tool.call` and `session.start` | `CLAUDE_CODE_PLUGIN_DIRS` in `dot_claude/settings.json.tmpl`                                       |
-| pi and omp  | [`pi.ts`](pi.ts): `tool_call`, `tool_result`, and `session_start`                  | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
-| Codex       | [`command.ts`](command.ts): a command hook, `node command.ts codex`                | `dot_codex/modify_hooks.json`                                                                      |
+| Agent       | Adapter                                                                                                                              | Loaded by                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts): a mod on `tool.call` and `session.start`                                                   | `CLAUDE_CODE_PLUGIN_DIRS` in `dot_claude/settings.json.tmpl` |
+| pi          | [`pi.ts`](pi.ts): `tool_call`, `tool_result`, and `session_start`                                                                    | `extensions` in `dot_pi/agent/modify_settings.json`          |
+| omp         | [`omp.ts`](omp.ts): the `track` of `pi.ts` with the omp tools, which adds a git snapshot around `eval` and a write to `xd://resolve` | `extensions` in `dot_omp/private_agent/private_config.yml`   |
+| Codex       | [`command.ts`](command.ts): a command hook, `node command.ts codex`                                                                  | `dot_codex/modify_hooks.json`                                |
 
 ## Log
 
@@ -30,17 +31,18 @@ A line with 7 fields has no `before` and `after`. A blob ID is empty also when t
 
 ## What it records
 
-| Agent and tool           | Events                                                   | Files                                                    | Line                                                                             |
-| ------------------------ | -------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Claude Code Edit, Write  | `tool.call`, after `next`                                | `file_path` of the input                                 | First hunk of `structuredPatch` in the result. A new file has no hunks: line 1   |
-| Claude Code NotebookEdit | `tool.call`, after `next`                                | `notebook_path` of the input                             | First line that differs between `original_file` and `updated_file` of the result |
-| Claude Code Bash         | `tool.call`, before and after `next`                     | Snapshot difference                                      | First hunk of `git diff-files -p -U0`                                            |
-| Codex Bash               | `PreToolUse`, `PostToolUse`, also after a failed command | Snapshot difference                                      | The same                                                                         |
-| Codex `apply_patch`      | `PreToolUse`, `PostToolUse`                              | `*** Add/Update/Delete File`, `Move to`                  | From the snapshot. A new file outside it: 1                                      |
-| pi and omp `bash`        | `tool_call`, `tool_result`                               | Snapshot difference                                      | The same as Bash                                                                 |
-| pi and omp `edit`        | `tool_call`, `tool_result`                               | pi: the input `path`. omp: each file of the tool details | `firstChangedLine` of the details. An omp file it creates: 1                     |
-| pi and omp `write`       | `tool_call`, `tool_result`                               | The input `path`                                         | The old file, read at the call, against the file after it                        |
-| Each agent               | Session start                                            | None: deletes logs and state after 30 days               | None                                                                             |
+| Agent and tool                              | Events                                                   | Files                                                    | Line                                                                             |
+| ------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Claude Code Edit, Write                     | `tool.call`, after `next`                                | `file_path` of the input                                 | First hunk of `structuredPatch` in the result. A new file has no hunks: line 1   |
+| Claude Code NotebookEdit                    | `tool.call`, after `next`                                | `notebook_path` of the input                             | First line that differs between `original_file` and `updated_file` of the result |
+| Claude Code Bash                            | `tool.call`, before and after `next`                     | Snapshot difference                                      | First hunk of `git diff-files -p -U0`                                            |
+| Codex Bash                                  | `PreToolUse`, `PostToolUse`, also after a failed command | Snapshot difference                                      | The same                                                                         |
+| Codex `apply_patch`                         | `PreToolUse`, `PostToolUse`                              | `*** Add/Update/Delete File`, `Move to`                  | From the snapshot. A new file outside it: 1                                      |
+| pi and omp `bash`                           | `tool_call`, `tool_result`                               | Snapshot difference                                      | The same as Bash                                                                 |
+| omp `eval`, and a `write` to `xd://resolve` | `tool_call`, `tool_result`                               | Snapshot difference                                      | The same as Bash                                                                 |
+| pi and omp `edit`                           | `tool_call`, `tool_result`                               | pi: the input `path`. omp: each file of the tool details | `firstChangedLine` of the details. An omp file it creates: 1                     |
+| pi and omp `write`                          | `tool_call`, `tool_result`                               | The input `path`                                         | The old file, read at the call, against the file after it                        |
+| Each agent                                  | Session start                                            | None: deletes logs and state after 30 days               | None                                                                             |
 
 A failed Bash call logs its changes, because a command that fails can still write files. A tool that names its files also logs a file outside every repo and a git-ignored file. A failed Edit, Write, NotebookEdit, pi `edit`, or pi `write` logs nothing. In Claude Code, a call that another hook denies logs nothing. A pi `write` that leaves the file as it was logs nothing.
 
@@ -98,7 +100,7 @@ The hook needs `git`. `command.ts` needs Node 23.6 or later, which runs `.ts` fi
 
 ## Tests
 
-`node test/check.ts` checks the parsers in-process, runs `command.ts` as a child process with a scratch `HOME` around file changes in scratch repos, and runs the mod and `pi.ts` with stubs over the real files. `TRACK_HOOK=<path>` runs the `command.ts` cases against another command hook. `just hooks-check` runs it.
+`node test/check.ts` checks the parsers in-process, runs `command.ts` as a child process with a scratch `HOME` around file changes in scratch repos, and runs the mod, `pi.ts`, and `omp.ts` with stubs over the real files. `TRACK_HOOK=<path>` runs the `command.ts` cases against another command hook. `just hooks-check` runs it.
 
 ## Files
 
@@ -107,7 +109,8 @@ The hook needs `git`. `command.ts` needs Node 23.6 or later, which runs `.ts` fi
 | `core.ts`                                           | Yes                                                  | Snapshots, blobs, the log, and the prune, over an `Io` from the adapter |
 | `hooks/register.ts`                                 | Yes                                                  | Claude Code mod, with the `Io` over `$`                                 |
 | `hooks/hooks.json`, `dot_claude-plugin/plugin.json` | Yes, the second as `.claude-plugin/plugin.json`      | Module list and plugin manifest                                         |
-| `pi.ts`                                             | Yes                                                  | pi and omp extension                                                    |
+| `pi.ts`                                             | Yes                                                  | The pi extension, and the `track` that `omp.ts` runs                    |
+| `omp.ts`                                            | Yes                                                  | The omp extension, in place of `pi.ts`                                  |
 | `command.ts`                                        | Yes                                                  | Codex command hook                                                      |
 | `io.ts`                                             | Yes                                                  | The `Io` under Node, for `pi.ts` and `command.ts`                       |
 | `README.md`, `docs/`, `test/`                       | No                                                   | Kept in the repo by `.chezmoiignore`                                    |

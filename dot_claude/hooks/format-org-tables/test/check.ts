@@ -15,6 +15,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { align } from "../core.ts";
 import { register } from "../hooks/register.ts";
+import ompExtension from "../omp.ts";
 import extension from "../pi.ts";
 
 const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
@@ -269,6 +270,43 @@ await check("pi.ts: appends the amend hint to the result", async () => {
   )) as { content: { text: string }[] };
   assert.equal(result.content[0]?.text, "committed");
   assert.match(result.content[1]?.text ?? "", /pi-commit\.org/);
+});
+
+let ompHandler: Handler | undefined;
+ompExtension({
+  on: (_name: string, handler: Handler) => (ompHandler = handler),
+} as never);
+const omp = (toolName: string, input: object, details?: object) =>
+  ompHandler?.({ toolName, input, details, content: [] }, { cwd: repo });
+await check("omp.ts: aligns each file of a multi-file edit", async () => {
+  unaligned(`${repo}/omp-a.org`);
+  unaligned(`${repo}/omp-b.org`);
+  await omp("edit", { paths: ["omp-a.org", "omp-b.org"] });
+  assert.match(read(`${repo}/omp-a.org`), /^\| a {2}/);
+  assert.match(read(`${repo}/omp-b.org`), /^\| a {2}/);
+});
+await check("omp.ts: aligns the files of an applied ast_edit", async () => {
+  unaligned(`${repo}/omp-ast.org`);
+  await omp(
+    "write",
+    { path: "xd://resolve" },
+    {
+      xdev: {
+        tool: "resolve",
+        inner: {
+          action: "apply",
+          sourceToolName: "ast_edit",
+          sourceResultDetails: { applied: true, files: ["omp-ast.org"] },
+        },
+      },
+    },
+  );
+  assert.match(read(`${repo}/omp-ast.org`), /^\| a {2}/);
+});
+await check("omp.ts: leaves the calls of pi.ts alone", async () => {
+  unaligned(`${repo}/omp-pi.org`);
+  await omp("write", { path: "omp-pi.org" });
+  assert.equal(read(`${repo}/omp-pi.org`), RAW);
 });
 
 type Hook = (...args: unknown[]) => Promise<unknown>;

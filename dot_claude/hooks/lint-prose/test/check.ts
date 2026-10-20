@@ -14,6 +14,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { check as lintProse } from "../core.ts";
 import { register } from "../hooks/register.ts";
+import ompExtension from "../omp.ts";
 import extension from "../pi.ts";
 
 const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
@@ -392,7 +393,7 @@ await check("pi.ts: appends the alerts and marks an error", async () => {
   );
 });
 await check("pi.ts: a repeat goes to a notification", async () => {
-  assert.equal(await piCall("edit", { paths: [adapter] }), undefined);
+  assert.equal(await piCall("edit", { path: adapter }), undefined);
   assert.match(notices[0] ?? "", /blocked on before/);
 });
 await check(
@@ -402,6 +403,37 @@ await check(
     write(`${tmp}/failed.md`, `${long}\n`);
     assert.equal(await piCall("edit", { path: "failed.md" }, true), undefined);
     assert.equal(await piCall("read", { path: "failed.md" }), undefined);
+  },
+);
+
+let ompHandler: Handler | undefined;
+ompExtension({
+  on: (_name: string, handler: Handler) => (ompHandler = handler),
+} as never);
+const ompCall = (toolName: string, input: object, isError = false) =>
+  ompHandler?.(
+    { toolName, input, content: [{ type: "text", text: "written" }], isError },
+    ctx,
+  ) as Promise<{ content: { text: string }[]; isError: boolean } | undefined>;
+await check("omp.ts: lints each file of a multi-file edit", async () => {
+  write(`${tmp}/omp.md`, `${long}\n`);
+  const result = await ompCall("edit", { paths: ["clean.md", "omp.md"] });
+  assert.equal(result?.isError, true);
+  assert.match(result?.content[1]?.text ?? "", /omp\.md:1:.*ParagraphLength/);
+});
+await check(
+  "omp.ts: leaves the one file of an edit to pi.ts, and a failed call",
+  async () => {
+    write(`${tmp}/omp-one.md`, `${long}\n`);
+    assert.equal(
+      await ompCall("edit", { path: "omp-one.md", paths: ["omp-one.md"] }),
+      undefined,
+    );
+    assert.equal(
+      await ompCall("edit", { paths: ["omp-one.md", "clean.md"] }, true),
+      undefined,
+    );
+    assert.equal(await ompCall("write", { path: "omp-one.md" }), undefined);
   },
 );
 

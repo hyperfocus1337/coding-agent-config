@@ -15,6 +15,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { format } from "../core.ts";
 import { register } from "../hooks/register.ts";
+import ompExtension from "../omp.ts";
 import extension from "../pi.ts";
 
 const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
@@ -363,6 +364,43 @@ await check("pi.ts: leaves other tools alone", async () => {
     { cwd: outer },
   );
   assert.equal(read(`${outer}/read.md`), RAW);
+});
+
+let ompHandler: Handler | undefined;
+ompExtension({
+  on: (_name: string, handler: Handler) => (ompHandler = handler),
+} as never);
+const omp = (toolName: string, input: object, details?: object) =>
+  ompHandler?.({ toolName, input, details, content: [] }, { cwd: outer });
+await check("omp.ts: formats each file of a multi-file edit", async () => {
+  unaligned(`${outer}/omp-a.md`);
+  unaligned(`${outer}/omp-b.md`);
+  await omp("edit", { paths: ["omp-a.md", "omp-b.md"] });
+  assert.match(read(`${outer}/omp-a.md`), /^\| a {2}/);
+  assert.match(read(`${outer}/omp-b.md`), /^\| a {2}/);
+});
+await check("omp.ts: formats the files of an applied ast_edit", async () => {
+  unaligned(`${outer}/omp-ast.md`);
+  await omp(
+    "write",
+    { path: "xd://resolve" },
+    {
+      xdev: {
+        tool: "resolve",
+        inner: {
+          action: "apply",
+          sourceToolName: "ast_edit",
+          sourceResultDetails: { applied: true, files: ["omp-ast.md"] },
+        },
+      },
+    },
+  );
+  assert.match(read(`${outer}/omp-ast.md`), /^\| a {2}/);
+});
+await check("omp.ts: leaves the calls of pi.ts alone", async () => {
+  unaligned(`${outer}/omp-pi.md`);
+  await omp("write", { path: "omp-pi.md" });
+  assert.equal(read(`${outer}/omp-pi.md`), RAW);
 });
 
 type Hook = (...args: unknown[]) => Promise<unknown>;

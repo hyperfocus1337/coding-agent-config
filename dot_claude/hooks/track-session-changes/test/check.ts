@@ -26,7 +26,8 @@ import {
 } from "../core.ts";
 import { register } from "../hooks/register.ts";
 import { nodeIo } from "../io.ts";
-import extension, { editFiles } from "../pi.ts";
+import ompExtension, { editFiles } from "../omp.ts";
+import extension, { piTools } from "../pi.ts";
 
 let checks = 0;
 async function check(what: string, run: () => unknown): Promise<void> {
@@ -1063,10 +1064,10 @@ await check("mod session.start: prunes after the engine starts", async () => {
 
 await check("pi edit: the input path, with the line of the details", () => {
   assert.deepEqual(
-    editFiles({ firstChangedLine: 3 }, { path: "f.txt" }, "/w"),
+    piTools.edited({ firstChangedLine: 3 }, { path: "f.txt" }, "/w"),
     [{ status: "M", path: "/w/f.txt", line: 3 }],
   );
-  assert.deepEqual(editFiles({}, { path: "@~/f.txt" }, "/w"), [
+  assert.deepEqual(piTools.edited({}, { path: "@~/f.txt" }, "/w"), [
     { status: "M", path: path.join(os.homedir(), "f.txt"), line: undefined },
   ]);
 });
@@ -1122,14 +1123,11 @@ const realHome = process.env.HOME;
 process.env.HOME = home;
 const pr = repo("pr", { "f.txt": "a\nb\nc\n" });
 type Handler = (event: Record<string, unknown>, ctx: unknown) => Promise<void>;
-function load(title: string, session: string) {
+function load(title: "pi" | "omp", session: string) {
   const handlers = new Map<string, Handler>();
-  const was = process.title;
-  process.title = title;
-  extension({
+  (title === "pi" ? extension : ompExtension)({
     on: (name: string, handler: Handler) => handlers.set(name, handler),
   } as never);
-  process.title = was;
   const ctx = { cwd: pr, sessionManager: { getSessionId: () => session } };
   return (name: string, event: Record<string, unknown>) =>
     handlers.get(name)?.(event, ctx);
@@ -1242,6 +1240,35 @@ await check(
     assert.deepEqual(blobs("p4", "omp"), [
       [blobId(f), blobId("F\n")],
       [blobId("g\n"), blobId("G\n")],
+    ]);
+  },
+);
+
+await check(
+  "omp eval and ast_edit apply: a git snapshot around the call",
+  async () => {
+    const fire = load("omp", "p5");
+    const around = async (id: string, toolName: string, input: object) => {
+      await fire("tool_call", { toolName, toolCallId: id, input });
+      return () =>
+        fire("tool_result", {
+          toolName,
+          toolCallId: id,
+          input,
+          isError: false,
+        });
+    };
+    let done = await around("v1", "eval", { language: "py", code: "x" });
+    fs.writeFileSync(path.join(pr, "eval.txt"), "e\n");
+    await done();
+    done = await around("r1", "write", { path: "xd://resolve" });
+    fs.writeFileSync(path.join(pr, "f.txt"), "R\n");
+    await done();
+    done = await around("x1", "write", { path: "xd://lsp" });
+    await done();
+    assert.deepEqual(logged("p5", "omp"), [
+      `eval\tA\t${pr}\t${pr}/eval.txt\t1`,
+      `write\tM\t${pr}\t${pr}/f.txt\t1`,
     ]);
   },
 );

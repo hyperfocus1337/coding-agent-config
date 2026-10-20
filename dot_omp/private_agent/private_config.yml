@@ -18,13 +18,18 @@ commands:
 extensions:
   - ~/.claude/hooks/enforce-cli-tools/pi.ts
   - ~/.claude/hooks/lint-code/pi.ts
+  - ~/.claude/hooks/lint-code/omp.ts
   - ~/.claude/hooks/block-commit-attribution/pi.ts
   - ~/.claude/hooks/block-secret-commits/pi.ts
   - ~/.claude/hooks/format-prettier/pi.ts
+  - ~/.claude/hooks/format-prettier/omp.ts
   - ~/.claude/hooks/format-org-tables/pi.ts
+  - ~/.claude/hooks/format-org-tables/omp.ts
   - ~/.claude/hooks/format-terraform/pi.ts
+  - ~/.claude/hooks/format-terraform/omp.ts
   - ~/.claude/hooks/lint-prose/pi.ts
+  - ~/.claude/hooks/lint-prose/omp.ts
   - ~/.claude/hooks/type-check-tsc/omp.ts
   - ~/.claude/hooks/type-check-pyrefly/omp.ts
-  - ~/.claude/hooks/track-session-changes/pi.ts
+  - ~/.claude/hooks/track-session-changes/omp.ts
   - ~/.claude/hooks/toggle-hook/pi.ts

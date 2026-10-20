@@ -4,11 +4,12 @@ Lints the prose in each Markdown, Org, HTML, or plain-text file that a Write or 
 
 One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
-| Agent       | Adapter                                                                                                    | Loaded by                                                                                          |
-| ----------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write and Edit adds `context` after `next` | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
-| pi and omp  | [`pi.ts`](pi.ts): `tool_result` on write and edit returns `{ content, isError: true }`                     | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
-| Codex       | [`command.ts`](command.ts): exit code 2 with the alerts on stderr, exit code 1 with a message for you      | `PostToolUse` on `apply_patch`, through `dot_codex/hooks/apply-patch.ts`                           |
+| Agent       | Adapter                                                                                                    | Loaded by                                                                |
+| ----------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write and Edit adds `context` after `next` | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                        |
+| pi          | [`pi.ts`](pi.ts): `tool_result` on write and edit returns `{ content, isError: true }`                     | `extensions` in `dot_pi/agent/modify_settings.json`                      |
+| omp         | [`pi.ts`](pi.ts) as in pi, and [`omp.ts`](omp.ts): `tool_result` on an omp edit of more than one file      | `extensions` in `dot_omp/private_agent/private_config.yml`               |
+| Codex       | [`command.ts`](command.ts): exit code 2 with the alerts on stderr, exit code 1 with a message for you      | `PostToolUse` on `apply_patch`, through `dot_codex/hooks/apply-patch.ts` |
 
 ## What it checks
 
@@ -92,16 +93,17 @@ Codex runs a hook only after you trust its entry. After the change from `hook.sh
 
 ## Tests
 
-`node test/check.ts` runs `command.ts` with the real Vale on the rule in each format, a Bash payload, the changed-paragraph filter in a git repository, the once-per-session record, a Vale failure, and the skips. It also checks the pi and mod adapters with stubs over the real files. It needs `vale` and `git`. `just hooks-check` runs it.
+`node test/check.ts` runs `command.ts` with the real Vale on the rule in each format, a Bash payload, the changed-paragraph filter in a git repository, the once-per-session record, a Vale failure, and the skips. It also checks the pi, omp, and mod adapters with stubs over the real files. It needs `vale` and `git`. `just hooks-check` runs it.
 
 ## Files
 
-| File                                    | Deployed to `~/.claude/hooks/lint-prose/` | Role                                                               |
-| --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------ |
-| `core.ts`                               | Yes                                       | Runs Vale, keeps the changed paragraphs, and keeps the record      |
-| `hooks/register.ts`, `hooks/hooks.json` | Yes                                       | Claude Code mod                                                    |
-| `dot_claude-plugin/plugin.json`         | Yes, as `.claude-plugin/plugin.json`      | Plugin manifest                                                    |
-| `pi.ts`                                 | Yes                                       | pi and omp extension                                               |
-| `command.ts`                            | Yes                                       | Codex command hook                                                 |
-| `io.ts`                                 | Yes                                       | The `Io` and the settings under Node, for `pi.ts` and `command.ts` |
-| `README.md`, `docs/`, `test/`           | No                                        | Kept in the repo by `.chezmoiignore`                               |
+| File                                    | Deployed to `~/.claude/hooks/lint-prose/` | Role                                                                      |
+| --------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------- |
+| `core.ts`                               | Yes                                       | Runs Vale, keeps the changed paragraphs, and keeps the record             |
+| `hooks/register.ts`, `hooks/hooks.json` | Yes                                       | Claude Code mod                                                           |
+| `dot_claude-plugin/plugin.json`         | Yes, as `.claude-plugin/plugin.json`      | Plugin manifest                                                           |
+| `pi.ts`                                 | Yes                                       | The pi extension, which omp also loads                                    |
+| `omp.ts`                                | Yes                                       | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see |
+| `command.ts`                            | Yes                                       | Codex command hook                                                        |
+| `io.ts`                                 | Yes                                       | The `Io` and the settings under Node, for `pi.ts` and `command.ts`        |
+| `README.md`, `docs/`, `test/`           | No                                        | Kept in the repo by `.chezmoiignore`                                      |

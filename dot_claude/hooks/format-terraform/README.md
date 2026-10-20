@@ -4,11 +4,12 @@ Formats the `.tf` and `.tfvars` files that a Write, an Edit, or a Bash call chan
 
 One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
-| Agent       | Adapter                                                                                                    | Loaded by                                                                                          |
-| ----------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash formats after `next` | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
-| pi and omp  | [`pi.ts`](pi.ts): `tool_result` on write, edit, and bash                                                   | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
-| Codex       | [`command.ts`](command.ts): the amend hint as `hookSpecificOutput` JSON on stdout                          | `PostToolUse` on Bash, and on `apply_patch` through `dot_codex/hooks/apply-patch.ts`               |
+| Agent       | Adapter                                                                                                                                                                 | Loaded by                                                                            |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash formats after `next`                                                              | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                    |
+| pi          | [`pi.ts`](pi.ts): `tool_result` on write, edit, and bash                                                                                                                | `extensions` in `dot_pi/agent/modify_settings.json`                                  |
+| omp         | [`pi.ts`](pi.ts) as in pi, and [`omp.ts`](omp.ts): `tool_result` on an omp edit of more than one file, an `ast_edit` that a write to `xd://resolve` applies, and `eval` | `extensions` in `dot_omp/private_agent/private_config.yml`                           |
+| Codex       | [`command.ts`](command.ts): the amend hint as `hookSpecificOutput` JSON on stdout                                                                                       | `PostToolUse` on Bash, and on `apply_patch` through `dot_codex/hooks/apply-patch.ts` |
 
 The git pre-commit hook [`format-staged-files`](../../../dot_config/git/hooks/format-staged-files/README.md) also runs `command.ts`, once for each staged file.
 
@@ -44,11 +45,11 @@ In an agent session, `format-staged-files` formats the staged file before the co
 
 The hook never blocks a call and never marks a result as an error. A missing `terraform`, a file that does not parse, or a run past 10 s leaves the file as it is.
 
-| Adapter      | On a failure                                                                                      |
-| ------------ | ------------------------------------------------------------------------------------------------- |
-| Mod          | Claude Code skips a hook that throws, and the result stands.                                      |
-| `pi.ts`      | The handler catches the error and returns nothing.                                                |
-| `command.ts` | Node exits 1, which Codex shows as a failed hook and does not block. A missing terraform exits 0. |
+| Adapter           | On a failure                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------- |
+| Mod               | Claude Code skips a hook that throws, and the result stands.                                      |
+| `pi.ts`, `omp.ts` | The handler catches the error and returns nothing.                                                |
+| `command.ts`      | Node exits 1, which Codex shows as a failed hook and does not block. A missing terraform exits 0. |
 
 The hook drops the stderr of `terraform fmt`, so a parse error does not show as hook output. `lint-code` does not check Terraform, so nothing reports the parse error to the model. `terraform validate` or tflint can do that, but both check a whole module folder and `validate` needs `terraform init`.
 
@@ -69,17 +70,18 @@ node test/check.ts
 - **A Write or Edit:** a `.tf` and a `.tfvars` file, a file that is not Terraform, a path that does not exist, a file that does not parse, and a file in a temp folder.
 - **A Bash call:** a relative and two absolute paths in a command, a command that names no Terraform file, a path that does not exist, and a path the command only read.
 - **The amend hint:** after a commit, and none for a file that the run left alone or without a commit.
-- **The adapters:** `pi.ts` and `hooks/register.ts` with stubs over the real files.
+- **The adapters:** `pi.ts`, `omp.ts`, and `hooks/register.ts` with stubs over the real files.
 
 The check turns off `format-staged-files` with `GIT_CONFIG_*` variables, and skips with a message when git or terraform is missing.
 
 ## Files
 
-| File                                                             | Role                                                          |
-| ---------------------------------------------------------------- | ------------------------------------------------------------- |
-| [`core.ts`](core.ts)                                             | Finds the files and runs `terraform fmt`. No Node imports.    |
-| [`io.ts`](io.ts)                                                 | The file and process functions of the core under Node         |
-| [`command.ts`](command.ts)                                       | The command hook for Codex and `format-staged-files`          |
-| [`pi.ts`](pi.ts)                                                 | The pi and omp extension                                      |
-| [`hooks/register.ts`](hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                           |
-| [`dot_claude-plugin/plugin.json`](dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json` |
+| File                                                             | Role                                                                      |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [`core.ts`](core.ts)                                             | Finds the files and runs `terraform fmt`. No Node imports.                |
+| [`io.ts`](io.ts)                                                 | The file and process functions of the core under Node                     |
+| [`command.ts`](command.ts)                                       | The command hook for Codex and `format-staged-files`                      |
+| [`pi.ts`](pi.ts)                                                 | The pi extension, which omp also loads                                    |
+| [`omp.ts`](omp.ts)                                               | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see |
+| [`hooks/register.ts`](hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                                       |
+| [`dot_claude-plugin/plugin.json`](dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json`             |

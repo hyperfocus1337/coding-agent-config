@@ -15,6 +15,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { format } from "../core.ts";
 import { register } from "../hooks/register.ts";
+import ompExtension from "../omp.ts";
 import extension from "../pi.ts";
 
 const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
@@ -231,6 +232,43 @@ await check("pi.ts: appends the amend hint to the result", async () => {
   )) as { content: { text: string }[] };
   assert.equal(result.content[0]?.text, "committed");
   assert.match(result.content[1]?.text ?? "", /pi-commit\.tf/);
+});
+
+let ompHandler: Handler | undefined;
+ompExtension({
+  on: (_name: string, handler: Handler) => (ompHandler = handler),
+} as never);
+const omp = (toolName: string, input: object, details?: object) =>
+  ompHandler?.({ toolName, input, details, content: [] }, { cwd: repo });
+await check("omp.ts: formats each file of a multi-file edit", async () => {
+  unformatted(`${repo}/omp-a.tf`);
+  unformatted(`${repo}/omp-b.tf`);
+  await omp("edit", { paths: ["omp-a.tf", "omp-b.tf"] });
+  assert.equal(read(`${repo}/omp-a.tf`), FORMATTED);
+  assert.equal(read(`${repo}/omp-b.tf`), FORMATTED);
+});
+await check("omp.ts: formats the files of an applied ast_edit", async () => {
+  unformatted(`${repo}/omp-ast.tf`);
+  await omp(
+    "write",
+    { path: "xd://resolve" },
+    {
+      xdev: {
+        tool: "resolve",
+        inner: {
+          action: "apply",
+          sourceToolName: "ast_edit",
+          sourceResultDetails: { applied: true, files: ["omp-ast.tf"] },
+        },
+      },
+    },
+  );
+  assert.equal(read(`${repo}/omp-ast.tf`), FORMATTED);
+});
+await check("omp.ts: leaves the calls of pi.ts alone", async () => {
+  unformatted(`${repo}/omp-pi.tf`);
+  await omp("write", { path: "omp-pi.tf" });
+  assert.equal(read(`${repo}/omp-pi.tf`), RAW);
 });
 
 type Hook = (...args: unknown[]) => Promise<unknown>;

@@ -4,11 +4,12 @@ Formats the files that a Write, an Edit, or a Bash call changed with [Prettier](
 
 One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
-| Agent       | Adapter                                                                                                    | Loaded by                                                                                          |
-| ----------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash formats after `next` | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
-| pi and omp  | [`pi.ts`](pi.ts): `tool_result` on write, edit, and bash                                                   | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
-| Codex       | [`command.ts`](command.ts): the amend hint as `hookSpecificOutput` JSON on stdout                          | `PostToolUse` on Bash, and on `apply_patch` through `dot_codex/hooks/apply-patch.ts`               |
+| Agent       | Adapter                                                                                                                                                                 | Loaded by                                                                            |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash formats after `next`                                                              | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                    |
+| pi          | [`pi.ts`](pi.ts): `tool_result` on write, edit, and bash                                                                                                                | `extensions` in `dot_pi/agent/modify_settings.json`                                  |
+| omp         | [`pi.ts`](pi.ts) as in pi, and [`omp.ts`](omp.ts): `tool_result` on an omp edit of more than one file, an `ast_edit` that a write to `xd://resolve` applies, and `eval` | `extensions` in `dot_omp/private_agent/private_config.yml`                           |
+| Codex       | [`command.ts`](command.ts): the amend hint as `hookSpecificOutput` JSON on stdout                                                                                       | `PostToolUse` on Bash, and on `apply_patch` through `dot_codex/hooks/apply-patch.ts` |
 
 The git pre-commit hook [`format-staged-files`](../../../dot_config/git/hooks/format-staged-files/README.md) also runs `command.ts`, once for each staged file.
 
@@ -106,11 +107,11 @@ Everything is formatted with `--prose-wrap preserve`, so Prettier keeps the line
 
 Unlike `lint-code`, this hook never blocks a call and never marks a result as an error. A missing Prettier, a parse error, or any other failure leaves the file as it is. A formatter should reshape working code, not reject an edit.
 
-| Adapter      | On a failure                                                                                     |
-| ------------ | ------------------------------------------------------------------------------------------------ |
-| Mod          | Claude Code skips a hook that throws, and the result stands.                                     |
-| `pi.ts`      | The handler catches the error and returns nothing.                                               |
-| `command.ts` | Node exits 1, which Codex shows as a failed hook and does not block. A missing Prettier exits 0. |
+| Adapter           | On a failure                                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| Mod               | Claude Code skips a hook that throws, and the result stands.                                     |
+| `pi.ts`, `omp.ts` | The handler catches the error and returns nothing.                                               |
+| `command.ts`      | Node exits 1, which Codex shows as a failed hook and does not block. A missing Prettier exits 0. |
 
 The core stops Prettier after 20 s. Codex stops `command.ts` after 20 s, the `timeout` of its entry.
 
@@ -151,17 +152,18 @@ node test/check.ts
 - **Prose wrap:** a wide table stays padded, and sentence lines stay apart.
 - **The amend hint:** after a commit, on `PostToolUseFailure` with that event name, on the first commit of a repo, and none without a commit, for an uncommitted file, or when Prettier changed nothing.
 - **A Write or Edit:** `.ts` is formatted, `.org`, `.py`, and a temp file are not.
-- **The adapters:** `pi.ts` and `hooks/register.ts` with stubs over the real files.
+- **The adapters:** `pi.ts`, `omp.ts`, and `hooks/register.ts` with stubs over the real files.
 
 The check turns off `format-staged-files` with `GIT_CONFIG_*` variables, and skips with a message when git or Prettier is missing.
 
 ## Files
 
-| File                                                             | Role                                                          |
-| ---------------------------------------------------------------- | ------------------------------------------------------------- |
-| [`core.ts`](core.ts)                                             | Finds the files and runs Prettier. No Node imports.           |
-| [`io.ts`](io.ts)                                                 | The file and process functions of the core under Node         |
-| [`command.ts`](command.ts)                                       | The command hook for Codex and `format-staged-files`          |
-| [`pi.ts`](pi.ts)                                                 | The pi and omp extension                                      |
-| [`hooks/register.ts`](hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                           |
-| [`dot_claude-plugin/plugin.json`](dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json` |
+| File                                                             | Role                                                                      |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [`core.ts`](core.ts)                                             | Finds the files and runs Prettier. No Node imports.                       |
+| [`io.ts`](io.ts)                                                 | The file and process functions of the core under Node                     |
+| [`command.ts`](command.ts)                                       | The command hook for Codex and `format-staged-files`                      |
+| [`pi.ts`](pi.ts)                                                 | The pi extension, which omp also loads                                    |
+| [`omp.ts`](omp.ts)                                               | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see |
+| [`hooks/register.ts`](hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                                       |
+| [`dot_claude-plugin/plugin.json`](dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json`             |

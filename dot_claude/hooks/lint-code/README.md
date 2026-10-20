@@ -4,11 +4,12 @@ Lints each file that a Write, an Edit, or a Bash call changed, with the linter f
 
 One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
-| Agent       | Adapter                                                                                                           | Loaded by                                                                                          |
-| ----------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash adds `context` after `next` | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
-| pi and omp  | [`pi.ts`](pi.ts): `tool_result` on write, edit, and bash returns `{ content, isError: true }`                     | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
-| Codex       | [`command.ts`](command.ts): exit code 2 with the errors on stderr                                                 | `PostToolUse` on Bash, and on `apply_patch` through `dot_codex/hooks/apply-patch.ts`               |
+| Agent       | Adapter                                                                                                                                                                 | Loaded by                                                                            |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash adds `context` after `next`                                                       | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                    |
+| pi          | [`pi.ts`](pi.ts): `tool_result` on write, edit, and bash returns `{ content, isError: true }`                                                                           | `extensions` in `dot_pi/agent/modify_settings.json`                                  |
+| omp         | [`pi.ts`](pi.ts) as in pi, and [`omp.ts`](omp.ts): `tool_result` on an omp edit of more than one file, an `ast_edit` that a write to `xd://resolve` applies, and `eval` | `extensions` in `dot_omp/private_agent/private_config.yml`                           |
+| Codex       | [`command.ts`](command.ts): exit code 2 with the errors on stderr                                                                                                       | `PostToolUse` on Bash, and on `apply_patch` through `dot_codex/hooks/apply-patch.ts` |
 
 ## How it works
 
@@ -105,17 +106,18 @@ Codex runs a hook only after you trust its entry. After the change from `hook.sh
 
 ## Tests
 
-`node test/check.ts` checks the core with stub I/O, `command.ts` with the real shellcheck, and the pi and mod adapters with stubs. `just hooks-check` runs it.
+`node test/check.ts` checks the core with stub I/O, `command.ts` with the real shellcheck, and the pi, omp, and mod adapters with stubs. `just hooks-check` runs it.
 
 ## Files
 
-| File                                             | Deployed to `~/.claude/hooks/lint-code/` | Role                                                               |
-| ------------------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------ |
-| `core.ts`                                        | Yes                                      | Finds the files, picks the linter, and runs it through an `Io`     |
-| `hooks/register.ts`, `hooks/hooks.json`          | Yes                                      | Claude Code mod                                                    |
-| `dot_claude-plugin/plugin.json`                  | Yes, as `.claude-plugin/plugin.json`     | Plugin manifest                                                    |
-| `pi.ts`                                          | Yes                                      | pi and omp extension                                               |
-| `command.ts`                                     | Yes                                      | Codex command hook                                                 |
-| `io.ts`                                          | Yes                                      | The `Io` and the settings under Node, for `pi.ts` and `command.ts` |
-| `config/dot_yamllint`, `config/dot_ansible-lint` | Yes, as `.yamllint` and `.ansible-lint`  | Linter configs                                                     |
-| `README.md`, `test/`                             | No                                       | Kept in the repo by `.chezmoiignore`                               |
+| File                                             | Deployed to `~/.claude/hooks/lint-code/` | Role                                                                      |
+| ------------------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------- |
+| `core.ts`                                        | Yes                                      | Finds the files, picks the linter, and runs it through an `Io`            |
+| `hooks/register.ts`, `hooks/hooks.json`          | Yes                                      | Claude Code mod                                                           |
+| `dot_claude-plugin/plugin.json`                  | Yes, as `.claude-plugin/plugin.json`     | Plugin manifest                                                           |
+| `pi.ts`                                          | Yes                                      | The pi extension, which omp also loads                                    |
+| `omp.ts`                                         | Yes                                      | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see |
+| `command.ts`                                     | Yes                                      | Codex command hook                                                        |
+| `io.ts`                                          | Yes                                      | The `Io` and the settings under Node, for `pi.ts` and `command.ts`        |
+| `config/dot_yamllint`, `config/dot_ansible-lint` | Yes, as `.yamllint` and `.ansible-lint`  | Linter configs                                                            |
+| `README.md`, `test/`                             | No                                       | Kept in the repo by `.chezmoiignore`                                      |

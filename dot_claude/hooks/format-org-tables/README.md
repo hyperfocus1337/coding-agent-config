@@ -4,11 +4,12 @@ Aligns the [Org mode](https://orgmode.org/) tables in the `.org` files that a Wr
 
 One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
-| Agent       | Adapter                                                                                                   | Loaded by                                                                                          |
-| ----------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash aligns after `next` | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
-| pi and omp  | [`pi.ts`](pi.ts): `tool_result` on write, edit, and bash                                                  | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
-| Codex       | [`command.ts`](command.ts): the amend hint as `hookSpecificOutput` JSON on stdout                         | `PostToolUse` on Bash, and on `apply_patch` through `dot_codex/hooks/apply-patch.ts`               |
+| Agent       | Adapter                                                                                                                                                                 | Loaded by                                                                            |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash aligns after `next`                                                               | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                    |
+| pi          | [`pi.ts`](pi.ts): `tool_result` on write, edit, and bash                                                                                                                | `extensions` in `dot_pi/agent/modify_settings.json`                                  |
+| omp         | [`pi.ts`](pi.ts) as in pi, and [`omp.ts`](omp.ts): `tool_result` on an omp edit of more than one file, an `ast_edit` that a write to `xd://resolve` applies, and `eval` | `extensions` in `dot_omp/private_agent/private_config.yml`                           |
+| Codex       | [`command.ts`](command.ts): the amend hint as `hookSpecificOutput` JSON on stdout                                                                                       | `PostToolUse` on Bash, and on `apply_patch` through `dot_codex/hooks/apply-patch.ts` |
 
 The git pre-commit hook [`format-staged-files`](../../../dot_config/git/hooks/format-staged-files/README.md) also runs `command.ts`, once for each staged file.
 
@@ -117,11 +118,11 @@ Without it, Emacs loads the user's full init (Doom, in this setup) on every hook
 
 The hook never blocks a call and never marks a result as an error. A missing `emacs` or a failed Emacs run leaves the file as it is. A formatter should reshape working files, not reject an edit.
 
-| Adapter      | On a failure                                                                                  |
-| ------------ | --------------------------------------------------------------------------------------------- |
-| Mod          | Claude Code skips a hook that throws, and the result stands.                                  |
-| `pi.ts`      | The handler catches the error and returns nothing.                                            |
-| `command.ts` | Node exits 1, which Codex shows as a failed hook and does not block. A missing Emacs exits 0. |
+| Adapter           | On a failure                                                                                  |
+| ----------------- | --------------------------------------------------------------------------------------------- |
+| Mod               | Claude Code skips a hook that throws, and the result stands.                                  |
+| `pi.ts`, `omp.ts` | The handler catches the error and returns nothing.                                            |
+| `command.ts`      | Node exits 1, which Codex shows as a failed hook and does not block. A missing Emacs exits 0. |
 
 Emacs batch runs emit a harmless locale warning on `stderr` (`LANG=… cannot be used, using en_US.UTF-8 instead`); the hook drops the stderr of Emacs, so it never shows as hook noise.
 
@@ -152,17 +153,18 @@ node test/check.ts
 - **A Write or Edit:** the named file, a file that is not `.org`, a path that does not exist, a second pass over an aligned file, no backup files, a file in a temp folder, a `|` line inside a block, a `#+TBLFM` formula, and a link at its raw width.
 - **A Bash call:** a relative and two absolute paths in a command, a command that names no `.org` file, a path that does not exist, and a path the command only read.
 - **The amend hint:** after a commit, and none for a file the run left alone or without a commit.
-- **The adapters:** `pi.ts` and `hooks/register.ts` with stubs over the real files.
+- **The adapters:** `pi.ts`, `omp.ts`, and `hooks/register.ts` with stubs over the real files.
 
 The check turns off `format-staged-files` with `GIT_CONFIG_*` variables, and skips with a message when git or Emacs is missing.
 
 ## Files
 
-| File                                                             | Role                                                          |
-| ---------------------------------------------------------------- | ------------------------------------------------------------- |
-| [`core.ts`](core.ts)                                             | Finds the files and runs Emacs. No Node imports.              |
-| [`io.ts`](io.ts)                                                 | The file and process functions of the core under Node         |
-| [`command.ts`](command.ts)                                       | The command hook for Codex and `format-staged-files`          |
-| [`pi.ts`](pi.ts)                                                 | The pi and omp extension                                      |
-| [`hooks/register.ts`](hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                           |
-| [`dot_claude-plugin/plugin.json`](dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json` |
+| File                                                             | Role                                                                      |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [`core.ts`](core.ts)                                             | Finds the files and runs Emacs. No Node imports.                          |
+| [`io.ts`](io.ts)                                                 | The file and process functions of the core under Node                     |
+| [`command.ts`](command.ts)                                       | The command hook for Codex and `format-staged-files`                      |
+| [`pi.ts`](pi.ts)                                                 | The pi extension, which omp also loads                                    |
+| [`omp.ts`](omp.ts)                                               | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see |
+| [`hooks/register.ts`](hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                                       |
+| [`dot_claude-plugin/plugin.json`](dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json`             |

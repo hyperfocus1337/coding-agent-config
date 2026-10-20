@@ -14,6 +14,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { lint, targets, type Io } from "../core.ts";
 import { register } from "../hooks/register.ts";
+import ompExtension from "../omp.ts";
 import extension from "../pi.ts";
 
 const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
@@ -314,6 +315,58 @@ await check("pi.ts: leaves a clean file and other tools alone", async () => {
     undefined,
   );
 });
+
+let ompHandler: Handler | undefined;
+ompExtension({
+  on: (_name: string, handler: Handler) => (ompHandler = handler),
+} as never);
+const omp = (toolName: string, input: object, details?: object) =>
+  ompHandler?.(
+    { toolName, input, details, content: [] },
+    { cwd: tmp },
+  ) as Promise<{ isError?: boolean; content: { text: string }[] } | undefined>;
+const applied = (applied: boolean) => ({
+  xdev: {
+    tool: "resolve",
+    inner: {
+      action: "apply",
+      sourceToolName: "ast_edit",
+      sourceResultDetails: { applied, files: ["adapter.sh"] },
+    },
+  },
+});
+await check("omp.ts: lints each file of a multi-file edit", async () => {
+  const result = await omp("edit", { paths: ["clean.sh", "adapter.sh"] });
+  assert.equal(result?.isError, true);
+  assert.match(result?.content[0]?.text ?? "", /SC2154/);
+});
+await check("omp.ts: leaves the one file of an edit to pi.ts", async () =>
+  assert.equal(
+    await omp("edit", { path: "adapter.sh", paths: ["adapter.sh"] }),
+    undefined,
+  ),
+);
+await check("omp.ts: lints the files of an applied ast_edit", async () => {
+  const result = await omp("write", { path: "xd://resolve" }, applied(true));
+  assert.match(result?.content[0]?.text ?? "", /SC2154/);
+  assert.equal(
+    await omp("write", { path: "xd://resolve" }, applied(false)),
+    undefined,
+  );
+});
+await check("omp.ts: lints the files that eval code names", async () => {
+  const code = "open('adapter.sh', 'w').write(text)";
+  const result = await omp("eval", { language: "py", code });
+  assert.match(result?.content[0]?.text ?? "", /SC2154/);
+});
+await check(
+  "omp.ts: leaves the calls of pi.ts and other tools alone",
+  async () => {
+    assert.equal(await omp("write", { path: "adapter.sh" }), undefined);
+    assert.equal(await omp("bash", { command: "cat adapter.sh" }), undefined);
+    assert.equal(await omp("read", { path: "adapter.sh" }), undefined);
+  },
+);
 
 type Hook = (...args: unknown[]) => Promise<unknown>;
 let modHook: Hook | undefined;
