@@ -14,3 +14,6 @@
 .claude/hooks/track-session-changes/hook.ts
 .pi/agent/extensions/track-session-changes
 .omp/agent/extensions/track-session-changes
+.claude/commands/restate/core.md
+.claude/commands/restate/full.md
+.claude/commands/restate/goal-gaps-assumptions.md

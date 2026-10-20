@@ -23,7 +23,7 @@ Four one-shot commands that ask questions before the work starts. See [ask/READM
 
 ## restate/ — write my text back
 
-Nine one-shot commands that write my text back as a goal, a scope, an outline, or a prompt, then wait for my confirmation. See [restate/README.md](restate/README.md).
+Ten one-shot commands that write my text back as a goal, a scope, an outline, or a prompt, then wait for my confirmation. See [restate/README.md](restate/README.md).
 
 ## docs/ — documentation style
 
