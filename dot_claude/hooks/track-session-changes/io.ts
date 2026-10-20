@@ -72,7 +72,10 @@ export function nodeIo(): Io {
         let truncated = false;
         child.stdout.setEncoding("utf8");
         child.stdout.on("data", (chunk: string) => {
-          if (stdout.length + chunk.length <= MAX_OUTPUT) stdout += chunk;
+          // After one dropped chunk, drop the rest too: the output stays a
+          // prefix, with no gap in it.
+          if (!truncated && stdout.length + chunk.length <= MAX_OUTPUT)
+            stdout += chunk;
           else truncated = true;
         });
         // A child that exits before it reads its input closes the pipe.
