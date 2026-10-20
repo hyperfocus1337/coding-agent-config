@@ -1,6 +1,6 @@
 /**
- * The file and process functions of ./core.ts under Node, for command.ts and
- * pi.ts.
+ * The file and process functions of ./core.ts under Node, for command.ts,
+ * pi.ts, and omp.ts.
  */
 
 import { spawn } from "node:child_process";

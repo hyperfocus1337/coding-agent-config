@@ -1,6 +1,6 @@
 /**
  * Self-check for ../core.ts and its adapters: the cases through command.ts
- * in a real git repository, and the pi adapter with a stub. A stand-in tsc
+ * in a real git repository, and pi.ts and omp.ts with stubs. A stand-in tsc
  * on PATH passes or fails, as FAKE_TSC says, and logs each start to FAKE_LOG.
  *
  * Run: node test/check.ts, from the hook directory. Needs git.
@@ -46,7 +46,6 @@ exit 0
 );
 fs.chmodSync(`${bin}/tsc`, 0o755);
 const log = `${tmp}/log`;
-const started = () => (fs.existsSync(log) ? fs.readFileSync(log, "utf8") : "");
 
 const env = {
   ...process.env,
@@ -116,22 +115,17 @@ function fresh(files: Record<string, string> = {}) {
     write(`${repo}/${name}`, text);
 }
 const tsconfig = { "tsconfig.json": "{}\n" };
+const edited = { ...tsconfig, "src/old.ts": "let x = 2;\n" };
 const failed = "Type check failed. Fix the errors above, then stop.";
 
+// FAKE_TSC=fail, so exit 0 with no output also means that tsc did not start.
+
 // --- Checks ---
-fresh();
-await expect("no change starts no tsc", run(repo), 0);
-fresh(tsconfig);
-await expect("a new tsconfig.json alone starts no tsc", run(repo), 0);
-await check("no .ts change: nothing started", () =>
-  assert.equal(started(), ""),
-);
+fresh({ ...tsconfig, "a.py": "" });
+await expect("a change with no .ts file starts no tsc", run(repo), 0);
 fresh({ "src/old.ts": "let x = 2;\n" });
 await expect("a .ts file without tsconfig.json starts no tsc", run(repo), 0);
-await check("no tsconfig.json: nothing started", () =>
-  assert.equal(started(), ""),
-);
-fresh({ ...tsconfig, "src/old.ts": "let x = 2;\n" });
+fresh(edited);
 await expect(
   "a changed .ts file with errors blocks",
   run(repo),
@@ -144,21 +138,19 @@ for (const name of ["new.tsx", "new.mts", "new.cts"]) {
 }
 fresh({ ...tsconfig, "src/é.ts": "" });
 await expect("a path that git quotes still counts", run(repo), 2, failed);
-fresh({ ...tsconfig, "src/old.ts": "let x = 2;\n" });
+fresh(edited);
 await expect(
   "tsc that passes does not block",
   run(repo, {}, { FAKE_TSC: "pass" }),
   0,
 );
 await check("tsc that passes: it started", () =>
-  assert.equal(started(), "tsc\n"),
+  assert.equal(fs.readFileSync(log, "utf8"), "tsc\n"),
 );
 fresh(tsconfig);
 fs.rmSync(`${repo}/src/old.ts`);
 await expect("a deleted .ts file starts no tsc", run(repo), 0);
-fresh({ ...tsconfig, "a.py": "" });
-await expect("a .py file starts no tsc", run(repo), 0);
-fresh({ ...tsconfig, "src/old.ts": "let x = 2;\n" });
+fresh(edited);
 await expect(
   "tsc runs from the root, not the session folder",
   run(`${repo}/src`),
@@ -167,22 +159,15 @@ await expect(
 );
 
 // --- Skips ---
-fresh({ ...tsconfig, "src/old.ts": "let x = 2;\n" });
 await expect(
   "stop_hook_active lets the stop pass",
   run(repo, { stop_hook_active: true }),
   0,
 );
-await check("stop_hook_active: nothing started", () =>
-  assert.equal(started(), ""),
-);
 await expect(
   "CLAUDE_HOOKS_DISABLE that names the hook lets the stop pass",
   run(repo, {}, { CLAUDE_HOOKS_DISABLE: "lint-code,type-check-tsc" }),
   0,
-);
-await check("CLAUDE_HOOKS_DISABLE: nothing started", () =>
-  assert.equal(started(), ""),
 );
 const gitDir = path.dirname(
   spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout,
@@ -208,9 +193,7 @@ await expect(
 
 // --- pi.ts, with a stub ---
 
-const saved = { ...process.env };
 Object.assign(process.env, env);
-fresh({ ...tsconfig, "src/old.ts": "let x = 2;\n" });
 
 type Handler = (event: unknown, ctx: unknown) => Promise<unknown>;
 let piHandler: Handler | undefined;
@@ -220,13 +203,9 @@ extension({
   sendMessage: (message: { content: string }, options: unknown) =>
     sent.push({ content: message.content, options }),
 } as never);
-const end = (stopReason = "stop", extra: object = {}) =>
+const end = (stopReason = "stop") =>
   piHandler?.(
-    {
-      type: "agent_end",
-      messages: [{ role: "assistant", stopReason }],
-      ...extra,
-    },
+    { type: "agent_end", messages: [{ role: "assistant", stopReason }] },
     { cwd: `${repo}/src` },
   );
 await check("pi.ts: sends the errors and starts a run", async () => {
@@ -291,9 +270,6 @@ await check("omp.ts: a stopped or failed run starts nothing", async () => {
   assert.equal(await stop(false, "error"), undefined);
 });
 
-for (const name of Object.keys(process.env))
-  if (!(name in saved)) delete process.env[name];
-Object.assign(process.env, saved);
 fs.rmSync(tmp, { recursive: true });
 if (failures) {
   console.error(`${failures} failed`);

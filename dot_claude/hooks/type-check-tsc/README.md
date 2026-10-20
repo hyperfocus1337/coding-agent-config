@@ -65,7 +65,7 @@ Codex runs a hook only after you trust its entry. After a hook entry changes, tr
 
 ## Tests
 
-`node test/check.ts` runs `command.ts` in a git repository with a stand-in `tsc` on `PATH`, which passes or fails. It covers each TypeScript extension, a missing `tsconfig.json`, a path that git quotes, the root from a subdirectory, the loop guard, a missing `tsc`, a folder outside git, and a repository with no commit. It also checks `pi.ts` and `omp.ts` with stubs. It needs `git`. `just hooks-check` runs it.
+`node test/check.ts` runs `command.ts` in a git repository with a stand-in `tsc` on `PATH`, which passes or fails. It covers each TypeScript extension, a missing `tsconfig.json`, a path that git quotes, the root from a subdirectory, the loop guard, `CLAUDE_HOOKS_DISABLE`, a missing `tsc`, a folder outside git, and a repository with no commit. It also checks `pi.ts` and `omp.ts` with stubs. It needs `git`. `just hooks-check` runs it.
 
 ## Files
 

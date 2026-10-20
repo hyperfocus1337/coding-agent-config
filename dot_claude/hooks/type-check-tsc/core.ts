@@ -4,8 +4,8 @@
  * adapters pass in the process functions, and each adapter keeps its own
  * loop guard. type-check-pyrefly is the same hook for Python.
  *
- * Adapters: pi.ts (pi and omp), command.ts (Claude Code and Codex). Why a
- * stop and not each edit: README.md.
+ * Adapters: pi.ts (pi), omp.ts (omp), command.ts (Claude Code and Codex).
+ * Why a stop and not each edit: README.md.
  */
 
 export interface Io {
