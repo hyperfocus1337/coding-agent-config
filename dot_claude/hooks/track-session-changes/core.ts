@@ -179,8 +179,13 @@ interface Repo {
 async function repoAt(io: Io, dir: string): Promise<Repo | undefined> {
   while (!(await io.exists(dir)) && dirname(dir) !== dir) dir = dirname(dir);
   const out = await git(io, dir, [
-    ...["rev-parse", "--show-cdup", "--path-format=absolute"],
-    ...["--git-path", "objects", "--git-path", "index"],
+    "rev-parse",
+    "--show-cdup",
+    "--path-format=absolute",
+    "--git-path",
+    "objects",
+    "--git-path",
+    "index",
   ]);
   const [cdup = "", objects, index] = out?.stdout.split("\n") ?? [];
   if (!objects || !index) return undefined;
@@ -420,8 +425,13 @@ async function diffCall(
     io,
     top,
     [
-      ...["--no-optional-locks", "status", "--porcelain=v2", "-z"],
-      ...["--untracked-files=all", "--no-renames", "--ignore-submodules=dirty"],
+      "--no-optional-locks",
+      "status",
+      "--porcelain=v2",
+      "-z",
+      "--untracked-files=all",
+      "--no-renames",
+      "--ignore-submodules=dirty",
     ],
     env,
   );
@@ -463,9 +473,17 @@ async function diffCall(
     io,
     top,
     [
-      ...["-c", "core.quotePath=false", "diff-files", "--no-ext-diff"],
-      ...["--no-textconv", "--ignore-submodules=dirty", "--diff-filter=MT"],
-      ...["--src-prefix=a/", "--dst-prefix=b/", "-p", "-U0"],
+      "-c",
+      "core.quotePath=false",
+      "diff-files",
+      "--no-ext-diff",
+      "--no-textconv",
+      "--ignore-submodules=dirty",
+      "--diff-filter=MT",
+      "--src-prefix=a/",
+      "--dst-prefix=b/",
+      "-p",
+      "-U0",
     ],
     env,
   );
