@@ -44,7 +44,7 @@ const strings = (value: unknown) =>
     : [];
 
 /** The calls of an omp tool result that ./pi.ts does not format. */
-export function ompCalls(
+function ompCalls(
   tool: string,
   input: Record<string, unknown>,
   details: unknown,

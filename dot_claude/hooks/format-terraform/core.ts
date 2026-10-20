@@ -5,8 +5,8 @@
  * a file that does not parse stays as it is. The adapters pass in the file
  * and process functions, because a mod reaches them only through `$`.
  *
- * Adapters: hooks/register.ts (Claude Code mod), pi.ts (pi and omp),
- * command.ts (Codex, and the format-staged-files pre-commit hook).
+ * Adapters: hooks/register.ts (Claude Code mod), pi.ts (pi and omp), omp.ts
+ * (omp only), command.ts (Codex, and the format-staged-files pre-commit hook).
  * Design notes: README.md.
  */
 
@@ -41,22 +41,15 @@ const TERRAFORM = /\.(tf|tfvars)$/;
 /** A Terraform path that a command names. */
 const NAMED = /[^\s:;|&"'`()<>=]+\.(?:tfvars|tf)\b/g;
 
-/** Whether a command commits: the hint then checks the last commit. */
-const commits = (call: Call) =>
-  !call.filePath && (call.command ?? "").includes("git commit");
+const plain = (path: string) => path.replace(/^\/private/, "");
 
 /**
  * A file under /tmp, /var/tmp, or TMPDIR is a scratch file, not project
  * code. macOS resolves /tmp to /private/tmp, so both sides drop that prefix.
  */
-function throwaway(file: string, settings: Settings): boolean {
-  const tmpdir = (settings.tmpdir || "/nonexistent").replace(/^\/private/, "");
-  const plain = file.replace(/^\/private/, "");
-  return (
-    plain.startsWith("/tmp/") ||
-    plain.startsWith("/var/tmp/") ||
-    plain.startsWith(tmpdir)
-  );
+function throwaway(file: string, { tmpdir }: Settings): boolean {
+  const dirs = ["/tmp/", "/var/tmp/", ...(tmpdir ? [plain(tmpdir)] : [])];
+  return dirs.some((dir) => plain(file).startsWith(dir));
 }
 
 /**
@@ -66,30 +59,26 @@ function throwaway(file: string, settings: Settings): boolean {
  * shortcut: a command that writes early and then runs for minutes falls
  * outside the window. The upgrade is a start time stamped before the call.
  */
-export async function targets(
+async function targets(
   call: Call,
   io: Io,
   settings: Settings,
-  now = Date.now(),
 ): Promise<string[]> {
-  const candidates: string[] = [];
-  if (call.filePath) candidates.push(call.filePath);
-  else
-    for (const [named] of (call.command ?? "").matchAll(NAMED)) {
-      const path = named.startsWith("/") ? named : `${call.cwd}/${named}`;
-      const stat = await io.stat(path);
-      if (stat?.kind === "file" && now - stat.mtimeMs <= 120_000)
-        candidates.push(path);
-    }
+  const paths = call.filePath
+    ? [call.filePath]
+    : [...(call.command ?? "").matchAll(NAMED)].map(([named]) =>
+        named.startsWith("/") ? named : `${call.cwd}/${named}`,
+      );
   const kept: string[] = [];
-  for (const file of candidates)
+  for (const file of new Set(paths)) {
+    if (!TERRAFORM.test(file) || throwaway(file, settings)) continue;
+    const stat = await io.stat(file);
     if (
-      TERRAFORM.test(file) &&
-      !throwaway(file, settings) &&
-      !kept.includes(file) &&
-      (await io.stat(file))?.kind === "file"
+      stat?.kind === "file" &&
+      (call.filePath || Date.now() - stat.mtimeMs <= 120_000)
     )
       kept.push(file);
+  }
   return kept;
 }
 
@@ -105,6 +94,8 @@ export async function format(
 ): Promise<string | undefined> {
   if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("format-terraform"))
     return undefined;
+  // A command that commits: the hint then checks the last commit.
+  const commits = !call.filePath && call.command?.includes("git commit");
   const dirty: string[] = [];
   for (const file of await targets(call, io, settings)) {
     // One run for each file: a file that does not parse makes terraform fmt
@@ -115,7 +106,7 @@ export async function format(
       cwd: dir,
       timeoutMs: 10_000,
     });
-    if (!commits(call) || ran?.exitCode !== 0 || !ran.stdout.trim()) continue;
+    if (!commits || ran?.exitCode !== 0 || !ran.stdout.trim()) continue;
     // Only a file that the last commit holds needs an amend. diff-tree --root
     // also answers for the first commit of a repository.
     const held = await io.run(

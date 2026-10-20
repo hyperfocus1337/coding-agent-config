@@ -145,7 +145,7 @@ await quiet(
 unformatted(`${repo}/committed.tf`);
 git(repo, "add", "-A");
 git(repo, "commit", "-qm", "seed");
-let ran = bash(repo, `touch ${repo}/committed.tf\ngit commit -am infra`);
+const ran = bash(repo, `touch ${repo}/committed.tf\ngit commit -am infra`);
 await formatted("a file the command committed", `${repo}/committed.tf`);
 await check("hint: names the file", () => {
   const out = JSON.parse(ran.stdout) as {
@@ -157,11 +157,7 @@ await check("hint: names the file", () => {
 
 // A path the command only read stays as it is: its old mtime says so.
 unformatted(`${repo}/read-only.tf`);
-fs.utimesSync(
-  `${repo}/read-only.tf`,
-  new Date(2020, 0, 1),
-  new Date(2020, 0, 1),
-);
+fs.utimesSync(`${repo}/read-only.tf`, 0, 0);
 bash(repo, `cat ${repo}/read-only.tf > ${repo}/copy.tf`);
 await untouched("a path the command only read", `${repo}/read-only.tf`);
 
@@ -177,26 +173,22 @@ await quiet(
 );
 
 unformatted(`${repo}/quiet.tf`);
-ran = bash(repo, `touch ${repo}/quiet.tf`);
-await quiet("hint: none without a commit", ran);
+await quiet(
+  "hint: none without a commit",
+  bash(repo, `touch ${repo}/quiet.tf`),
+);
 await formatted("a file written with no commit", `${repo}/quiet.tf`);
 
 // --- CLAUDE_HOOKS_DISABLE ---
 
+const noIo = new Proxy({}, { get: () => () => assert.fail("the hook ran") });
 await check(
   "CLAUDE_HOOKS_DISABLE that names the hook: nothing runs",
   async () =>
     assert.equal(
-      await format(
-        { filePath: "/x/a.tf", cwd: "/x" },
-        new Proxy(
-          {},
-          { get: () => () => assert.fail("the hook ran") },
-        ) as never,
-        {
-          hooksOff: "lint-code format-terraform",
-        },
-      ),
+      await format({ filePath: "/x/a.tf", cwd: "/x" }, noIo as never, {
+        hooksOff: "lint-code format-terraform",
+      }),
       undefined,
     ),
 );

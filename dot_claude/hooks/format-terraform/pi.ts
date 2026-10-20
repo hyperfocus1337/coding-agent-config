@@ -15,18 +15,15 @@ import { format, type Call } from "./core.ts";
 import { nodeIo, nodeSettings } from "./io.ts";
 
 export default function (pi: ExtensionAPI) {
-  pi.on("tool_result", (event, ctx) => {
-    if (!["write", "edit", "bash"].includes(event.toolName)) return;
-    const input = event.input as { path?: unknown; command?: unknown };
-    const command =
-      typeof input.command === "string" ? input.command : undefined;
-    const calls: Call[] =
-      event.toolName === "bash"
-        ? [{ command, cwd: ctx.cwd }]
-        : typeof input.path === "string"
-          ? [{ filePath: absolute(input.path, ctx.cwd), cwd: ctx.cwd }]
-          : [];
-    return formatCalls(calls, event.content);
+  pi.on("tool_result", (event, { cwd }) => {
+    const { command, path } = event.input;
+    if (event.toolName === "bash" && typeof command === "string")
+      return formatCalls([{ command, cwd }], event.content);
+    if (["write", "edit"].includes(event.toolName) && typeof path === "string")
+      return formatCalls(
+        [{ filePath: absolute(path, cwd), cwd }],
+        event.content,
+      );
   });
 }
 
@@ -43,9 +40,10 @@ export async function formatCalls(
   content: ToolResultEvent["content"],
 ): Promise<ToolResultEventResult | undefined> {
   try {
+    const settings = nodeSettings();
     const hints: string[] = [];
     for (const call of calls) {
-      const hint = await format(call, nodeIo(), nodeSettings());
+      const hint = await format(call, nodeIo, settings);
       if (hint) hints.push(hint);
     }
     if (!hints.length) return;

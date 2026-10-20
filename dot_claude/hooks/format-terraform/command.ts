@@ -25,7 +25,7 @@ const hint = await format(
     command: text(payload.tool_input?.command),
     cwd: payload.cwd || process.cwd(),
   },
-  nodeIo(),
+  nodeIo,
   nodeSettings(),
 );
 // hookEventName must name the event that fired, or the output is invalid.

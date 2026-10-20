@@ -17,16 +17,10 @@ export const register: Register = (on) => {
     // The engine only takes $ calls spelled at the call site, so each
     // function of the core is written out here.
     const io: Io = {
-      stat: (path) =>
-        $.fs.stat(path).then(
-          (found) => ({ kind: found.kind, mtimeMs: found.mtimeMs }),
-          () => undefined,
-        ),
+      stat: (path) => $.fs.stat(path).catch(() => undefined),
+      // Rejects when the program is not installed or times out.
       run: (argv, options) =>
-        $.process.run(argv, options).then(
-          (done) => ({ exitCode: done.exitCode, stdout: done.stdout }),
-          () => undefined, // not installed, or timed out
-        ),
+        $.process.run(argv, options).catch(() => undefined),
     };
     const call =
       e.tool === "Bash"
