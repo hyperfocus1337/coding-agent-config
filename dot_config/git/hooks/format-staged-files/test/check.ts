@@ -88,6 +88,13 @@ Object.assign(base, {
   GIT_CONFIG_KEY_1: "hook.claude-format-staged.command",
   GIT_CONFIG_VALUE_1: command,
 });
+// A mise shim reads the config under the real HOME, and under the fixture HOME
+// it fails on the trust check before it falls back to the next program on
+// PATH. Without the shims, each program resolves to its real binary.
+base.PATH = base
+  .PATH!.split(":")
+  .filter((dir) => !dir.endsWith("/mise/shims"))
+  .join(":");
 const work = `${tmp}/work`;
 fs.mkdirSync(work);
 const git = (
@@ -159,7 +166,7 @@ check("the unstaged change stays in the tree", () =>
 );
 git(["checkout", "-q", "--", "new.md"]);
 
-if (spawnSync("emacs", ["--version"]).error)
+if (spawnSync("emacs", ["--version"], { env: base }).error)
   console.log("SKIP no emacs on PATH: Org case");
 else {
   write("t.org", "| a | bbbb |\n| cccc | d |\n");
@@ -170,7 +177,7 @@ else {
   );
 }
 
-if (spawnSync("terraform", ["version"]).error)
+if (spawnSync("terraform", ["version"], { env: base }).error)
   console.log("SKIP no terraform on PATH: Terraform case");
 else {
   write("main.tf", "a   = 1\nbb = 2\n");
