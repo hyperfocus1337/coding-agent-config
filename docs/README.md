@@ -73,10 +73,12 @@ The `research/` folder holds investigations into the agent environment and sessi
 
 The `research/hooks/` folder holds the source reading, tests, and transcript counts behind the hooks in [`dot_claude/hooks/`](../dot_claude/hooks/README.md). [`hooks/`](hooks/README.md) gives the design that follows from them.
 
+- [`hook-scoping.md`](research/hooks/hook-scoping.md) checks, from the source and live tests of Claude Code, pi, omp, and Codex, that each hook attaches to the right event and tool names. The type checks use the wrong stop event in omp, and omp `ast_edit` and `eval`, a Codex patch sent through the shell, and Claude Code `NotebookEdit` skip some file hooks.
 - [`event-scoping.md`](research/hooks/event-scoping.md) measures, from 205 Claude Code transcripts, whether each format, lint, and type-check hook runs after each tool call or at the stop.
 
 | File                                                  | Description                                                                             |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| [`hook-scoping.md`](research/hooks/hook-scoping.md)   | The event, matcher, and tool names of each hook in each agent, with a verdict and a fix |
 | [`event-scoping.md`](research/hooks/event-scoping.md) | After each tool call or at the stop: the event for each per-file and whole-project hook |
 
 ### Commands
