@@ -10,10 +10,8 @@
  */
 
 export interface Io {
-  /** The kind of a path and its mtime; undefined if missing. */
-  stat(
-    path: string,
-  ): Promise<{ kind: "file" | "dir" | "other"; mtimeMs: number } | undefined>;
+  /** The kind of a path; undefined if missing. */
+  stat(path: string): Promise<{ kind: "file" | "dir" | "other" } | undefined>;
   /** The text of a file; undefined if it cannot be read. */
   read(path: string): Promise<string | undefined>;
   /** The exit code and stdout; undefined when the program cannot start. */
@@ -46,6 +44,14 @@ const MARKDOWN = /\.(md|markdown)$/;
 const NAMED = /[^\s:;|&"'`()<>=]+\.(?:md|markdown)\b/g;
 /** An absolute path in a command: a root for the sweep. */
 const ABSOLUTE = /\/[^\s:;|&"'`()<>]+/g;
+/** The files of the last commit; --root also answers for the first commit. */
+const LAST_COMMIT = [
+  "diff-tree",
+  "--no-commit-id",
+  "--name-only",
+  "-r",
+  "--root",
+];
 
 /** Whether a command commits: the sweep then also covers the last commit. */
 const commits = (call: Call) =>
@@ -64,6 +70,8 @@ function throwaway(file: string, settings: Settings): boolean {
     plain.startsWith(tmpdir)
   );
 }
+
+const parent = (path: string) => path.slice(0, path.lastIndexOf("/")) || "/";
 
 async function toplevel(dir: string, io: Io): Promise<string | undefined> {
   const ran = await io.run(["git", "rev-parse", "--show-toplevel"], {
@@ -87,22 +95,19 @@ async function sweep(call: Call, io: Io): Promise<string[]> {
   // The roots: the cwd and each absolute path in the command, because a `cd`
   // in the command never moves the cwd of the hook. shortcut: absolute paths
   // only, because a relative one is ambiguous after a cd.
-  const queue: string[] = [];
+  const roots = new Set<string>();
   const paths = new Set([
     call.cwd,
     ...[...command.matchAll(ABSOLUTE)].map(([path]) => path),
   ]);
   for (const path of paths) {
-    const dir =
-      (await io.stat(path))?.kind === "dir"
-        ? path
-        : path.slice(0, path.lastIndexOf("/")) || "/";
+    const dir = (await io.stat(path))?.kind === "dir" ? path : parent(path);
     const root = await toplevel(dir, io);
-    if (root && !queue.includes(root)) queue.push(root);
+    if (root) roots.add(root);
   }
   // A repository inside a repository lists as one folder entry, so each such
-  // entry joins the queue as a root of its own. for...of visits the roots
-  // that join while it runs.
+  // entry joins the roots as a root of its own. for...of over a Set visits the
+  // roots that join while it runs.
   const lists = [
     ["diff", "--name-only", "-z", "--diff-filter=d", "HEAD"],
     ["ls-files", "--others", "--exclude-standard", "-z"],
@@ -110,17 +115,8 @@ async function sweep(call: Call, io: Io): Promise<string[]> {
   // A command that writes and commits leaves a clean tree, so the sweep also
   // takes the files of the last commit. README "Write and commit in one command".
   if (commits(call))
-    lists.push([
-      "diff-tree",
-      "--no-commit-id",
-      "--name-only",
-      "-r",
-      "--root",
-      "-z",
-      "--diff-filter=d",
-      "HEAD",
-    ]);
-  for (const root of queue) {
+    lists.push([...LAST_COMMIT, "-z", "--diff-filter=d", "HEAD"]);
+  for (const root of roots) {
     const changed = new Set<string>();
     for (const args of lists) {
       // A repository with no commits has no HEAD, so the diff fails and the
@@ -134,7 +130,7 @@ async function sweep(call: Call, io: Io): Promise<string[]> {
       if ((await io.stat(full))?.kind !== "dir") found.push(full);
       else {
         const nested = await toplevel(full, io);
-        if (nested && !queue.includes(nested)) queue.push(nested);
+        if (nested) roots.add(nested);
       }
     }
   }
@@ -145,7 +141,7 @@ async function sweep(call: Call, io: Io): Promise<string[]> {
  * The files to format, each once. A Write or Edit: the file it names, by the
  * extensions Prettier formats. A Bash call: the Markdown files of the sweep.
  */
-export async function targets(
+async function targets(
   call: Call,
   io: Io,
   settings: Settings,
@@ -153,11 +149,10 @@ export async function targets(
   const candidates = call.filePath ? [call.filePath] : await sweep(call, io);
   const extensions = call.filePath ? EDITED : MARKDOWN;
   const kept: string[] = [];
-  for (const file of candidates)
+  for (const file of new Set(candidates))
     if (
       extensions.test(file) &&
       !throwaway(file, settings) &&
-      !kept.includes(file) &&
       (await io.stat(file))?.kind === "file"
     )
       kept.push(file);
@@ -179,10 +174,8 @@ export async function format(
   const files = await targets(call, io, settings);
   if (!files.length) return undefined;
   // The hint names only the files that Prettier itself changed, so keep the
-  // text from before the run.
-  const watched = commits(call)
-    ? files.filter((file) => MARKDOWN.test(file))
-    : [];
+  // text from before the run. A commit sweep holds only Markdown.
+  const watched = commits(call) ? files : [];
   const before = await Promise.all(watched.map((file) => io.read(file)));
   // --prose-wrap preserve keeps one sentence per line. --ignore-path drops
   // .gitignore from the ignore files of Prettier, and keeps .prettierignore.
@@ -203,22 +196,10 @@ export async function format(
   const dirty: string[] = [];
   for (const [i, file] of watched.entries()) {
     if ((await io.read(file)) === before[i]) continue;
-    // Only a file that the last commit holds needs an amend. diff-tree --root
-    // also answers for the first commit of a repository.
-    const held = await io.run(
-      [
-        "git",
-        "diff-tree",
-        "--no-commit-id",
-        "--name-only",
-        "-r",
-        "--root",
-        "HEAD",
-        "--",
-        file,
-      ],
-      { cwd: file.slice(0, file.lastIndexOf("/")) || "/" },
-    );
+    // Only a file that the last commit holds needs an amend.
+    const held = await io.run(["git", ...LAST_COMMIT, "HEAD", "--", file], {
+      cwd: parent(file),
+    });
     if (held?.stdout.trim()) dirty.push(file);
   }
   if (!dirty.length) return undefined;

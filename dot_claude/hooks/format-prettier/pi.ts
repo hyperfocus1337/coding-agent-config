@@ -17,7 +17,7 @@ import { nodeIo, nodeSettings } from "./io.ts";
 export default function (pi: ExtensionAPI) {
   pi.on("tool_result", (event, ctx) => {
     if (!["write", "edit", "bash"].includes(event.toolName)) return;
-    const input = event.input as { path?: unknown; command?: unknown };
+    const { input } = event;
     const command =
       typeof input.command === "string" ? input.command : undefined;
     const calls: Call[] =
@@ -45,7 +45,7 @@ export async function formatCalls(
   try {
     const hints: string[] = [];
     for (const call of calls) {
-      const hint = await format(call, nodeIo(), nodeSettings());
+      const hint = await format(call, nodeIo, nodeSettings());
       if (hint) hints.push(hint);
     }
     if (!hints.length) return;

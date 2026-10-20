@@ -55,7 +55,7 @@ A git repo inside a repo is opaque to the parent, so the parent sweep cannot see
 
 A worktree checked out inside the repo (`git worktree add .worktrees/feat`) is the same case, and the most common one here: the parent lists `.worktrees/feat/` as one entry, because the worktree directory holds a `.git` file rather than tracked content. `git rev-parse --show-toplevel` inside it returns the worktree path, not the main repo, so the worktree becomes a root of its own and its changed and untracked markdown is swept there.
 
-So the roots are a queue, not a fixed list. The sweep loop enumerates one root, sends file entries to the candidate list and directory entries back onto the queue as roots of their own, and continues until the queue is drained. Any nesting depth is covered, and the membership check on push keeps a symlink that points back at an existing root from looping. `test/check.ts` covers a plain subdirectory, an embedded repo, an embedded repo two levels down, and a dirty submodule.
+So the roots are a queue, not a fixed list. The sweep loop enumerates one root, sends file entries to the candidate list and directory entries back onto the queue as roots of their own, and continues until the queue is drained. Any nesting depth is covered, and because the roots are a set, a symlink that points back at an existing root does not join a second time and cannot loop. `test/check.ts` covers a plain subdirectory, an embedded repo, an embedded repo two levels down, and a dirty submodule.
 
 Note the side effect: any repo whose absolute path appears in a shell command gets its changed and untracked markdown formatted, even if the command only read from it. That is the same pass the session repo already gets, and it only ever touches files git already reports as modified or untracked.
 
@@ -151,7 +151,8 @@ node test/check.ts
 - **Named paths:** a named file outside any repo, an ignored file, a relative path, a path that does not exist, and a file in `.prettierignore`.
 - **Prose wrap:** a wide table stays padded, and sentence lines stay apart.
 - **The amend hint:** after a commit, on `PostToolUseFailure` with that event name, on the first commit of a repo, and none without a commit, for an uncommitted file, or when Prettier changed nothing.
-- **A Write or Edit:** `.ts` is formatted, `.org`, `.py`, and a temp file are not.
+- **A Write or Edit:** `.ts`, `.mts`, and `.cts` are formatted. `.org`, `.py`, and a temp file are not, and a file that does not exist gives no output.
+- **`CLAUDE_HOOKS_DISABLE`:** a value that names the hook stops the core before its first file or process call.
 - **The adapters:** `pi.ts`, `omp.ts`, and `hooks/register.ts` with stubs over the real files.
 
 The check turns off `format-staged-files` with `GIT_CONFIG_*` variables, and skips with a message when git or Prettier is missing.

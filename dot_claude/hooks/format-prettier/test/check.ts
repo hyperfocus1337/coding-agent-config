@@ -18,7 +18,7 @@ import { register } from "../hooks/register.ts";
 import ompExtension from "../omp.ts";
 import extension from "../pi.ts";
 
-const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
+const hook = path.dirname(import.meta.dirname);
 
 let failures = 0;
 async function check(what: string, run: () => void | Promise<void>) {
@@ -39,8 +39,7 @@ for (const program of ["git", "prettier"])
 const tmp = fs.mkdtempSync(path.join(os.homedir(), ".format-hook-test."));
 // Turn off the format-staged-files pre-commit hook: it formats the file
 // before the commit, and then nothing is left to amend.
-const env = {
-  ...process.env,
+Object.assign(process.env, {
   GIT_CONFIG_COUNT: "1",
   GIT_CONFIG_KEY_0: "hook.claude-format-staged.enabled",
   GIT_CONFIG_VALUE_0: "false",
@@ -48,10 +47,9 @@ const env = {
   GIT_AUTHOR_EMAIL: "test@example.com",
   GIT_COMMITTER_NAME: "test",
   GIT_COMMITTER_EMAIL: "test@example.com",
-};
-Object.assign(process.env, env);
+});
 const git = (cwd: string, ...args: string[]) => {
-  const ran = spawnSync("git", args, { cwd, encoding: "utf8", env });
+  const ran = spawnSync("git", args, { cwd, encoding: "utf8" });
   assert.equal(ran.status, 0, `git ${args.join(" ")}: ${ran.stderr}`);
 };
 
@@ -60,7 +58,6 @@ const hookRun = (payload: object) =>
   spawnSync(process.execPath, [path.join(hook, "command.ts")], {
     input: JSON.stringify(payload),
     encoding: "utf8",
-    env,
     timeout: 30_000,
   });
 const bash = (cwd: string, command: string, extra: object = {}) =>
@@ -71,8 +68,9 @@ const edit = (file: string) => hookRun({ tool_input: { file_path: file } });
 const RAW = "| a | bbbbbbbbbbbb |\n| --- | --- |\n| ccccccccccccccc | d |\n";
 const unaligned = (file: string) => fs.writeFileSync(file, RAW);
 const read = (file: string) => fs.readFileSync(file, "utf8");
+const aligned = (file: string) => assert.match(read(file), /^\| a {2}/);
 const formatted = (what: string, file: string) =>
-  check(`format ${what}`, () => assert.match(read(file), /^\| a {2}/));
+  check(`format ${what}`, () => aligned(file));
 const unchanged = (what: string, file: string, text: string) =>
   check(`skip ${what}`, () => assert.equal(read(file), text));
 const quiet = (what: string, ran: ReturnType<typeof hookRun>) =>
@@ -80,17 +78,10 @@ const quiet = (what: string, ran: ReturnType<typeof hookRun>) =>
     assert.equal(ran.status, 0, ran.stderr);
     assert.equal(ran.stdout + ran.stderr, "");
   });
-const hint = (ran: ReturnType<typeof hookRun>) =>
-  ran.stdout
-    ? (
-        JSON.parse(ran.stdout) as {
-          hookSpecificOutput: {
-            hookEventName: string;
-            additionalContext: string;
-          };
-        }
-      ).hookSpecificOutput
-    : undefined;
+const hint = (
+  ran: ReturnType<typeof hookRun>,
+): { hookEventName: string; additionalContext: string } | undefined =>
+  ran.stdout ? JSON.parse(ran.stdout).hookSpecificOutput : undefined;
 
 // --- The Bash sweep ---
 
@@ -284,20 +275,19 @@ await check("hint: also for the first commit of a repo", () =>
 
 // --- A Write or Edit: one named file, by extension ---
 
-fs.writeFileSync(`${outer}/edited.ts`, "const a  =  1\n");
-await quiet("edit: prints nothing", edit(`${outer}/edited.ts`));
-await unchanged("edit formats .ts", `${outer}/edited.ts`, "const a = 1;\n");
-for (const name of ["edited.mts", "edited.cts"]) {
+for (const name of ["edited.ts", "edited.mts", "edited.cts"]) {
   fs.writeFileSync(`${outer}/${name}`, "const a  =  1\n");
-  edit(`${outer}/${name}`);
+  await quiet(`edit ${name}: prints nothing`, edit(`${outer}/${name}`));
   await unchanged(`edit formats ${name}`, `${outer}/${name}`, "const a = 1;\n");
 }
-fs.writeFileSync(`${outer}/notes.org`, "| a | bbbb |\n");
-edit(`${outer}/notes.org`);
-await unchanged("edit leaves .org", `${outer}/notes.org`, "| a | bbbb |\n");
-fs.writeFileSync(`${outer}/script.py`, "x  =  1\n");
-edit(`${outer}/script.py`);
-await unchanged("edit leaves .py", `${outer}/script.py`, "x  =  1\n");
+for (const [name, text] of [
+  ["notes.org", "| a | bbbb |\n"],
+  ["script.py", "x  =  1\n"],
+] as const) {
+  fs.writeFileSync(`${outer}/${name}`, text);
+  edit(`${outer}/${name}`);
+  await unchanged(`edit leaves ${name}`, `${outer}/${name}`, text);
+}
 // A file in a temp folder is a scratch file, not project code.
 const scratch = `${process.env.TMPDIR || "/tmp"}/format-hook-scratch.md`;
 unaligned(scratch);
@@ -340,7 +330,7 @@ await check("pi.ts: formats the file of an edit", async () => {
     { cwd: outer },
   );
   assert.equal(result, undefined);
-  assert.match(read(`${outer}/pi.md`), /^\| a {2}/);
+  aligned(`${outer}/pi.md`);
 });
 unaligned(`${committed}/PI.md`);
 git(committed, "add", "-A");
@@ -376,8 +366,8 @@ await check("omp.ts: formats each file of a multi-file edit", async () => {
   unaligned(`${outer}/omp-a.md`);
   unaligned(`${outer}/omp-b.md`);
   await omp("edit", { paths: ["omp-a.md", "omp-b.md"] });
-  assert.match(read(`${outer}/omp-a.md`), /^\| a {2}/);
-  assert.match(read(`${outer}/omp-b.md`), /^\| a {2}/);
+  aligned(`${outer}/omp-a.md`);
+  aligned(`${outer}/omp-b.md`);
 });
 await check("omp.ts: formats the files of an applied ast_edit", async () => {
   unaligned(`${outer}/omp-ast.md`);
@@ -395,7 +385,7 @@ await check("omp.ts: formats the files of an applied ast_edit", async () => {
       },
     },
   );
-  assert.match(read(`${outer}/omp-ast.md`), /^\| a {2}/);
+  aligned(`${outer}/omp-ast.md`);
 });
 await check("omp.ts: leaves the calls of pi.ts alone", async () => {
   unaligned(`${outer}/omp-pi.md`);
@@ -418,7 +408,6 @@ const stub$ = (cwd: string) => ({
       const found = fs.statSync(file);
       return {
         kind: found.isFile() ? "file" : found.isDirectory() ? "dir" : "other",
-        mtimeMs: found.mtimeMs,
       };
     },
     read: async (file: string) => fs.readFileSync(file, "utf8"),
@@ -430,11 +419,7 @@ const stub$ = (cwd: string) => ({
         encoding: "utf8",
       });
       if (done.error) throw done.error;
-      return {
-        exitCode: done.status ?? 1,
-        stdout: done.stdout,
-        stderr: done.stderr,
-      };
+      return { exitCode: done.status ?? 1, stdout: done.stdout };
     },
   },
 });
@@ -449,7 +434,7 @@ await check("register.ts: formats the file and passes the result", async () => {
     ),
     result,
   );
-  assert.match(read(`${outer}/mod.md`), /^\| a {2}/);
+  aligned(`${outer}/mod.md`);
 });
 unaligned(`${committed}/MOD.md`);
 git(committed, "add", "-A");
