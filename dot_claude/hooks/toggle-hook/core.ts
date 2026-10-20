@@ -20,12 +20,15 @@ export const HOOKS = [
   "type-check-pyrefly",
 ];
 
-/** The guards have no toggle: what to use in place of one. */
-const GUARDS: Record<string, string> = {
-  "enforce-cli-tools": "Use .claude-allow-cli-tools in the repo.",
-  "block-commit-attribution": "Remove the trailer from the commit message.",
-  "block-secret-commits": "Use .claude-allow-secrets in the repo.",
-};
+/**
+ * The guards have no toggle: what to use in place of one. A Map, so that a
+ * name such as `constructor` does not find an Object.prototype property.
+ */
+const GUARDS = new Map([
+  ["enforce-cli-tools", "Use .claude-allow-cli-tools in the repo."],
+  ["block-commit-attribution", "Remove the trailer from the commit message."],
+  ["block-secret-commits", "Use .claude-allow-secrets in the repo."],
+]);
 
 /** The hook names in a CLAUDE_HOOKS_DISABLE value: space or comma. */
 function names(value: string | undefined): string[] {
@@ -62,7 +65,7 @@ export function toggle(
           text: "All hooks are off until you quit the agent.",
         };
   }
-  const guard = GUARDS[name];
+  const guard = GUARDS.get(name);
   if (guard)
     return {
       value: current,

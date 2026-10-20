@@ -64,6 +64,11 @@ await check("an unknown name changes nothing", () => {
   const { value, text } = toggle("lint-code", "lint");
   assert.equal(value, "lint-code");
   assert.ok(text.startsWith("lint is not a hook."));
+  assert.ok(
+    toggle(undefined, "constructor").text.startsWith(
+      "constructor is not a hook.",
+    ),
+  );
 });
 await check("status names only the hooks that are off", () => {
   assert.equal(status(undefined), undefined);
