@@ -18,6 +18,9 @@ import ompExtension from "../omp.ts";
 import extension from "../pi.ts";
 
 const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
+// A hook that /toggle-hook turned off in the agent that runs this check
+// still runs here.
+delete process.env.CLAUDE_HOOKS_DISABLE;
 // The Vale config in the chezmoi source, not the applied copy in ~/.config.
 const valeDir = path.resolve(hook, "../../../dot_config/vale");
 
