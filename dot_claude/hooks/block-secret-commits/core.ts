@@ -34,7 +34,7 @@ export interface Io {
 export interface Settings {
   /** The repo root: CLAUDE_PROJECT_DIR, or the working folder of the agent. */
   root: string;
-  /** CLAUDE_ALLOW_SECRETS: paths or basenames, whitespace or colon separated. */
+  /** AGENT_ALLOW_SECRETS: paths or basenames, whitespace or colon separated. */
   allow?: string;
   /** conf/betterleaks.toml beside this file. */
   config: string;
@@ -131,8 +131,8 @@ export async function check(
 
 /** The allowlist, and betterleaks with the config to pass, if installed. */
 async function prepare(io: Io, settings: Settings) {
-  // .claude-allow-secrets, without blank and `#` lines, and CLAUDE_ALLOW_SECRETS.
-  const file = (await io.read(`${settings.root}/.claude-allow-secrets`)) ?? "";
+  // .agent-allow-secrets, without blank and `#` lines, and AGENT_ALLOW_SECRETS.
+  const file = (await io.read(`${settings.root}/.agent-allow-secrets`)) ?? "";
   const list = [
     ...file.split("\n").filter((line) => line && !line.startsWith("#")),
     ...(settings.allow ?? "").split(/[\s:]+/).filter(Boolean),
@@ -213,6 +213,13 @@ async function scanBinary(io: Io, setup: Setup): Promise<string[]> {
   return offenders;
 }
 
+/**
+ * The command that adds the allow files to the exclude file of the repo, which
+ * all worktrees share. Not .gitignore: the list is for the user of this hook.
+ */
+const excludeCommand = (root: string) =>
+  `echo '.agent-allow-*' >> "$(git -C "${root}" rev-parse --path-format=absolute --git-path info/exclude)"`;
+
 function binaryMessage(offenders: string[], root: string): string {
   return [
     "Blocked: this commit would add binary file(s) that hold a secret, or that could not be scanned:",
@@ -220,8 +227,9 @@ function binaryMessage(offenders: string[], root: string): string {
     "",
     "Fix one of:",
     "  * drop the file, or add it to .gitignore if it is build output (recommended), or",
-    `  * list the path(s) in ${root}/.claude-allow-secrets (persistent, per-repo), or`,
-    "  * set CLAUDE_ALLOW_SECRETS to the path(s), colon-separated (one-off)",
+    `  * list the path(s) in ${root}/.agent-allow-secrets (persistent, per-repo),`,
+    `    and keep it out of git: ${excludeCommand(root)}, or`,
+    "  * set AGENT_ALLOW_SECRETS to the path(s), colon-separated (one-off)",
     "",
     "Inspect with: betterleaks dir <path> --redact --verbose",
   ].join("\n");
@@ -288,6 +296,7 @@ async function scanContent(
     "  * remove the secret, or add the file to .gitignore (recommended), or",
     "  * mark a false positive with a 'betterleaks:allow' comment on the line, or",
     `  * add the fingerprint above to ${root}/.betterleaksignore, or`,
-    `  * last resort, and not portable to anyone without this hook: list the file in ${root}/.claude-allow-secrets`,
+    `  * last resort, and not portable to anyone without this hook: list the file in ${root}/.agent-allow-secrets,`,
+    `    and keep it out of git: ${excludeCommand(root)}`,
   ].join("\n");
 }

@@ -29,7 +29,7 @@ export function parseRules(text: string): Rule[] {
 
 /**
  * The tools this repo or session may still use: the first word of each line
- * of `.claude-allow-cli-tools`, and the CLAUDE_ALLOW_CLI_TOOLS value split on
+ * of `.agent-allow-cli-tools`, and the AGENT_ALLOW_CLI_TOOLS value split on
  * whitespace or colons.
  */
 export function allowList(file: string, env = ""): Set<string> {
@@ -142,6 +142,13 @@ export function suggest(line: string, tool: string, replacement: string) {
   return line.replace(word, (_, before, after) => before + replacement + after);
 }
 
+/**
+ * The command that adds the allow files to the exclude file of the repo, which
+ * all worktrees share. Not .gitignore: the list is for the user of this hook.
+ */
+const excludeCommand = (root: string) =>
+  `echo '.agent-allow-*' >> "$(git -C "${root}" rev-parse --path-format=absolute --git-path info/exclude)"`;
+
 /** The reason the model reads when the call is blocked. */
 export function blockMessage(line: string, rule: Rule, root: string): string {
   const suggested = suggest(line, rule.tool, rule.replacement);
@@ -150,7 +157,8 @@ export function blockMessage(line: string, rule: Rule, root: string): string {
     ...(suggested ? [`  suggested: ${suggested}`] : []),
     "",
     "Allow it anyway with one of:",
-    `  * add "${rule.tool}" to ${root}/.claude-allow-cli-tools (persistent, per-repo)`,
-    `  * set CLAUDE_ALLOW_CLI_TOOLS=${rule.tool} (one-off, colon-separated)`,
+    `  * add "${rule.tool}" to ${root}/.agent-allow-cli-tools (persistent, per-repo),`,
+    `    and keep it out of git: ${excludeCommand(root)}`,
+    `  * set AGENT_ALLOW_CLI_TOOLS=${rule.tool} (one-off, colon-separated)`,
   ].join("\n");
 }

@@ -37,7 +37,7 @@ Supports [Binary scan](implementation.md#binary-scan).
 
 ## Delegating the binary verdict
 
-An earlier version blocked every newly added binary outright, on the reasoning that an unreadable file cannot be cleared. That blocks an ordinary PNG, and it pushed every committed image, font and icon into `.claude-allow-secrets`.
+An earlier version blocked every newly added binary outright, on the reasoning that an unreadable file cannot be cleared. That blocks an ordinary PNG, and it pushed every committed image, font and icon into `.agent-allow-secrets`.
 
 `betterleaks dir` reads binaries, so the hook can hand it the paths git selected and block only on a finding. Measured with the shipped config:
 

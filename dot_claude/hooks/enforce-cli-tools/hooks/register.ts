@@ -14,11 +14,11 @@ export const register: Register = (on) => {
     // inline. A missing file reads as "", which allows.
     const rules = await $.fs.read(`${$.plugin.root}/rules`).catch(() => "");
     const allowFile = await $.fs
-      .read(`${root}/.claude-allow-cli-tools`)
+      .read(`${root}/.agent-allow-cli-tools`)
       .catch(() => "");
     const allowed = allowList(
       allowFile,
-      await $.env.get("CLAUDE_ALLOW_CLI_TOOLS"),
+      await $.env.get("AGENT_ALLOW_CLI_TOOLS"),
     );
     const rule = violation(e.command, parseRules(rules), allowed);
     return rule ? { deny: blockMessage(e.command, rule, root) } : next(e);

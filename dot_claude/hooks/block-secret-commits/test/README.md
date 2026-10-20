@@ -23,7 +23,7 @@ If betterleaks is missing, the check prints `skip` for the other cases.
 - A secret inside a `.png` and inside a `.pdf` must block. The default config exempts these extensions, so they block only because the hook scans a copy with a neutral name.
 - A binary named `we ird".dat` must block, which proves that the `-z` parse keeps a space and a quote.
 - A modified tracked binary must allow, because `--diff-filter=A` covers added files only.
-- `.claude-allow-secrets` must exempt a binary.
+- `.agent-allow-secrets` must exempt a binary.
 
 The fixtures hold a NUL byte. That makes git report the blob as binary, which is the same test that betterleaks uses to skip the file, so the check exercises this match.
 
@@ -40,7 +40,7 @@ Run the check after each edit to `../conf/betterleaks.toml`. A config error stop
 - A staged secret blocks a commit, and does not block `git add`.
 - `git add hooks/block-secret-commits/test` and `git add .git/hooks/commit-msg` must allow: `commit` in a path is not the subcommand. `git -C . commit` must block.
 - Clean content, an empty stage, an unstaged secret, a folder that is not a repo, and an unrelated command must allow.
-- The message must name the rule, file, and line, give the fingerprint, keep the secret value out, offer `.betterleaksignore`, and mark `.claude-allow-secrets` as the last resort.
+- The message must name the rule, file, and line, give the fingerprint, keep the secret value out, offer `.betterleaksignore`, and mark `.agent-allow-secrets` as the last resort, with the command that adds it to the exclude file of the repo.
 - stdout must stay empty on a block and on an allow, because Codex reports any stdout as a failed hook.
 
 ## git commit -a
@@ -50,7 +50,7 @@ Run the check after each edit to `../conf/betterleaks.toml`. A config error stop
 
 ## Allowlist
 
-- A path, a basename, and `CLAUDE_ALLOW_SECRETS` must each exempt a content finding. The basename case also clears the `secret-filename` finding on `config/prod.env`.
+- A path, a basename, and `AGENT_ALLOW_SECRETS` must each exempt a content finding. The basename case also clears the `secret-filename` finding on `config/prod.env`.
 - A second file that is not in the list must still block.
 
 ## pi.ts

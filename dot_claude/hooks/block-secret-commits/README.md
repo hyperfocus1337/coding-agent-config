@@ -135,16 +135,22 @@ One entry clears one secret on one line, so a file holding five secrets needs fi
 
 ### 3. Per-repo allowlist file (a binary scan block)
 
-Create a `.claude-allow-secrets` file in the repo root listing the file(s) you intend to commit, one per line. An entry matches either a repo-relative path or a bare basename. The hook ignores blank lines and lines that start with `#`. A `#` after a path is part of the entry, so put a comment on its own line:
+Create a `.agent-allow-secrets` file in the repo root listing the file(s) you intend to commit, one per line. An entry matches either a repo-relative path or a bare basename. The hook ignores blank lines and lines that start with `#`. A `#` after a path is part of the entry, so put a comment on its own line:
 
 ```sh
-# .claude-allow-secrets
+# .agent-allow-secrets
 # A keystore fixture that the binary scan blocks.
 test/fixtures/keystore.p12
 # A blob that betterleaks cannot clear.
 build/assets.bin
 # A bare basename: each file named .pgpass, in any folder.
 .pgpass
+```
+
+The list is for the user of this hook, so keep the file out of git with the exclude file of the repo, not `.gitignore`, which the team shares. One line covers the allow files of both guards, and all worktrees share the exclude file:
+
+```sh
+echo '.agent-allow-*' >> "$(git rev-parse --path-format=absolute --git-path info/exclude)"
 ```
 
 This list is the only mechanism that covers the binary scan, because that scan reports no stable fingerprint to write down. See [Why this list exists at all](docs/implementation.md#why-this-list-exists-at-all).
@@ -155,10 +161,10 @@ For a content finding this is the last resort, because the exemption is invisibl
 
 ### 4. Environment variable
 
-Set `CLAUDE_ALLOW_SECRETS` to the file(s) to exempt, whitespace- or colon-separated, using the same path-or-basename matching and covering the same checks:
+Set `AGENT_ALLOW_SECRETS` to the file(s) to exempt, whitespace- or colon-separated, using the same path-or-basename matching and covering the same checks:
 
 ```sh
-CLAUDE_ALLOW_SECRETS=test/fixtures/keystore.p12:.pgpass
+AGENT_ALLOW_SECRETS=test/fixtures/keystore.p12:.pgpass
 ```
 
 This is best for a one-off or session-scoped skip that leaves no trace in the repo.

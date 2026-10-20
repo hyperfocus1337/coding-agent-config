@@ -58,7 +58,7 @@ await check("all turns every hook off, then on, and keeps other names", () => {
 await check("a guard has no toggle", () => {
   const { value, text } = toggle(undefined, "enforce-cli-tools");
   assert.equal(value, undefined);
-  assert.ok(text.includes("is a guard") && text.includes(".claude-allow"));
+  assert.ok(text.includes("is a guard") && text.includes(".agent-allow"));
 });
 await check("an unknown name changes nothing", () => {
   const { value, text } = toggle("lint-code", "lint");

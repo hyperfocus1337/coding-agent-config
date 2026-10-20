@@ -123,14 +123,14 @@ await check("allowlist: file and env", () => {
 
 // A scratch repo with an allowlist file, for the adapters.
 const repo = fs.mkdtempSync(path.join(os.tmpdir(), "enforce-cli-tools-"));
-fs.writeFileSync(path.join(repo, ".claude-allow-cli-tools"), "yarn\n");
+fs.writeFileSync(path.join(repo, ".agent-allow-cli-tools"), "yarn\n");
 
 // command.ts: exit 2 with the message on stderr, exit 0 and silence otherwise.
 const runCommand = (command: string) =>
   spawnSync(process.execPath, [path.join(hook, "command.ts")], {
     input: JSON.stringify({ cwd: repo, tool_input: { command } }),
     encoding: "utf8",
-    env: { ...process.env, CLAUDE_PROJECT_DIR: "", CLAUDE_ALLOW_CLI_TOOLS: "" },
+    env: { ...process.env, CLAUDE_PROJECT_DIR: "", AGENT_ALLOW_CLI_TOOLS: "" },
   });
 await check("command.ts: blocks npm", () => {
   const ran = runCommand("npm i");
@@ -157,7 +157,8 @@ const piCall = (toolName: string, command: string) =>
 await check("pi.ts: blocks npm with the message", () => {
   const result = piCall("bash", "npm i") as { block: boolean; reason: string };
   assert.equal(result.block, true);
-  assert.match(result.reason, new RegExp(`${repo}/.claude-allow-cli-tools`));
+  assert.match(result.reason, new RegExp(`${repo}/.agent-allow-cli-tools`));
+  assert.match(result.reason, /--git-path info\/exclude/);
 });
 await check("pi.ts: allows yarn, and other tools", () => {
   assert.equal(piCall("bash", "yarn add x"), undefined);

@@ -40,7 +40,7 @@ Each hook has one TypeScript core with an adapter for each agent: a Claude Code 
 
 **One switch for the advisory hooks.** `CLAUDE_HOOKS_DISABLE` lists the hooks that are off, separated by spaces or commas. The formatters, `lint-code`, `lint-prose`, and the type checkers read it on each run, and do nothing when it names them. [`/toggle-hook`](toggle-hook/README.md) changes it in the running agent. In Codex, set it at launch. The guards do not read it, and `format-staged-files` removes it before it runs the formatters.
 
-**Per-repo escape hatches.** `block-secret-commits` reads `.claude-allow-secrets` and `.betterleaksignore`; `enforce-cli-tools` reads `.claude-allow-cli-tools`. Both also accept an environment variable for a one-off override. See the hook README for the exact names.
+**Per-repo escape hatches.** `block-secret-commits` reads `.agent-allow-secrets` and `.betterleaksignore`; `enforce-cli-tools` reads `.agent-allow-cli-tools`. Both also accept an environment variable for a one-off override. See the hook README for the exact names. Keep an `.agent-allow-*` file out of git with `.git/info/exclude`, not `.gitignore`.
 
 **A test that commits turns off `format-staged-files`.** In an agent session, an agent variable such as `CLAUDECODE=1` is set, so `git commit` in a fixture repository under `$HOME` starts the global pre-commit hook. The hook formats the fixture before the commit, so the commit does not hold the text that the test wrote. Put these lines in each test that commits, before the first commit. They turn off only this hook and keep the other global settings:
 

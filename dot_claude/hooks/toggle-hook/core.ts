@@ -25,9 +25,9 @@ export const HOOKS = [
  * name such as `constructor` does not find an Object.prototype property.
  */
 const GUARDS = new Map([
-  ["enforce-cli-tools", "Use .claude-allow-cli-tools in the repo."],
+  ["enforce-cli-tools", "Use .agent-allow-cli-tools in the repo."],
   ["block-commit-attribution", "Remove the trailer from the commit message."],
-  ["block-secret-commits", "Use .claude-allow-secrets in the repo."],
+  ["block-secret-commits", "Use .agent-allow-secrets in the repo."],
 ]);
 
 /** The hook names in a CLAUDE_HOOKS_DISABLE value: space or comma. */

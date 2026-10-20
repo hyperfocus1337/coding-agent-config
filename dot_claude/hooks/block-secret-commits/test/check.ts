@@ -207,11 +207,11 @@ if (haveBetterleaks) {
     allows(repo, "git commit -m x");
   });
 
-  await check("binary exempted by .claude-allow-secrets", () =>
+  await check("binary exempted by .agent-allow-secrets", () =>
     allows(
       mkrepo("binallow", {
         "payload.dat": secretBin,
-        ".claude-allow-secrets": "payload.dat\n",
+        ".agent-allow-secrets": "payload.dat\n",
       }),
       "git commit -m x",
     ),
@@ -374,9 +374,10 @@ if (haveBetterleaks) {
       /\* add the fingerprint above to .*\.betterleaksignore/,
     ),
   );
-  await check("msg    marks .claude-allow-secrets as the fallback", () =>
-    assert.match(message.stderr, /last resort/),
-  );
+  await check("msg    marks .agent-allow-secrets as the fallback", () => {
+    assert.match(message.stderr, /last resort/);
+    assert.match(message.stderr, /--git-path info\/exclude/);
+  });
   // Codex reports any stdout of a command hook as a failed hook.
   await check("stdout stays empty on block and on allow", () => {
     assert.equal(message.stdout, "");
@@ -411,7 +412,7 @@ if (haveBetterleaks) {
     allows(
       mkrepo("allowed-path", {
         "config/prod.env": secret,
-        ".claude-allow-secrets": "config/prod.env\n",
+        ".agent-allow-secrets": "config/prod.env\n",
       }),
       "git commit -m wip",
     ),
@@ -420,14 +421,14 @@ if (haveBetterleaks) {
     allows(
       mkrepo("allowed-base", {
         "config/prod.env": secret,
-        ".claude-allow-secrets": "# comment\n\nprod.env\n",
+        ".agent-allow-secrets": "# comment\n\nprod.env\n",
       }),
       "git commit -m wip",
     ),
   );
-  await check("allow  allowlisted by CLAUDE_ALLOW_SECRETS", () =>
+  await check("allow  allowlisted by AGENT_ALLOW_SECRETS", () =>
     allows(mkrepo("allowed-env", { "app.py": secret }), "git commit -m wip", {
-      CLAUDE_ALLOW_SECRETS: "other.txt:app.py",
+      AGENT_ALLOW_SECRETS: "other.txt:app.py",
     }),
   );
   await check("block  second file not allowlisted", () =>
@@ -435,7 +436,7 @@ if (haveBetterleaks) {
       mkrepo("allowed-partial", {
         "config/prod.env": secret,
         "app.py": secret,
-        ".claude-allow-secrets": "config/prod.env\n",
+        ".agent-allow-secrets": "config/prod.env\n",
       }),
       "git commit -m wip",
     ),

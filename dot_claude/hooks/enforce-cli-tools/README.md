@@ -77,19 +77,25 @@ If the rules file is missing or empty, the hook allows everything, so a half-dep
 
 Both overrides name the tool that stays allowed, so they never turn the whole hook off.
 
-**1. Allowlist file for each repo.** Create `.claude-allow-cli-tools` in the repo root, with one tool on each line. `#` comments and blank lines are ignored:
+**1. Allowlist file for each repo.** Create `.agent-allow-cli-tools` in the repo root, with one tool on each line. `#` comments and blank lines are ignored:
 
 ```sh
-# .claude-allow-cli-tools
+# .agent-allow-cli-tools
 npm # this client's repo is npm-only, package-lock.json is committed
 ```
 
-The file stays across sessions, and you can commit it so the whole team gets the exemption. Use it for a repo that does not use pnpm. The hook reads it from the session's project root: `$.session.root()` in Claude Code, the working directory in pi and omp, and `CLAUDE_PROJECT_DIR` or the payload `cwd` in Codex.
-
-**2. Environment variable.** Set `CLAUDE_ALLOW_CLI_TOOLS` to the tools to exempt, separated by whitespace or colons:
+The file stays across sessions. Use it for a repo that does not use pnpm. The exemption is for the user of this hook, so keep the file out of git with the exclude file of the repo, not `.gitignore`. One line covers the allow files of both guards, and all worktrees share the exclude file:
 
 ```sh
-CLAUDE_ALLOW_CLI_TOOLS=npm:yarn
+echo '.agent-allow-*' >> "$(git rev-parse --path-format=absolute --git-path info/exclude)"
+```
+
+The hook reads it from the session's project root: `$.session.root()` in Claude Code, the working directory in pi and omp, and `CLAUDE_PROJECT_DIR` or the payload `cwd` in Codex.
+
+**2. Environment variable.** Set `AGENT_ALLOW_CLI_TOOLS` to the tools to exempt, separated by whitespace or colons:
+
+```sh
+AGENT_ALLOW_CLI_TOOLS=npm:yarn
 ```
 
 Use it for a one-off or a session that must leave no trace in the repo.
@@ -101,7 +107,7 @@ Both overrides add to each other and apply to named tools only: an exemption for
 `settings.json` can deny commands directly (`"permissions": {"deny": ["Bash(npm:*)"]}`), and its matcher uses a real parser. This hook exists because a deny rule can only refuse:
 
 - It cannot name the replacement or suggest a corrected command.
-- It cannot be exempted for one repo: deny always wins over allow, so nothing can do what `.claude-allow-cli-tools` does.
+- It cannot be exempted for one repo: deny always wins over allow, so nothing can do what `.agent-allow-cli-tools` does.
 - pi, omp and Codex do not read it.
 
 If those three points stop mattering, a deny rule plus the line in `rules/tools.md` replaces this directory.

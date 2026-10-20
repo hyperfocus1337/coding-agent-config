@@ -20,6 +20,6 @@ It prints one `FAIL` line for each failed case, then `all pass` or the failure c
 
 **Adapters.**
 
-- `command.ts` runs as a child process: it exits 2 with the message on stderr for `npm i`, and it exits 0 with no output for a tool that the repo's `.claude-allow-cli-tools` file allows.
+- `command.ts` runs as a child process: it exits 2 with the message on stderr for `npm i`, and the message gives the command that adds the allow file to the exclude file of the repo, and it exits 0 with no output for a tool that the repo's `.agent-allow-cli-tools` file allows.
 - `pi.ts` runs with a stub `pi`.
 - `hooks/register.ts` runs with a stub `$` over the real files.

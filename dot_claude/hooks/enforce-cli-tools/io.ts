@@ -22,8 +22,8 @@ export function inputs(root: string) {
     // import.meta.url is the real path, also when pi loads pi.ts through a link.
     rules: parseRules(read(new URL("./rules", import.meta.url))),
     allowed: allowList(
-      read(join(root, ".claude-allow-cli-tools")),
-      process.env.CLAUDE_ALLOW_CLI_TOOLS,
+      read(join(root, ".agent-allow-cli-tools")),
+      process.env.AGENT_ALLOW_CLI_TOOLS,
     ),
   };
 }

@@ -66,7 +66,7 @@ export function nodeIo(root: string): Io {
 export function nodeSettings(root: string): Settings {
   return {
     root,
-    allow: process.env.CLAUDE_ALLOW_SECRETS,
+    allow: process.env.AGENT_ALLOW_SECRETS,
     // import.meta.url is the real path, also when pi loads pi.ts by setting.
     config: fileURLToPath(new URL("./conf/betterleaks.toml", import.meta.url)),
   };

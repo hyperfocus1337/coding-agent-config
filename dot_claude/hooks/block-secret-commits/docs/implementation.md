@@ -45,8 +45,8 @@ Both scans read the index. The hook runs before the command it guards, so at `gi
 
 Two sources feed one list, and both are additive:
 
-- `.claude-allow-secrets` in the repo root, one entry per line, with `#` comments and blank lines skipped.
-- `CLAUDE_ALLOW_SECRETS`, whitespace-separated or colon-separated, for a one-off skip that leaves no trace in the repo.
+- `.agent-allow-secrets` in the repo root, one entry per line, with `#` comments and blank lines skipped.
+- `AGENT_ALLOW_SECRETS`, whitespace-separated or colon-separated, for a one-off skip that leaves no trace in the repo.
 
 An entry matches either a repo-relative path or a bare basename. Both feed `allowed()` in the core, which is the single definition of "allowed" for the binary scan and the content scan alike, so one entry covers every check.
 
@@ -79,7 +79,7 @@ The name rules do not close this on their own. `pkcs12-file` is already in the u
 
 ### Why the verdict is delegated, not assumed
 
-Selecting that set is not the same as condemning it. An earlier version blocked every newly added binary outright, on the reasoning that an unreadable file cannot be cleared. That blocks an ordinary PNG, and it pushed every committed image, font and icon into `.claude-allow-secrets`.
+Selecting that set is not the same as condemning it. An earlier version blocked every newly added binary outright, on the reasoning that an unreadable file cannot be cleared. That blocks an ordinary PNG, and it pushed every committed image, font and icon into `.agent-allow-secrets`.
 
 `betterleaks dir` reads binaries, so the hook hands it exactly the paths git selected and blocks only on a finding. An ordinary image or a random blob passes; a binary holding a private key blocks even under an innocuous name, which no file-name rule would ever match. The earlier rejection of `dir` was measured over the whole repo and does not apply to an explicit path list. [The measurements](research.md#delegating-the-binary-verdict).
 
@@ -213,7 +213,7 @@ The report is JSON on stdout (`-r -`), and the core parses it only on exit code 
 
 The command is read for `-a` only when the first scan is clean, so a blocking scan never runs the second one.
 
-Findings in an allowlisted file are dropped before the hook decides, which is what makes `.claude-allow-secrets` cover the content scan as well as the binary scan.
+Findings in an allowlisted file are dropped before the hook decides, which is what makes `.agent-allow-secrets` cover the content scan as well as the binary scan.
 
 ## Cost
 
