@@ -226,9 +226,11 @@ function repo(name: string, files: Record<string, string>): string {
   fs.mkdirSync(dir, { recursive: true });
   for (const [file, text] of Object.entries(files))
     fs.writeFileSync(path.join(dir, file), text);
+  // With maintenance.auto on, the commit starts a background maintenance run
+  // whose maintenance.lock in .git/objects can change the object count.
   sh(
     dir,
-    "git init -q . && git add -A && git -c user.name=t -c user.email=t@t commit -q --no-verify --allow-empty -m init",
+    "git init -q . && git add -A && git -c user.name=t -c user.email=t@t -c maintenance.auto=false commit -q --no-verify --allow-empty -m init",
   );
   return dir;
 }
