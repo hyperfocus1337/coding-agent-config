@@ -58,7 +58,7 @@ The list is still the right answer for one content case. A `secret-filename` exe
 
 `.betterleaksignore` is keyed by fingerprint alone: only an exact `file:rule:line` entry suppresses anything, and a bare path or a glob matches nothing ([measured](research.md#what-betterleaksignore-accepts)). Two properties of the binary scan put it outside that keying:
 
-- The scan hands betterleaks a **copy at a neutral name** under a fresh `mktemp -d`, for the reason in [The extension allowlist](#the-extension-allowlist). A `dir` finding does carry a fingerprint, but it carries the path it was given, so the fingerprint is `/tmp/tmp.XXXXXX/0.dat:private-key:1` and it changes on every run. Passing the real path instead would restore the fingerprint and lose the extension-allowlist defeat, which is the more valuable half.
+- The scan hands betterleaks a **copy at a neutral name** in a new temporary folder, for the reason in [The extension allowlist](#the-extension-allowlist). A `dir` finding does carry a fingerprint, but it carries the path it was given, so the fingerprint is `<temporary folder>/block-secret-commits-XXXXXX/0.dat:private-key:1` and it changes on every run. Passing the real path instead would restore the fingerprint and lose the extension-allowlist defeat, which is the more valuable half.
 - The fail-closed paths produce **no finding**, so there is no fingerprint to write: betterleaks missing, the file unreadable, the file staged and then removed from the worktree, or the file above `COPY_MAX` and unscannable under its own name.
 
 `[allowlist] paths` in a `.betterleaks.toml` is the one native mechanism that is path-keyed and line-independent. It still cannot exempt a binary. The scan matches `paths` against the copy at `<temporary folder>/<n>.dat`, never against the path written in the config, and the hook passes `--config` only when `betterleaks config path` answers `default`, so a repo adding that file drops the shipped rules rather than extending them.
@@ -99,7 +99,7 @@ Upstream sets these to suppress false positives on compressed bytes. The cost is
 
 Only the file name decides, so the hook copies each candidate to a neutral name and scans the copy. Rule selection and a symlink were both tried and neither defeats the allowlist; a per-file `betterleaks stdin` does, but it multiplies the 4 s cap by the number of files, while one batched `dir` keeps a single bound. Scanning 300 real images, fonts and PDFs under neutral names produced no finding, so the copy does not reintroduce what the allowlist suppresses. [The measurements](research.md#defeating-the-extension-allowlist).
 
-`COPY_MAX` (100 MiB) stops the copy from dominating on large media. A file above it keeps its own path and stays exempt if its extension is listed. Closing that remainder would mean copying a file large enough to fill `/tmp`.
+`COPY_MAX` (100 MiB) stops the copy from dominating on large media. A file above it keeps its own path and stays exempt if its extension is listed. Closing that remainder would mean copying a file large enough to fill the temporary folder.
 
 A fixture may use any extension, because the name no longer decides.
 

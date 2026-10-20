@@ -96,19 +96,21 @@ const noNode = bin("no-node", tools);
 const oldNode = bin("old-node", { ...tools, node: "#!/bin/sh\nexit 1\n" });
 
 /** Runs guard.sh on a Bash payload, as Claude Code does. */
-function hook(repo: string, command: string, env: Record<string, string> = {}) {
-  const ran = spawnSync("/bin/sh", [GUARD], {
+const hook = (
+  repo: string,
+  command: string,
+  env: Record<string, string> = {},
+) =>
+  spawnSync("/bin/sh", [GUARD], {
     input: JSON.stringify({ tool_name: "Bash", tool_input: { command } }),
     env: { ...process.env, CLAUDE_PROJECT_DIR: repo, ...env },
     encoding: "utf8",
   });
-  return { code: ran.status, stdout: ran.stdout, stderr: ran.stderr };
-}
 
 const blocks = (repo: string, command: string, env?: Record<string, string>) =>
-  assert.equal(hook(repo, command, env).code, 2);
+  assert.equal(hook(repo, command, env).status, 2);
 const allows = (repo: string, command: string, env?: Record<string, string>) =>
-  assert.equal(hook(repo, command, env).code, 0);
+  assert.equal(hook(repo, command, env).status, 0);
 
 // A NUL byte makes git report a blob as binary, which is the same test
 // betterleaks uses to skip it in git mode. The token is a random string
@@ -136,7 +138,7 @@ for (const [what, PATH] of [
 ]) {
   await check(`guard: blocks a commit when ${what}`, () => {
     const ran = hook(plain, "git commit -m x", { PATH: PATH! });
-    assert.equal(ran.code, 2);
+    assert.equal(ran.status, 2);
     assert.match(ran.stderr, /could not scan this commit/);
   });
   await check(`guard: allows other commands when ${what}`, () => {
@@ -180,18 +182,16 @@ if (haveBetterleaks) {
       mkrepo("binsecret", { "payload.dat": secretBin }),
       "git commit -m x",
     );
-    assert.equal(ran.code, 2);
+    assert.equal(ran.status, 2);
     assert.match(ran.stderr, /payload\.dat/);
   });
 
   // The default config exempts these extensions from every rule, so they
   // block only because the hook scans a copy with a neutral name.
-  await check("secret inside a .png blocked", () =>
-    blocks(mkrepo("binpng", { "logo.png": secretBin }), "git commit -m x"),
-  );
-  await check("secret inside a .pdf blocked", () =>
-    blocks(mkrepo("binpdf", { "notes.pdf": secretBin }), "git commit -m x"),
-  );
+  for (const name of ["logo.png", "notes.pdf"])
+    await check(`secret inside ${name} blocked`, () =>
+      blocks(mkrepo(name, { [name]: secretBin }), "git commit -m x"),
+    );
 
   // A name with a space and a quote must survive the -z parse.
   await check("binary with space and quote blocked", () =>
@@ -215,11 +215,6 @@ if (haveBetterleaks) {
       }),
       "git commit -m x",
     ),
-  );
-  await check("binary exempted by CLAUDE_ALLOW_SECRETS", () =>
-    allows(mkrepo("binenv", { "payload.dat": secretBin }), "git commit -m x", {
-      CLAUDE_ALLOW_SECRETS: "payload.dat",
-    }),
   );
 
   // --- Name rule ---
@@ -270,7 +265,7 @@ if (haveBetterleaks) {
 
   // Every secret name, staged together, must be named in one block.
   const named = hook(mkrepo("names", placeholders(names)), "git commit -m x");
-  await check("secret file names blocked", () => assert.equal(named.code, 2));
+  await check("secret file names blocked", () => assert.equal(named.status, 2));
   await check("every secret name appears in the block message", () =>
     assert.deepEqual(
       names.filter((name) => !named.stderr.includes(name)),
@@ -300,15 +295,6 @@ if (haveBetterleaks) {
           "notes.gpg",
         ]),
       ),
-      "git commit -m x",
-    ),
-  );
-  await check(".env exempted by .claude-allow-secrets", () =>
-    allows(
-      mkrepo("nameallow", {
-        ".env": "placeholder\n",
-        ".claude-allow-secrets": ".env\n",
-      }),
       "git commit -m x",
     ),
   );

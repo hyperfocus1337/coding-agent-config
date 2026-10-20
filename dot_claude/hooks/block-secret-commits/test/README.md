@@ -23,7 +23,7 @@ If betterleaks is missing, the check prints `skip` for the other cases.
 - A secret inside a `.png` and inside a `.pdf` must block. The default config exempts these extensions, so they block only because the hook scans a copy with a neutral name.
 - A binary named `we ird".dat` must block, which proves that the `-z` parse keeps a space and a quote.
 - A modified tracked binary must allow, because `--diff-filter=A` covers added files only.
-- `.claude-allow-secrets` and `CLAUDE_ALLOW_SECRETS` must each exempt a binary.
+- `.claude-allow-secrets` must exempt a binary.
 
 The fixtures hold a NUL byte. That makes git report the blob as binary, which is the same test that betterleaks uses to skip the file, so the check exercises this match.
 
@@ -31,7 +31,6 @@ The fixtures hold a NUL byte. That makes git report the blob as binary, which is
 
 - One repo stages a file for each of the 39 secret names. The commit must block, and each name must appear in the message, so a rule that stops to match cannot pass on the exit code alone. Add a name to the `names` list when you change the `path` pattern in `../conf/betterleaks.toml`.
 - The templates (`.env.example` and the others), ordinary files, `id_rsa.pub`, `server.crt`, and `notes.gpg` must allow.
-- `.claude-allow-secrets` must exempt `.env`.
 - A repo with its own `.betterleaks.toml` keeps it, so the shipped name rule does not apply.
 
 Run the check after each edit to `../conf/betterleaks.toml`. A config error stops betterleaks, and the scan then fails open with no sign.
@@ -51,7 +50,7 @@ Run the check after each edit to `../conf/betterleaks.toml`. A config error stop
 
 ## Allowlist
 
-- A path, a basename, and `CLAUDE_ALLOW_SECRETS` must each exempt a content finding.
+- A path, a basename, and `CLAUDE_ALLOW_SECRETS` must each exempt a content finding. The basename case also clears the `secret-filename` finding on `config/prod.env`.
 - A second file that is not in the list must still block.
 
 ## pi.ts

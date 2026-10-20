@@ -8,7 +8,7 @@
  * omp). There is no mod: the mod API cannot copy a binary file.
  */
 
-export interface Ran {
+interface Ran {
   /** -1 when the program was stopped by a signal. */
   exitCode: number;
   stdout: string;
@@ -71,7 +71,7 @@ const FLAGS = [
  * before it. So `git -C . commit` matches, and `git add .git/hooks/commit-msg`
  * and `hooks/block-secret-commits/` do not.
  */
-export function isCommit(command: string): boolean {
+function isCommit(command: string): boolean {
   return (
     command.includes("git") && /(^|\s)commit([^A-Za-z0-9_-]|$)/.test(command)
   );
@@ -82,20 +82,9 @@ export function isCommit(command: string): boolean {
  * the hook has run. The text from `-m ` or `--message` on is not read, so a
  * message that holds `-a` is not a flag.
  */
-export function stagesAll(command: string): boolean {
+function stagesAll(command: string): boolean {
   const flags = command.split("-m ")[0]!.split("--message")[0]!;
   return /(^|\s)(-[a-zA-Z]*a|--all(\s|$))/.test(flags);
-}
-
-/** The entries of .claude-allow-secrets and CLAUDE_ALLOW_SECRETS. */
-export function allowList(
-  file: string | undefined,
-  env: string | undefined,
-): string[] {
-  const lines = (file ?? "")
-    .split("\n")
-    .filter((line) => line !== "" && !line.startsWith("#"));
-  return [...lines, ...(env ?? "").split(/[\s:]+/).filter(Boolean)];
 }
 
 /** A path is allowed when the list holds the path or its basename. */
@@ -111,40 +100,43 @@ export async function check(
   io: Io,
   settings: Settings,
 ): Promise<Verdict> {
-  const verdict: Verdict = { warnings: [] };
-  if (!isCommit(command)) return verdict;
+  const warnings: string[] = [];
+  if (!isCommit(command)) return { warnings };
   let setup: Setup;
   try {
     setup = await prepare(io, settings);
     const offenders = await scanBinary(io, setup);
     if (offenders.length)
-      return { ...verdict, block: binaryMessage(offenders, settings.root) };
+      return { block: binaryMessage(offenders, settings.root), warnings };
   } catch (error) {
     return {
-      ...verdict,
       block: `Blocked: the binary scan of this commit failed, so it could not clear the new binary files: ${(error as Error).message}`,
+      warnings,
     };
   }
   try {
-    verdict.block = await scanContent(
+    const block = await scanContent(
       command,
       io,
       setup,
       settings.root,
-      verdict.warnings,
+      warnings,
     );
+    return { block, warnings };
   } catch {
     // Fail open: a broken content scan must not block every commit.
+    return { warnings };
   }
-  return verdict;
 }
 
 /** The allowlist, and betterleaks with the config to pass, if installed. */
 async function prepare(io: Io, settings: Settings) {
-  const list = allowList(
-    await io.read(`${settings.root}/.claude-allow-secrets`),
-    settings.allow,
-  );
+  // .claude-allow-secrets, without blank and `#` lines, and CLAUDE_ALLOW_SECRETS.
+  const file = (await io.read(`${settings.root}/.claude-allow-secrets`)) ?? "";
+  const list = [
+    ...file.split("\n").filter((line) => line && !line.startsWith("#")),
+    ...(settings.allow ?? "").split(/[\s:]+/).filter(Boolean),
+  ];
   // Ask betterleaks which config it would take. "default" means that nothing
   // selected one, so this hook may pass its own.
   const picked = await io.run(["betterleaks", "config", "path"]);
@@ -176,12 +168,13 @@ async function scanBinary(io: Io, setup: Setup): Promise<string[]> {
     .filter((record) => record.startsWith("-\t-\t"))
     .map((record) => record.slice(4))
     .filter((path) => !allowed(setup.list, path));
-  if (!binaries.length) return [];
+  // No scanner: no file can be cleared.
+  if (!setup.betterleaks) return binaries;
   const offenders: string[] = [];
   const real: { path: string; size: number }[] = [];
   for (const path of binaries) {
-    const size = setup.betterleaks ? await io.size(path) : undefined;
-    // Unreadable, removed from the worktree, or no scanner: it cannot be cleared.
+    const size = await io.size(path);
+    // Unreadable or removed from the worktree: it cannot be cleared.
     if (size === undefined) offenders.push(path);
     else real.push({ path, size });
   }
