@@ -9,6 +9,9 @@
 #   4. node over each test/check.ts of both hook folders and over
 #      dot_codex/hooks/test/apply-patch.ts.
 #
+# A failed step does not stop the later steps. The script lists the failed
+# steps at the end and exits 1.
+#
 # Both sets of types differ per machine, so the tsconfigs are generated here.
 set -euo pipefail
 shopt -s nullglob
@@ -52,6 +55,15 @@ PI_PACKAGE="$("${REPO}/scripts/extensions/pi/package.sh")"
 WORK="$(mktemp -d)"
 trap 'rm -rf "${WORK}"' EXIT
 
+FAILED=()
+# Runs one step and records its name when it fails.
+step() {
+  local name="$1"
+  shift
+  echo "==> ${name}"
+  "$@" || FAILED+=("${name}")
+}
+
 # The engine's own tsconfig sets the options and the type roots of a mod. A mod
 # imports ../core.ts, so core.ts must also compile with no Node and no DOM.
 cat >"${WORK}/mod.tsconfig.json" <<JSON
@@ -81,28 +93,34 @@ cat >"${WORK}/node.tsconfig.json" <<JSON
 }
 JSON
 
-echo "==> tsc mods ($(head -1 "${CLAUDE_CODE_TYPES}/claude-code/index.d.ts" | sed 's|^// ||'))"
-tsc -p "${WORK}/mod.tsconfig.json"
-echo "==> tsc pi, omp, Codex, and git adapters"
-tsc -p "${WORK}/node.tsconfig.json"
+step "tsc mods ($(head -1 "${CLAUDE_CODE_TYPES}/claude-code/index.d.ts" | sed 's|^// ||'))" \
+  tsc -p "${WORK}/mod.tsconfig.json"
+step "tsc pi, omp, Codex, and git adapters" tsc -p "${WORK}/node.tsconfig.json"
 
 # validate reads .claude-plugin/, which chezmoi names dot_claude-plugin/ in the
 # repository, so it runs on a copy.
-for manifest in "${HOOKS}"/*/dot_claude-plugin/plugin.json; do
-  source="$(dirname "$(dirname "${manifest}")")"
-  hook="$(basename "${source}")"
-  echo "==> claude plugin validate ${hook}"
-  cp -R "${source}" "${WORK}/${hook}"
+validate() {
+  local hook="$1" report
+  cp -R "${HOOKS}/${hook}" "${WORK}/${hook}"
   mv "${WORK}/${hook}/dot_claude-plugin" "${WORK}/${hook}/.claude-plugin"
   report="$(claude plugin validate "${WORK}/${hook}" 2>&1)" || {
     printf '%s\n' "${report}" >&2
-    exit 1
+    return 1
   }
+}
+for manifest in "${HOOKS}"/*/dot_claude-plugin/plugin.json; do
+  hook="$(basename "$(dirname "$(dirname "${manifest}")")")"
+  step "claude plugin validate ${hook}" validate "${hook}"
 done
 
+# A subshell, so that the cd does not reach the later steps.
+test_hook() (cd "$1" && PI_PACKAGE="${PI_PACKAGE}" node test/check.ts)
 for check in "${HOOKS}"/*/test/check.ts "${GIT_HOOKS}"/*/test/check.ts; do
-  echo "==> ${check#"${REPO}"/}"
-  (cd "${check%/test/check.ts}" && PI_PACKAGE="${PI_PACKAGE}" node test/check.ts)
+  step "${check#"${REPO}"/}" test_hook "${check%/test/check.ts}"
 done
-echo "==> dot_codex/hooks/test/apply-patch.ts"
-node "${CODEX_HOOKS}/test/apply-patch.ts"
+step "dot_codex/hooks/test/apply-patch.ts" node "${CODEX_HOOKS}/test/apply-patch.ts"
+
+if ((${#FAILED[@]})); then
+  printf 'FAILED: %s\n' "${FAILED[@]}" >&2
+  exit 1
+fi
