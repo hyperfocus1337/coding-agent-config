@@ -14,7 +14,7 @@ The design behind this layout is in [`docs/hooks/`](../../../docs/hooks/README.m
 
 ## How it works
 
-The hook checks only the **command position**, never a substring or a word anywhere in the command. It first blanks quoted spans, so a separator in a string cannot split the command. It then splits the rest into segments on `&`, `|`, `;`, newlines, and the brackets that open a subshell, a group or a substitution: what runs inside `$(...)`, backticks or `{ ...; }` is its own command, wherever it sits in the line. In each segment the hook steps over `VAR=value` assignments and the usual wrappers (`sudo`, `env`, `command`, `builtin`, `exec`, `nohup`, `time`, `timeout`, `nice`, `stdbuf`, `xargs`), and after a wrapper also over its flags and their values. It then removes a leading path from the next word and compares it with the rules. These commands block:
+The hook checks only the **command position**, never a substring or a word anywhere in the command. It first drops the body of each heredoc with a quoted delimiter, then blanks quoted spans, so a separator in a string cannot split the command. It then splits the rest into segments on `&`, `|`, `;`, newlines, and the brackets that open a subshell, a group or a substitution: what runs inside `$(...)`, backticks or `{ ...; }` is its own command, wherever it sits in the line. In each segment the hook steps over `VAR=value` assignments and the usual wrappers (`sudo`, `env`, `command`, `builtin`, `exec`, `nohup`, `time`, `timeout`, `nice`, `stdbuf`, `xargs`), and after a wrapper also over its flags and their values. It then removes a leading path from the next word and compares it with the rules. These commands block:
 
 ```sh
 npm i                  # plain invocation
@@ -41,7 +41,7 @@ cat package-lock.json
 npmrc-check
 ```
 
-A heredoc with a quoted delimiter (`<<'EOF'`, `<<"EOF"`, `<<\EOF`) runs nothing, so the hook drops its body before the split. Two gaps remain:
+A heredoc with a quoted delimiter (`<<'EOF'`, `<<"EOF"`, `<<\EOF`) runs nothing, so the hook drops its body before the quote pass. Else an apostrophe in its text pairs with a quote lines away. Two gaps remain:
 
 - An unquoted heredoc body can run `$(...)`, so the hook still splits it naively. A separator in its text can start a false segment and block. The overrides below clear that case.
 - A banned tool inside a quoted span is invisible, so `sh -c 'npm i'` passes.
@@ -116,7 +116,7 @@ The hook fails open in every agent, so a broken hook never blocks work:
 
 ## Dependencies
 
-The mod needs Claude Code 2.1.296 or later, the oldest version tested. `pi.ts` and `command.ts` need Node 23.6 or later, which runs `.ts` files without a flag. The Codex entry starts with `command -v node || exit 0`, so a machine without Node is not blocked.
+The mod needs Claude Code 2.1.296 or later, the oldest version tested. pi and omp load `pi.ts` in their own runtime. `command.ts` needs Node 23.6 or later, which runs `.ts` files without a flag. The Codex entry starts with `command -v node || exit 0`, so a machine without Node is not blocked.
 
 Codex runs a hook only after you trust its entry. After the change from `hook.sh` to `command.ts`, trust the hooks again in the Codex TUI, on the host and in the devcontainer. See [`docs/agents/codex.md`](../../../docs/agents/codex.md#trust).
 

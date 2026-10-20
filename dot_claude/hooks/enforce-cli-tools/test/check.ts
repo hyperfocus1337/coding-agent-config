@@ -20,18 +20,18 @@ import {
 import { register } from "../hooks/register.ts";
 import extension from "../pi.ts";
 
-const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
+const hook = path.dirname(import.meta.dirname);
 const rules = parseRules(fs.readFileSync(path.join(hook, "rules"), "utf8"));
-const none = allowList();
+const none = new Set<string>();
 
 let failures = 0;
-function check(what: string, run: () => void | Promise<void>) {
-  return Promise.resolve()
-    .then(run)
-    .catch((error: unknown) => {
-      failures += 1;
-      console.error(`FAIL ${what}\n  ${(error as Error).message}`);
-    });
+async function check(what: string, run: () => void | Promise<void>) {
+  try {
+    await run();
+  } catch (error) {
+    failures += 1;
+    console.error(`FAIL ${what}\n  ${(error as Error).message}`);
+  }
 }
 
 const blocks = (line: string) =>

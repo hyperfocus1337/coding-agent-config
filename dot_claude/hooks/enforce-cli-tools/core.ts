@@ -32,7 +32,7 @@ export function parseRules(text: string): Rule[] {
  * of `.claude-allow-cli-tools`, and the CLAUDE_ALLOW_CLI_TOOLS value split on
  * whitespace or colons.
  */
-export function allowList(file = "", env = ""): Set<string> {
+export function allowList(file: string, env = ""): Set<string> {
   const fromFile = file
     .split("\n")
     .map((line) => line.trim().split(/\s+/)[0] ?? "")
