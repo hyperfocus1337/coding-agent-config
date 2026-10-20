@@ -1,12 +1,12 @@
 /**
- * pi and omp extension: runs pyrefly on the project when a run ends. On
- * errors it sends them to the model as a follow-up message that starts one
- * more run, so the model fixes them. The end of that run passes without a check: pi and
- * omp have no `stop_hook_active`, so this flag is the loop guard. Loaded
- * through the `extensions` setting of each agent.
+ * pi extension: runs pyrefly on the project when a run ends. On errors it
+ * sends them to the model as a follow-up message that starts one more run,
+ * so the model fixes them. The end of that run passes without a check: pi
+ * has no `stop_hook_active`, so this flag is the loop guard. Loaded through
+ * the `extensions` setting of pi. omp loads ./omp.ts instead.
  *
- * `agent_end`, not pi's `agent_before_settle`: omp 18.10.3 does not have that
- * event, and both agents have `sendMessage` with `triggerTurn`.
+ * pi awaits `agent_end`, and a message that a handler sends from it with
+ * `triggerTurn` starts one more run.
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -21,8 +21,6 @@ export default function (pi: ExtensionAPI) {
       continued = false;
       return;
     }
-    // omp sets willContinue when the run goes on by itself: check at the end.
-    if ((event as { willContinue?: boolean }).willContinue) return;
     // A run that you stopped, or that failed, does not start another.
     const last = event.messages.at(-1);
     if (

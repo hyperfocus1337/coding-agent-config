@@ -12,6 +12,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import extension from "../pi.ts";
+import ompExtension from "../omp.ts";
 
 const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
 
@@ -246,15 +247,49 @@ await check("pi.ts: the next run is checked again", async () => {
   assert.equal(sent.length, 2);
   await end(); // the guard again
 });
-await check(
-  "pi.ts: a stopped or failed run, and one that goes on, start nothing",
-  async () => {
-    await end("aborted");
-    await end("error");
-    await end("stop", { willContinue: true });
-    assert.equal(sent.length, 2);
+await check("pi.ts: a stopped or failed run starts nothing", async () => {
+  await end("aborted");
+  await end("error");
+  assert.equal(sent.length, 2);
+});
+
+// --- omp.ts, with a stub ---
+
+let ompHandler: Handler | undefined;
+const registered: string[] = [];
+ompExtension({
+  on: (name: string, handler: Handler) => {
+    registered.push(name);
+    ompHandler = handler;
   },
+} as never);
+const stop = (stopHookActive = false, stopReason = "stop") =>
+  ompHandler?.(
+    {
+      type: "session_stop",
+      stop_hook_active: stopHookActive,
+      last_assistant_message: { role: "assistant", stopReason },
+    },
+    { cwd: `${repo}/src` },
+  );
+await check("omp.ts: registers session_stop only", () =>
+  assert.deepEqual(registered, ["session_stop"]),
 );
+await check("omp.ts: continues with the errors as context", async () => {
+  const result = (await stop()) as {
+    continue?: boolean;
+    additionalContext?: string;
+  };
+  assert.equal(result.continue, true);
+  assert.ok(result.additionalContext?.includes(`tsc error in ${repo}`));
+});
+await check("omp.ts: the stop after a continuation passes", async () =>
+  assert.equal(await stop(true), undefined),
+);
+await check("omp.ts: a stopped or failed run starts nothing", async () => {
+  assert.equal(await stop(false, "aborted"), undefined);
+  assert.equal(await stop(false, "error"), undefined);
+});
 
 for (const name of Object.keys(process.env))
   if (!(name in saved)) delete process.env[name];

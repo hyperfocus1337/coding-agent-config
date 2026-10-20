@@ -22,9 +22,13 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 **Decision:** the `env` block of `settings.json.tmpl` sets `CLAUDE_CODE_PLUGIN_DIRS` to the list of mod folders. **Why:** it needs no marketplace and no install step. chezmoi deploys the folder, and the next session loads it. Each folder keeps the default `hooks/hooks.json` and `hooks/register.ts`, not a `"hooks"` field in `plugin.json`.
 
-## pi and omp load `pi.ts` through the `extensions` setting
+## pi and omp load their files through the `extensions` setting
 
-**Decision:** `extensions` in the settings of pi and omp names `~/.claude/hooks/<hook>/pi.ts`. **Why:** pi resolves the imports of a linked file from the folder of the link, so an extension link to a hook folder fails with `Cannot find module './core.ts'`. To turn a hook off, remove its line.
+**Decision:** `extensions` in the settings of pi and omp names `~/.claude/hooks/<hook>/pi.ts`, and in omp also `omp.ts`. **Why:** pi resolves the imports of a linked file from the folder of the link, so an extension link to a hook folder fails with `Cannot find module './core.ts'`. To turn a hook off, remove its lines.
+
+## omp code goes in `omp.ts`
+
+**Decision:** code that omp needs and pi does not goes in the `omp.ts` of the hook, which imports the shared code from `pi.ts`, by the rules in [`authoring.md`](authoring.md#omp-code). omp loads `omp.ts` after `pi.ts` when it adds to it, and in place of `pi.ts` when the `pi.ts` handler must not run in omp. **Why:** you can see and track the omp fixes apart from the pi code, with `fd omp.ts` and the git log of the `omp.ts` files, and no code exists twice in one hook. **Cost:** omp loads up to 2 files for each hook, and each `omp.ts` declares the omp-only event types it reads, because no omp types are installed. The omp call parsing of the 4 format and lint hooks exists in each of their `omp.ts` files, as [No shared library between hooks](#no-shared-library-between-hooks) allows.
 
 ## block-secret-commits is a command hook in Claude Code
 

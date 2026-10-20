@@ -13,7 +13,8 @@ Each hook is one folder in `dot_claude/hooks/<hook>/` and imports nothing from o
 | `hooks/register.ts`             | The Claude Code mod                                                                                                   | Yes                                  |
 | `hooks/hooks.json`              | `{"modules": ["./register.ts"]}`                                                                                      | Yes                                  |
 | `dot_claude-plugin/plugin.json` | The plugin manifest: `name`, `version`, `description`                                                                 | Yes, as `.claude-plugin/plugin.json` |
-| `pi.ts`                         | The pi and omp extension                                                                                              | Yes                                  |
+| `pi.ts`                         | The pi extension. omp loads it too, unless the hook has an `omp.ts` that replaces it                                  | Yes                                  |
+| `omp.ts`                        | The omp code: what omp needs and pi does not. Only in a hook that has such code, see [omp code](#omp-code)            | Yes                                  |
 | `command.ts`                    | The command hook: stdin JSON in, exit code 2 and stderr out. For Codex, and for Claude Code where a mod does not fit. | Yes                                  |
 | Data files                      | `rules`, `config/`, `conf/`: read at run time, never imported                                                         | Yes                                  |
 | `README.md`, `docs/`, `test/`   | Kept in the repo by `.chezmoiignore`                                                                                  | No                                   |
@@ -34,24 +35,33 @@ The core takes values or an `Io` object. It never takes `$` and never reads an e
 | Adapter             | Reads the environment with     | Project root                                     | Blocks with               | Feedback after a call                        |
 | ------------------- | ------------------------------ | ------------------------------------------------ | ------------------------- | -------------------------------------------- |
 | `hooks/register.ts` | `$.env.get("NAME")`, a literal | `$.session.root()`                               | `{ deny }` before `next`  | `{ ...ran, context: [...] }` after `next`    |
-| `pi.ts`             | `process.env` through `io.ts`  | `ctx.cwd`                                        | `{ block: true, reason }` | `tool_result` returns `{ content, isError }` |
+| `pi.ts`, `omp.ts`   | `process.env` through `io.ts`  | `ctx.cwd`                                        | `{ block: true, reason }` | `tool_result` returns `{ content, isError }` |
 | `command.ts`        | `process.env` through `io.ts`  | `CLAUDE_PROJECT_DIR \|\| payload.cwd \|\| cwd()` | Exit 2, message on stderr | Exit 2, output on stderr                     |
 
 - **The `$` call-site rule.** In `register.ts`, spell each `$` call where it is used. To give the core an `Io`, write an object literal whose methods spell `$.fs.stat(...)` and `$.process.run(...)` inside them. `claude plugin validate` refuses `$.fs` passed as a value.
 - **Empty means unset.** Use `||`, not `??`, for an environment fallback. Bash `${VAR:-default}` also falls back on an empty value.
 - **Timeouts.** `$.process.run` stops a program after 30 s. Pass `timeoutMs` where the hook needs more or less.
 - **No `classic.*` events.** For a Team organization, Claude Code skips a user mod on a `classic.*` event. Use a command hook in `settings.json.tmpl` for such an event.
-- **pi and omp tool results differ.** For example, a pi edit names its file in `path` and an omp edit in `paths`. Read both.
+- **pi and omp tool results differ.** For example, a pi edit names its file in `path`, and an omp edit of more than one file names them in `paths`. `pi.ts` reads the pi shape. The omp shape goes in `omp.ts`.
+
+## omp code
+
+Code that omp needs and pi does not goes in `omp.ts`, never in `pi.ts`. `fd omp.ts dot_claude/hooks` then lists each hook with omp code, and the git log of the `omp.ts` files gives the history of the omp fixes. [`gaps.md`](gaps.md) lists the omp gaps that are still open.
+
+- **No copy of shared code.** `pi.ts` exports the code that both agents run, and `omp.ts` imports it from `./pi.ts`.
+- **An addition: omp loads both files.** When omp needs more than pi, such as more tools or more fields, `omp.ts` registers handlers only for the omp calls. List it after `pi.ts` in `extensions`. omp runs the handlers of each extension in list order, and a `tool_result` handler gets the result that the handlers before it returned.
+- **A replacement: omp loads only `omp.ts`.** When the `pi.ts` handler must not run in omp, `omp.ts` registers the omp handlers and `extensions` names only `omp.ts`. An example is a pi event that omp does not await, or one record that needs the omp fields.
+- **Types.** `omp.ts` uses the pi types for the events that both agents share. For an omp-only event, such as `session_stop`, it declares the fields it reads, with the omp source line, because no omp types are installed.
 
 ## Failure behavior
 
 Keep the choice that the hook README gives. The adapters differ in what an error that escapes the hook does:
 
-| Adapter      | An error that escapes the hook                | To fail open         | To fail closed                         |
-| ------------ | --------------------------------------------- | -------------------- | -------------------------------------- |
-| Mod          | Claude Code skips the hook, and the call runs | Nothing to do        | Add a `.catch` that returns `{ deny }` |
-| `pi.ts`      | pi blocks the call                            | Catch in the handler | Nothing to do                          |
-| `command.ts` | Node exits 1, which does not block            | Nothing to do        | Catch, then exit 2                     |
+| Adapter           | An error that escapes the hook                | To fail open         | To fail closed                         |
+| ----------------- | --------------------------------------------- | -------------------- | -------------------------------------- |
+| Mod               | Claude Code skips the hook, and the call runs | Nothing to do        | Add a `.catch` that returns `{ deny }` |
+| `pi.ts`, `omp.ts` | pi or omp blocks the call                     | Catch in the handler | Nothing to do                          |
+| `command.ts`      | Node exits 1, which does not block            | Nothing to do        | Catch, then exit 2                     |
 
 A mod module that does not load has no `.catch`, so a mod cannot fail closed on a load error.
 
@@ -62,7 +72,7 @@ A mod module that does not load has no `.catch`, so a mod cannot fail closed on 
 | Claude Code, mod          | `dot_claude/settings.json.tmpl`            | Add the hook name to the `list` in `CLAUDE_CODE_PLUGIN_DIRS`                                                         |
 | Claude Code, command hook | `dot_claude/settings.json.tmpl`            | `command -v node >/dev/null \|\| exit 0; NODE_COMPILE_CACHE=... node "$HOME/.claude/hooks/<hook>/command.ts"`        |
 | pi                        | `dot_pi/agent/modify_settings.json`        | Add `~/.claude/hooks/<hook>/pi.ts` to `extensions`                                                                   |
-| omp                       | `dot_omp/private_agent/private_config.yml` | Add the same path to `extensions`                                                                                    |
+| omp                       | `dot_omp/private_agent/private_config.yml` | Add `pi.ts`, `omp.ts` after it, or only `omp.ts` to `extensions`, see [omp code](#omp-code)                          |
 | Codex                     | `dot_codex/modify_hooks.json`              | `command -v node >/dev/null \|\| exit 0; NODE_COMPILE_CACHE="$HOME/.cache/node-compile-cache" node ".../command.ts"` |
 
 A file hook in Codex runs through `dot_codex/hooks/apply-patch.ts <command.ts>` on `apply_patch`, because that payload has no `file_path`. A command entry exits 0 when `node` is missing. For a hook that runs as a command, add its name to the warning text of the `SessionStart` entry that checks `node`, in each agent that runs it.

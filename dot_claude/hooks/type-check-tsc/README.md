@@ -2,12 +2,13 @@
 
 Runs `tsc --noEmit` on the whole project once, when the agent stops, and gives the errors to the model, so it fixes them. [`type-check-pyrefly`](../type-check-pyrefly/README.md) is the same hook for Python.
 
-One core, [`core.ts`](core.ts), serves four agents through two adapters:
+One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
-| Agent                 | Adapter                                                                                                        | Loaded by                                                                                          |
-| --------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| pi and omp            | [`pi.ts`](pi.ts): `agent_end` sends the errors with `sendMessage` and `triggerTurn`, which starts one more run | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
-| Claude Code and Codex | [`command.ts`](command.ts): exit code 2 with the errors on stderr                                              | `Stop` in `dot_claude/settings.json.tmpl` and `dot_codex/modify_hooks.json`                        |
+| Agent                 | Adapter                                                                                                                      | Loaded by                                                                   |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| pi                    | [`pi.ts`](pi.ts): `agent_end` sends the errors with `sendMessage` and `triggerTurn`, which starts one more run               | `extensions` in `dot_pi/agent/modify_settings.json`                         |
+| omp                   | [`omp.ts`](omp.ts): `session_stop` returns `{ continue: true, additionalContext }` with the errors, which runs one more turn | `extensions` in `dot_omp/private_agent/private_config.yml`                  |
+| Claude Code and Codex | [`command.ts`](command.ts): exit code 2 with the errors on stderr                                                            | `Stop` in `dot_claude/settings.json.tmpl` and `dot_codex/modify_hooks.json` |
 
 ## Why not a mod in Claude Code
 
@@ -36,41 +37,43 @@ The other file hooks run after each Write or Edit, because they act on the one f
 ## How the model sees the errors
 
 - **Claude Code and Codex:** `command.ts` exits 2 with the errors on stderr, which blocks the stop. The model continues with the errors. When `type-check-pyrefly` also blocks the same stop, the model gets both outputs.
-- **pi and omp:** `pi.ts` sends the errors as a message that the model reads, and the message starts one more run. `omp -p` aborts that run when it exits, so in omp the check reaches the model only in an interactive session. `pi -p` runs it.
+- **pi:** `pi.ts` sends the errors as a message that the model reads, and the message starts one more run. `pi -p` runs it.
+- **omp:** `omp.ts` returns the errors from `session_stop` as context for one more turn, which omp runs before it settles. omp does not await `agent_end`, so the message of `pi.ts` was lost when omp settled first: in `omp -p` 18.12.2, also with a check of 217 ms. `omp.ts` keeps the run also in `omp -p`.
 
 ## The loop guard
 
 A check that the model cannot fix must not block every stop after it. Claude Code and Codex set `stop_hook_active` to `true` in a stop that follows a block, and `command.ts` then lets the stop pass.
 
-pi and omp have no `stop_hook_active`. `pi.ts` keeps a flag instead: after it starts a run, the end of that run passes without a check, and the run after it is checked again. `pi.ts` also starts no run when you stopped the run or the run failed, or when omp says that the run goes on by itself (`willContinue`).
+pi has no `stop_hook_active`. `pi.ts` keeps a flag instead: after it starts a run, the end of that run passes without a check, and the run after it is checked again. `pi.ts` also starts no run when you stopped the run or the run failed.
 
-`pi.ts` uses `agent_end`, not pi's `agent_before_settle`: omp 18.10.3 does not have that event, and pi and omp both have `sendMessage` with `triggerTurn`.
+omp sets `stop_hook_active` on the stop after a `session_stop` continuation, and `omp.ts` then lets the stop pass. omp also allows at most 8 continuations. `omp.ts` starts no turn when you stopped the run or the run failed.
 
 ## Failure behavior
 
 The hook fails open in every agent, so a broken check never keeps the agent working:
 
 - `command.ts` exits 1 on a bad payload, which does not block. Each agent stops it after 60 s, which does not block either.
-- `pi.ts` catches its own errors.
+- `pi.ts` and `omp.ts` catch their own errors.
 
 ## Dependencies
 
 `tsc` usually comes from the `typescript` dev dependency of each project. The hook runs `tsc` from `PATH`, and skips it when it is not there.
 
-`pi.ts` and `command.ts` need Node 23.6 or later, which runs `.ts` files without a flag. The Claude Code and Codex entries start with `command -v node || exit 0`, so a machine without Node is not blocked. The `SessionStart` check then gives a warning, see [A missing `node` gives a warning](../README.md#shared-conventions).
+`pi.ts`, `omp.ts`, and `command.ts` need Node 23.6 or later, which runs `.ts` files without a flag. The Claude Code and Codex entries start with `command -v node || exit 0`, so a machine without Node is not blocked. The `SessionStart` check then gives a warning, see [A missing `node` gives a warning](../README.md#shared-conventions).
 
 Codex runs a hook only after you trust its entry. After a hook entry changes, trust the hooks again in the Codex TUI, on the host and in the devcontainer. See [`docs/agents/codex.md`](../../../docs/agents/codex.md#trust).
 
 ## Tests
 
-`node test/check.ts` runs `command.ts` in a git repository with a stand-in `tsc` on `PATH`, which passes or fails. It covers each TypeScript extension, a missing `tsconfig.json`, a path that git quotes, the root from a subdirectory, the loop guard, a missing `tsc`, a folder outside git, and a repository with no commit. It also checks the pi adapter with a stub. It needs `git`. `just hooks-check` runs it.
+`node test/check.ts` runs `command.ts` in a git repository with a stand-in `tsc` on `PATH`, which passes or fails. It covers each TypeScript extension, a missing `tsconfig.json`, a path that git quotes, the root from a subdirectory, the loop guard, a missing `tsc`, a folder outside git, and a repository with no commit. It also checks `pi.ts` and `omp.ts` with stubs. It needs `git`. `just hooks-check` runs it.
 
 ## Files
 
-| File                 | Deployed to `~/.claude/hooks/type-check-tsc/` | Role                                                                   |
-| -------------------- | --------------------------------------------- | ---------------------------------------------------------------------- |
-| `core.ts`            | Yes                                           | Finds a changed TypeScript file and runs `tsc`                         |
-| `pi.ts`              | Yes                                           | pi and omp extension                                                   |
-| `command.ts`         | Yes                                           | Claude Code and Codex command hook                                     |
-| `io.ts`              | Yes                                           | The `Io` under Node, with the 60 s limit, for `pi.ts` and `command.ts` |
-| `README.md`, `test/` | No                                            | Kept in the repo by `.chezmoiignore`                                   |
+| File                 | Deployed to `~/.claude/hooks/type-check-tsc/` | Role                                                         |
+| -------------------- | --------------------------------------------- | ------------------------------------------------------------ |
+| `core.ts`            | Yes                                           | Finds a changed TypeScript file and runs `tsc`               |
+| `pi.ts`              | Yes                                           | The pi extension                                             |
+| `omp.ts`             | Yes                                           | The omp extension, in place of `pi.ts`                       |
+| `command.ts`         | Yes                                           | Claude Code and Codex command hook                           |
+| `io.ts`              | Yes                                           | The `Io` under Node, with the 60 s limit, for the 3 adapters |
+| `README.md`, `test/` | No                                            | Kept in the repo by `.chezmoiignore`                         |
