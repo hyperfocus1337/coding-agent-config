@@ -15,6 +15,7 @@ Three hooks also run `command.ts` in Claude Code, as a command hook in `settings
 | [`authoring.md`](authoring.md) | You add a hook or change an adapter                  |
 | [`platforms.md`](platforms.md) | You must know if an agent's hook API can do a thing  |
 | [`decisions.md`](decisions.md) | You want to change the design, and must know the why |
+| [`gaps.md`](gaps.md)           | You must know what a hook does not cover yet         |
 
 Related research:
 

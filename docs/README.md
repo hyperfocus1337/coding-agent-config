@@ -64,6 +64,7 @@ The `hooks/` folder gives the design of the hooks in [`dot_claude/hooks/`](../do
 | [`authoring.md`](hooks/authoring.md) | The rules for a hook folder, and the steps to add a hook |
 | [`platforms.md`](hooks/platforms.md) | What the hook API of each agent can and cannot do        |
 | [`decisions.md`](hooks/decisions.md) | Why the hooks are built this way                         |
+| [`gaps.md`](hooks/gaps.md)           | What a hook does not cover yet, open or accepted         |
 
 ## Research
 
