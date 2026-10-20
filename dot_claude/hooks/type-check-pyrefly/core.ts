@@ -6,8 +6,8 @@
  * adapters pass in the process function, and each adapter keeps its own loop
  * guard. type-check-tsc is the same hook for TypeScript.
  *
- * Adapters: pi.ts (pi and omp), command.ts (Claude Code and Codex). Why a
- * stop and not each edit: README.md.
+ * Adapters: pi.ts (pi), omp.ts (omp), command.ts (Claude Code and Codex).
+ * Why a stop and not each edit: ../type-check-tsc/README.md.
  */
 
 export interface Io {

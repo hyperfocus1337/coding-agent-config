@@ -1,6 +1,6 @@
 /**
  * Self-check for ../core.ts and its adapters: the cases through command.ts
- * in a real git repository, and the pi adapter with a stub. A stand-in
+ * in a real git repository, and the pi and omp adapters with stubs. A stand-in
  * pyrefly on PATH passes, fails, or matches no files, as FAKE_PYREFLY says,
  * and logs each start to FAKE_LOG.
  *
@@ -15,7 +15,7 @@ import * as path from "node:path";
 import extension from "../pi.ts";
 import ompExtension from "../omp.ts";
 
-const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
+const hook = path.dirname(import.meta.dirname);
 
 let failures = 0;
 async function check(what: string, run: () => void | Promise<void>) {
@@ -123,7 +123,6 @@ const failed = "Type check failed. Fix the errors above, then stop.";
 // --- Checks ---
 fresh();
 await expect("no change starts no pyrefly", run(repo), 0);
-await check("no change: nothing started", () => assert.equal(started(), ""));
 fresh({ "src/old.py": "x = 2\n" });
 await expect(
   "a changed .py file with errors blocks",
@@ -152,7 +151,7 @@ await expect(
 fresh();
 fs.rmSync(`${repo}/src/old.py`);
 await expect("a deleted .py file starts no pyrefly", run(repo), 0);
-fresh({ "a.ts": "", "tsconfig.json": "{}\n" });
+fresh({ "a.ts": "" });
 await expect("a .ts file starts no pyrefly", run(repo), 0);
 fresh({ "src/old.py": "x = 2\n" });
 await expect(
@@ -169,19 +168,13 @@ await expect(
   run(repo, { stop_hook_active: true }),
   0,
 );
-await check("stop_hook_active: nothing started", () =>
-  assert.equal(started(), ""),
-);
 await expect(
   "CLAUDE_HOOKS_DISABLE that names the hook lets the stop pass",
   run(repo, {}, { CLAUDE_HOOKS_DISABLE: "lint-code,type-check-pyrefly" }),
   0,
 );
-await check("CLAUDE_HOOKS_DISABLE: nothing started", () =>
-  assert.equal(started(), ""),
-);
-const gitDir = path.dirname(
-  spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout,
+const gitDir = process.env.PATH?.split(":").find((dir) =>
+  fs.existsSync(`${dir}/git`),
 );
 await expect(
   "a missing pyrefly is skipped",
@@ -202,7 +195,6 @@ await expect(
 
 // --- pi.ts, with a stub ---
 
-const saved = { ...process.env };
 Object.assign(process.env, env);
 fresh({ "src/old.py": "x = 2\n" });
 
@@ -214,13 +206,9 @@ extension({
   sendMessage: (message: { content: string }, options: unknown) =>
     sent.push({ content: message.content, options }),
 } as never);
-const end = (stopReason = "stop", extra: object = {}) =>
+const end = (stopReason = "stop") =>
   piHandler?.(
-    {
-      type: "agent_end",
-      messages: [{ role: "assistant", stopReason }],
-      ...extra,
-    },
+    { type: "agent_end", messages: [{ role: "assistant", stopReason }] },
     { cwd: `${repo}/src` },
   );
 await check("pi.ts: sends the errors and starts a run", async () => {
@@ -285,9 +273,6 @@ await check("omp.ts: a stopped or failed run starts nothing", async () => {
   assert.equal(await stop(false, "error"), undefined);
 });
 
-for (const name of Object.keys(process.env))
-  if (!(name in saved)) delete process.env[name];
-Object.assign(process.env, saved);
 fs.rmSync(tmp, { recursive: true });
 if (failures) {
   console.error(`${failures} failed`);

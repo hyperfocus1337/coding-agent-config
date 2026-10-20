@@ -1,5 +1,5 @@
 /**
- * The process function of ./core.ts under Node, for command.ts and pi.ts.
+ * The process function of ./core.ts under Node, for the 3 adapters.
  */
 
 import { spawn } from "node:child_process";

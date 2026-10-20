@@ -45,7 +45,7 @@ Codex runs a hook only after you trust its entry. After a hook entry changes, tr
 
 ## Tests
 
-`node test/check.ts` runs `command.ts` in a git repository with a stand-in `pyrefly` on `PATH`, which passes, fails, or matches no files. It covers a changed, untracked, and deleted `.py` file, a path that git quotes, the root from a subdirectory, the loop guard, a missing pyrefly, a folder outside git, and a repository with no commit. It also checks `pi.ts` and `omp.ts` with stubs. It needs `git`. `just hooks-check` runs it.
+`node test/check.ts` runs `command.ts` in a git repository with a stand-in `pyrefly` on `PATH`, which passes, fails, or matches no files. It covers a changed, untracked, and deleted `.py` file, a path that git quotes, the root from a subdirectory, the loop guard, `CLAUDE_HOOKS_DISABLE`, a missing pyrefly, a folder outside git, and a repository with no commit. It also checks `pi.ts` and `omp.ts` with stubs. It needs `git`. `just hooks-check` runs it.
 
 ## Files
 
