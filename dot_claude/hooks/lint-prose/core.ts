@@ -6,8 +6,8 @@
  * pass in the file and process functions, because a mod reaches them only
  * through `$`.
  *
- * Adapters: hooks/register.ts (Claude Code mod), pi.ts (pi and omp),
- * command.ts (Codex). Design notes and the rules: docs/implementation.md.
+ * Adapters: hooks/register.ts (Claude Code mod), pi.ts and omp.ts (pi and
+ * omp), command.ts (Codex). Design notes and the rules: docs/implementation.md.
  */
 
 export interface Io {
@@ -50,13 +50,10 @@ const dirname = (path: string) => path.slice(0, path.lastIndexOf("/")) || "/";
  * A file under /tmp, /var/tmp, or TMPDIR is scratch prose, not project prose.
  * macOS resolves /tmp to /private/tmp, so both sides drop that prefix.
  */
-function throwaway(file: string, settings: Settings): boolean {
-  const tmpdir = (settings.tmpdir || "/nonexistent").replace(/^\/private/, "");
-  const plain = file.replace(/^\/private/, "");
-  return (
-    plain.startsWith("/tmp/") ||
-    plain.startsWith("/var/tmp/") ||
-    plain.startsWith(tmpdir)
+function throwaway(file: string, tmpdir: string | undefined): boolean {
+  const plain = (path: string) => path.replace(/^\/private/, "");
+  return ["/tmp/", "/var/tmp/", tmpdir].some(
+    (dir) => dir && plain(file).startsWith(plain(dir)),
   );
 }
 
@@ -73,19 +70,17 @@ async function changedLines(
   const git = (...args: string[]) => io.run(["git", ...args], dir);
   if ((await git("ls-files", "--error-unmatch", "--", file))?.exitCode !== 0)
     return undefined;
-  if ((await git("rev-parse", "-q", "--verify", "HEAD^{commit}"))?.exitCode)
-    return undefined;
-  const diff = (await git("diff", "-U0", "HEAD", "--", file))?.stdout ?? "";
+  // Before the first commit there is no HEAD, and the diff fails.
+  const diff = await git("diff", "-U0", "HEAD", "--", file);
+  if (diff?.exitCode !== 0) return undefined;
   const lines = new Set<number>();
   // A hunk header is @@ -a,b +start,count @@. A count of 0 is a deletion
   // after line start, and that line still marks its paragraph as changed.
-  for (const [, start, count] of diff.matchAll(
+  for (const [, start, count = "1"] of diff.stdout.matchAll(
     /^@@ \S+ \+(\d+)(?:,(\d+))?/gm,
   )) {
-    const first = Number(start);
-    const n = count === undefined ? 1 : Number(count);
-    if (n === 0) lines.add(first);
-    for (let i = 0; i < n; i++) lines.add(first + i);
+    for (let i = 0; i < Math.max(Number(count), 1); i++)
+      lines.add(Number(start) + i);
   }
   return lines;
 }
@@ -95,12 +90,8 @@ async function changedLines(
  * line.
  */
 function paragraph(lines: string[], start: number): string[] {
-  const span: string[] = [];
-  for (let l = start; l <= lines.length; l++) {
-    if (l > start && BLANK.test(lines[l - 1]!)) break;
-    span.push(lines[l - 1]!);
-  }
-  return span;
+  const end = lines.findIndex((line, i) => i >= start && BLANK.test(line));
+  return lines.slice(start - 1, end < 0 ? undefined : end);
 }
 
 /** Lints one file. The session id keys the once-per-session record. */
@@ -110,14 +101,16 @@ export async function check(
   io: Io,
   settings: Settings,
 ): Promise<Result> {
-  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("lint-prose"))
+  const names = (list = "") => list.split(/[\s,]+/);
+  if (
+    names(settings.hooksOff).includes("lint-prose") ||
+    names(settings.disable).some((name) => name === "all" || name === "prose")
+  )
     return {};
-  const disable = ` ${(settings.disable ?? "").replaceAll(",", " ")} `;
-  if (disable.includes(" all ") || disable.includes(" prose ")) return {};
   if (
     !file ||
     !PROSE.test(file) ||
-    throwaway(file, settings) ||
+    throwaway(file, settings.tmpdir) ||
     !(await io.isFile(file))
   )
     return {};
@@ -143,8 +136,7 @@ export async function check(
       notice: `lint-prose: Vale failed, so the prose was not checked:\n${output}\n`,
     };
 
-  const text = (await io.read(file)) ?? "";
-  const lines = text.replace(/\n$/, "").split("\n");
+  const lines = ((await io.read(file)) ?? "").replace(/\n$/, "").split("\n");
   const prefix = `${file}:`;
   let alerts = output.split("\n").filter(Boolean);
   // An alert names the first line of its paragraph, and the paragraph runs to
@@ -181,7 +173,7 @@ export async function check(
       rule,
       paragraph(lines, Number(line)).join("\n"),
     ]);
-    if (record && seen.has(key)) repeats.push(alert);
+    if (seen.has(key)) repeats.push(alert);
     else {
       report.push(alert);
       seen.add(key);

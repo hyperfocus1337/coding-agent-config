@@ -190,6 +190,13 @@ const old = write(
   `${long}\nStill the old paragraph.\n\nShort.\n`,
 );
 git("add", "old.md");
+ran = run(edit(old));
+await expect(
+  "before the first commit a file is checked whole",
+  ran,
+  2,
+  "old.md:1:",
+);
 git("commit", "-q", "-m", "old");
 
 write(old, `${long}\nStill the old paragraph.\n\nShort, and changed.\n`);
@@ -362,27 +369,32 @@ await expect(
 
 process.env.LINT_PROSE_VALE_DIR = valeDir;
 delete process.env.CLAUDE_LINT_DISABLE;
-const tmpdir = process.env.TMPDIR;
 process.env.TMPDIR = state;
 const adapter = write(`${tmp}/adapter.md`, `${long}\n`);
 const clean = write(`${tmp}/clean.md`, "Short.\n");
 
-type Handler = (event: unknown, ctx: unknown) => Promise<unknown>;
-let piHandler: Handler | undefined;
-extension({
-  on: (_name: string, handler: Handler) => (piHandler = handler),
-} as never);
 const notices: string[] = [];
 const ctx = {
   cwd: tmp,
   sessionManager: { getSessionId: () => "pi" },
   ui: { notify: (text: string) => notices.push(text) },
 };
-const piCall = (toolName: string, input: object, isError = false) =>
-  piHandler?.(
-    { toolName, input, content: [{ type: "text", text: "written" }], isError },
-    ctx,
-  ) as Promise<{ content: { text: string }[]; isError: boolean } | undefined>;
+/** Loads an extension; returns a function that calls its tool_result handler. */
+function caller(load: typeof extension) {
+  let handler: (event: unknown, ctx: unknown) => Promise<unknown>;
+  load({ on: (_name: string, on: typeof handler) => (handler = on) } as never);
+  return (toolName: string, input: object, isError = false) =>
+    handler(
+      {
+        toolName,
+        input,
+        content: [{ type: "text", text: "written" }],
+        isError,
+      },
+      ctx,
+    ) as Promise<{ content: { text: string }[]; isError: boolean } | undefined>;
+}
+const piCall = caller(extension);
 await check("pi.ts: appends the alerts and marks an error", async () => {
   const result = await piCall("write", { path: "adapter.md" });
   assert.equal(result?.isError, true);
@@ -406,15 +418,7 @@ await check(
   },
 );
 
-let ompHandler: Handler | undefined;
-ompExtension({
-  on: (_name: string, handler: Handler) => (ompHandler = handler),
-} as never);
-const ompCall = (toolName: string, input: object, isError = false) =>
-  ompHandler?.(
-    { toolName, input, content: [{ type: "text", text: "written" }], isError },
-    ctx,
-  ) as Promise<{ content: { text: string }[]; isError: boolean } | undefined>;
+const ompCall = caller(ompExtension);
 await check("omp.ts: lints each file of a multi-file edit", async () => {
   write(`${tmp}/omp.md`, `${long}\n`);
   const result = await ompCall("edit", { paths: ["clean.md", "omp.md"] });
@@ -506,8 +510,6 @@ await check(
   },
 );
 
-if (tmpdir === undefined) delete process.env.TMPDIR;
-else process.env.TMPDIR = tmpdir;
 fs.rmSync(tmp, { recursive: true });
 if (failures) {
   console.error(`${failures} failed`);

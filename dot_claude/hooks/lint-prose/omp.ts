@@ -10,8 +10,9 @@
  * the reason that ./pi.ts skips bash, and `ast_edit` rewrites code.
  */
 
+import { resolve } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { absolute, checkFiles } from "./pi.ts";
+import { checkFiles } from "./pi.ts";
 
 export default function (omp: ExtensionAPI) {
   omp.on("tool_result", (event, ctx) => {
@@ -22,7 +23,7 @@ export default function (omp: ExtensionAPI) {
     const files = paths
       .filter((file): file is string => typeof file === "string")
       .filter((file) => file !== path)
-      .map((file) => absolute(file, ctx.cwd));
+      .map((file) => resolve(ctx.cwd, file));
     if (files.length) return checkFiles(files, event.content, ctx);
   });
 }

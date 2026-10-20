@@ -25,7 +25,8 @@ const { block, notice } = await check(
   nodeIo(),
   nodeSettings(),
 );
-if (block ?? notice) {
-  process.stderr.write((block ?? notice)!);
+const message = block ?? notice;
+if (message) {
+  process.stderr.write(message);
   process.exitCode = block ? 2 : 1;
 }

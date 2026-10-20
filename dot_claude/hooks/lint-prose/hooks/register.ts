@@ -23,17 +23,9 @@ export const register: Register = (on) => {
         ),
       read: (path) => $.fs.read(path).catch(() => undefined),
       write: (path, text) => $.fs.write(path, text),
-      run: (argv, cwd) =>
-        $.process.run(argv, { cwd }).then(
-          (done) => ({
-            exitCode: done.exitCode,
-            stdout: done.stdout,
-            stderr: done.stderr,
-          }),
-          () => undefined, // not installed, or timed out
-        ),
+      // Rejects when the program is not installed, or timed out.
+      run: (argv, cwd) => $.process.run(argv, { cwd }).catch(() => undefined),
     };
-    const home = await $.env.get("HOME");
     const { block, notice } = await check(
       e.file_path,
       await $.session.id(),
@@ -42,7 +34,8 @@ export const register: Register = (on) => {
         disable: await $.env.get("CLAUDE_LINT_DISABLE"),
         tmpdir: await $.env.get("TMPDIR"),
         valeDir:
-          (await $.env.get("LINT_PROSE_VALE_DIR")) || `${home}/.config/vale`,
+          (await $.env.get("LINT_PROSE_VALE_DIR")) ||
+          `${await $.env.get("HOME")}/.config/vale`,
         hooksOff: await $.env.get("CLAUDE_HOOKS_DISABLE"),
       },
     );

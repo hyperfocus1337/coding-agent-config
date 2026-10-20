@@ -7,6 +7,7 @@
  * does not see.
  */
 
+import { resolve } from "node:path";
 import type {
   ExtensionAPI,
   ExtensionContext,
@@ -22,13 +23,9 @@ export default function (pi: ExtensionAPI) {
     if (!["write", "edit"].includes(event.toolName) || event.isError) return;
     const { path } = event.input as { path?: unknown };
     if (typeof path !== "string") return;
-    return checkFiles([absolute(path, ctx.cwd)], event.content, ctx);
+    return checkFiles([resolve(ctx.cwd, path)], event.content, ctx);
   });
 }
-
-/** A tool path against the session folder. */
-export const absolute = (file: string, cwd: string) =>
-  file.startsWith("/") ? file : `${cwd}/${file}`;
 
 /**
  * Lints the prose in `files`. Returns `content` with the alerts appended and
@@ -42,14 +39,11 @@ export async function checkFiles(
 ): Promise<ToolResultEventResult | undefined> {
   try {
     const session = ctx.sessionManager.getSessionId();
+    const io = nodeIo();
+    const settings = nodeSettings();
     const blocks: string[] = [];
     for (const file of new Set(files)) {
-      const { block, notice } = await check(
-        file,
-        session,
-        nodeIo(),
-        nodeSettings(),
-      );
+      const { block, notice } = await check(file, session, io, settings);
       if (block) blocks.push(block);
       if (notice) ctx.ui.notify(notice, "warning");
     }
