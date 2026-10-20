@@ -20,8 +20,12 @@ export function nodeIo(): Io {
         });
         let stdout = "";
         let stderr = "";
-        child.stdout.on("data", (chunk) => (stdout += chunk));
-        child.stderr.on("data", (chunk) => (stderr += chunk));
+        // Decode as a stream, so that a character split across two chunks
+        // stays whole.
+        child.stdout.setEncoding("utf8");
+        child.stderr.setEncoding("utf8");
+        child.stdout.on("data", (chunk: string) => (stdout += chunk));
+        child.stderr.on("data", (chunk: string) => (stderr += chunk));
         // A program that cannot start (not installed) counts as missing, and
         // so does one that the timeout stops: its output is cut off.
         child.on("error", () => resolve(undefined));

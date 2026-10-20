@@ -14,6 +14,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import extension from "../pi.ts";
 import ompExtension from "../omp.ts";
+import { nodeIo } from "../io.ts";
 
 const hook = path.dirname(import.meta.dirname);
 // A hook that /toggle-hook turned off in the agent that runs this check
@@ -275,6 +276,20 @@ await check("omp.ts: a stopped or failed run starts nothing", async () => {
   assert.equal(await stop(false, "aborted"), undefined);
   assert.equal(await stop(false, "error"), undefined);
 });
+
+// --- io.ts ---
+
+await check(
+  "io.ts: a character split across two chunks stays whole",
+  async () => {
+    // The two bytes of é, written 50 ms apart, arrive as two chunks.
+    const script =
+      "process.stdout.write(Buffer.from([0xc3]));" +
+      "setTimeout(() => process.stdout.write(Buffer.from([0xa9])), 50);";
+    const ran = await nodeIo().run([process.execPath, "-e", script], tmp);
+    assert.equal(ran?.stdout, "é");
+  },
+);
 
 fs.rmSync(tmp, { recursive: true });
 if (failures) {
