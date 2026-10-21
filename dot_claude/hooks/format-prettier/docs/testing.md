@@ -26,10 +26,10 @@ The fixtures are in a temporary folder under `$HOME`, because the hook skips `/t
 - **Prose wrap:** a wide table stays padded, and sentence lines stay separate.
 - **The amend hint:** after a commit, after `git -C <dir> commit`, on `PostToolUseFailure` with that event name, and on the first commit of a repository. No hint without a commit, for an uncommitted file, or when Prettier changed nothing.
 - **A Write or Edit:** the hook formats `.ts`, `.mts`, and `.cts`. It does not format `.org`, `.py`, or a temp file, and a file that does not exist gives no output.
-- **`CLAUDE_HOOKS_DISABLE`:** a value that names the hook stops the core before its first file or process call.
+- **`AGENT_HOOKS_DISABLE`:** a value that names the hook stops the core before its first file or process call.
 - **The adapters:** `pi.ts`, `omp.ts`, and `hooks/register.ts` with stubs over the real files.
 
 ## Settings that the check changes
 
 - **`format-staged-files`:** the check turns this pre-commit hook off with `GIT_CONFIG_*` variables. In an agent session it formats the file before the commit, so the amend hint never comes and the hint cases fail.
-- **`CLAUDE_HOOKS_DISABLE`:** the check removes this variable, so the check also runs the hook when `/toggle-hook` turned it off in the agent that starts the check.
+- **`AGENT_HOOKS_DISABLE`:** the check removes this variable, so the check also runs the hook when `/toggle-hook` turned it off in the agent that starts the check.

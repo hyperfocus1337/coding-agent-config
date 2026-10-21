@@ -1,5 +1,5 @@
 /**
- * Claude Code mod: adds `/toggle-hook`, which sets CLAUDE_HOOKS_DISABLE in
+ * Claude Code mod: adds `/toggle-hook`, which sets AGENT_HOOKS_DISABLE in
  * the Claude Code process. The mods read it on the next tool call, and the
  * command hooks and Bash calls started after get it. The status line names
  * the hooks that are off. Only the person can run the command: the Skill
@@ -17,15 +17,15 @@ export const register: Register = (on) => {
       argumentHint: "[hook|all]",
     });
     // A value set at launch shows from the start.
-    $.ui.status(status(await $.env.get("CLAUDE_HOOKS_DISABLE")));
+    $.ui.status(status(await $.env.get("AGENT_HOOKS_DISABLE")));
     return next(e);
   });
   on("command.run", { command: "toggle-hook" }, async ($, e) => {
     const { value, text } = toggle(
-      await $.env.get("CLAUDE_HOOKS_DISABLE"),
+      await $.env.get("AGENT_HOOKS_DISABLE"),
       e.args,
     );
-    const set = await $.env.set("CLAUDE_HOOKS_DISABLE", value);
+    const set = await $.env.set("AGENT_HOOKS_DISABLE", value);
     if (set.deny !== undefined) return { text: `Not changed: ${set.deny}` };
     $.ui.status(status(value));
     return { text };

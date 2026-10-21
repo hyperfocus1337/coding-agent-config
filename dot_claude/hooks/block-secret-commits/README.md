@@ -115,7 +115,7 @@ A binary block message lists the paths of the files. It gives the command to ins
 
 ### Turn the hook off
 
-The hook does not read `CLAUDE_HOOKS_DISABLE`. To turn it off, remove its entry from the file that loads it, in the table at the top. To let one file through, use an [override](#overrides).
+The hook does not read `AGENT_HOOKS_DISABLE`. To turn it off, remove its entry from the file that loads it, in the table at the top. To let one file through, use an [override](#overrides).
 
 ### The name rules
 

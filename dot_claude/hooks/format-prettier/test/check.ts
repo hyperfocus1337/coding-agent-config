@@ -21,7 +21,7 @@ import extension from "../pi.ts";
 const hook = path.dirname(import.meta.dirname);
 // A hook that /toggle-hook turned off in the agent that runs this check
 // still runs here.
-delete process.env.CLAUDE_HOOKS_DISABLE;
+delete process.env.AGENT_HOOKS_DISABLE;
 
 let failures = 0;
 async function check(what: string, run: () => void | Promise<void>) {
@@ -326,24 +326,19 @@ await unchanged("edit leaves a temp file", scratch, RAW);
 fs.rmSync(scratch);
 await quiet("edit: a file that does not exist", edit(`${outer}/gone.md`));
 
-// --- CLAUDE_HOOKS_DISABLE ---
+// --- AGENT_HOOKS_DISABLE ---
 
-await check(
-  "CLAUDE_HOOKS_DISABLE that names the hook: nothing runs",
-  async () =>
-    assert.equal(
-      await format(
-        { filePath: "/x/a.md", cwd: "/x" },
-        new Proxy(
-          {},
-          { get: () => () => assert.fail("the hook ran") },
-        ) as never,
-        {
-          hooksOff: "lint-code format-prettier",
-        },
-      ),
-      undefined,
+await check("AGENT_HOOKS_DISABLE that names the hook: nothing runs", async () =>
+  assert.equal(
+    await format(
+      { filePath: "/x/a.md", cwd: "/x" },
+      new Proxy({}, { get: () => () => assert.fail("the hook ran") }) as never,
+      {
+        hooksOff: "lint-code format-prettier",
+      },
     ),
+    undefined,
+  ),
 );
 
 // --- pi.ts and hooks/register.ts, with stubs over the real files ---

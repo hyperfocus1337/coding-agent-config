@@ -22,7 +22,7 @@ export interface Io {
 }
 
 export interface Settings {
-  /** CLAUDE_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
+  /** AGENT_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
   hooksOff?: string;
 }
 

@@ -188,9 +188,9 @@ fs.rmSync(`${work}/c.md`);
 write("new.md", "*   toggled\n");
 git(["commit", "-q", "-a", "-m", "toggled"], {
   CLAUDECODE: "1",
-  CLAUDE_HOOKS_DISABLE: "format-prettier",
+  AGENT_HOOKS_DISABLE: "format-prettier",
 });
-check("CLAUDE_HOOKS_DISABLE does not turn off the commit-time format", () =>
+check("AGENT_HOOKS_DISABLE does not turn off the commit-time format", () =>
   assert.equal(committed("new.md"), "- toggled\n"),
 );
 

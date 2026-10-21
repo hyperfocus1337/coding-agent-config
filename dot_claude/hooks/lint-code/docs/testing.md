@@ -13,7 +13,7 @@ node test/check.ts
 
 `just hooks-check` runs it too, with the checks of the other hooks. The check prints `all pass`, or a `FAIL` line for each failed case and the number of failures. On a failure, it exits 1.
 
-The fixtures go in a `.lint-hook-check-*` directory under `$HOME`, because the hook skips `/tmp` and `$TMPDIR`. The check deletes the directory at the end. It also removes `CLAUDE_HOOKS_DISABLE`, so a hook that `/toggle-hook` turned off in the agent that runs the check still runs here.
+The fixtures go in a `.lint-hook-check-*` directory under `$HOME`, because the hook skips `/tmp` and `$TMPDIR`. The check deletes the directory at the end. It also removes `AGENT_HOOKS_DISABLE`, so a hook that `/toggle-hook` turned off in the agent that runs the check still runs here.
 
 ## Requirements
 
@@ -33,7 +33,7 @@ The other linters are not necessary. The core cases use stub I/O and run no lint
 - **YAML routing:** a file is Ansible by its entry point name and by its content. Other YAML goes to yamllint.
 - **`CLAUDE_LINT_DISABLE`:** keys separated by a comma, and `all`.
 - **Missing linter:** the hook skips its file, and the output joins the output of every linter that ran.
-- **`CLAUDE_HOOKS_DISABLE`:** when it names `lint-code`, there are no targets, and the hook touches no file.
+- **`AGENT_HOOKS_DISABLE`:** when it names `lint-code`, there are no targets, and the hook touches no file.
 
 ### `command.ts`, with the real shellcheck
 

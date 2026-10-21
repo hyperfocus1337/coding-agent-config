@@ -2,11 +2,11 @@
 
 Adds the `/toggle-hook` command, which turns an advisory hook off or on until you quit the agent. Use it when a formatter fights the style of a repo, or when a linter reports on a file that you do not own, and you do not want to restart the agent.
 
-| Agent       | Adapter                                                                                                       | Loaded by                                                                                          |
-| ----------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `$.command.register` and a `command.run` hook                | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
-| pi and omp  | [`pi.ts`](pi.ts): `registerCommand`, with completion of the hook names                                        | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
-| Codex       | None. Codex has no extension commands, so set the variable at launch: `CLAUDE_HOOKS_DISABLE=lint-prose codex` | Not applicable                                                                                     |
+| Agent       | Adapter                                                                                                      | Loaded by                                                                                          |
+| ----------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `$.command.register` and a `command.run` hook               | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
+| pi and omp  | [`pi.ts`](pi.ts): `registerCommand`, with completion of the hook names                                       | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
+| Codex       | None. Codex has no extension commands, so set the variable at launch: `AGENT_HOOKS_DISABLE=lint-prose codex` | Not applicable                                                                                     |
 
 ## What it checks
 
@@ -37,7 +37,7 @@ The guards (`enforce-cli-tools`, `block-commit-attribution`, `block-secret-commi
 
 ## How it works
 
-The state is one environment variable, `CLAUDE_HOOKS_DISABLE`: a list of hook names, separated by spaces or commas. The command changes the variable in the process of the agent itself. Nothing goes to disk, so the change does not reach another session, and chezmoi sees no drift.
+The state is one environment variable, `AGENT_HOOKS_DISABLE`: a list of hook names, separated by spaces or commas. The command changes the variable in the process of the agent itself. Nothing goes to disk, so the change does not reach another session, and chezmoi sees no drift.
 
 Each of the 7 hooks reads the variable on each run, and does nothing when the variable names it. In Claude Code, `type-check-tsc` and `type-check-pyrefly` are command hooks, which Claude Code starts as a new process: each one gets the variable as Claude Code has it when Claude Code starts the hook.
 
@@ -75,10 +75,10 @@ While a hook is off, the status line shows `hooks off: <names>`.
 
 ## Settings
 
-You can set `CLAUDE_HOOKS_DISABLE` before you start an agent. This command starts Claude Code with `lint-prose` off, and the status line shows it:
+You can set `AGENT_HOOKS_DISABLE` before you start an agent. This command starts Claude Code with `lint-prose` off, and the status line shows it:
 
 ```sh
-CLAUDE_HOOKS_DISABLE=lint-prose claude
+AGENT_HOOKS_DISABLE=lint-prose claude
 ```
 
 In Codex, this is the only way to turn a hook off.

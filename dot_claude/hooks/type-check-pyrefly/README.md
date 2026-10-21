@@ -39,7 +39,7 @@ Codex runs a hook only after you trust its entry. After a hook entry changes, tr
 
 ## How it works
 
-1. The hook stops when `CLAUDE_HOOKS_DISABLE` names `type-check-pyrefly`.
+1. The hook stops when `AGENT_HOOKS_DISABLE` names `type-check-pyrefly`.
 2. It finds the repository root with `git rev-parse --show-toplevel`, because the session folder can be a subdirectory.
 3. It lists the changed paths: `git diff --name-only HEAD` plus the untracked files, without deleted files. Before the first commit, the diff fails, so only the untracked files count.
 4. It stops when no path in the list ends in `.py`.
@@ -84,7 +84,7 @@ A skip shows nothing.
 
 ## Settings
 
-- **Turn off for the session:** run [`/toggle-hook`](../toggle-hook/README.md), or set `CLAUDE_HOOKS_DISABLE` to a list that holds `type-check-pyrefly`. Separate the names with spaces or commas. In Codex, set the variable at launch.
+- **Turn off for the session:** run [`/toggle-hook`](../toggle-hook/README.md), or set `AGENT_HOOKS_DISABLE` to a list that holds `type-check-pyrefly`. Separate the names with spaces or commas. In Codex, set the variable at launch.
 - **Turn off for good:** remove the entry from the file in the "Loaded by" column of the agent table.
 - **Files to check:** the hook gives no options to `pyrefly check`, so the pyrefly config at the repository root sets which files pyrefly checks.
 

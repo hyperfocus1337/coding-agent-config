@@ -13,7 +13,7 @@ It prints `all pass`, or one `FAIL` line for each failed case and exits 1.
 - **Node 23.6 or later**, which runs a `.ts` file.
 - **terraform**, **shfmt**, and **git** on `PATH`. Without one of them, some cases cannot pass, so the check prints `SKIP no <program> on PATH` and exits 0.
 
-The fixture goes in a folder under `$HOME`, because the hook skips `/tmp` and `$TMPDIR`. The check removes `CLAUDE_HOOKS_DISABLE`, so it runs also when `/toggle-hook` turned the hook off. It turns off `format-staged-files` with `GIT_CONFIG_*` variables, because that hook formats the file before the commit and then nothing is left to amend.
+The fixture goes in a folder under `$HOME`, because the hook skips `/tmp` and `$TMPDIR`. The check removes `AGENT_HOOKS_DISABLE`, so it runs also when `/toggle-hook` turned the hook off. It turns off `format-staged-files` with `GIT_CONFIG_*` variables, because that hook formats the file before the commit and then nothing is left to amend.
 
 ## What the cases check
 
@@ -23,7 +23,7 @@ The cases run `command.ts` with the real `terraform`, shfmt, and git:
 - **A Bash call:** a relative and two absolute paths in a command, a command that names no Terraform file, a path that does not exist, and a path the command only read.
 - **The amend hint:** after a commit and after `git -C <dir> commit`, and none for a file that the run left alone or without a commit.
 - **shfmt:** a 2-space indent and an indented `case` branch when no `.editorconfig` is above the fixture, the indent of an `.editorconfig` in the repo, a `.bash` path in a command, a file that does not parse, and the amend hint that names shfmt. An `.editorconfig` above `$HOME` changes the first case, so the check prints `SKIP` for it.
-- **`CLAUDE_HOOKS_DISABLE`:** a value that names the hook stops the core before it reads a file.
+- **`AGENT_HOOKS_DISABLE`:** a value that names the hook stops the core before it reads a file.
 
 Then the cases run the adapters with stubs over the real files:
 

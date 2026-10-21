@@ -47,7 +47,7 @@ The hook runs in the agent process, so it has no exit code. A call that passes g
 
 ## Settings
 
-The hook has no variables or config files. `CLAUDE_HOOKS_DISABLE` does not turn it off, because it is a guard, not an advisory hook. See [`toggle-hook`](../toggle-hook/README.md).
+The hook has no variables or config files. `AGENT_HOOKS_DISABLE` does not turn it off, because it is a guard, not an advisory hook. See [`toggle-hook`](../toggle-hook/README.md).
 
 To turn the hook off:
 

@@ -80,7 +80,9 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 ## Advisory hooks turn off through one environment variable
 
-**Decision:** `/toggle-hook` sets `CLAUDE_HOOKS_DISABLE` in the agent process, and each advisory hook reads it on each run. **Why:** a mod can change the environment of Claude Code with `$.env.set`, and an extension can change `process.env` of pi and omp. One variable then reaches the mods, the extensions, and the command hooks, with no state shared between hook folders. A setting in `settings.json` would drift from chezmoi, and stay on after the session. **Cost:** Codex has no extension commands, so it gets the variable at launch only. The guards have no toggle, so that a command cannot turn one off.
+**Decision:** `/toggle-hook` sets `AGENT_HOOKS_DISABLE` in the agent process, and each advisory hook reads it on each run. **Why:** a mod can change the environment of Claude Code with `$.env.set`, and an extension can change `process.env` of pi and omp. One variable then reaches the mods, the extensions, and the command hooks, with no state shared between hook folders. A setting in `settings.json` would drift from chezmoi, and stay on after the session. **Cost:** Codex has no extension commands, so it gets the variable at launch only. The guards have no toggle, so that a command cannot turn one off.
+
+**Name:** until 2026-10-21 the variable was `CLAUDE_HOOKS_DISABLE`. It got the `AGENT_` prefix of `AGENT_ALLOW_*`, because 4 agents read it. The hooks no longer read the old name.
 
 ## Behavior that the move dropped
 

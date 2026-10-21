@@ -42,6 +42,6 @@ export function nodeSettings(): Settings {
     configDir: fileURLToPath(new URL("./config", import.meta.url)),
     disable: process.env.CLAUDE_LINT_DISABLE,
     tmpdir: process.env.TMPDIR,
-    hooksOff: process.env.CLAUDE_HOOKS_DISABLE,
+    hooksOff: process.env.AGENT_HOOKS_DISABLE,
   };
 }

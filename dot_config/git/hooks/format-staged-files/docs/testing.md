@@ -25,7 +25,7 @@ node test/check.ts
 - **Output:** one stderr line for each file that the hook staged again, and no line for an unchanged file.
 - **Skipped files:** a partly staged file is committed as staged, and its unstaged change stays in the tree. A symlink stays a symlink.
 - **Agent detection:** each agent variable turns the hook on, and a commit outside an agent is not formatted.
-- **`CLAUDE_HOOKS_DISABLE`:** a commit is still formatted when the variable names `format-prettier`.
+- **`AGENT_HOOKS_DISABLE`:** a commit is still formatted when the variable names `format-prettier`.
 - **No `node`:** a commit with no `node` on `PATH` continues, with no output.
 
 ## Requirements

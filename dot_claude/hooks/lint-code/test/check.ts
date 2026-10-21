@@ -20,7 +20,7 @@ import extension from "../pi.ts";
 const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
 // A hook that /toggle-hook turned off in the agent that runs this check
 // still runs here.
-delete process.env.CLAUDE_HOOKS_DISABLE;
+delete process.env.AGENT_HOOKS_DISABLE;
 
 let failures = 0;
 async function check(what: string, run: () => void | Promise<void>) {
@@ -180,7 +180,7 @@ await check(
   },
 );
 
-await check("CLAUDE_HOOKS_DISABLE that names the hook: no targets", async () =>
+await check("AGENT_HOOKS_DISABLE that names the hook: no targets", async () =>
   assert.deepEqual(
     await targets(
       { filePath: "/x/a.py", cwd: "/x" },

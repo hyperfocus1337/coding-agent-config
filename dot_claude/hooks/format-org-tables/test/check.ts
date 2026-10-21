@@ -21,7 +21,7 @@ import extension from "../pi.ts";
 const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
 // A hook that /toggle-hook turned off in the agent that runs this check
 // still runs here.
-delete process.env.CLAUDE_HOOKS_DISABLE;
+delete process.env.AGENT_HOOKS_DISABLE;
 
 let failures = 0;
 async function check(what: string, run: () => void | Promise<void>) {
@@ -252,18 +252,16 @@ ran = bash(repo, `cat > ${repo}/quiet.org <<'EOF'\nEOF`);
 await quiet("hint: none without a commit", ran);
 await aligned("a file written with no commit", `${repo}/quiet.org`);
 
-// --- CLAUDE_HOOKS_DISABLE ---
+// --- AGENT_HOOKS_DISABLE ---
 
 const noIo = new Proxy({}, { get: () => () => assert.fail("the hook ran") });
-await check(
-  "CLAUDE_HOOKS_DISABLE that names the hook: nothing runs",
-  async () =>
-    assert.equal(
-      await align({ filePath: "/x/a.org", cwd: "/x" }, noIo as never, {
-        hooksOff: "lint-code format-org-tables",
-      }),
-      undefined,
-    ),
+await check("AGENT_HOOKS_DISABLE that names the hook: nothing runs", async () =>
+  assert.equal(
+    await align({ filePath: "/x/a.org", cwd: "/x" }, noIo as never, {
+      hooksOff: "lint-code format-org-tables",
+    }),
+    undefined,
+  ),
 );
 
 // --- pi.ts and hooks/register.ts, with stubs over the real files ---

@@ -37,5 +37,5 @@ export function nodeIo(): Io {
 }
 
 export function nodeSettings(): Settings {
-  return { hooksOff: process.env.CLAUDE_HOOKS_DISABLE };
+  return { hooksOff: process.env.AGENT_HOOKS_DISABLE };
 }

@@ -109,17 +109,17 @@ const run = (args: string) =>
   hooks.get("command.run")?.(stub$, { command: "toggle-hook", args });
 
 await check("mod: session.start registers the command", async () => {
-  env.set("CLAUDE_HOOKS_DISABLE", "lint-code");
+  env.set("AGENT_HOOKS_DISABLE", "lint-code");
   await hooks.get("session.start")?.(stub$, {}, async () => ({}));
   assert.equal(commands[0]?.name, "toggle-hook");
   assert.equal(statuses.at(-1), "hooks off: lint-code");
 });
 await check("mod: the command sets the variable and the status", async () => {
   assert.deepEqual(await run("lint-code"), { text: "lint-code is on." });
-  assert.equal(env.has("CLAUDE_HOOKS_DISABLE"), false);
+  assert.equal(env.has("AGENT_HOOKS_DISABLE"), false);
   assert.equal(statuses.at(-1), undefined);
   await run("lint-prose");
-  assert.equal(env.get("CLAUDE_HOOKS_DISABLE"), "lint-prose");
+  assert.equal(env.get("AGENT_HOOKS_DISABLE"), "lint-prose");
   assert.equal(statuses.at(-1), "hooks off: lint-prose");
 });
 await check("mod: a denied write says so", async () => {
@@ -129,7 +129,7 @@ await check("mod: a denied write says so", async () => {
 
 // --- pi.ts, with a stub pi ---
 
-delete process.env.CLAUDE_HOOKS_DISABLE;
+delete process.env.AGENT_HOOKS_DISABLE;
 type Command = {
   getArgumentCompletions: (prefix: string) => { value: string }[];
   handler: (args: string, ctx: unknown) => Promise<void>;
@@ -154,11 +154,11 @@ await check("pi.ts: the command sets process.env and the status", async () => {
   start?.({}, ctx);
   assert.equal(piStatus.at(-1), undefined);
   await command?.handler("type-check-tsc", ctx);
-  assert.equal(process.env.CLAUDE_HOOKS_DISABLE, "type-check-tsc");
+  assert.equal(process.env.AGENT_HOOKS_DISABLE, "type-check-tsc");
   assert.equal(notes.at(-1), "type-check-tsc is off until you quit the agent.");
   assert.equal(piStatus.at(-1), "hooks off: type-check-tsc");
   await command?.handler("type-check-tsc", ctx);
-  assert.equal("CLAUDE_HOOKS_DISABLE" in process.env, false);
+  assert.equal("AGENT_HOOKS_DISABLE" in process.env, false);
 });
 await check("pi.ts: completes the hook names and all", () => {
   const complete = (prefix: string) =>

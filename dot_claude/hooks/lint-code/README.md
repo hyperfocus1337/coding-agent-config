@@ -113,7 +113,7 @@ In Codex, when Node 23.6 or later is not on `PATH`, a `SessionStart` check shows
 
 ### Turn the hook off
 
-To turn the whole hook off in a running agent, run `/toggle-hook lint-code`. The command adds `lint-code` to `CLAUDE_HOOKS_DISABLE`. Codex has no such command, so set `CLAUDE_HOOKS_DISABLE=lint-code` when you start it. See [`toggle-hook`](../toggle-hook/README.md).
+To turn the whole hook off in a running agent, run `/toggle-hook lint-code`. The command adds `lint-code` to `AGENT_HOOKS_DISABLE`. Codex has no such command, so set `AGENT_HOOKS_DISABLE=lint-code` when you start it. See [`toggle-hook`](../toggle-hook/README.md).
 
 To remove the hook from one agent for good, remove its entry from the file in the "Loaded by" column of the table at the top.
 

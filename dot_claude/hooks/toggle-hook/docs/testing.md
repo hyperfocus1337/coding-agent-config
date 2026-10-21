@@ -16,4 +16,4 @@ node test/check.ts
 
 ## Tests in other hooks
 
-The test of each of the 7 hooks has a case that sets `CLAUDE_HOOKS_DISABLE` and checks that the hook does nothing. The test of `format-staged-files` checks that a commit is still formatted.
+The test of each of the 7 hooks has a case that sets `AGENT_HOOKS_DISABLE` and checks that the hook does nothing. The test of `format-staged-files` checks that a commit is still formatted.

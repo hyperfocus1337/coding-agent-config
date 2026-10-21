@@ -856,7 +856,7 @@ function hookEnv(): NodeJS.ProcessEnv {
   const env = { ...process.env };
   for (const name of [
     "CLAUDE_PROJECT_DIR",
-    "CLAUDE_HOOKS_DISABLE",
+    "AGENT_HOOKS_DISABLE",
     "CLAUDE_LINT_DISABLE",
     "AGENT_ALLOW_SECRETS",
     "AGENT_ALLOW_CLI_TOOLS",
@@ -1379,7 +1379,7 @@ async function main() {
   Object.assign(process.env, hookEnv());
   for (const name of [
     "CLAUDE_PROJECT_DIR",
-    "CLAUDE_HOOKS_DISABLE",
+    "AGENT_HOOKS_DISABLE",
     "CLAUDE_LINT_DISABLE",
     "AGENT_ALLOW_SECRETS",
     "AGENT_ALLOW_CLI_TOOLS",

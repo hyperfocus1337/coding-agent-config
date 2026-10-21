@@ -138,7 +138,7 @@ A line with 7 fields has no `before` and `after`. A blob ID is empty also when t
 
 ## Settings
 
-The hook has no variables or config files, and it does not read `CLAUDE_HOOKS_DISABLE`. To turn it off for one agent, remove its entry from the file in the "Loaded by" column of the adapter table.
+The hook has no variables or config files, and it does not read `AGENT_HOOKS_DISABLE`. To turn it off for one agent, remove its entry from the file in the "Loaded by" column of the adapter table.
 
 ## Failure behavior
 

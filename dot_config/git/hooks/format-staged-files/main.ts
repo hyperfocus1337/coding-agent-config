@@ -120,7 +120,7 @@ for (const formatter of ["format-prettier", "format-org-tables", "format-code"])
     cwd: root,
     // /toggle-hook turns off the agent hooks only, not this commit-time
     // format. Node leaves an undefined variable out.
-    env: { ...env, CLAUDE_HOOKS_DISABLE: undefined },
+    env: { ...env, AGENT_HOOKS_DISABLE: undefined },
     input: payload,
     stdio: ["pipe", "ignore", "ignore"],
   });

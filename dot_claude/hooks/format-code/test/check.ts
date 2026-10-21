@@ -22,7 +22,7 @@ import extension from "../pi.ts";
 const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
 // A hook that /toggle-hook turned off in the agent that runs this check
 // still runs here.
-delete process.env.CLAUDE_HOOKS_DISABLE;
+delete process.env.AGENT_HOOKS_DISABLE;
 
 let failures = 0;
 async function check(what: string, run: () => void | Promise<void>) {
@@ -263,18 +263,16 @@ await check("shfmt: the hint names the file and shfmt", () =>
 );
 fs.rmSync(`${repo}/.editorconfig`);
 
-// --- CLAUDE_HOOKS_DISABLE ---
+// --- AGENT_HOOKS_DISABLE ---
 
 const noIo = new Proxy({}, { get: () => () => assert.fail("the hook ran") });
-await check(
-  "CLAUDE_HOOKS_DISABLE that names the hook: nothing runs",
-  async () =>
-    assert.equal(
-      await format({ filePath: "/x/a.tf", cwd: "/x" }, noIo as never, {
-        hooksOff: "lint-code format-code",
-      }),
-      undefined,
-    ),
+await check("AGENT_HOOKS_DISABLE that names the hook: nothing runs", async () =>
+  assert.equal(
+    await format({ filePath: "/x/a.tf", cwd: "/x" }, noIo as never, {
+      hooksOff: "lint-code format-code",
+    }),
+    undefined,
+  ),
 );
 
 // --- pi.ts and hooks/register.ts, with stubs over the real files ---

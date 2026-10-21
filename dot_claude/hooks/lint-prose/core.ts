@@ -31,7 +31,7 @@ export interface Settings {
   tmpdir?: string;
   /** The Vale config and scripts/check.sh: ~/.config/vale, or LINT_PROSE_VALE_DIR. */
   valeDir: string;
-  /** CLAUDE_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
+  /** AGENT_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
   hooksOff?: string;
 }
 

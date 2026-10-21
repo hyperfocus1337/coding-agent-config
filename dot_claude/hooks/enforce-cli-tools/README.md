@@ -152,7 +152,7 @@ Use it for a one-off, or for a session that must leave no trace in the repo.
 
 The allow file and the variable add to each other, and each names the tools that stay allowed. An exemption for `npm` keeps every other rule, so neither override turns the whole hook off.
 
-The hook does not read `CLAUDE_HOOKS_DISABLE`, so [`/toggle-hook`](../toggle-hook/README.md) cannot turn it off. To turn it off in one agent, remove its entry from the file in the "Loaded by" column of the table above.
+The hook does not read `AGENT_HOOKS_DISABLE`, so [`/toggle-hook`](../toggle-hook/README.md) cannot turn it off. To turn it off in one agent, remove its entry from the file in the "Loaded by" column of the table above.
 
 ## Failure behavior
 

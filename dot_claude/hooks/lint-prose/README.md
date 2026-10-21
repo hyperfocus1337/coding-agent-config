@@ -112,11 +112,11 @@ Some messages are for you and not for the model, because they are not about text
 
 The hook reads these variables at run time, so export them in your shell, or set them in `env` in `settings.json`:
 
-| Variable               | Effect                                                                                                                               |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `CLAUDE_LINT_DISABLE`  | Turns the hook off when its list holds `prose` or `all`. `all` also turns off `lint-code`. Separate the items with spaces or commas. |
-| `CLAUDE_HOOKS_DISABLE` | Turns the hook off when its list holds `lint-prose`. `/toggle-hook` sets it.                                                         |
-| `LINT_PROSE_VALE_DIR`  | Replaces `~/.config/vale` as the directory of the config and `scripts/check.sh`. The tests set it to `dot_config/vale`.              |
+| Variable              | Effect                                                                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `CLAUDE_LINT_DISABLE` | Turns the hook off when its list holds `prose` or `all`. `all` also turns off `lint-code`. Separate the items with spaces or commas. |
+| `AGENT_HOOKS_DISABLE` | Turns the hook off when its list holds `lint-prose`. `/toggle-hook` sets it.                                                         |
+| `LINT_PROSE_VALE_DIR` | Replaces `~/.config/vale` as the directory of the config and `scripts/check.sh`. The tests set it to `dot_config/vale`.              |
 
 To turn the hook off for all sessions, run:
 

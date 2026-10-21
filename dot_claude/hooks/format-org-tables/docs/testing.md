@@ -13,7 +13,7 @@ It prints `all pass`, or one `FAIL` line for each failed case and exits 1.
 - **Node 23.6 or later**, which runs a `.ts` file.
 - **git** and **Emacs** on `PATH`. Without one of them, the check prints `SKIP no <program> on PATH` and exits 0, because the hook does nothing.
 
-The fixtures are in a temporary folder under `$HOME`, because the hook skips `/tmp` and `$TMPDIR`. The check removes the folder at the end. The check also removes `CLAUDE_HOOKS_DISABLE`, so the hook runs even when `/toggle-hook` turned it off in the agent that runs the check.
+The fixtures are in a temporary folder under `$HOME`, because the hook skips `/tmp` and `$TMPDIR`. The check removes the folder at the end. The check also removes `AGENT_HOOKS_DISABLE`, so the hook runs even when `/toggle-hook` turned it off in the agent that runs the check.
 
 The check turns off the [`format-staged-files`](../../../../dot_config/git/hooks/format-staged-files/README.md) pre-commit hook with `GIT_CONFIG_*` variables. Otherwise that hook aligns the file before the commit, and the amend hint never appears.
 
@@ -24,7 +24,7 @@ The first groups run `command.ts` with the real Emacs and git:
 - **A Write or Edit:** the named file, a file that is not `.org`, a path that does not exist, a second pass over an aligned file, no backup files, a file in a temp folder, a `|` line inside a block, a `#+TBLFM` formula, and a link at its raw width.
 - **A Bash call:** a relative and two absolute paths in a command, a relative path after an absolute `cd` and after two relative ones, a command that names no `.org` file, a path that does not exist, and a path that the command only read.
 - **The amend hint:** after a commit and after `git -C <dir> commit`, and none for a file that the run left as it was or without a commit.
-- **`CLAUDE_HOOKS_DISABLE`:** a value that names the hook stops the core before it reads a file.
+- **`AGENT_HOOKS_DISABLE`:** a value that names the hook stops the core before it reads a file.
 
 The last group runs the adapters with stubs over the real files:
 

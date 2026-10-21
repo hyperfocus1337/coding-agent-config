@@ -87,7 +87,7 @@ You see the same line in the Bash output of the transcript. A commit that you ma
 - **One commit:** use `git commit --no-verify`.
 - **A test that commits:** see [Shared conventions](../../../../dot_claude/hooks/README.md#shared-conventions).
 
-`CLAUDE_HOOKS_DISABLE` does not turn this hook off. The hook removes the variable before it runs the formatters, so a formatter that [`/toggle-hook`](../../../../dot_claude/hooks/toggle-hook/README.md) turned off in the agent still formats the commit.
+`AGENT_HOOKS_DISABLE` does not turn this hook off. The hook removes the variable before it runs the formatters, so a formatter that [`/toggle-hook`](../../../../dot_claude/hooks/toggle-hook/README.md) turned off in the agent still formats the commit.
 
 ## Failure behavior
 

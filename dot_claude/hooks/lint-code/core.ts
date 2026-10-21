@@ -24,7 +24,7 @@ export interface Settings {
   disable?: string;
   /** TMPDIR: files under it are throwaway and not linted. */
   tmpdir?: string;
-  /** CLAUDE_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
+  /** AGENT_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
   hooksOff?: string;
 }
 

@@ -38,7 +38,7 @@ export const register: Register = (on) => {
       configDir: `${$.plugin.root}/config`,
       disable: await $.env.get("CLAUDE_LINT_DISABLE"),
       tmpdir: await $.env.get("TMPDIR"),
-      hooksOff: await $.env.get("CLAUDE_HOOKS_DISABLE"),
+      hooksOff: await $.env.get("AGENT_HOOKS_DISABLE"),
     };
     const call =
       e.tool === "Bash"

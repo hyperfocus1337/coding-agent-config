@@ -1,6 +1,6 @@
 /**
  * The toggle-hook logic: `/toggle-hook <hook>` turns an advisory hook off or
- * on until you quit the agent. The state is CLAUDE_HOOKS_DISABLE, a list of
+ * on until you quit the agent. The state is AGENT_HOOKS_DISABLE, a list of
  * hook names in the agent's own environment. Each hook in HOOKS reads it on
  * each run and does nothing when it is named. This file only computes: the
  * adapters read and write the variable.
@@ -9,7 +9,7 @@
  * extension commands, so set the variable when you start it. README.md.
  */
 
-/** The hooks that read CLAUDE_HOOKS_DISABLE, in the order the list shows. */
+/** The hooks that read AGENT_HOOKS_DISABLE, in the order the list shows. */
 export const HOOKS = [
   "format-prettier",
   "format-org-tables",
@@ -30,13 +30,13 @@ const GUARDS = new Map([
   ["block-secret-commits", "Use .agent-allow-secrets in the repo."],
 ]);
 
-/** The hook names in a CLAUDE_HOOKS_DISABLE value: space or comma. */
+/** The hook names in a AGENT_HOOKS_DISABLE value: space or comma. */
 function names(value: string | undefined): string[] {
   return (value ?? "").split(/[\s,]+/).filter(Boolean);
 }
 
 /**
- * Runs `/toggle-hook <args>` on the current CLAUDE_HOOKS_DISABLE. Returns the
+ * Runs `/toggle-hook <args>` on the current AGENT_HOOKS_DISABLE. Returns the
  * new value (undefined: unset the variable) and the text for the user. No
  * argument lists the state of each hook, a hook name flips it, and `all`
  * turns every hook off, or on again when one is off. A name that is not in

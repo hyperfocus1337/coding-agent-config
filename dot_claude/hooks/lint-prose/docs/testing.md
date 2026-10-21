@@ -22,7 +22,7 @@ node test/check.ts
 
 - The check uses the Vale config in the chezmoi source, `dot_config/vale`, through `LINT_PROSE_VALE_DIR`. It does not use the applied copy in `~/.config/vale`.
 - The fixtures go in a directory under `$HOME`, `~/.lint-prose-test.*`, because the hook skips `/tmp` and `$TMPDIR`. The check removes the directory at the end.
-- The check removes `CLAUDE_HOOKS_DISABLE` and `CLAUDE_LINT_DISABLE`. So a hook that `/toggle-hook` turned off in the agent that runs the check still runs in the check.
+- The check removes `AGENT_HOOKS_DISABLE` and `CLAUDE_LINT_DISABLE`. So a hook that `/toggle-hook` turned off in the agent that runs the check still runs in the check.
 - The fixture commits turn off the `format-staged-files` pre-commit hook, so each commit holds the fixture text.
 
 ## What the cases check
@@ -31,7 +31,7 @@ All groups but the first and the last run `command.ts` on a payload, as Codex do
 
 | Group                       | What it checks                                                                                                                                                                                                                                                                                |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CLAUDE_HOOKS_DISABLE`      | When the list names `lint-prose`, `core.ts` runs nothing.                                                                                                                                                                                                                                     |
+| `AGENT_HOOKS_DISABLE`       | When the list names `lint-prose`, `core.ts` runs nothing.                                                                                                                                                                                                                                     |
 | Markdown                    | A paragraph or list item with more than 5 sentences blocks. 5 sentences pass. Frontmatter that is not valid YAML, code, and abbreviations are not counted.                                                                                                                                    |
 | Org                         | A long paragraph blocks. Keyword lines, headings, and `#+begin_src` blocks are not counted.                                                                                                                                                                                                   |
 | HTML                        | `<script>` and `<pre>` are not counted.                                                                                                                                                                                                                                                       |

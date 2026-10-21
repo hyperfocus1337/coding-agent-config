@@ -24,7 +24,7 @@ export interface Io {
 export interface Settings {
   /** TMPDIR: files under it are throwaway and not formatted. */
   tmpdir?: string;
-  /** CLAUDE_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
+  /** AGENT_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
   hooksOff?: string;
 }
 

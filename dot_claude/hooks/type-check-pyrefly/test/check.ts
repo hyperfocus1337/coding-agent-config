@@ -19,7 +19,7 @@ import { nodeIo } from "../io.ts";
 const hook = path.dirname(import.meta.dirname);
 // A hook that /toggle-hook turned off in the agent that runs this check
 // still runs here.
-delete process.env.CLAUDE_HOOKS_DISABLE;
+delete process.env.AGENT_HOOKS_DISABLE;
 
 let failures = 0;
 async function check(what: string, run: () => void | Promise<void>) {
@@ -173,8 +173,8 @@ await expect(
   0,
 );
 await expect(
-  "CLAUDE_HOOKS_DISABLE that names the hook lets the stop pass",
-  run(repo, {}, { CLAUDE_HOOKS_DISABLE: "lint-code,type-check-pyrefly" }),
+  "AGENT_HOOKS_DISABLE that names the hook lets the stop pass",
+  run(repo, {}, { AGENT_HOOKS_DISABLE: "lint-code,type-check-pyrefly" }),
   0,
 );
 const gitDir = process.env.PATH?.split(":").find((dir) =>

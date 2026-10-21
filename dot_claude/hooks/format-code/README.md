@@ -50,7 +50,7 @@ brew install hashicorp/tap/terraform shfmt
 
 ## How it works
 
-1. The hook stops when `CLAUDE_HOOKS_DISABLE` names `format-code`.
+1. The hook stops when `AGENT_HOOKS_DISABLE` names `format-code`.
 2. It finds the files to format, as "What it checks" tells.
 3. It runs the command of the formatter once for each file, in the folder of the file, with a limit of 10 s.
 4. When the call is a Bash command that commits, it asks git whether the last commit holds each file that a formatter changed.
@@ -84,18 +84,18 @@ The hook shows you no message when it formats a file. It drops the stderr of the
 
 ## Settings
 
-| Setting                | Effect                                                                                                               |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `CLAUDE_HOOKS_DISABLE` | A list of the hooks that are off, separated by spaces or commas. When it names `format-code`, the hook does nothing. |
-| `TMPDIR`               | The hook skips the files under this folder.                                                                          |
+| Setting               | Effect                                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `AGENT_HOOKS_DISABLE` | A list of the hooks that are off, separated by spaces or commas. When it names `format-code`, the hook does nothing. |
+| `TMPDIR`              | The hook skips the files under this folder.                                                                          |
 
 To turn the hook off until you quit, run [`/toggle-hook`](../toggle-hook/README.md) in Claude Code, pi, or omp. Codex has no command, so set the variable when you start it:
 
 ```sh
-CLAUDE_HOOKS_DISABLE=format-code codex
+AGENT_HOOKS_DISABLE=format-code codex
 ```
 
-To turn the hook off for good in one agent, remove it from the setting in the "Loaded by" column of the table at the top. `format-staged-files` removes `CLAUDE_HOOKS_DISABLE` before it runs the formatters, so the pre-commit run still formats.
+To turn the hook off for good in one agent, remove it from the setting in the "Loaded by" column of the table at the top. `format-staged-files` removes `AGENT_HOOKS_DISABLE` before it runs the formatters, so the pre-commit run still formats.
 
 ## Failure behavior
 

@@ -20,7 +20,7 @@ import extension from "../pi.ts";
 const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
 // A hook that /toggle-hook turned off in the agent that runs this check
 // still runs here.
-delete process.env.CLAUDE_HOOKS_DISABLE;
+delete process.env.AGENT_HOOKS_DISABLE;
 // The Vale config in the chezmoi source, not the applied copy in ~/.config.
 const valeDir = path.resolve(hook, "../../../dot_config/vale");
 
@@ -80,26 +80,21 @@ async function expect(
 
 const long = "One. Two. Three. Four. Five. Six, the last sentence here.";
 
-// --- CLAUDE_HOOKS_DISABLE ---
+// --- AGENT_HOOKS_DISABLE ---
 
-await check(
-  "CLAUDE_HOOKS_DISABLE that names the hook: nothing runs",
-  async () =>
-    assert.deepEqual(
-      await lintProse(
-        "/x/a.md",
-        "s",
-        new Proxy(
-          {},
-          { get: () => () => assert.fail("the hook ran") },
-        ) as never,
-        {
-          valeDir: "/x",
-          hooksOff: "lint-code lint-prose",
-        },
-      ),
-      {},
+await check("AGENT_HOOKS_DISABLE that names the hook: nothing runs", async () =>
+  assert.deepEqual(
+    await lintProse(
+      "/x/a.md",
+      "s",
+      new Proxy({}, { get: () => () => assert.fail("the hook ran") }) as never,
+      {
+        valeDir: "/x",
+        hooksOff: "lint-code lint-prose",
+      },
     ),
+    {},
+  ),
 );
 
 // --- Markdown ---
