@@ -161,6 +161,11 @@ pi: pi-apply pi-check
 hooks-check:
     "{{ SCRIPTS }}/extensions/hooks/check.sh"
 
+# Time the TypeScript hooks on tool calls replayed from ~/.claude/projects, and update docs/hooks/performance.md. Takes hours.
+[group('extensions')]
+hooks-perf:
+    node "{{ SCRIPTS }}/extensions/hooks/perf.ts" --write "{{ REPO }}/docs/hooks/performance.md"
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Lint & format
 # ──────────────────────────────────────────────────────────────────────────────
