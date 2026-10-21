@@ -1,6 +1,37 @@
 # Columns of the performance data
 
-This document explains each column of [`summary.csv`](../data/summary.csv) and [`slowest.csv`](../data/slowest.csv), with examples from the rows. The [README](../README.md#data) gives a one-line meaning for each column. Read this document when you must know what a number tells you, and which column answers your question.
+This document explains each column of [`summary.csv`](../data/summary.csv) and [`slowest.csv`](../data/slowest.csv), with examples from the rows. The quick reference gives a one-line meaning for each column. The sections after it explain what a number tells you, and which column answers your question.
+
+## Quick reference
+
+### `summary.csv`
+
+| Column             | Meaning                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| `hook`             | The hook folder in `dot_claude/hooks/`                                                            |
+| `path`             | `in process` or `command.ts`, see [`path`](#path)                                                 |
+| `agents`           | The agents that run this path of the hook, see [`agents`](#agents)                                |
+| `event`            | The hook event and the tool. A Bash row of `track-session-changes` holds both phases of the call  |
+| `session_ms`       | `mean_ms` × `per_session`: the time the row costs in an average session                           |
+| `mean_ms`          | The mean time of a call, without the stalls                                                       |
+| `p95_ms`           | The percentile 95, with the stalls                                                                |
+| `max_ms`           | The slowest call, with the stalls                                                                 |
+| `did_work_pct`     | Percent of the calls where the hook did work, see the list in the [Results](../README.md#results) |
+| `calls`            | The calls that the hook got. A Bash row holds the sample of 2000                                  |
+| `per_session`      | Calls of this event in an average session. A Bash row is scaled from the sample to all calls      |
+| `p50_ms`, `p99_ms` | The percentiles 50 and 99, with the stalls                                                        |
+| `tool_ran_pct`     | Percent of the calls where the hook started its tool                                              |
+
+### `slowest.csv`
+
+| Column                            | Meaning                                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `hook`, `path`, `agents`, `event` | The same as in `summary.csv`                                                                     |
+| `ms`                              | The time of the call                                                                             |
+| `extension`                       | The extension of the file, or `Bash command` for a Bash call                                     |
+| `hunks_only`                      | `true` when the file holds only the lines of the patch hunks, see the [Limits](method.md#limits) |
+| `bytes`                           | The size of the file or the command                                                              |
+| `lines`                           | The lines of the file or the command                                                             |
 
 ## What a row is
 
@@ -79,7 +110,7 @@ Most Edit calls are not on an Org file with a table, so the hook returns in 0.02
 
 ### `max_ms`
 
-The slowest call of the row. It shows one call only, so it can be an accident of the machine and not a property of the hook. For example, `block-secret-commits` through `command.ts` has a `max_ms` of 25469.61, but its `p99_ms` is 362.18. Over the two runs of the test, 26 of 57,374 `command.ts` calls took about 25 seconds, in the start of the Node process and not in the hook code. The README calls these calls stalls, and the mean leaves them out.
+The slowest call of the row. It shows one call only, so it can be an accident of the machine and not a property of the hook. For example, `block-secret-commits` through `command.ts` has a `max_ms` of 25469.61, but its `p99_ms` is 362.18. Over the two runs of the test, 26 of 57,374 `command.ts` calls took about 25 seconds, in the start of the Node process and not in the hook code. The [method](method.md#steps) calls these calls stalls, and the mean leaves them out.
 
 ## Frequency columns
 
@@ -103,7 +134,7 @@ The time that this row adds to an average session: `mean_ms` × `per_session`. I
 
 For example, `format-prettier` in process on Bash has `mean_ms` 113.95 and `per_session` 49.19. So it adds 113.95 × 49.19 = 5605 ms, or 5.6 seconds, to an average session. To get the cost of a hook for one agent, add up `session_ms` over the rows of that hook and agent. The sum of all Claude Code rows is 15.2 seconds for each session.
 
-`session_ms` is an average, not the time of one session. A session with many Bash calls costs more, and a session with no Org files pays nothing for `format-org-tables`. For `type-check-tsc` and `type-check-pyrefly`, the number holds almost no type check, because the test fixtures have no full project, see the [Limits](../README.md#limits).
+`session_ms` is an average, not the time of one session. A session with many Bash calls costs more, and a session with no Org files pays nothing for `format-org-tables`. For `type-check-tsc` and `type-check-pyrefly`, the number holds almost no type check, because the test fixtures have no full project, see the [Limits](method.md#limits).
 
 ## Activity columns
 
