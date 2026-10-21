@@ -4,6 +4,18 @@ Why the hook is built the way it is. [`core.ts`](../core.ts) holds both scans, a
 
 This file states the decisions. [research.md](research.md) holds the measurements, the comparisons and the alternatives that lost, so a decision here reads as one paragraph and links to its evidence.
 
+## Files
+
+| File                          | Deployed to `~/.claude/hooks/block-secret-commits/` | Role                                                                     |
+| ----------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------ |
+| `core.ts`                     | Yes                                                 | Both scans and the block messages. The adapters pass the file functions. |
+| `io.ts`                       | Yes                                                 | The file and process functions under Node                                |
+| `guard.sh`                    | Yes                                                 | Runs `command.ts`. Blocks a commit when `command.ts` gives no verdict.   |
+| `command.ts`                  | Yes                                                 | Command hook for Claude Code and Codex                                   |
+| `pi.ts`                       | Yes                                                 | pi and omp extension                                                     |
+| `conf/betterleaks.toml`       | Yes                                                 | The rule config that the hook passes with `--config`                     |
+| `README.md`, `docs/`, `test/` | No                                                  | Kept in the repo by `.chezmoiignore`                                     |
+
 ## Execution order
 
 The repo root comes first, because the allowlist is a file under it and each git and betterleaks run uses it as the working folder.
@@ -23,7 +35,9 @@ The bash hook also printed a JSON verdict for Cursor on stdout. Codex reports an
 
 Claude Code and Codex block only on exit 2. Each other result lets the call run. So if `command.ts` cannot give a verdict, a commit passes with no scan and no sign. This occurs when `node` is missing from `$PATH`, is older than 23.6 and cannot run a `.ts` file, or when `command.ts` fails, for example on a payload that it cannot parse.
 
-`guard.sh` reads the payload once and passes it to `node command.ts`. It keeps the exit code when it is 0 or 2. For each other exit code, it blocks the call when the raw payload holds a commit, with the same word test as `isCommit()`, and allows other calls. So a broken Node blocks commits only, and the message tells the user to fix `$PATH`. In this state, the raw payload test also blocks a call such as `git log --grep commit`. This is acceptable, because it occurs only while Node is broken.
+`guard.sh` reads the payload once and passes it to `node command.ts`. It keeps the exit code when it is 0 or 2. For each other exit code, it blocks the call when the raw payload holds a commit, with the same word test as `isCommit()`, and allows other calls. So a broken Node blocks commits only, and the message tells the user to fix `$PATH`.
+
+In this state, the raw payload test also blocks a call such as `git log --grep commit`. This is acceptable, because it occurs only while Node is broken.
 
 The guard adds one `sh` start and one `cat` to each Bash call. The cost is too small to measure: 20 calls took 0.42 s with the guard and 0.43 s without it. `grep` runs only when `node` failed.
 
@@ -115,6 +129,8 @@ A fixture may use any extension, because the name no longer decides.
 
 This is the one check that never fails open. Anything that stops a candidate being cleared blocks it: betterleaks missing, a scan error, a timeout, or a file staged and then removed from the worktree, which `dir` cannot read.
 
+The file list is the one exception. If `git diff --cached` fails, for example outside a git repository or in a root that does not exist, the scan has no file to check and allows.
+
 ## Config resolution
 
 ### Why the file sits in `conf/`
@@ -170,9 +186,11 @@ The native flag aborts the scan and reports **success**, which is indistinguisha
 
 ## `git commit -a`
 
-`-a` stages tracked modifications as part of the commit itself, after this hook has run, so the index the hook reads does not hold them yet. When the command carries `-a` or `--all` and the staged scan came back clean, the hook runs a second scan with `betterleaks git --pre-commit`, which reads the unstaged tracked diff. Both scans have to be clean for the commit to proceed.
+`-a` stages tracked modifications as part of the commit itself, after this hook has run, so the index the hook reads does not hold them yet. When the command carries `-a` or `--all` and the staged scan came back clean, the hook runs a second scan with `betterleaks git --pre-commit`, which reads the unstaged tracked diff.
 
-`stagesAll()` cuts the command at `-m` or `--message` before testing, so `git commit -m "add -a flag"` is not mistaken for an `-a` commit. A message glued straight to the flag (`-m"..."`) defeats that and costs one extra scan, which can block on a working-tree secret the commit would not have included. `--all` is anchored on both ends, so `--allow-empty` does not read as `--all`.
+"Clean" means that the staged scan reported no finding before the allowlist filter. A staged finding in an allowlisted file skips the second scan, and the allowlist then drops that finding, so the commit proceeds with no scan of the working tree.
+
+`stagesAll()` cuts the command at `-m ` or `--message` before testing, so `git commit -m "add -a flag"` is not mistaken for an `-a` commit. The cut also hides a flag after the message, so `git commit -m wip -a` runs no second scan. A message glued straight to the flag (`-m"..."`) defeats the cut and costs one extra scan, which can block on a working-tree secret the commit would not have included. `--all` is anchored on both ends, so `--allow-empty` does not read as `--all`.
 
 The flag test exists rather than always running both scans. Running both unconditionally would delete `stagesAll()`, but every commit would then block on an unrelated secret sitting anywhere in the dirty working tree.
 
@@ -217,7 +235,9 @@ Findings in an allowlisted file are dropped before the hook decides, which is wh
 
 ## Cost
 
-In Claude Code and Codex, a command that is not a commit costs about 25 ms, which is the Node start. The bash hook took about 1 ms. This case runs before every Bash call. A clean commit also pays for the scan, about 50 ms. A binary adds one `betterleaks dir`, paid only when a binary is actually added. The `settings.json` timeout of 10 s covers the worst case of two capped scans on an `-a` commit. [The full table](research.md#cost).
+In Claude Code and Codex, a command that is not a commit costs about 25 ms, which is the Node start. The bash hook took about 1 ms. This case runs before every Bash call.
+
+A clean commit also pays for the scan, about 50 ms. A binary adds one `betterleaks dir`, paid only when a binary is actually added. The `settings.json` timeout of 10 s covers the worst case of two capped scans on an `-a` commit. [The full table](research.md#cost).
 
 ## Changing this hook
 
@@ -227,4 +247,4 @@ Run the check after each change, and after each edit to `conf/betterleaks.toml`:
 node test/check.ts
 ```
 
-A config error turns off the betterleaks scan with no sign, so a passing check is the only proof that the name rules still load. See [test/README.md](../test/README.md) for what each case covers.
+A config error turns off the betterleaks scan with no sign, so a passing check is the only proof that the name rules still load. See [testing.md](testing.md) for what each case covers.
