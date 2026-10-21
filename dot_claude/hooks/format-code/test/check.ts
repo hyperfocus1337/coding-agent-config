@@ -1,11 +1,12 @@
 /**
  * Self-check for ../core.ts and its adapters: the cases through command.ts
- * with the real git and terraform, then the pi and mod adapters with stubs
- * over the real files.
+ * with the real git, terraform, and shfmt, then the pi and mod adapters with
+ * stubs over the real files.
  *
  * Run: node test/check.ts, from the hook directory. Fixtures live under $HOME,
- * because the hook skips /tmp and $TMPDIR. Without git or terraform the hook
- * does nothing, so the check skips with a message instead of passing.
+ * because the hook skips /tmp and $TMPDIR. Without git, terraform, or shfmt
+ * the hook does nothing, so the check skips with a message instead of
+ * passing.
  */
 
 import assert from "node:assert/strict";
@@ -33,13 +34,13 @@ async function check(what: string, run: () => void | Promise<void>) {
   }
 }
 
-for (const program of ["git", "terraform"])
+for (const program of ["git", "terraform", "shfmt"])
   if (spawnSync(program, ["--version"]).error) {
     console.log(`SKIP no ${program} on PATH`);
     process.exit(0);
   }
 
-const tmp = fs.mkdtempSync(path.join(os.homedir(), ".tf-hook-test."));
+const tmp = fs.mkdtempSync(path.join(os.homedir(), ".format-code-test."));
 // Turn off the format-staged-files pre-commit hook: it formats the file
 // before the commit, and then nothing is left to amend.
 const env = {
@@ -107,7 +108,7 @@ await check("skip a file that does not parse", () =>
 );
 
 // A file in a temp folder is a scratch file, not project code.
-const scratch = `${process.env.TMPDIR || "/tmp"}/tf-hook-scratch.tf`;
+const scratch = `${process.env.TMPDIR || "/tmp"}/format-code-scratch.tf`;
 unformatted(scratch);
 edit(scratch);
 await untouched("a file in a temp folder", scratch);
@@ -194,6 +195,74 @@ await quiet(
 );
 await formatted("a file written with no commit", `${repo}/quiet.tf`);
 
+// --- shfmt ---
+
+/** Shell that shfmt changes: a 4-space indent and a double space. */
+const RAW_SH = "if true; then\n    echo  a\nfi\n";
+const CASE = "case $1 in\na) echo a ;;\nesac\n";
+const shfmtFile = (what: string, file: string, want: string) =>
+  check(`shfmt: ${what}`, () => assert.equal(read(file), want));
+
+// No .editorconfig above the fixture: the hook passes -i 2 -ci. An
+// .editorconfig above $HOME would make shfmt use it instead.
+const above = (dir: string): boolean =>
+  fs.existsSync(`${dir}/.editorconfig`) ||
+  (dir !== "/" && above(path.dirname(dir)));
+if (above(tmp)) console.log("SKIP shfmt -i 2: an .editorconfig is above $HOME");
+else {
+  fs.writeFileSync(`${tmp}/edit.sh`, RAW_SH);
+  await quiet("shfmt: edit prints nothing", edit(`${tmp}/edit.sh`));
+  await shfmtFile(
+    "a 2-space indent with no .editorconfig",
+    `${tmp}/edit.sh`,
+    "if true; then\n  echo a\nfi\n",
+  );
+  fs.writeFileSync(`${tmp}/case.sh`, CASE);
+  edit(`${tmp}/case.sh`);
+  await shfmtFile(
+    "an indented case branch with no .editorconfig",
+    `${tmp}/case.sh`,
+    "case $1 in\n  a) echo a ;;\nesac\n",
+  );
+}
+
+// An .editorconfig in the repo: shfmt takes its indent, here 4 spaces.
+fs.writeFileSync(
+  `${repo}/.editorconfig`,
+  "root = true\n[*.sh]\nindent_style = space\nindent_size = 4\n",
+);
+fs.writeFileSync(`${repo}/ec.bash`, "echo  a\n");
+fs.writeFileSync(`${repo}/ec.sh`, "if true; then\n  echo a\nfi\n");
+edit(`${repo}/ec.sh`);
+await shfmtFile(
+  "the indent of the .editorconfig",
+  `${repo}/ec.sh`,
+  RAW_SH.replace("echo  a", "echo a"),
+);
+bash(repo, "touch ec.bash");
+await shfmtFile(
+  "a .bash path that a command names",
+  `${repo}/ec.bash`,
+  "echo a\n",
+);
+
+fs.writeFileSync(`${repo}/bad.sh`, "if true; then\n");
+await quiet("shfmt: a file that does not parse", edit(`${repo}/bad.sh`));
+await shfmtFile(
+  "skip a file that does not parse",
+  `${repo}/bad.sh`,
+  "if true; then\n",
+);
+
+fs.writeFileSync(`${repo}/committed.sh`, RAW_SH);
+git(repo, "add", "-A");
+git(repo, "commit", "-qm", "shell");
+const shCommit = bash(repo, "touch committed.sh && git commit -am shell");
+await check("shfmt: the hint names the file and shfmt", () =>
+  assert.match(shCommit.stdout, /shfmt reformatted.*committed\.sh/),
+);
+fs.rmSync(`${repo}/.editorconfig`);
+
 // --- CLAUDE_HOOKS_DISABLE ---
 
 const noIo = new Proxy({}, { get: () => () => assert.fail("the hook ran") });
@@ -202,7 +271,7 @@ await check(
   async () =>
     assert.equal(
       await format({ filePath: "/x/a.tf", cwd: "/x" }, noIo as never, {
-        hooksOff: "lint-code format-terraform",
+        hooksOff: "lint-code format-code",
       }),
       undefined,
     ),

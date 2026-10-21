@@ -48,7 +48,11 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 ## terraform fmt runs in a format hook, not in the lint hook
 
-**Decision:** `format-terraform` runs `terraform fmt` on each changed `.tf` and `.tfvars` file, and `lint-code` no longer checks Terraform. **Why:** `terraform fmt` is a formatter. As `terraform fmt -check -diff` in the lint hook, it blocked the call and the model fixed the spaces by hand, which cost a turn. As a format hook, it fixes the file and the model gets no message, as with `format-prettier` and `format-org-tables`. **Cost:** a new hook folder with its own adapters and test, about 300 lines that copy `format-org-tables`. Nothing reports a Terraform file that does not parse: `terraform validate` and tflint check a whole module, not one file.
+**Decision:** `format-terraform`, now [`format-code`](#format-code-holds-the-formatters-that-are-not-prettier), runs `terraform fmt` on each changed `.tf` and `.tfvars` file, and `lint-code` no longer checks Terraform. **Why:** `terraform fmt` is a formatter. As `terraform fmt -check -diff` in the lint hook, it blocked the call and the model fixed the spaces by hand, which cost a turn. As a format hook, it fixes the file and the model gets no message, as with `format-prettier` and `format-org-tables`. **Cost:** a new hook folder with its own adapters and test, about 300 lines that copy `format-org-tables`. Nothing reports a Terraform file that does not parse: `terraform validate` and tflint check a whole module, not one file.
+
+## format-code holds the formatters that are not Prettier
+
+**Decision:** on 2026-10-21, `format-terraform` became `format-code`, with a table of formatters in `core.ts`: `terraform fmt` for `.tf` and `.tfvars`, and shfmt for `.sh` and `.bash`. **Why:** each formatter runs one command on one file and prints the name of a changed file, so a new formatter is one row and not a new folder with about 300 lines of adapters and test, as [`lint-code`](#each-hook-name-says-what-it-covers) does for linters. **Cost:** you can turn off only all of `format-code`, not one of its formatters. The rename changes the Codex hook entries, so you trust them again in the Codex TUI. `format-prettier` and `format-org-tables` stay apart, because each finds the files of a Bash call in its own way.
 
 ## track-session-changes runs as a mod
 

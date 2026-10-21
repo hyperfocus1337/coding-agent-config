@@ -41,7 +41,7 @@ Codex sends Claude's hook payload with Claude's tool name `Bash`, so the scripts
 | Event         | Matcher       | Hooks                                                                                           |
 | ------------- | ------------- | ----------------------------------------------------------------------------------------------- |
 | `PreToolUse`  | `Bash`        | dcg, `block-secret-commits`, `enforce-cli-tools`                                                |
-| `PostToolUse` | `Bash`        | `format-prettier`, `format-org-tables`, `format-terraform`, `lint-code`                         |
+| `PostToolUse` | `Bash`        | `format-prettier`, `format-org-tables`, `format-code`, `lint-code`                              |
 | `PostToolUse` | `apply_patch` | the same four and `lint-prose`, through `apply-patch.ts`                                        |
 | `Stop`        |               | `type-check-tsc`, `type-check-pyrefly`; Codex sends `stop_hook_active`, so the loop guard works |
 

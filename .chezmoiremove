@@ -17,3 +17,4 @@
 .claude/commands/restate/core.md
 .claude/commands/restate/full.md
 .claude/commands/restate/goal-gaps-assumptions.md
+.claude/hooks/format-terraform

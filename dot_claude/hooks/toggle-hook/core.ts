@@ -13,7 +13,7 @@
 export const HOOKS = [
   "format-prettier",
   "format-org-tables",
-  "format-terraform",
+  "format-code",
   "lint-code",
   "lint-prose",
   "type-check-tsc",

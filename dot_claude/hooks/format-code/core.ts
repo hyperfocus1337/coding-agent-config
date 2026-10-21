@@ -1,9 +1,10 @@
 /**
- * The format-terraform logic: finds the Terraform files a tool call changed
- * and formats each one with `terraform fmt`. Prettier has no Terraform
- * parser, so format-prettier skips .tf. Never blocks: a missing terraform or
- * a file that does not parse stays as it is. The adapters pass in the file
- * and process functions, because a mod reaches them only through `$`.
+ * The format-code logic: finds the files a tool call changed and formats
+ * each one with the formatter for its extension, from FORMATTERS: terraform
+ * fmt and shfmt. Prettier has no parser for these languages, so
+ * format-prettier skips them. Never blocks: a missing formatter or a file
+ * that does not parse stays as it is. The adapters pass in the file and
+ * process functions, because a mod reaches them only through `$`.
  *
  * Adapters: hooks/register.ts (Claude Code mod), pi.ts (pi and omp), omp.ts
  * (omp only), command.ts (Codex, and the format-staged-files pre-commit hook).
@@ -42,17 +43,51 @@ export interface Call {
 }
 
 /**
+ * A formatter: the files it takes, and its command for one file. Each
+ * command writes the file in place, exits 0, and prints the file name only
+ * when it changed the file. A file that does not parse exits other than 0.
+ */
+interface Formatter {
+  name: string;
+  files: RegExp;
+  argv(file: string, io: Io): Promise<string[]>;
+}
+
+const FORMATTERS: Formatter[] = [
+  {
+    name: "terraform fmt",
+    files: /\.(tf|tfvars)$/,
+    argv: async (file) => ["terraform", "fmt", "-no-color", file],
+  },
+  {
+    name: "shfmt",
+    files: /\.(sh|bash)$/,
+    // Any printer flag makes shfmt ignore .editorconfig. So the flags only
+    // where no .editorconfig applies, else shfmt indents with tabs. README
+    // "shfmt and .editorconfig".
+    argv: async (file, io) => {
+      for (let dir = parent(file); ; dir = parent(dir)) {
+        if ((await io.stat(`${dir}/.editorconfig`))?.kind === "file")
+          return ["shfmt", "-l", "-w", file];
+        if (dir === "/") return ["shfmt", "-l", "-w", "-i", "2", "-ci", file];
+      }
+    },
+  },
+];
+
+/**
  * A command that commits: `git`, then global options such as `-C <dir>`, then
  * `commit` as a word, in one simple command. `git commit-tree` does not match.
  */
 const COMMIT = /\bgit[ \t](?:[^;&|\n]*[ \t])?commit(?![\w-])/;
 
-/** The extensions terraform fmt formats here. */
-const TERRAFORM = /\.(tf|tfvars)$/;
-/** A Terraform path that a command names. */
-const NAMED = /[^\s:;|&"'`()<>=]+\.(?:tfvars|tf)\b/g;
+/** A path that a command names, with an extension of FORMATTERS. */
+const NAMED = /[^\s:;|&"'`()<>=]+\.(?:tfvars|tf|bash|sh)\b/g;
 
 const plain = (path: string) => path.replace(/^\/private/, "");
+const parent = (path: string) => path.slice(0, path.lastIndexOf("/")) || "/";
+const formatterOf = (file: string) =>
+  FORMATTERS.find(({ files }) => files.test(file));
 
 /**
  * A file under /tmp, /var/tmp, or TMPDIR is a scratch file, not project
@@ -65,8 +100,8 @@ function throwaway(file: string, { tmpdir }: Settings): boolean {
 
 /**
  * The files to format, each once. A Write or Edit: the file it names. A Bash
- * call: the Terraform paths its command names that it just wrote, by an
- * mtime of at most 120 s, so a file the command only read stays as it is.
+ * call: the paths its command names that it just wrote, by an mtime of at
+ * most 120 s, so a file the command only read stays as it is.
  * shortcut: a command that writes early and then runs for minutes falls
  * outside the window. The upgrade is a start time stamped before the call.
  */
@@ -83,7 +118,7 @@ async function targets(
     );
   const kept: string[] = [];
   for (const file of new Set(paths)) {
-    if (!TERRAFORM.test(file) || throwaway(file, settings)) continue;
+    if (!formatterOf(file) || throwaway(file, settings)) continue;
     const stat = await io.stat(file);
     if (
       stat?.kind === "file" &&
@@ -95,8 +130,8 @@ async function targets(
 }
 
 /**
- * Formats the Terraform files a call changed. Returns the amend hint for the
- * model when the call committed a file that terraform fmt then changed, else
+ * Formats the files a call changed. Returns the amend hint for the model
+ * when the call committed a file that a formatter then changed, else
  * undefined. README "Write and commit in one command".
  */
 export async function format(
@@ -104,17 +139,18 @@ export async function format(
   io: Io,
   settings: Settings,
 ): Promise<string | undefined> {
-  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("format-terraform"))
+  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("format-code"))
     return undefined;
   // A command that commits: the hint then checks the last commit.
   const commits = !call.filePath && COMMIT.test(call.command ?? "");
   const dirty: string[] = [];
+  const names = new Set<string>();
   for (const file of await targets(call, io, settings)) {
+    const formatter = formatterOf(file)!;
     // One run for each file: a file that does not parse makes terraform fmt
-    // exit 2 and skip the files after it. A run takes about 15 ms. stdout
-    // names the file only when the run changed it.
-    const dir = file.slice(0, file.lastIndexOf("/")) || "/";
-    const ran = await io.run(["terraform", "fmt", "-no-color", file], {
+    // exit 2 and skip the files after it. A run takes about 15 ms.
+    const dir = parent(file);
+    const ran = await io.run(await formatter.argv(file, io), {
       cwd: dir,
       timeoutMs: 10_000,
     });
@@ -135,8 +171,10 @@ export async function format(
       ],
       { cwd: dir },
     );
-    if (held?.stdout.trim()) dirty.push(file);
+    if (!held?.stdout.trim()) continue;
+    dirty.push(file);
+    names.add(formatter.name);
   }
   if (!dirty.length) return undefined;
-  return `terraform fmt reformatted files after your commit, so the commit holds the unformatted version and the working tree is now dirty: ${dirty.join(" ")}. Fold the formatting into that commit (amend, or a fixup commit if it is already pushed).`;
+  return `${[...names].join(" and ")} reformatted files after your commit, so the commit holds the unformatted version and the working tree is now dirty: ${dirty.join(" ")}. Fold the formatting into that commit (amend, or a fixup commit if it is already pushed).`;
 }

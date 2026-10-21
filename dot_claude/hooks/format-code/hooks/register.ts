@@ -1,8 +1,8 @@
 /**
- * Claude Code mod: after a Write, Edit, or Bash call, formats the Terraform
- * files it changed. A failed Bash call is formatted too: it may still have
- * written files. Adds the amend hint as context when the call committed a
- * file that terraform fmt then changed. Fails open: a hook that throws is
+ * Claude Code mod: after a Write, Edit, or Bash call, formats the files
+ * it changed. A failed Bash call is formatted too: it may still have written
+ * files. Adds the amend hint as context when the call committed a file that
+ * a formatter then changed. Fails open: a hook that throws is
  * skipped and the result stands.
  */
 

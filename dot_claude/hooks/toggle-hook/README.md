@@ -24,7 +24,7 @@ The hook checks nothing. It runs when you type `/toggle-hook`, and the argument 
 
 Only the advisory hooks have a toggle. An advisory hook formats, lints, or type-checks, and does not exist to stop the model. The 7 advisory hooks are in `HOOKS` in [`core.ts`](core.ts):
 
-- `format-prettier`, `format-org-tables`, and `format-terraform`
+- `format-prettier`, `format-org-tables`, and `format-code`
 - `lint-code` and `lint-prose`
 - `type-check-tsc` and `type-check-pyrefly`
 
@@ -61,7 +61,7 @@ The command prints the state of the hooks, or the new state of one hook:
 > /toggle-hook
 on   format-prettier
 on   format-org-tables
-on   format-terraform
+on   format-code
 on   lint-code
 off  lint-prose
 on   type-check-tsc

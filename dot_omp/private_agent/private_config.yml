@@ -26,8 +26,8 @@ extensions:
   - ~/.claude/hooks/format-prettier/omp.ts
   - ~/.claude/hooks/format-org-tables/pi.ts
   - ~/.claude/hooks/format-org-tables/omp.ts
-  - ~/.claude/hooks/format-terraform/pi.ts
-  - ~/.claude/hooks/format-terraform/omp.ts
+  - ~/.claude/hooks/format-code/pi.ts
+  - ~/.claude/hooks/format-code/omp.ts
   - ~/.claude/hooks/lint-prose/pi.ts
   - ~/.claude/hooks/lint-prose/omp.ts
   - ~/.claude/hooks/type-check-tsc/omp.ts

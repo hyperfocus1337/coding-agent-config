@@ -1,5 +1,0 @@
-{
-  "name": "format-terraform",
-  "version": "0.1.0",
-  "description": "Formats the .tf and .tfvars files a Write, Edit, or Bash call changed, with terraform fmt."
-}

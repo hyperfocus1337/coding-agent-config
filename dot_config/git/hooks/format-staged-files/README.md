@@ -15,7 +15,7 @@ Git starts the hook on each `git commit`, in each repository. The hook formats o
 | omp         | `OMPCODE=1`                  |
 | Codex       | `CODEX_THREAD_ID`, any value |
 
-The hook takes the staged files that the commit adds, copies, modifies, or renames. It gives all of these files to the formatters of [`format-prettier`](../../../../dot_claude/hooks/format-prettier/README.md), [`format-org-tables`](../../../../dot_claude/hooks/format-org-tables/README.md), and [`format-terraform`](../../../../dot_claude/hooks/format-terraform/README.md). The formatting rules stay in those hooks: the extensions, `.prettierignore`, `--prose-wrap preserve`, and the skip of `/tmp` and `$TMPDIR`.
+The hook takes the staged files that the commit adds, copies, modifies, or renames. It gives all of these files to the formatters of [`format-prettier`](../../../../dot_claude/hooks/format-prettier/README.md), [`format-org-tables`](../../../../dot_claude/hooks/format-org-tables/README.md), and [`format-code`](../../../../dot_claude/hooks/format-code/README.md). The formatting rules stay in those hooks: the extensions, `.prettierignore`, `--prose-wrap preserve`, and the skip of `/tmp` and `$TMPDIR`.
 
 The hook skips these files, and the commit takes them as staged:
 
@@ -55,7 +55,7 @@ A repository's own `.git/hooks/pre-commit` or `core.hooksPath` hook still runs. 
 
 1. [`main.ts`](main.ts) exits at once when no agent variable is set. A commit outside an agent costs one Node start, see [research](docs/research.md).
 2. It lists the staged files with `git diff --cached --raw`. For `git commit -a` and `git commit <path>`, git builds a temporary index and sets `GIT_INDEX_FILE`, so the list holds the files that this commit takes.
-3. It runs the `command.ts` of `format-prettier`, `format-org-tables`, and `format-terraform` once each. Each run gets a `PostToolUse` payload that names all regular files without unstaged changes in `tool_input.file_paths`.
+3. It runs the `command.ts` of `format-prettier`, `format-org-tables`, and `format-code` once each. Each run gets a `PostToolUse` payload that names all regular files without unstaged changes in `tool_input.file_paths`.
 4. It runs `git add` on the files that a formatter changed. Git reads the index again after the `pre-commit` hook, so the commit takes the formatted version.
 5. It writes the path and the old blob ID of each staged file to `format-staged-files` in the git folder, and prints one line to stderr for each file.
 6. After the commit, the `post-commit` run reads that record and deletes it. When the real index still holds the old blob of a file, it copies the committed version into the index with `git reset`.
@@ -106,7 +106,7 @@ The hook fails open: a failure never stops the commit.
 
 ### Why a pre-commit hook
 
-The formatters `format-prettier`, `format-org-tables`, and `format-terraform` run after a tool call ends. When one Bash command writes a file and commits it, the commit already holds the unformatted text by the time the formatters run. The formatters then tell the model to amend.
+The formatters `format-prettier`, `format-org-tables`, and `format-code` run after a tool call ends. When one Bash command writes a file and commits it, the commit already holds the unformatted text by the time the formatters run. The formatters then tell the model to amend.
 
 A `pre-commit` hook runs inside `git commit`, after the command wrote the file and before git writes the commit, so the commit gets the formatted file. [Research](docs/research.md) gives how often the amend occurred before this hook.
 

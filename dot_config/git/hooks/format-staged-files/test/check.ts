@@ -44,10 +44,7 @@ for (const [link, target] of [
     ".claude/hooks/format-org-tables",
     `${repo}/dot_claude/hooks/format-org-tables`,
   ],
-  [
-    ".claude/hooks/format-terraform",
-    `${repo}/dot_claude/hooks/format-terraform`,
-  ],
+  [".claude/hooks/format-code", `${repo}/dot_claude/hooks/format-code`],
 ]) {
   fs.mkdirSync(path.dirname(`${home}/${link}`), { recursive: true });
   fs.symlinkSync(target!, `${home}/${link}`);

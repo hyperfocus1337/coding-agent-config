@@ -23,7 +23,7 @@ The hook lints these files, by extension:
 | `.yml` `.yaml` (plain)                                | [yamllint](https://github.com/adrienverge/yamllint)     | `yamllint -c config/.yamllint`            | https://yamllint.readthedocs.io/              |
 | `.yml` `.yaml` (Ansible)                              | [ansible-lint](https://github.com/ansible/ansible-lint) | `ansible-lint -c config/.ansible-lint -q` | https://ansible.readthedocs.io/projects/lint/ |
 
-YAML goes to one of two linters, see [YAML routing](#yaml-routing). The hook does not check `.tf` and `.tfvars` files. [`format-terraform`](../format-terraform/README.md) formats them, because `terraform fmt` is a formatter, not a linter.
+YAML goes to one of two linters, see [YAML routing](#yaml-routing). The hook does not check `.tf` and `.tfvars` files. [`format-code`](../format-code/README.md) formats them, because `terraform fmt` is a formatter, not a linter.
 
 The hook runs after each of these calls, also after a call that failed, because a failed Bash call can still have written a file:
 

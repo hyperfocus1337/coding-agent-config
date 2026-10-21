@@ -639,15 +639,15 @@ const toolCall = (c: Ctx) =>
     ? { command: c.command, cwd: c.cwd }
     : { filePath: c.filePath, cwd: c.cwd };
 
-const formatter = (name: string, fn: string, tool: string): Hook => ({
+const formatter = (name: string, fn: string, tools: string[]): Hook => ({
   name,
   on: { Write: ["post"], Edit: ["post"], Bash: ["post"] },
-  tools: [tool],
+  tools,
   state: true,
-  mtime: tool !== "prettier",
+  mtime: !tools.includes("prettier"),
   probe: "files",
   args: [],
-  work: `${tool} changed a file`,
+  work: `${tools.join(" or ")} changed a file`,
   core: async (c, _phase, m) => {
     // nodeIo is an object in some hooks and a function in others.
     const io = typeof m.io.nodeIo === "function" ? m.io.nodeIo() : m.io.nodeIo;
@@ -672,9 +672,9 @@ const typeCheck = (name: string, tool: string): Hook => ({
 });
 
 const HOOK_LIST: Hook[] = [
-  formatter("format-prettier", "format", "prettier"),
-  formatter("format-org-tables", "align", "emacs"),
-  formatter("format-terraform", "format", "terraform"),
+  formatter("format-prettier", "format", ["prettier"]),
+  formatter("format-org-tables", "align", ["emacs"]),
+  formatter("format-code", "format", ["terraform", "shfmt"]),
   {
     name: "lint-code",
     on: { Write: ["post"], Edit: ["post"], Bash: ["post"] },

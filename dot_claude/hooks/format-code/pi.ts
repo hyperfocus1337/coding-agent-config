@@ -1,9 +1,9 @@
 /**
- * pi extension: formats the Terraform files a write, edit, or bash call
- * changed, and appends the amend hint to the result when the call committed
- * a file that terraform fmt then changed. Loaded through the `extensions`
- * setting of pi and omp. omp also loads ./omp.ts, which formats the
- * Terraform files of the omp calls that this file does not see.
+ * pi extension: formats the files a write, edit, or bash call changed,
+ * and appends the amend hint to the result when the call committed a file
+ * that a formatter then changed. Loaded through the `extensions` setting of
+ * pi and omp. omp also loads ./omp.ts, which formats the files of the omp
+ * calls that this file does not see.
  */
 
 import type {

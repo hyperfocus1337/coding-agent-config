@@ -1,9 +1,8 @@
 /**
  * Command hook for Codex (PostToolUse), and for the format-staged-files
- * pre-commit hook: reads the hook payload on stdin and formats the Terraform
- * files the call changed. Prints the amend hint as hookSpecificOutput JSON
- * when the call committed a file that terraform fmt then changed. Always
- * exits 0.
+ * pre-commit hook: reads the hook payload on stdin and formats the files
+ * the call changed. Prints the amend hint as hookSpecificOutput JSON when
+ * the call committed a file that a formatter then changed. Always exits 0.
  *
  * Run: node command.ts
  */
