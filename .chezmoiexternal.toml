@@ -1,0 +1,22 @@
+{{- /*
+  dcg (destructive_command_guard): the release binary only, from
+  https://github.com/Dicklesworthstone/destructive_command_guard. The agent
+  hooks that run it are in the agent config files, see
+  dot_claude/hooks/block-destructive-commands/README.md. To upgrade, set the
+  version and copy the four checksums from the SHA256SUMS asset of the release.
+*/ -}}
+{{- $dcgVersion := "0.15.3" -}}
+{{- $dcgTargets := dict
+  "darwin/arm64" (list "aarch64-apple-darwin" "50a1a50762299c7e4b5ebaf3f932f45066c8e7c86a1d5d419b01babd1e2698d7")
+  "darwin/amd64" (list "x86_64-apple-darwin" "ec548b61a14c29dd2fc9ae54b1512d99cd3a370911e82639ed1fac71eec91585")
+  "linux/arm64" (list "aarch64-unknown-linux-gnu" "361765877ef5fc2aa89e3d07b189a4abba4368441125fb5f67b5728d26e5b271")
+  "linux/amd64" (list "x86_64-unknown-linux-musl" "dc7dcec9679f74ac3e6990959771ca0c84168eba658eff64fe9e63f917a84cc4") -}}
+{{- $dcg := get $dcgTargets (printf "%s/%s" .chezmoi.os .chezmoi.arch) -}}
+{{- if $dcg }}
+[".local/bin/dcg"]
+    type = "archive-file"
+    url = "https://github.com/Dicklesworthstone/destructive_command_guard/releases/download/v{{ $dcgVersion }}/dcg-{{ index $dcg 0 }}.tar.xz"
+    path = "dcg"
+    executable = true
+    checksum.sha256 = "{{ index $dcg 1 }}"
+{{- end }}
