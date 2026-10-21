@@ -7,4 +7,4 @@
 
 ## Timings
 
-[`docs/hooks/performance.md`](../../../../docs/hooks/performance.md) gives the time that `lint-code` takes for each call, in process and through `command.ts`.
+[`docs/hooks/performance/`](../../../../docs/hooks/performance/README.md) gives the time that `lint-code` takes for each call, in process and through `command.ts`.

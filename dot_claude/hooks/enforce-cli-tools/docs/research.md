@@ -10,7 +10,7 @@ This file holds the cost measurements of the hook. For what the hook does and ho
 | pi and omp  | The extension runs in the agent process.                                                                                     |
 | Codex       | `command.ts` starts Node: about 18 ms for each Bash call, against 1.5 ms for the old bash hook (median of 20 runs on Linux). |
 
-[`docs/hooks/performance.md`](../../../../docs/hooks/performance.md) has a later measurement of all hooks, on macOS.
+[`docs/hooks/performance/`](../../../../docs/hooks/performance/README.md) has a later measurement of all hooks, on macOS.
 
 ## Tokens per call
 

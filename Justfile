@@ -161,10 +161,28 @@ pi: pi-apply pi-check
 hooks-check:
     "{{ SCRIPTS }}/extensions/hooks/check.sh"
 
-# Time the TypeScript hooks on tool calls replayed from ~/.claude/projects, and update docs/hooks/performance.md. Takes hours.
-[group('extensions')]
+# --- hooks ---
+
+# Time the TypeScript hooks on tool calls replayed from ~/.claude/projects, and update docs/hooks/performance/. Takes hours.
+[group('hooks')]
 hooks-perf:
-    node "{{ SCRIPTS }}/extensions/hooks/perf.ts" --write "{{ REPO }}/docs/hooks/performance.md"
+    node "{{ SCRIPTS }}/extensions/hooks/perf.ts" --write "{{ REPO }}/docs/hooks/performance"
+
+# Write docs/hooks/performance/ again from the results of the last hooks-perf run, with no replay. Takes seconds.
+[group('hooks')]
+hooks-perf-render:
+    node "{{ SCRIPTS }}/extensions/hooks/perf.ts" --render --write "{{ REPO }}/docs/hooks/performance"
+
+# Print docs/hooks/performance/<file>.csv sorted by a column: numbers largest first, text A to Z. An agent keeps only its rows. Example: just hooks-perf-sort p95_ms summary "Claude Code"
+[group('hooks')]
+hooks-perf-sort column="session_ms" file="summary" agent="":
+    sqlite3 :memory: -cmd '.import --csv "{{ REPO }}/docs/hooks/performance/{{ file }}.csv" data' -cmd '.mode table' \
+        "SELECT * FROM data WHERE agents LIKE '%{{ agent }}%' ORDER BY CASE WHEN {{ column }} GLOB '[0-9]*' THEN CAST({{ column }} AS REAL) END DESC, {{ column }}"
+
+# Open docs/hooks/performance/<file>.csv in csvlens. An agent keeps only its rows. mise downloads csvlens on the first run. Example: just hooks-perf-view summary "Claude Code"
+[group('hooks')]
+hooks-perf-view file="summary" agent="":
+    mise exec github:YS-L/csvlens@0.15.1 -- csvlens -c {{ if agent == "" { "" } else { "--filter '" + agent + "'" } }} "{{ REPO }}/docs/hooks/performance/{{ file }}.csv"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Lint & format

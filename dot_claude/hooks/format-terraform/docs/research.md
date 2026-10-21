@@ -2,7 +2,7 @@
 
 ## Run time
 
-One `terraform fmt` run on one file takes about 15 ms. So one run for each file costs little, and the hook does not need to format all files in one run. [`docs/hooks/performance.md`](../../../../docs/hooks/performance.md) gives the time of the whole hook for each call.
+One `terraform fmt` run on one file takes about 15 ms. So one run for each file costs little, and the hook does not need to format all files in one run. [`docs/hooks/performance/`](../../../../docs/hooks/performance/README.md) gives the time of the whole hook for each call.
 
 ## Parse errors
 

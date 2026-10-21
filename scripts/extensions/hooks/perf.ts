@@ -3,17 +3,19 @@
  * the Claude Code transcripts (~/.claude/projects/*\/*.jsonl) through the
  * core.ts of each hook in this process, and through its command.ts with the
  * payload on stdin. Writes the results to ~/.cache/hook-perf/results.json,
- * and with --write, the part of docs/hooks/performance.md between the
- * perf:begin and perf:end markers.
+ * and with --write DIR, summary.csv and slowest.csv in DIR and the part of
+ * DIR/README.md between the perf:begin and perf:end markers. Without
+ * --write, prints summary.csv.
  *
  * The transcripts are only a source of input. Each session is rebuilt in a
  * fixture under ~/.cache/hook-perf/, and each path in a payload or a command
  * points into it. No historical command runs: it is only the payload. The
  * durationMs values and the hook output in the transcripts are not read.
  *
- * Run: node scripts/extensions/hooks/perf.ts [--write FILE] [--hook NAME]...
- * [--limit N], or `just hooks-perf`. --limit caps the calls of each hook, for
- * a smoke test.
+ * Run: node scripts/extensions/hooks/perf.ts [--write DIR] [--hook NAME]...
+ * [--limit N] [--render], or `just hooks-perf`. --limit caps the calls of
+ * each hook, for a smoke test. --render replays nothing: it writes the
+ * report again from results.json.
  */
 
 import { spawn, spawnSync } from "node:child_process";
@@ -63,6 +65,7 @@ const { values: flags } = parseArgs({
     write: { type: "string" },
     hook: { type: "string", multiple: true },
     limit: { type: "string" },
+    render: { type: "boolean" },
   },
 });
 const LIMIT = flags.limit ? Number(flags.limit) : Infinity;
@@ -1152,16 +1155,24 @@ async function replay(
 /** Nearest-rank percentile of sorted values. */
 const percentile = (sorted: number[], p: number) =>
   sorted[Math.max(Math.ceil((p / 100) * sorted.length) - 1, 0)] ?? 0;
-const ms = (value: number) =>
-  value < 10 ? value.toFixed(2) : value.toFixed(0);
-const share = (part: number, all: number) =>
-  all ? `${Math.round((100 * part) / all)} %` : "-";
-const size = (bytes: number) =>
-  bytes < 1024
-    ? `${bytes} B`
-    : bytes < 1024 * 1024
-      ? `${(bytes / 1024).toFixed(1)} KiB`
-      : `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
+const round = (value: number) => Math.round(value * 100) / 100;
+const pct = (part: number, all: number) =>
+  all ? Math.round((100 * part) / all) : 0;
+/** A call slower than this is a stall: the mean leaves it out. */
+const STALL = 2000;
+
+const csv = (rows: (string | number | boolean)[][]) =>
+  rows
+    .map((row) =>
+      row
+        .map((value) =>
+          /[",\n]/.test(String(value))
+            ? `"${String(value).replaceAll('"', '""')}"`
+            : value,
+        )
+        .join(","),
+    )
+    .join("\n") + "\n";
 
 interface Results {
   meta: Record<string, string | number>;
@@ -1175,10 +1186,42 @@ interface Results {
   }[];
 }
 
-function render(results: Results): string {
+/**
+ * The agents that run a path of a hook, from the files in the work tree that
+ * load the hooks: a mod, pi.ts, or omp.ts runs in process, and a command hook
+ * runs command.ts, also through guard.sh.
+ */
+function loaders() {
+  const read = (file: string) => readFileSync(join(REPO, file), "utf8");
+  const claude = read("dot_claude/settings.json.tmpl");
+  const mods = claude.match(/"CLAUDE_CODE_PLUGIN_DIRS".*/)?.[0] ?? "";
+  const pi = read("dot_pi/agent/modify_settings.json");
+  const omp = read("dot_omp/private_agent/private_config.yml");
+  const codex = read("dot_codex/modify_hooks.json");
+  return (hook: string, path: Path) =>
+    (path === "in process"
+      ? ([
+          ["Claude Code", mods.includes(`"${hook}"`)],
+          // omp loads pi.ts, omp.ts, or both: each runs in process.
+          ["pi", pi.includes(`hooks/${hook}/`)],
+          ["omp", omp.includes(`hooks/${hook}/`)],
+        ] as const)
+      : ([
+          // The mod list names a hook only in quotes, never in a path.
+          ["Claude Code", claude.includes(`hooks/${hook}/`)],
+          ["Codex", codex.includes(`hooks/${hook}/`)],
+        ] as const)
+    )
+      .filter(([, runs]) => runs)
+      .map(([agent]) => agent)
+      .join(", ");
+}
+
+function report(results: Results) {
   const { meta } = results;
+  const agents = loaders();
   const dates = [...new Set(results.hooks.map((hook) => hook.date))].sort();
-  const out: string[] = [
+  const block: string[] = [
     `- Date: ${dates.length > 1 ? `${dates[0]} to ${dates.at(-1)}` : dates[0]}`,
     `- Commit: \`${meta.commit}\`, the hooks from a \`git archive\` of it`,
     `- Node: ${meta.node}`,
@@ -1187,64 +1230,126 @@ function render(results: Results): string {
     `- Run again: \`${meta.command}\``,
     `- Input: ${meta.transcripts} transcripts, ${meta.writes} Write, ${meta.edits} Edit, and ${meta.notebooks} NotebookEdit calls, ${meta.sample} of ${meta.bash} Bash calls (seed ${SEED}), ${meta.stops} turns that changed files.`,
     `- Edit rebuilds: ${meta.editOriginal} from \`originalFile\`, ${meta.editState} from the text that earlier calls left, ${meta.editHunks} from the patch hunks only.`,
-    "",
-    "| Hook | Path | Event | Calls | p50 ms | p95 ms | p99 ms | Max ms | Did work | Tool ran | Off |",
-    "| ---- | ---- | ----- | ----: | -----: | -----: | -----: | -----: | -------: | -------: | --: |",
   ];
-  const slow: string[] = [
-    "| Hook | Path | Event | ms | Extension | Size | Lines |",
-    "| ---- | ---- | ----- | -: | --------- | ---: | ----: |",
-  ];
+  const summary: { session_ms: number; [column: string]: string | number }[] =
+    [];
+  const slowest: Sample[] = [];
+  const notes: string[] = [];
   for (const hook of results.hooks) {
     if (hook.none) {
-      out.push(
-        `| ${hook.name} | both | - | not measured: ${hook.none} | | | | | | | |`,
-      );
+      notes.push(`- ${hook.name}: not measured, ${hook.none}.`);
       continue;
     }
     const all: Sample[] = [];
     for (const path of ["in process", "command.ts"] as Path[]) {
       const pass = hook.passes[path];
       if (!pass) {
-        out.push(
-          `| ${hook.name} | ${path} | - | skipped: no ${path === "command.ts" ? "command.ts" : "in-process path"} | | | | | | | |`,
+        notes.push(
+          `- ${hook.name}, ${path}: not measured, no ${path === "command.ts" ? "command.ts" : "in-process path"}.`,
         );
         continue;
       }
       all.push(...pass.samples);
-      const events = [...new Set(pass.samples.map((s) => s.event))];
-      for (const event of events) {
+      for (const event of new Set(pass.samples.map((s) => s.event))) {
         const rows = pass.samples.filter((s) => s.event === event);
         const sorted = rows.map((s) => s.ms).sort((a, b) => a - b);
-        out.push(
-          `| ${hook.name} | ${path} | ${event} | ${rows.length} | ${ms(percentile(sorted, 50))} | ${ms(percentile(sorted, 95))} | ${ms(percentile(sorted, 99))} | ${ms(sorted.at(-1) ?? 0)} | ${share(rows.filter((s) => s.acted).length, rows.length)} | ${share(rows.filter((s) => s.ran).length, rows.length)} | ${events.indexOf(event) === 0 ? pass.off : ""} |`,
-        );
+        const kept = sorted.filter((ms) => ms <= STALL);
+        const mean = kept.reduce((sum, ms) => sum + ms, 0) / kept.length;
+        // A Bash row holds a sample of the Bash calls: scale it to all of them.
+        const scale = event.endsWith("Bash")
+          ? Number(meta.bash) / Number(meta.sample)
+          : 1;
+        const perSession = (rows.length * scale) / Number(meta.transcripts);
+        // The key order is the column order: the columns to rank by first.
+        summary.push({
+          hook: hook.name,
+          path,
+          agents: agents(hook.name, path),
+          event,
+          session_ms: round(mean * perSession),
+          mean_ms: round(mean),
+          p95_ms: round(percentile(sorted, 95)),
+          max_ms: round(sorted.at(-1) ?? 0),
+          did_work_pct: pct(rows.filter((s) => s.acted).length, rows.length),
+          calls: rows.length,
+          per_session: round(perSession),
+          p50_ms: round(percentile(sorted, 50)),
+          p99_ms: round(percentile(sorted, 99)),
+          tool_ran_pct: pct(rows.filter((s) => s.ran).length, rows.length),
+        });
       }
-    }
-    for (const s of all.sort((a, b) => b.ms - a.ms).slice(0, 5))
-      slow.push(
-        `| ${hook.name} | ${s.path} | ${s.event} | ${ms(s.ms)} | ${s.ext}${s.partial ? " (hunks only)" : ""} | ${size(s.size)} | ${s.lines} |`,
+      notes.push(
+        ...[
+          pass.off && `${pass.off} calls where the tool could not start`,
+          pass.unsafe &&
+            `${pass.unsafe} unsafe (a write outside the fixture, refused)`,
+          pass.failed && `${pass.failed} failed calls that the adapter skips`,
+          pass.mismatch &&
+            `${pass.mismatch} calls where command.ts and the core in process disagree on "did work"`,
+        ]
+          .filter(Boolean)
+          .map((note) => `- ${hook.name}, ${path}: ${note}, not counted.`),
       );
+    }
+    slowest.push(...all.sort((a, b) => b.ms - a.ms).slice(0, 5));
   }
-  out.push("", '"Did work" per hook:', "");
+  block.push("", '"Did work" per hook:', "");
   for (const hook of results.hooks)
-    if (!hook.none) out.push(`- ${hook.name}: ${hook.work}.`);
-  const notes = results.hooks.flatMap((hook) =>
-    Object.entries(hook.passes).flatMap(([path, pass]) =>
+    if (!hook.none) block.push(`- ${hook.name}: ${hook.work}.`);
+  if (notes.length) block.push("", "Calls left out:", "", ...notes);
+  return {
+    block: block.join("\n"),
+    summary: csv([
+      Object.keys(summary[0] ?? {}),
+      // The most expensive rows first.
+      ...summary
+        .sort((a, b) => b.session_ms - a.session_ms)
+        .map((row) => Object.values(row)),
+    ]),
+    slowest: csv([
       [
-        pass.unsafe &&
-          `${pass.unsafe} unsafe (a write outside the fixture, refused)`,
-        pass.failed && `${pass.failed} failed calls that the adapter skips`,
-        pass.mismatch &&
-          `${pass.mismatch} calls where command.ts and the core in process disagree on "did work"`,
-      ]
-        .filter(Boolean)
-        .map((note) => `- ${hook.name}, ${path}: ${note}, not counted.`),
-    ),
-  );
-  if (notes.length) out.push("", "Calls left out:", "", ...notes);
-  out.push("", "### Slowest cases", "", ...slow);
-  return out.join("\n");
+        "hook",
+        "path",
+        "agents",
+        "event",
+        "ms",
+        "extension",
+        "hunks_only",
+        "bytes",
+        "lines",
+      ],
+      ...slowest
+        .sort((a, b) => b.ms - a.ms)
+        .map((s) => [
+          s.hook,
+          s.path,
+          agents(s.hook, s.path),
+          s.event,
+          round(s.ms),
+          s.ext,
+          s.partial,
+          s.size,
+          s.lines,
+        ]),
+    ]),
+  };
+}
+
+/** Writes the CSV files and the generated part of the README in DIR. */
+function publish(results: Results) {
+  const { block, summary, slowest } = report(results);
+  if (!flags.write) return void process.stdout.write(summary);
+  writeFileSync(join(flags.write, "summary.csv"), summary);
+  writeFileSync(join(flags.write, "slowest.csv"), slowest);
+  const readme = join(flags.write, "README.md");
+  const doc = readFileSync(readme, "utf8");
+  const begin = "<!-- perf:begin -->";
+  const end = "<!-- perf:end -->";
+  const [head, rest] = doc.split(begin);
+  const tail = rest?.split(end)[1];
+  if (tail === undefined)
+    throw new Error(`${readme}: no ${begin} ... ${end} block`);
+  writeFileSync(readme, `${head}${begin}\n\n${block}\n\n${end}${tail}`);
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -1260,6 +1365,9 @@ function random(seed: number) {
 }
 
 async function main() {
+  const saved = join(BASE, "results.json");
+  if (flags.render)
+    return publish(JSON.parse(readFileSync(saved, "utf8")) as Results);
   if (!existsSync(HOOKS)) {
     const src = join(BASE, "src", HEAD);
     mkdirSync(src, { recursive: true });
@@ -1328,7 +1436,6 @@ async function main() {
     hooks: [],
   };
   // A --hook run keeps the other hooks of the last run at the same commit.
-  const saved = join(BASE, "results.json");
   if (flags.hook && existsSync(saved)) {
     const last = JSON.parse(readFileSync(saved, "utf8")) as Results;
     if (last.meta.commit === HEAD)
@@ -1374,16 +1481,7 @@ async function main() {
       writeFileSync(saved, JSON.stringify(results));
     }
   }
-  const report = render(results);
-  if (!flags.write) return void process.stdout.write(`${report}\n`);
-  const doc = readFileSync(flags.write, "utf8");
-  const begin = "<!-- perf:begin -->";
-  const end = "<!-- perf:end -->";
-  const [head, rest] = doc.split(begin);
-  const tail = rest?.split(end)[1];
-  if (tail === undefined)
-    throw new Error(`${flags.write}: no ${begin} ... ${end} block`);
-  writeFileSync(flags.write, `${head}${begin}\n\n${report}\n\n${end}${tail}`);
+  publish(results);
 }
 
 await main();

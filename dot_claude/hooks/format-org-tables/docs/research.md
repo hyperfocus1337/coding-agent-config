@@ -1,6 +1,6 @@
 # format-org-tables: research
 
-Timings and measurements behind the design of [`format-org-tables`](../README.md). For the cost of the hook in real sessions, see [`docs/hooks/performance.md`](../../../../docs/hooks/performance.md).
+Timings and measurements behind the design of [`format-org-tables`](../README.md). For the cost of the hook in real sessions, see [`docs/hooks/performance/`](../../../../docs/hooks/performance/README.md).
 
 ## Emacs start
 

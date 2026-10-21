@@ -173,7 +173,7 @@ Median of 9 runs on the installed hook:
 
 The non-git row is the one that matters most, because the hook is wired to every `Bash` call.
 
-The 1 ms in that row is the bash hook. The TypeScript hook costs about 25 ms on a command that is not a commit in Claude Code and Codex, which is the Node start. In pi and omp the extension is already loaded, so the cost is less than 1 ms. [`docs/hooks/performance.md`](../../../../docs/hooks/performance.md) has the timings of all hooks on replayed tool calls.
+The 1 ms in that row is the bash hook. The TypeScript hook costs about 25 ms on a command that is not a commit in Claude Code and Codex, which is the Node start. In pi and omp the extension is already loaded, so the cost is less than 1 ms. [`docs/hooks/performance/`](../../../../docs/hooks/performance/README.md) has the timings of all hooks on replayed tool calls.
 
 A binary costs one extra `betterleaks dir` (about 34 ms), and a blocked one a second pass to name the offending file. Both are paid only when a binary is actually added.
 

@@ -11,13 +11,13 @@ Each hook in [`dot_claude/hooks/`](../../dot_claude/hooks/README.md) has one Typ
 
 Three hooks also run `command.ts` in Claude Code, as a command hook in `settings.json.tmpl`: `block-secret-commits`, `type-check-tsc`, and `type-check-pyrefly`. The mod API cannot do what they need, see [`decisions.md`](decisions.md). `format-staged-files` is not an agent hook. It is a git `pre-commit` hook in [`dot_config/git/hooks/`](../../dot_config/git/hooks/format-staged-files/README.md) that runs the `command.ts` of the two formatter hooks.
 
-| File                               | Read it when                                         |
-| ---------------------------------- | ---------------------------------------------------- |
-| [`authoring.md`](authoring.md)     | You add a hook or change an adapter                  |
-| [`platforms.md`](platforms.md)     | You must know if an agent's hook API can do a thing  |
-| [`decisions.md`](decisions.md)     | You want to change the design, and must know the why |
-| [`gaps.md`](gaps.md)               | You must know what a hook does not cover yet         |
-| [`performance.md`](performance.md) | You must know how long a hook takes per call         |
+| File                                    | Read it when                                         |
+| --------------------------------------- | ---------------------------------------------------- |
+| [`authoring.md`](authoring.md)          | You add a hook or change an adapter                  |
+| [`platforms.md`](platforms.md)          | You must know if an agent's hook API can do a thing  |
+| [`decisions.md`](decisions.md)          | You want to change the design, and must know the why |
+| [`gaps.md`](gaps.md)                    | You must know what a hook does not cover yet         |
+| [`performance/`](performance/README.md) | You must know how long a hook takes per call         |
 
 Related research:
 

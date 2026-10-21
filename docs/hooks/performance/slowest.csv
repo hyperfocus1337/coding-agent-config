@@ -1,0 +1,56 @@
+hook,path,agents,event,ms,extension,hunks_only,bytes,lines
+block-secret-commits,command.ts,"Claude Code, Codex",PreToolUse Bash,25469.61,Bash command,false,640,13
+format-org-tables,command.ts,Codex,PostToolUse Edit,25133.87,.json,false,6793,257
+block-secret-commits,command.ts,"Claude Code, Codex",PreToolUse Bash,25041.76,Bash command,false,250,1
+format-org-tables,command.ts,Codex,PostToolUse Edit,1253.22,.org,true,770,7
+format-org-tables,command.ts,Codex,PostToolUse Bash,1190.08,Bash command,false,897,10
+format-org-tables,command.ts,Codex,PostToolUse Edit,1168.92,.org,true,864,8
+format-org-tables,in process,"Claude Code, pi, omp",PostToolUse Bash,1080.93,Bash command,false,1336,12
+format-prettier,command.ts,Codex,PostToolUse Bash,1052.15,Bash command,false,5969,96
+format-prettier,command.ts,Codex,PostToolUse Bash,936.68,Bash command,false,285,2
+format-prettier,in process,"Claude Code, pi, omp",PostToolUse Bash,905.04,Bash command,false,285,2
+block-secret-commits,command.ts,"Claude Code, Codex",PreToolUse Bash,903.68,Bash command,false,375,2
+lint-prose,command.ts,Codex,PostToolUse Edit,900.52,.org,false,3289,16
+format-prettier,in process,"Claude Code, pi, omp",PostToolUse Bash,885.84,Bash command,false,1157,18
+format-prettier,in process,"Claude Code, pi, omp",PostToolUse Bash,847.56,Bash command,false,1147,1
+lint-prose,in process,"Claude Code, pi, omp",PostToolUse Edit,829.15,.org,false,24611,246
+block-secret-commits,in process,"pi, omp",PreToolUse Bash,824.81,Bash command,false,506,1
+lint-prose,in process,"Claude Code, pi, omp",PostToolUse Edit,815.94,.org,true,6367,34
+lint-prose,command.ts,Codex,PostToolUse Edit,803.99,.org,false,10235,81
+lint-prose,in process,"Claude Code, pi, omp",PostToolUse Edit,795.33,.org,true,344,6
+type-check-pyrefly,in process,"pi, omp",Stop,794.71,.py .sh,false,2959,67
+block-secret-commits,command.ts,"Claude Code, Codex",PreToolUse Bash,766.16,Bash command,false,843,14
+track-session-changes,command.ts,Codex,PreToolUse + PostToolUse Bash,686.84,Bash command,false,651,10
+lint-code,in process,"Claude Code, pi, omp",PostToolUse Bash,623.96,Bash command,false,148,1
+track-session-changes,command.ts,Codex,PreToolUse + PostToolUse Bash,562.29,Bash command,false,185,1
+type-check-pyrefly,in process,"pi, omp",Stop,548.01,.md .py .sh,false,18002,323
+type-check-pyrefly,command.ts,"Claude Code, Codex",Stop,542.88,.org,false,1093,12
+type-check-pyrefly,command.ts,"Claude Code, Codex",Stop,525.06,.md .py .sh,false,18002,323
+track-session-changes,command.ts,Codex,PreToolUse + PostToolUse Bash,522.6,Bash command,false,3773,19
+track-session-changes,command.ts,Codex,PreToolUse + PostToolUse Bash,515.64,Bash command,false,42,1
+track-session-changes,command.ts,Codex,PreToolUse + PostToolUse Bash,506.7,Bash command,false,782,7
+lint-code,command.ts,Codex,PostToolUse Bash,466.7,Bash command,false,2885,69
+type-check-tsc,command.ts,"Claude Code, Codex",Stop,461.77,.el .org,false,33972,230
+type-check-tsc,command.ts,"Claude Code, Codex",Stop,459.21,.el,true,1789,27
+type-check-tsc,command.ts,"Claude Code, Codex",Stop,454.84,.org,false,6422,70
+type-check-tsc,command.ts,"Claude Code, Codex",Stop,447.85,.el,false,12254,289
+type-check-pyrefly,command.ts,"Claude Code, Codex",Stop,440.34,.fish,false,1706,28
+type-check-tsc,command.ts,"Claude Code, Codex",Stop,439.67,.org,false,15937,208
+lint-code,in process,"Claude Code, pi, omp",PostToolUse Bash,431.47,Bash command,false,2885,69
+lint-code,command.ts,Codex,PostToolUse Edit,353.55,.ts,false,44736,1242
+lint-code,command.ts,Codex,PostToolUse Edit,326.87,.sh,false,5869,152
+format-terraform,command.ts,Codex,PostToolUse Bash,185.19,Bash command,false,463,1
+enforce-cli-tools,command.ts,Codex,PreToolUse Bash,165.79,Bash command,false,114,1
+format-terraform,command.ts,Codex,PostToolUse Edit,165.51,.md,false,13425,127
+enforce-cli-tools,command.ts,Codex,PreToolUse Bash,164.46,Bash command,false,169,1
+format-terraform,command.ts,Codex,PostToolUse Bash,163.13,Bash command,false,585,12
+format-terraform,command.ts,Codex,PostToolUse Edit,157.53,.json,false,6587,252
+format-terraform,command.ts,Codex,PostToolUse Bash,156.37,Bash command,false,258,1
+enforce-cli-tools,command.ts,Codex,PreToolUse Bash,151.95,Bash command,false,682,13
+enforce-cli-tools,command.ts,Codex,PreToolUse Bash,135.44,Bash command,false,16596,316
+enforce-cli-tools,command.ts,Codex,PreToolUse Bash,103.41,Bash command,false,3544,87
+block-commit-attribution,in process,"Claude Code, pi, omp",PreToolUse Bash,0.4,Bash command,false,161,1
+block-commit-attribution,in process,"Claude Code, pi, omp",PreToolUse Bash,0.02,Bash command,false,162,1
+block-commit-attribution,in process,"Claude Code, pi, omp",PreToolUse Bash,0.01,Bash command,false,16596,316
+block-commit-attribution,in process,"Claude Code, pi, omp",PreToolUse Bash,0.01,Bash command,false,254,1
+block-commit-attribution,in process,"Claude Code, pi, omp",PreToolUse Bash,0.01,Bash command,false,16205,64
