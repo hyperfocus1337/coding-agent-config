@@ -86,6 +86,11 @@ ours=$(cat <<'EOF'
       {
         "hooks": [
           {
+            "command": "\"$HOME/.local/bin/dcg\"",
+            "timeout": 5,
+            "type": "command"
+          },
+          {
             "command": "sh \"$HOME/.claude/hooks/block-secret-commits/guard.sh\"",
             "timeout": 10,
             "type": "command"
