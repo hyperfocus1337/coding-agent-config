@@ -3,9 +3,8 @@
  * the Claude Code transcripts (~/.claude/projects/*\/*.jsonl) through the
  * core.ts of each hook in this process, and through its command.ts with the
  * payload on stdin. Writes the results to ~/.cache/hook-perf/results.json,
- * and with --write DIR, summary.csv and slowest.csv in DIR/data and the part
- * of DIR/README.md between the perf:begin and perf:end markers. Without
- * --write, prints summary.csv.
+ * and with --write DIR, summary.csv, slowest.csv, and README.md in DIR/data.
+ * Without --write, prints summary.csv.
  *
  * The transcripts are only a source of input. Each session is rebuilt in a
  * fixture under ~/.cache/hook-perf/, and each path in a payload or a command
@@ -1335,7 +1334,7 @@ function report(results: Results) {
   };
 }
 
-/** Writes the CSV files in DIR/data and the generated part of DIR/README.md. */
+/** Writes the CSV files and their README in DIR/data. */
 function publish(results: Results) {
   const { block, summary, slowest } = report(results);
   if (!flags.write) return void process.stdout.write(summary);
@@ -1343,15 +1342,12 @@ function publish(results: Results) {
   mkdirSync(data, { recursive: true });
   writeFileSync(join(data, "summary.csv"), summary);
   writeFileSync(join(data, "slowest.csv"), slowest);
-  const readme = join(flags.write, "README.md");
-  const doc = readFileSync(readme, "utf8");
-  const begin = "<!-- perf:begin -->";
-  const end = "<!-- perf:end -->";
-  const [head, rest] = doc.split(begin);
-  const tail = rest?.split(end)[1];
-  if (tail === undefined)
-    throw new Error(`${readme}: no ${begin} ... ${end} block`);
-  writeFileSync(readme, `${head}${begin}\n\n${block}\n\n${end}${tail}`);
+  const intro =
+    "`scripts/extensions/hooks/perf.ts` writes this file and the CSV files in this folder, so do not edit them. The [README](../README.md) tells how to read them.";
+  writeFileSync(
+    join(data, "README.md"),
+    `# Run data\n\n${intro}\n\n${block}\n`,
+  );
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────

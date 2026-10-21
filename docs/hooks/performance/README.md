@@ -65,7 +65,7 @@ just hooks-perf-sort lines slowest                    # slowest.csv by lines
 
 ### Run the test again
 
-`just hooks-perf` runs the replay again, which takes hours. It writes the two CSV files and replaces the part of this README between the `perf:begin` and `perf:end` markers, see [Results](#results). The raw samples stay in `~/.cache/hook-perf/results.json` (15 MB), out of git. `just hooks-perf-render` writes the same output again from that file in seconds, for example after a change to the columns. The text outside the markers is written by hand, so check the findings against the new numbers after a run.
+`just hooks-perf` runs the replay again, which takes hours. It writes the two CSV files and [`data/README.md`](data/README.md). The raw samples stay in `~/.cache/hook-perf/results.json` (15 MB), out of git. `just hooks-perf-render` writes the same output again from that file in seconds, for example after a change to the columns. This README and `docs/` are written by hand, so check the findings against the new numbers after a run.
 
 ## Data
 
@@ -75,6 +75,8 @@ just hooks-perf-sort lines slowest                    # slowest.csv by lines
 | --------------------------------- | ------------------------------------------------- | ------------------------ |
 | [`summary.csv`](data/summary.csv) | One row for each hook, path, and event            | `session_ms`, high first |
 | [`slowest.csv`](data/slowest.csv) | The 5 slowest calls of each hook, over both paths | `ms`, high first         |
+
+[`data/README.md`](data/README.md) gives the run: the date, the commit, the machine, the input counts, the meaning of "did work" for each hook, and the calls left out.
 
 More documents:
 
@@ -118,42 +120,3 @@ Each other hook takes 0.2 s or less for each session. For `type-check-tsc` and `
 - **type-check-tsc and type-check-pyrefly: the type check is not measured.** A Stop costs 55 ms in process and 84 ms through `command.ts`, but that is only the three git starts that decide if a check is necessary. `tsc` ran on 0 of the 1,427 Stops, because no fixture had a `tsconfig.json` at the repository root. `pyrefly` ran on 11 Stops, at 260 ms to 794 ms each, on fixtures that hold only a few files of the session.
 - **The real cost of a type check.** In a real project, `tsc` or `pyrefly` checks the whole project on each Stop that follows a change to a TypeScript or Python file. That takes longer than in a fixture, and this run did not measure it. To time it, run `tsc --noEmit` or `pyrefly check` at the root of the project.
 - **Stalls of 25 s.** 26 of 57,374 `command.ts` runs over both runs took 25.0 s to 26.2 s, in `format-prettier`, `block-secret-commits`, and `format-org-tables`. One was a `format-org-tables` run on a `.json` file, which only starts Node and exits, and no in-process call stalled. So the stall is in the start of the Node process, not in the code of a hook. The cause is not known, and the stalls stay in the p99 and max columns.
-
-## Results
-
-<!-- perf:begin -->
-
-- Date: 2026-10-20 to 2026-10-21
-- Commit: `c50c4fc11e39f4492bb1bdcc6335ba543c5d07b6`, the hooks from a `git archive` of it
-- Node: v26.10.0
-- CPU: Apple M1 Pro
-- macOS: 27.0.1 (26A434)
-- Run again: `just hooks-perf`
-- Input: 623 transcripts, 534 Write, 2928 Edit, and 2 NotebookEdit calls, 2000 of 30646 Bash calls (seed 20261020), 1427 turns that changed files.
-- Edit rebuilds: 639 from `originalFile`, 1701 from the text that earlier calls left, 557 from the patch hunks only.
-
-"Did work" per hook:
-
-- format-prettier: prettier changed a file.
-- format-org-tables: emacs changed a file.
-- format-terraform: terraform changed a file.
-- lint-code: reported lint errors.
-- lint-prose: blocked on alerts or gave a notice.
-- block-secret-commits: blocked the commit.
-- enforce-cli-tools: blocked the call.
-- block-commit-attribution: blocked the commit.
-- track-session-changes: logged a changed file.
-- type-check-tsc: blocked the stop with errors.
-- type-check-pyrefly: blocked the stop with errors.
-
-Calls left out:
-
-- lint-code, command.ts: 2 calls where command.ts and the core in process disagree on "did work", not counted.
-- lint-prose, in process: 33 failed calls that the adapter skips, not counted.
-- lint-prose, command.ts: 33 failed calls that the adapter skips, not counted.
-- block-commit-attribution, command.ts: not measured, no command.ts.
-- track-session-changes, in process: 34 failed calls that the adapter skips, not counted.
-- track-session-changes, command.ts: 34 failed calls that the adapter skips, not counted.
-- type-check-pyrefly, command.ts: 1 calls where command.ts and the core in process disagree on "did work", not counted.
-
-<!-- perf:end -->

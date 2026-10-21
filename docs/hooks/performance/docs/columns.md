@@ -6,21 +6,21 @@ This document explains each column of [`summary.csv`](../data/summary.csv) and [
 
 ### `summary.csv`
 
-| Column             | Meaning                                                                                           |
-| ------------------ | ------------------------------------------------------------------------------------------------- |
-| `hook`             | The hook folder in `dot_claude/hooks/`                                                            |
-| `path`             | `in process` or `command.ts`, see [`path`](#path)                                                 |
-| `agents`           | The agents that run this path of the hook, see [`agents`](#agents)                                |
-| `event`            | The hook event and the tool. A Bash row of `track-session-changes` holds both phases of the call  |
-| `session_ms`       | `mean_ms` × `per_session`: the time the row costs in an average session                           |
-| `mean_ms`          | The mean time of a call, without the stalls                                                       |
-| `p95_ms`           | The percentile 95, with the stalls                                                                |
-| `max_ms`           | The slowest call, with the stalls                                                                 |
-| `did_work_pct`     | Percent of the calls where the hook did work, see the list in the [Results](../README.md#results) |
-| `calls`            | The calls that the hook got. A Bash row holds the sample of 2000                                  |
-| `per_session`      | Calls of this event in an average session. A Bash row is scaled from the sample to all calls      |
-| `p50_ms`, `p99_ms` | The percentiles 50 and 99, with the stalls                                                        |
-| `tool_ran_pct`     | Percent of the calls where the hook started its tool                                              |
+| Column             | Meaning                                                                                             |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| `hook`             | The hook folder in `dot_claude/hooks/`                                                              |
+| `path`             | `in process` or `command.ts`, see [`path`](#path)                                                   |
+| `agents`           | The agents that run this path of the hook, see [`agents`](#agents)                                  |
+| `event`            | The hook event and the tool. A Bash row of `track-session-changes` holds both phases of the call    |
+| `session_ms`       | `mean_ms` × `per_session`: the time the row costs in an average session                             |
+| `mean_ms`          | The mean time of a call, without the stalls                                                         |
+| `p95_ms`           | The percentile 95, with the stalls                                                                  |
+| `max_ms`           | The slowest call, with the stalls                                                                   |
+| `did_work_pct`     | Percent of the calls where the hook did work, see the list in [`data/README.md`](../data/README.md) |
+| `calls`            | The calls that the hook got. A Bash row holds the sample of 2000                                    |
+| `per_session`      | Calls of this event in an average session. A Bash row is scaled from the sample to all calls        |
+| `p50_ms`, `p99_ms` | The percentiles 50 and 99, with the stalls                                                          |
+| `tool_ran_pct`     | Percent of the calls where the hook started its tool                                                |
 
 ### `slowest.csv`
 
@@ -116,7 +116,7 @@ The slowest call of the row. It shows one call only, so it can be an accident of
 
 ### `calls`
 
-The number of calls that the row measured. Write, Edit, Stop, and SessionStart rows hold all calls of the transcripts, except the calls that the README lists as left out. A Bash row holds a sample of 2000 of the 30,646 Bash calls, because a replay of all Bash calls would take too long. The sample is random, with a fixed seed, so each run uses the same 2000 calls.
+The number of calls that the row measured. Write, Edit, Stop, and SessionStart rows hold all calls of the transcripts, except the calls that [`data/README.md`](../data/README.md) lists as left out. A Bash row holds a sample of 2000 of the 30,646 Bash calls, because a replay of all Bash calls would take too long. The sample is random, with a fixed seed, so each run uses the same 2000 calls.
 
 A row with few calls gives a weak number. For example, `track-session-changes` on NotebookEdit has 1 call, so its time can be an accident.
 
@@ -149,7 +149,7 @@ The percent of the calls where the hook did something that matters to you. The m
 | Guard, such as `block-*` | The hook blocked the call           |
 | `track-session-changes`  | The hook logged a changed file      |
 
-The README lists the meaning for each hook. A low `did_work_pct` is not bad for a guard: `block-secret-commits` blocks 0 % of these calls, because no session tried to commit a secret. For a formatter, a low `did_work_pct` with a high `session_ms` can show that the hook does much work to find nothing.
+[`data/README.md`](../data/README.md) lists the meaning for each hook. A low `did_work_pct` is not bad for a guard: `block-secret-commits` blocks 0 % of these calls, because no session tried to commit a secret. For a formatter, a low `did_work_pct` with a high `session_ms` can show that the hook does much work to find nothing.
 
 ### `tool_ran_pct`
 

@@ -6,7 +6,7 @@ This document tells how [`perf.ts`](../../../../scripts/extensions/hooks/perf.ts
 
 - **Input and output:** the input is the real history of Claude Code sessions on this machine. The tool calls in the transcripts become the payloads of the hooks, and the files of each session are rebuilt from the transcript. The output is new: each time in the CSV files is measured in this run, on this machine.
 - **Paths:** "in process" calls `core.ts` with the Node functions of `io.ts`, as `pi.ts` does. "command.ts" starts `node command.ts` with the payload on stdin, as Codex and the Claude Code command hooks do. The script does not time `guard.sh`, the `command -v node` shell wrapper, or the Bash versions of the hooks.
-- **Code:** the hooks come from a `git archive` of the commit in the [Results](../README.md#results) of the README. Uncommitted edits in the work tree do not count.
+- **Code:** the hooks come from a `git archive` of the commit in [`data/README.md`](../data/README.md). Uncommitted edits in the work tree do not count.
 - **Events:** each hook gets the events of its `hooks/register.ts`, `pi.ts`, and `command.ts`. A hook gets every Write and Edit call, the same 2000 Bash calls (a random sample with a fixed seed), and one Stop after each turn that changed files.
 - **Fixtures:** the script rebuilds each session in `~/.cache/hook-perf/fixtures/`, not under `/tmp` or `$TMPDIR`, because the formatters skip those folders. Each path in a payload or a command points into the fixture. A path under `/tmp` maps under the `TMPDIR` of the hooks, so the hooks still skip it. When the transcript names a git branch, the working folder is a git repository with the files from before the session as its first commit. The script deletes each fixture after it times the session.
 - **File text:** a file gets its text from the transcript only: the content of a Write, the `originalFile` of an Edit, a full Read, and the patch hunks of an Edit or of a Bash call (`bashEditDiff`). A Bash call that commits gets a commit in the fixture. Before a Bash call, each file gets the age it had at that point in the session, because three hooks take a Bash path only when its mtime is at most 120 s old.
@@ -19,11 +19,11 @@ This document tells how [`perf.ts`](../../../../scripts/extensions/hooks/perf.ts
 
 The files in git hold metadata about the sessions, and no content:
 
-| File                            | Holds                                                                                                 |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `summary.csv`                   | Times and counts for each hook, path, and event                                                       |
-| `slowest.csv`                   | For each slow call: the extension, the size, and the lines. No path, file name, command, or file text |
-| The Results block of the README | Totals, such as the number of transcripts and tool calls                                              |
+| File             | Holds                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------- |
+| `summary.csv`    | Times and counts for each hook, path, and event                                                       |
+| `slowest.csv`    | For each slow call: the extension, the size, and the lines. No path, file name, command, or file text |
+| `data/README.md` | Totals, such as the number of transcripts and tool calls                                              |
 
 The script writes these to `~/.cache/hook-perf/`, out of git:
 
