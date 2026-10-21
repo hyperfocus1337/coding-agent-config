@@ -25,8 +25,8 @@ export const register: Register = (on) => {
           () => undefined,
         ),
       read: (path) => $.fs.read(path),
-      run: (argv) =>
-        $.process.run(argv, { cwd }).then(
+      run: (argv, options) =>
+        $.process.run(argv, { cwd: options?.cwd ?? cwd }).then(
           (done) => ({
             exitCode: done.exitCode,
             output: done.stdout + done.stderr,

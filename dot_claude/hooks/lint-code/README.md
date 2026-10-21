@@ -22,8 +22,9 @@ The hook lints these files, by extension:
 | `.sh` `.bash`                                         | [shellcheck](https://github.com/koalaman/shellcheck)    | `shellcheck -S warning`                   | https://www.shellcheck.net/wiki/              |
 | `.yml` `.yaml` (plain)                                | [yamllint](https://github.com/adrienverge/yamllint)     | `yamllint -c config/.yamllint`            | https://yamllint.readthedocs.io/              |
 | `.yml` `.yaml` (Ansible)                              | [ansible-lint](https://github.com/ansible/ansible-lint) | `ansible-lint -c config/.ansible-lint -q` | https://ansible.readthedocs.io/projects/lint/ |
+| `.tf`                                                 | [tflint](https://github.com/terraform-linters/tflint)   | `tflint --filter=<file> --format=compact` | https://github.com/terraform-linters/tflint   |
 
-YAML goes to one of two linters, see [YAML routing](#yaml-routing). The hook does not check `.tf` and `.tfvars` files. [`format-code`](../format-code/README.md) formats them, because `terraform fmt` is a formatter, not a linter.
+YAML goes to one of two linters, see [YAML routing](#yaml-routing). Terraform goes to tflint in the folder of the file, see [Terraform](#terraform). The hook does not lint `.tfvars` files. [`format-code`](../format-code/README.md) formats `.tf` and `.tfvars` files, because `terraform fmt` is a formatter, not a linter.
 
 The hook runs after each of these calls, also after a call that failed, because a failed Bash call can still have written a file:
 
@@ -42,6 +43,7 @@ macOS (Homebrew):
 ```sh
 brew install ruff shellcheck yamllint ansible-lint
 pnpm add -g oxlint
+mise use -g tflint@0.64.0 # Homebrew has no tflint formula
 ```
 
 Debian and Ubuntu:
@@ -51,6 +53,13 @@ apt install -y shellcheck yamllint
 uv tool install ruff # apt's ruff lags; uv tracks upstream
 uv tool install ansible-lint
 npm install -g oxlint
+mise use -g tflint@0.64.0
+```
+
+Then install the tflint plugins of the bundled config, once on each machine. `--init` downloads them from GitHub to `~/.tflint.d/plugins`. Set `GITHUB_TOKEN` if GitHub limits the API calls:
+
+```sh
+tflint --init --config ~/.claude/hooks/lint-code/config/.tflint.hcl
 ```
 
 On Debian and Ubuntu, install ruff with `uv`, because `apt` ships an older build. [`docs/research.md`](docs/research.md) compares the install methods and tells why the hook uses oxlint.
@@ -88,6 +97,12 @@ The hook treats a YAML file as Ansible and sends it to `ansible-lint`, which run
 - A line of the file starts with the key `hosts:`, `tasks:`, or `roles:`, after optional spaces and an optional `- `.
 
 All other YAML goes to `yamllint`.
+
+### Terraform
+
+tflint lints a whole module, which is all the `.tf` files of one folder. So the hook runs tflint in the folder of the file, and `--filter=<file>` keeps only the issues of that file. An issue in another file of the module does not reach the model. A parse error does, from each file of the module, because tflint cannot load a module that does not parse.
+
+The hook uses the `.tflint.hcl` or `.tflint.json` of the module folder when it has one. Else it passes the bundled [`config/dot_tflint.hcl`](config/dot_tflint.hcl) with `--config`. A config in a parent folder does not count, the same as when you run `tflint` in the module folder.
 
 ## What the model sees
 
@@ -129,6 +144,7 @@ To remove the hook from one agent for good, remove its entry from the file in th
 | `js`   | oxlint                                                           |
 | `sh`   | shellcheck                                                       |
 | `yaml` | yamllint and ansible-lint                                        |
+| `tf`   | tflint                                                           |
 | `all`  | The whole hook, and also [`lint-prose`](../lint-prose/README.md) |
 
 ```sh
@@ -139,10 +155,12 @@ export CLAUDE_LINT_DISABLE="all"       # off
 
 ### Tune the linters
 
-To tune YAML instead of turning it off, edit the bundled configs in [`config/`](config/). The hook passes them with `-c` on each run. So the hook ignores the `.yamllint` and `.ansible-lint` of a repository, and you do not copy a config into each project.
+To tune YAML instead of turning it off, edit the bundled configs in [`config/`](config/). The hook passes them with `-c` on each run. So the hook ignores the `.yamllint` and `.ansible-lint` of a repository, and you do not copy a config into each project. For Terraform, the config of the module wins, see [Terraform](#terraform).
 
 - [`config/dot_yamllint`](config/dot_yamllint), deployed as `.yamllint`, sets relaxed indentation and line-length rules for plain YAML ([yamllint config docs](https://yamllint.readthedocs.io/en/stable/configuration.html)).
 - [`config/dot_ansible-lint`](config/dot_ansible-lint), deployed as `.ansible-lint`, silences the noisy `yaml[indentation]` and `yaml[line-length]` findings for Ansible files with `skip_list` ([ansible-lint config docs](https://ansible.readthedocs.io/projects/lint/configuring/)). To get them as warnings that do not block, use the `warn_list` that the file holds as a comment. ansible-lint finds its embedded yamllint config by a directory search, so you tune the indentation for Ansible in this file, not in `config/dot_yamllint`.
+
+- [`config/dot_tflint.hcl`](config/dot_tflint.hcl), deployed as `.tflint.hcl`, turns on the `recommended` preset of the bundled `terraform` ruleset, and the `aws` and `azurerm` plugins ([tflint config docs](https://github.com/terraform-linters/tflint/blob/master/docs/user-guide/config.md)). The `aws` plugin finds values that AWS does not accept, such as an unknown instance type. Its `deep_check` stays off, because it calls the AWS API and needs credentials on each run. After you add a plugin or change a version, run `tflint --init` again.
 
 oxlint finds a project `.oxlintrc.json` in the directory of the file. A rule that this file sets to `off` stays off, also with `--deny-warnings`.
 
@@ -153,6 +171,8 @@ If a linter reports too much, change its severity in [`core.ts`](core.ts), for e
 The hook fails open in every agent: when the lint run breaks, the tool result stays as it is.
 
 - **A linter is not installed:** the hook skips its files.
+- **A mise shim has no version set:** the shim exits 1 with `No version is set for shim`, and the hook skips the file, as for a linter that is not installed.
+- **A tflint plugin is not installed:** tflint stops with `Did you run "tflint --init"?`, and the hook skips the file. This also applies to a plugin that the `.tflint.hcl` of a module names.
 - **The mod throws in Claude Code:** Claude Code skips the mod hook, and the result stands.
 - **`pi.ts` or `omp.ts` throws:** `pi.ts` catches its own errors, and the result stays as it is. `omp.ts` runs through the same code.
 - **`command.ts` gets a bad payload:** it exits 1. Only exit code 2 reaches the model.

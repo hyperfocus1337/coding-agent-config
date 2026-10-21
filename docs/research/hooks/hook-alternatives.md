@@ -179,7 +179,7 @@ The old name `format-all-languages` was not accurate, because the hook runs Pret
 
 **`lint-code`: no candidate replaces it, and only a part could move.** No vendor ships a hook that reports lint errors to the model after an edit. In Claude Code, local `.lsp.json` servers (`ruff server`, `oxlint --lsp`, `bash-language-server start`) would deliver per-file diagnostics after Edit and Write, without a block and without Bash writes. In omp, the built-in ruff, eslint, biome, bash, and terraform-ls servers do the same after `write`. Codex and pi would still need the hook, and no server covers yamllint or ansible-lint in all four agents.
 
-The old name `lint-all-languages` was not accurate either, because the hook lints Python, JS/TS, shell, and YAML. The hook is now `lint-code`, which pairs with `lint-prose`. The `tf` entry checked format, not lint. It is now the [`format-code`](../../../dot_claude/hooks/format-code/README.md) hook, which runs `terraform fmt` without `-check`, and `lint-code` does not check Terraform.
+The old name `lint-all-languages` was not accurate either, because the hook lints Python, JS/TS, shell, and YAML. The hook is now `lint-code`, which pairs with `lint-prose`. The `tf` entry checked format, not lint. It is now the [`format-code`](../../../dot_claude/hooks/format-code/README.md) hook, which runs `terraform fmt` without `-check`, and `lint-code` did not check Terraform. Since 2026-10-21, `lint-code` runs tflint on `.tf` files.
 
 ## Not verified
 

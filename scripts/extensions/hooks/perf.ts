@@ -678,7 +678,14 @@ const HOOK_LIST: Hook[] = [
   {
     name: "lint-code",
     on: { Write: ["post"], Edit: ["post"], Bash: ["post"] },
-    tools: ["ruff", "oxlint", "shellcheck", "yamllint", "ansible-lint"],
+    tools: [
+      "ruff",
+      "oxlint",
+      "shellcheck",
+      "yamllint",
+      "ansible-lint",
+      "tflint",
+    ],
     state: true,
     mtime: true,
     args: [],
@@ -1388,7 +1395,7 @@ async function main() {
   rmSync(join(BASE, "fixtures"), { recursive: true, force: true });
   mkdirSync(SCRATCH, { recursive: true });
   mkdirSync(LINT_CONFIG, { recursive: true });
-  for (const name of ["yamllint", "ansible-lint"])
+  for (const name of ["yamllint", "ansible-lint", "tflint.hcl"])
     copyFileSync(
       join(HOOKS, "lint-code/config", `dot_${name}`),
       join(LINT_CONFIG, `.${name}`),

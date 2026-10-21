@@ -4,17 +4,17 @@ This file holds the design detail that you do not need to use the hook. [`README
 
 ## Files
 
-| File                                             | Deployed to `~/.claude/hooks/lint-code/` | Role                                                                      |
-| ------------------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------- |
-| `core.ts`                                        | Yes                                      | Finds the files, picks the linter, and runs it through an `Io`            |
-| `hooks/register.ts`, `hooks/hooks.json`          | Yes                                      | Claude Code mod                                                           |
-| `dot_claude-plugin/plugin.json`                  | Yes, as `.claude-plugin/plugin.json`     | Plugin manifest                                                           |
-| `pi.ts`                                          | Yes                                      | The pi extension, which omp also loads                                    |
-| `omp.ts`                                         | Yes                                      | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see |
-| `command.ts`                                     | Yes                                      | Codex command hook                                                        |
-| `io.ts`                                          | Yes                                      | The `Io` and the settings under Node, for `pi.ts` and `command.ts`        |
-| `config/dot_yamllint`, `config/dot_ansible-lint` | Yes, as `.yamllint` and `.ansible-lint`  | Linter configs                                                            |
-| `README.md`, `docs/`, `test/`                    | No                                       | Kept in the repo by `.chezmoiignore`                                      |
+| File                                                                      | Deployed to `~/.claude/hooks/lint-code/`                | Role                                                                      |
+| ------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `core.ts`                                                                 | Yes                                                     | Finds the files, picks the linter, and runs it through an `Io`            |
+| `hooks/register.ts`, `hooks/hooks.json`                                   | Yes                                                     | Claude Code mod                                                           |
+| `dot_claude-plugin/plugin.json`                                           | Yes, as `.claude-plugin/plugin.json`                    | Plugin manifest                                                           |
+| `pi.ts`                                                                   | Yes                                                     | The pi extension, which omp also loads                                    |
+| `omp.ts`                                                                  | Yes                                                     | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see |
+| `command.ts`                                                              | Yes                                                     | Codex command hook                                                        |
+| `io.ts`                                                                   | Yes                                                     | The `Io` and the settings under Node, for `pi.ts` and `command.ts`        |
+| `config/dot_yamllint`, `config/dot_ansible-lint`, `config/dot_tflint.hcl` | Yes, as `.yamllint`, `.ansible-lint`, and `.tflint.hcl` | Linter configs                                                            |
+| `README.md`, `docs/`, `test/`                                             | No                                                      | Kept in the repo by `.chezmoiignore`                                      |
 
 ## Paths in a Bash command
 
@@ -25,6 +25,10 @@ The `NAMED` pattern in [`core.ts`](../core.ts) takes each word of the command th
 A named path is not always a written path. `cat app.py` names the file too, and to block a read on an error that was already in the file helps nobody. So the hook lints a named file only when its mtime is within 120 seconds of the hook run, which separates a file that the command wrote from a file that it read.
 
 A command that writes early and then runs for minutes falls outside that window and is missed. A `shortcut:` comment in `core.ts` marks this trade-off. The upgrade is a start time that a hook stamps before the call.
+
+## tflint and `--filter`
+
+tflint 0.64.0 matches `--filter` against the file names of its issues, and with `--chdir` those names are relative to the folder that tflint started in. So `tflint --chdir=<folder> --filter=<file>` reports nothing, with a relative, an absolute, or a glob filter. The hook runs tflint in the module folder instead: `Io.run` takes an optional `cwd`, and the `linter` function of [`core.ts`](../core.ts) gives the folder with the argv.
 
 ## Failed calls
 

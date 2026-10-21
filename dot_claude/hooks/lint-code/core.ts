@@ -11,16 +11,20 @@ export interface Io {
   /** Whether the path is a regular file, and its mtime; undefined if missing. */
   stat(path: string): Promise<{ isFile: boolean; mtimeMs: number } | undefined>;
   read(path: string): Promise<string>;
-  /** The exit code and output; undefined when the program cannot start. */
+  /**
+   * The exit code and output; undefined when the program cannot start. Runs
+   * in `cwd` when given, else in the session folder.
+   */
   run(
     argv: string[],
+    options?: { cwd?: string },
   ): Promise<{ exitCode: number; output: string } | undefined>;
 }
 
 export interface Settings {
-  /** The folder of the bundled .yamllint and .ansible-lint. */
+  /** The folder of the bundled .yamllint, .ansible-lint, and .tflint.hcl. */
   configDir: string;
-  /** CLAUDE_LINT_DISABLE: keys (py js sh yaml) or "all", space or comma. */
+  /** CLAUDE_LINT_DISABLE: keys (py js sh yaml tf) or "all", space or comma. */
   disable?: string;
   /** TMPDIR: files under it are throwaway and not linted. */
   tmpdir?: string;
@@ -40,7 +44,7 @@ export interface Call {
 
 /** A path a Bash command names, by the extensions this hook lints. */
 const NAMED =
-  /[^\s:;|&"'`()<>=]+\.(?:py|jsx?|tsx?|mjs|cjs|mts|cts|sh|bash|ya?ml)\b/g;
+  /[^\s:;|&"'`()<>=]+\.(?:py|jsx?|tsx?|mjs|cjs|mts|cts|sh|bash|ya?ml|tf)\b/g;
 
 /**
  * Whether the git config of the repository that holds `dir` sets
@@ -118,14 +122,23 @@ async function isAnsible(file: string, io: Io): Promise<boolean> {
   );
 }
 
-/** The linter for a file, or undefined when its key is disabled. */
-async function linter(file: string, io: Io, settings: Settings) {
+/**
+ * The linter for a file and the folder to run it in, or undefined when its
+ * key is disabled.
+ */
+async function linter(
+  file: string,
+  io: Io,
+  settings: Settings,
+): Promise<{ argv: string[]; cwd?: string } | undefined> {
   const off = (settings.disable ?? "").split(/[ ,]+/);
   const disabled = (key: string) => off.includes("all") || off.includes(key);
   const config = settings.configDir;
   switch (file.split(".").pop()) {
     case "py":
-      return disabled("py") ? undefined : ["ruff", "check", "--quiet", file];
+      return disabled("py")
+        ? undefined
+        : { argv: ["ruff", "check", "--quiet", file] };
     case "js":
     case "jsx":
     case "ts":
@@ -134,19 +147,52 @@ async function linter(file: string, io: Io, settings: Settings) {
     case "cjs":
     case "mts":
     case "cts":
-      return disabled("js") ? undefined : ["oxlint", "--deny-warnings", file];
+      return disabled("js")
+        ? undefined
+        : { argv: ["oxlint", "--deny-warnings", file] };
     case "sh":
     case "bash":
-      return disabled("sh") ? undefined : ["shellcheck", "-S", "warning", file];
+      return disabled("sh")
+        ? undefined
+        : { argv: ["shellcheck", "-S", "warning", file] };
     case "yml":
     case "yaml":
       if (disabled("yaml")) return undefined;
-      return (await isAnsible(file, io))
-        ? ["ansible-lint", "-c", `${config}/.ansible-lint`, "-q", file]
-        : ["yamllint", "-c", `${config}/.yamllint`, file];
+      return {
+        argv: (await isAnsible(file, io))
+          ? ["ansible-lint", "-c", `${config}/.ansible-lint`, "-q", file]
+          : ["yamllint", "-c", `${config}/.yamllint`, file],
+      };
+    case "tf": {
+      if (disabled("tf")) return undefined;
+      // tflint lints a whole module, so it runs in the folder of the file,
+      // and --filter keeps the issues of this file. With --chdir, --filter
+      // matches nothing (tflint 0.64.0). A .tflint.hcl or .tflint.json of
+      // the module wins over the bundled config.
+      const slash = file.lastIndexOf("/");
+      const dir = file.slice(0, slash) || "/";
+      const own =
+        (await io.stat(`${dir}/.tflint.hcl`)) ??
+        (await io.stat(`${dir}/.tflint.json`));
+      return {
+        argv: [
+          "tflint",
+          ...(own ? [] : [`--config=${config}/.tflint.hcl`]),
+          `--filter=${file.slice(slash + 1)}`,
+          "--format=compact",
+          "--no-color",
+        ],
+        cwd: dir,
+      };
+    }
   }
   return undefined;
 }
+
+/** tflint output for a plugin that `tflint --init` did not install. */
+const TFLINT_PLUGIN_MISSING = /Did you run "tflint --init"\?/;
+/** Output of a mise shim of any linter that has no version set. */
+const MISE_SHIM_VERSION_MISSING = /No version is set for shim/;
 
 /**
  * Lints every target, so one Bash call reports every file it wrote. Returns
@@ -161,9 +207,15 @@ export async function lint(
   let failed = false;
   let output = "";
   for (const file of files) {
-    const argv = await linter(file, io, settings);
-    const ran = argv && (await io.run(argv));
-    if (!ran) continue;
+    const found = await linter(file, io, settings);
+    const ran = found && (await io.run(found.argv, { cwd: found.cwd }));
+    // Not a lint error: the linter or its plugin is missing.
+    if (
+      !ran ||
+      TFLINT_PLUGIN_MISSING.test(ran.output) ||
+      MISE_SHIM_VERSION_MISSING.test(ran.output)
+    )
+      continue;
     output += ran.output;
     if (ran.exitCode !== 0) failed = true;
   }

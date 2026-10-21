@@ -111,7 +111,7 @@ The hook fails open: it never blocks a call and never marks a result as an error
 - The file does not parse. `terraform fmt` exits 2, and shfmt exits 1.
 - A run takes more than 10 s, and the hook stops it.
 
-For a Terraform file, nothing reports a parse error to the model, because `lint-code` does not check Terraform. For a shell file, the shellcheck run of [`lint-code`](../lint-code/README.md) reports it. [`docs/research.md`](docs/research.md#parse-errors) tells why `terraform validate` and tflint do not fill this gap.
+[`lint-code`](../lint-code/README.md) reports the parse error to the model: tflint for a `.tf` file, and shellcheck for a shell file. Nothing reports a parse error in a `.tfvars` file.
 
 When an adapter throws an error, each agent does a different thing:
 

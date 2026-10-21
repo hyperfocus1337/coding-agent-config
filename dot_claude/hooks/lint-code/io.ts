@@ -16,11 +16,11 @@ export function nodeIo(cwd: string): Io {
         () => undefined,
       ),
     read: (path) => readFile(path, "utf8"),
-    run: (argv) =>
+    run: (argv, options) =>
       new Promise((resolve) => {
         const [program = "", ...args] = argv;
         const child = spawn(program, args, {
-          cwd,
+          cwd: options?.cwd ?? cwd,
           stdio: ["ignore", "pipe", "pipe"],
         });
         let stdout = "";

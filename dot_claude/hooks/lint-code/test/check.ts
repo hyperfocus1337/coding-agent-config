@@ -35,26 +35,31 @@ async function check(what: string, run: () => void | Promise<void>) {
 // --- Core, with stub I/O ---
 
 const NOW = 1_000_000_000;
-/** Stub I/O over a map of path -> age in seconds; run records each argv. */
+/**
+ * Stub I/O over a map of path -> age in seconds; run records each argv, and
+ * dirs the folder of each run.
+ */
 function stub(
   ages: Record<string, number>,
   texts: Record<string, string> = {},
 ) {
   const ran: string[][] = [];
+  const dirs: (string | undefined)[] = [];
   const io: Io = {
     stat: async (file) =>
       file in ages
         ? { isFile: true, mtimeMs: NOW - ages[file]! * 1000 }
         : undefined,
     read: async (file) => texts[file] ?? "",
-    run: async (argv) => {
+    run: async (argv, options) => {
       ran.push(argv);
+      dirs.push(options?.cwd);
       return argv[0] === "missing"
         ? undefined
         : { exitCode: 1, output: `${argv[0]} says no\n` };
     },
   };
-  return { io, ran };
+  return { io, ran, dirs };
 }
 const settings = { configDir: "/cfg", tmpdir: "/var/folders/x/T/" };
 
@@ -93,13 +98,15 @@ await check("bash: fresh named files, relative to cwd, once each", async () => {
     "/r/old.sh": 500,
     "/abs/x.ts": 0,
     "/abs/y.mts": 0,
+    "/r/main.tf": 0,
   });
   const command =
-    "cat > new.sh && bash new.sh && grep x old.sh && touch /abs/x.ts /abs/y.mts README.md";
+    "cat > new.sh && bash new.sh && grep x old.sh && touch /abs/x.ts /abs/y.mts README.md main.tf";
   assert.deepEqual(await targets({ command, cwd: "/r" }, io, settings, NOW), [
     "/r/new.sh",
     "/abs/x.ts",
     "/abs/y.mts",
+    "/r/main.tf",
   ]);
 });
 await check("bash: a command that names no source file", async () => {
@@ -125,10 +132,11 @@ await check("each extension runs its linter", async () => {
     "d.bash",
     "e.yml",
     "/r/roles/f.yaml",
+    "/m/main.tf",
     "g.tfvars",
     "h.md",
   ];
-  const { io, ran } = stub({});
+  const { io, ran, dirs } = stub({});
   await lint(files, io, settings);
   assert.deepEqual(ran, [
     ["ruff", "check", "--quiet", "a.py"],
@@ -139,8 +147,38 @@ await check("each extension runs its linter", async () => {
     ["shellcheck", "-S", "warning", "d.bash"],
     ["yamllint", "-c", "/cfg/.yamllint", "e.yml"],
     ["ansible-lint", "-c", "/cfg/.ansible-lint", "-q", "/r/roles/f.yaml"],
+    [
+      "tflint",
+      "--config=/cfg/.tflint.hcl",
+      "--filter=main.tf",
+      "--format=compact",
+      "--no-color",
+    ],
   ]);
+  assert.deepEqual(dirs.slice(-2), [undefined, "/m"]);
 });
+await check("a .tflint.hcl or .tflint.json of the module wins", async () => {
+  for (const own of ["/m/.tflint.hcl", "/m/.tflint.json"]) {
+    const { io, ran } = stub({ [own]: 0 });
+    await lint(["/m/main.tf"], io, settings);
+    assert.deepEqual(ran[0]?.slice(1, 2), ["--filter=main.tf"], own);
+  }
+});
+await check(
+  "a missing tflint plugin or a mise shim with no version skips the file",
+  async () => {
+    for (const output of [
+      'Failed to initialize plugins; Plugin "aws" not found. Did you run "tflint --init"?\n',
+      "mise ERROR No version is set for shim: tflint\n",
+    ]) {
+      const io: Io = {
+        ...stub({}).io,
+        run: async () => ({ exitCode: 1, output }),
+      };
+      assert.equal(await lint(["/m/main.tf"], io, settings), undefined);
+    }
+  },
+);
 await check("ansible by entry-point name and by content", async () => {
   const { io, ran } = stub({}, { "x/deploy.yml": "- hosts: all\n" });
   await lint(["x/site.yaml", "x/deploy.yml", "x/other.yml"], io, settings);
@@ -151,7 +189,10 @@ await check("ansible by entry-point name and by content", async () => {
 });
 await check("CLAUDE_LINT_DISABLE keys, comma or space, and all", async () => {
   const { io, ran } = stub({});
-  await lint(["a.py", "b.ts", "c.sh"], io, { ...settings, disable: "py,sh" });
+  await lint(["a.py", "b.ts", "c.sh", "/m/d.tf"], io, {
+    ...settings,
+    disable: "py,sh tf",
+  });
   assert.deepEqual(
     ran.map((argv) => argv[0]),
     ["oxlint"],
@@ -274,6 +315,32 @@ else {
     command({ command: `grep -n TODO ${tmp}/old.sh` }),
     0,
   );
+}
+
+// --- command.ts, with the real tflint ---
+
+if (spawnSync("tflint", ["--version"]).status !== 0)
+  console.log("SKIP tflint cases: no tflint");
+else {
+  // A module config with the bundled ruleset only, so the case needs no
+  // plugin.
+  const module = `${tmp}/tf`;
+  fs.mkdirSync(module);
+  fs.writeFileSync(
+    `${module}/.tflint.hcl`,
+    'plugin "terraform" {\n  enabled = true\n}\n',
+  );
+  fs.writeFileSync(
+    `${module}/main.tf`,
+    'terraform {\n  required_version = ">= 1.0"\n}\n\nvariable "unused" {\n  type = string\n}\n',
+  );
+  fs.writeFileSync(`${module}/other.tf`, "locals {\n  x = 1\n}\n");
+  await check("tflint: reports the edited file of the module only", () => {
+    const ran = command({ file_path: `${module}/main.tf` });
+    assert.equal(ran.status, 2, ran.stderr);
+    assert.ok(ran.stderr.includes("main.tf:5:1"), ran.stderr);
+    assert.ok(!ran.stderr.includes("other.tf"), ran.stderr);
+  });
 }
 
 // --- pi.ts and hooks/register.ts, with stubs over the real files ---

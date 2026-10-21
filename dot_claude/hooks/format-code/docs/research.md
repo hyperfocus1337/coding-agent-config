@@ -6,7 +6,7 @@ One `terraform fmt` run on one file takes about 15 ms. One shfmt run on a shell 
 
 ## Parse errors
 
-`lint-code` does not check Terraform, so nothing reports a Terraform file that does not parse to the model. A shell file that does not parse gets a shellcheck error from `lint-code`. `terraform validate` or tflint can do that, but both check a whole module folder, not one file. `terraform validate` also needs `terraform init`.
+`lint-code` reports a file that does not parse: tflint for a `.tf` file, and shellcheck for a shell file. tflint checks a whole module folder, and `lint-code` limits its output to the edited file with `--filter`. `terraform validate` was not used, because it needs `terraform init`.
 
 ## Other hooks
 
