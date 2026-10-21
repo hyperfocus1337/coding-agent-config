@@ -160,6 +160,26 @@ await aligned(
   `${repo}/docs/heredoc.org`,
 );
 
+// The payload cwd is the one from before the command, so a relative path
+// after a cd resolves against the folder of the cd.
+fs.mkdirSync(`${repo}/pkg/sub`, { recursive: true });
+unaligned(`${repo}/pkg/after-cd.org`);
+bash(
+  `${repo}/docs`,
+  `cd ${repo}/pkg && python3 - <<'EOF'\np='after-cd.org'\nEOF`,
+);
+await aligned(
+  "a relative path after an absolute cd",
+  `${repo}/pkg/after-cd.org`,
+);
+
+unaligned(`${repo}/pkg/sub/two-cds.org`);
+bash(repo, `cd "pkg" && cd sub/ && sed -i '' s/x/y/ two-cds.org`);
+await aligned(
+  "a relative path after two relative cds",
+  `${repo}/pkg/sub/two-cds.org`,
+);
+
 unaligned(`${repo}/one.org`);
 unaligned(`${repo}/two.org`);
 bash(

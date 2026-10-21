@@ -41,6 +41,28 @@ export interface Call {
 /** An Org path that a command names. */
 const NAMED = /[^\s:;|&"'`()<>=]+\.org\b/g;
 
+/** The folder of a `cd` in a command. */
+const CD = /(?:^|[\s;&|(])cd\s+["']?([^\s;&|()"']+)/g;
+
+/**
+ * The folders a relative path of a command can be relative to: the session
+ * cwd, and each folder that a `cd` in the command moves to, in order. The
+ * session cwd is the one from before the command, so without the `cd`
+ * folders a `cd docs && sed -i … notes.org` is a silent miss. shortcut: a
+ * `cd` to `~`, `-` or a folder with a variable is not followed. The upgrade
+ * is the cwd of the shell after the command, which the adapters do not get.
+ */
+function bases(command: string, cwd: string): string[] {
+  const found = [cwd];
+  let at = cwd;
+  for (const [, dir = ""] of command.matchAll(CD)) {
+    if (/^[~-]|\$/.test(dir)) continue;
+    at = dir.startsWith("/") ? dir : `${at}/${dir}`;
+    found.push(at.replace(/\/+$/, ""));
+  }
+  return found;
+}
+
 /**
  * Aligns each table in the files of ORG_TABLE_FILES, one per line. Alignment
  * only: a #+TBLFM formula is not evaluated. org-link-descriptive nil counts a
@@ -77,7 +99,8 @@ function throwaway(file: string, settings: Settings): boolean {
 /**
  * The files to align, each once. A Write or Edit: the file it names. A Bash
  * call: the .org paths its command names that it just wrote, by an mtime of
- * at most 120 s, so a file the command only read stays as it is. shortcut: a
+ * at most 120 s, so a file the command only read stays as it is. A relative
+ * path is tried against each folder of `bases`. shortcut: a
  * command that writes early and then runs for minutes falls outside the
  * window. The upgrade is a start time stamped before the call. Only a file
  * with a line that starts with `|` counts, which keeps Emacs out of the
@@ -88,10 +111,12 @@ async function targets(
   io: Io,
   settings: Settings,
 ): Promise<string[]> {
+  const command = call.command ?? "";
+  const folders = bases(command, call.cwd);
   const named = call.filePath
     ? [call.filePath]
-    : [...(call.command ?? "").matchAll(NAMED)].map(([path]) =>
-        path.startsWith("/") ? path : `${call.cwd}/${path}`,
+    : [...command.matchAll(NAMED)].flatMap(([path]) =>
+        path.startsWith("/") ? [path] : folders.map((dir) => `${dir}/${path}`),
       );
   const kept: string[] = [];
   for (const file of new Set(named)) {

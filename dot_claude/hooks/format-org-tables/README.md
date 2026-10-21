@@ -44,7 +44,7 @@ A Bash call carries no `file_path`, but a shell command (a heredoc, `sed`, a red
 
 So on the Bash matcher the hook takes every `.org` path the command text names, absolute or relative to the session cwd, and aligns those. It asks git nothing, unlike the markdown sweep in [`format-prettier`](../format-prettier/README.md), because a command that writes an Org file names the file. A command that rewrites one without naming it (a script it calls, a `find -exec`) is still missed, and that file stays misaligned until the next `Edit` touches it.
 
-Relative paths resolve against the session cwd, so a `cd` elsewhere in the command can resolve one wrong. The file check makes that a silent miss, or at worst a no-op pass over an already aligned file of the same name.
+The session cwd is the one from before the command, so a relative path also resolves against each folder that a `cd` in the command moves to, in order: `cd pkg && cd sub && sed -i … notes.org` tries `notes.org` in the cwd, in `pkg` and in `pkg/sub`. The mtime check below keeps a file of the same name that the command did not write as it is. A `cd` to `~`, to `-`, or to a folder with a variable is not followed, and a path after it is still a silent miss.
 
 A command names a file it only reads as often as one it writes, and aligning a file the command read is an edit nobody asked for: `sed -n '1,20p' config.org > copy.org` names the live configuration and writes a copy. So a named path counts only when its mtime is inside a 120 s window, the test [`lint-code`](../lint-code/README.md) applies for the same reason. A command that writes early and then runs for minutes falls outside the window and is missed; the upgrade is a `PreToolUse` hook that stamps the start time of the matching call.
 
@@ -151,7 +151,7 @@ node test/check.ts
 [`test/check.ts`](test/check.ts) runs `command.ts` with the real Emacs and git, in a fixture under `$HOME`, because the hook skips `/tmp` and `$TMPDIR`:
 
 - **A Write or Edit:** the named file, a file that is not `.org`, a path that does not exist, a second pass over an aligned file, no backup files, a file in a temp folder, a `|` line inside a block, a `#+TBLFM` formula, and a link at its raw width.
-- **A Bash call:** a relative and two absolute paths in a command, a command that names no `.org` file, a path that does not exist, and a path the command only read.
+- **A Bash call:** a relative and two absolute paths in a command, a relative path after an absolute `cd` and after two relative ones, a command that names no `.org` file, a path that does not exist, and a path the command only read.
 - **The amend hint:** after a commit, and none for a file the run left alone or without a commit.
 - **`CLAUDE_HOOKS_DISABLE`:** a value that names the hook stops the core before it reads a file.
 - **The adapters:** `pi.ts`, `omp.ts`, and `hooks/register.ts` with stubs over the real files.
