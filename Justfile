@@ -156,12 +156,12 @@ pi-diff:
 [group('pi')]
 pi: pi-apply pi-check
 
+# --- hooks ---
+
 # Type-check and validate the TypeScript hooks in dot_claude/hooks, then run each test/check.ts.
-[group('extensions')]
+[group('hooks')]
 hooks-check:
     "{{ SCRIPTS }}/extensions/hooks/check.sh"
-
-# --- hooks ---
 
 # Time the TypeScript hooks on tool calls replayed from ~/.claude/projects, and update docs/hooks/performance/. Takes hours.
 [group('hooks')]
