@@ -2,6 +2,8 @@
 
 A [Codex CLI](https://developers.openai.com/codex/cli) session loads the user-scope configuration from this repository's single copy: `~/.claude/skills`, the scripts in `~/.claude/hooks`, and `CLAUDE.md` with the rules in `~/.claude/rules/`. Symlinks, one hooks file, one wrapper script, and one chezmoi template do it. No hook script or rule moves or changes. The Codex-only `claude-command` skill reads a selected Claude command on demand. Written against Codex CLI 0.160.1.
 
+## Resource overview
+
 | Resource                    | How Codex loads it                                                                           | Where                                                                                        |
 | --------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Skills                      | its native user skills directory, a chezmoi symlink `~/.agents/skills` to `~/.claude/skills` | [`dot_agents/symlink_skills`](../../dot_agents/symlink_skills)                               |
@@ -70,17 +72,31 @@ Codex runs a hook only after you trust it. Open the Codex TUI once on the host a
 - `codex exec --dangerously-bypass-hook-trust -s danger-full-access '<prompt>' </dev/null` runs one turn with every enabled hook, trusted or not. Without `</dev/null`, `codex exec` waits for stdin until its timeout.
 - `hooks/list` on `codex app-server` returns each hook's `currentHash` and `trustStatus`.
 
+### Devcontainer sandbox
+
 In the devcontainer, Codex's default `workspace-write` sandbox cannot write files: `apply_patch` fails with `Failed to write file`. `-s danger-full-access` works.
 
 ## Settings
+
+### Persistent defaults
 
 `dot_codex/modify_private_config.toml` is a chezmoi modify script for `~/.codex/config.toml`. It sets `model`, `model_reasoning_effort`, `web_search = "live"`, `features.memories`, and the Context7 MCP server in `mcp_servers.context7`.
 
 Codex and cmux write to the same file: a trust prompt adds a `projects` entry, hook trust adds a `hooks.state` entry, the TUI adds `tui` keys, and cmux adds hook trust entries between `# cmux-… begin` and `# cmux-… end` marker comments. The script merges the repository keys over the current file: a repository key wins, and a key the repository leaves out stays. Tables merge key by key, and a repository array replaces the current one. To keep a `/model` change, add it to the script; the next apply resets it otherwise.
 
+### Launch overrides
+
 Launch with `codex`, without `--search`. Live web search is a top-level setting in the file, not a launch override. Put persistent `-c` overrides in the same file and `--enable NAME` or `--disable NAME` values in `[features]` as `NAME = true` or `NAME = false`. These launch flags prevent use of the shared background server and make Codex use embedded mode instead. See the [official configuration documentation](https://learn.chatgpt.com/docs/config-file/config-basic).
 
+### cmux startup warning
+
+Inside cmux, its wrapper adds `--disable computer_use` and can add `-c` overrides, so the “Running without the shared background server” warning is expected. Codex still works in embedded mode; no documented setting hides this warning. `CMUX_CODEX_HOOKS_DISABLED=1` stops the injection but disables cmux integration for that launch.
+
+### Merge implementation
+
 The script is Python with [tomlkit](https://github.com/python-poetry/tomlkit), run through `uv run --script`, so it needs `uv` on `PATH` on the host and in the devcontainer. tomlkit edits the file in place: comments, the cmux markers, key and table order, and string quoting stay, and a value already equal to the repository value is not rewritten. A parser that serializes the whole file again, such as `yq`, drops the cmux end marker and moves `[tui]` behind the cmux tables. The `private_` attribute keeps the file at mode 0600, as Codex writes it. If the script fails, `chezmoi apply` stops and does not change the file.
+
+### Context7 API key
 
 The script also writes `CONTEXT7_API_KEY` into `[mcp_servers.context7.env]`. Codex passes only a fixed set of variables, such as `HOME` and `PATH`, to a stdio MCP server, so the key must be in the file, as `apm` writes it for Claude. The script takes the key from the `export CONTEXT7_API_KEY=` line in `.envrc` at the repository root, which chezmoi gives as `CHEZMOI_SOURCE_DIR`. `.envrc` is in `.gitignore` and `.chezmoiignore`, so the key reaches only `~/.codex/config.toml`, at mode 0600. Without a key, the script keeps the key from an earlier apply. `chezmoi diff` prints the key when it changes.
 
