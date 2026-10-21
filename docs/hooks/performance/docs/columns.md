@@ -41,7 +41,7 @@ So the same hook has two rows, and the `command.ts` row is about 34 ms slower fo
 
 ### `agents`
 
-The agents that run this path of the hook: Claude Code, pi, omp, or Codex. The script finds them in the files that load the hooks, see the [README](../README.md#data). In this repository, Claude Code runs most hooks in process, and Codex runs each hook that has a `command.ts` through it.
+The agents that run this path of the hook: Claude Code, pi, omp, or Codex. The script finds them in the files that load the hooks, see the [README](../README.md#agents). In this repository, Claude Code runs most hooks in process, and Codex runs each hook that has a `command.ts` through it.
 
 This column is important for a ranking. If you sort all rows by `session_ms`, the top two rows are `command.ts` rows of `track-session-changes` and `format-prettier`, at 7.3 s and 7.0 s for each session. Only Codex runs those rows. In Claude Code, the same two hooks run in process and cost 2.6 s and 5.6 s on Bash calls. So keep the rows of the agent that you want to know about, for example with `just hooks-perf-view summary "Claude Code"`.
 
