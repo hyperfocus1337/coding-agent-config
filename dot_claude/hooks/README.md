@@ -1,6 +1,6 @@
 # hooks
 
-Hooks run on agent events, for example after each `Write` or `Edit`, before a `Bash` call, or when the agent stops. Each hook is one folder here, with its TypeScript code and its own README.
+Hooks run on agent events, for example after each `Write` or `Edit`, before a `Bash` call, or when the agent stops. Each hook is one folder here, with its TypeScript code and its own README. `toggle-hook` is the exception: it runs only when you type `/toggle-hook`, not on an agent event, and turns the advisory hooks off or on. It is here and not in [`mods/`](../mods/README.md) because its `HOOKS` list names those hooks, and it has a pi and omp adapter.
 
 Each hook has one TypeScript core with an adapter for each agent: a Claude Code mod, a pi and omp extension, and a Codex command hook. `block-secret-commits`, `type-check-tsc`, and `type-check-pyrefly` run as command hooks in Claude Code, not as mods. A mod needs Claude Code 2.1.296 or later, the oldest version tested. [`docs/hooks/`](../../docs/hooks/README.md) gives the design, the rules to write a hook, the API facts of each agent, and the decisions.
 
