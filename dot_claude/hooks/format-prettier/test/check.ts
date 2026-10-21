@@ -193,6 +193,24 @@ await quiet(
 );
 await formatted("cross-repo absolute path", `${other}/OTHER.md`);
 
+// Only an absolute path is a root: the end of a relative path is not.
+await check("sweep: no git start for a relative path", async () => {
+  const dirs: string[] = [];
+  await format(
+    { command: "cat docs/a.md /abs/b.md > out/c.md", cwd: "/repo" },
+    {
+      stat: async (path) => (path === "/repo" ? { kind: "dir" } : undefined),
+      read: async () => undefined,
+      run: async (argv, { cwd }) => {
+        if (argv[1] === "rev-parse") dirs.push(cwd);
+        return { exitCode: 1, stdout: "" };
+      },
+    },
+    {},
+  );
+  assert.deepEqual(dirs, ["/repo", "/abs"]);
+});
+
 // A named file is formatted even when git cannot see it: a file written and
 // ignored in the same call is already ignored when the hook runs.
 unaligned(`${outer}/vendor/NAMED.md`);

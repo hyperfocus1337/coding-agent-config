@@ -42,8 +42,11 @@ const EDITED =
 const MARKDOWN = /\.(md|markdown)$/;
 /** A Markdown path that a command names. */
 const NAMED = /[^\s:;|&"'`()<>=]+\.(?:md|markdown)\b/g;
-/** An absolute path in a command: a root for the sweep. */
-const ABSOLUTE = /\/[^\s:;|&"'`()<>]+/g;
+/**
+ * An absolute path in a command: a root for the sweep. The `/` starts a word,
+ * so the end of a relative path such as `docs/a.md` does not match.
+ */
+const ABSOLUTE = /(?<![^\s"'`=(;|&<>])\/[^\s:;|&"'`()<>]+/g;
 /**
  * A command that commits: `git`, then global options such as `-C <dir>`, then
  * `commit` as a word, in one simple command. `git commit-tree` does not match.
