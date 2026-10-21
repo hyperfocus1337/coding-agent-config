@@ -30,6 +30,14 @@ The `scope/` folder answers "does this resource belong in every session, or in o
 | [`plugins.md`](scope/plugins.md)         | Project-scoped plugins (catalog: `install-plugins/references/plugins.json`) |
 | [`mcp-servers.md`](scope/mcp-servers.md) | Project-scoped MCP servers (catalog: `install-mcp/references/servers.json`) |
 
+## Runtime
+
+The `runtime/` folder covers running agent sessions on the host and inside devcontainers.
+
+| File                                       | Description                                                                |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| [`macos-sleep.md`](runtime/macos-sleep.md) | Keep local and devcontainer agent sessions running while the Mac is locked |
+
 ## Other agents
 
 The `agents/` folder covers running this repository's Claude Code configuration in another coding agent. [`pi.md`](agents/pi.md) documents how pi loads `~/.claude/skills`, `commands`, `rules`, and `CLAUDE.md` through the extensions, settings, and symlink in [`dot_pi/agent/`](../dot_pi/agent/README.md), and what to do when pi rewrites its own settings file. [`codex.md`](agents/codex.md) documents how Codex loads `~/.claude/skills`, `CLAUDE.md` with the rules, and the hooks in `~/.claude/hooks` through the symlink in [`dot_agents/`](../dot_agents/symlink_skills) and the files in [`dot_codex/`](../dot_codex/README.md), and that commands do not reach Codex.
