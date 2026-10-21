@@ -1,0 +1,26 @@
+# Blocks an agent command that writes an agent-hook.* git config key, so
+# that the model cannot turn off an advisory hook in a repository. Only you
+# change these keys, with /toggle-hook --repo or with git config in your own
+# terminal. See dot_claude/hooks/toggle-hook/README.md. Tested with dcg
+# 0.15.3: README.md "Custom packs".
+schema_version: 1
+id: local.agent_hook
+name: Agent hook switches
+version: 1.0.0
+description: Blocks git config writes to agent-hook.* keys. Reads stay allowed.
+keywords:
+  - agent-hook
+destructive_patterns:
+  # git, its global options, then config with no get, list, --get, --list,
+  # or -l in the same command, then an agent-hook key. Git ignores the case
+  # of a section name.
+  - name: config-write
+    pattern: >-
+      \bgit(?:\s+(?:-[Cc]\s+(?:"[^"]*"|'[^']*'|\S+)|--(?:git-dir|work-tree|namespace|exec-path|config-env)(?:=|\s+)(?:"[^"]*"|'[^']*'|\S+)|-\S+))*\s+config\b(?!(?:\s+-\S+)*\s+(?:get|list)\b)(?![^;&|\n]*\s(?:--get|--list|-l)\b)[^;&|\n]*\s["']?(?i:agent-hook)\b
+    severity: critical
+    executables: [git]
+    description: Agents must not change agent-hook.* git config keys
+    explanation: |
+      The agent-hook.* keys turn the advisory agent hooks off in one
+      repository. Only the user changes them: /toggle-hook --repo <hook> in
+      the agent, or git config in their own terminal.

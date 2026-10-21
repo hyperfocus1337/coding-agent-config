@@ -41,6 +41,21 @@ dcg enables these packs when no configuration exists.
 | `secret_disclosure`                          | `vault read`, `vault kv get`, `op read`, `op item get`, `aws secretsmanager get-secret-value`, Infisical and Doppler reads                                    | Stops a secret value from going into the agent context or a file that the agent selects. | [secret_disclosure.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/secret_disclosure.md)                                                                 |
 | `careful_company_running_windows.guardrails` | `dcg allow-once`, `dcg allowlist add`, `dcg allowlist add-command`, `dcg uninstall`, a write to an agent's hook config. The other rules are for Windows only. | Stops an agent from approving its own exception. See [Exceptions](#exceptions).          | [careful_company_running_windows.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/careful_company_running_windows.md#careful-company-guardrail-tampering) |
 
+## Custom packs
+
+`custom_paths` in [`config.toml`](config.toml) loads each YAML pack in `~/.config/dcg/packs/`. chezmoi installs the packs from [`packs/`](packs/).
+
+| Pack                                        | Rule                            | Blocks                                                                                                                                                     | Why                                                                                                                                                                          |
+| ------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`local.agent_hook`](packs/agent-hook.yaml) | `local.agent_hook:config-write` | A `git config` command that writes, removes, or adds an `agent-hook.*` key, at any scope. A command with `get`, `list`, `--get`, `--list`, or `-l` passes. | The keys turn the advisory hooks off in one repository. Only you change them, with `/toggle-hook --repo`. See [`toggle-hook`](../../dot_claude/hooks/toggle-hook/README.md). |
+
+Tests with dcg 0.15.3 on 2026-10-21, with `dcg test --config`:
+
+- **Blocked:** `git config agent-hook.x.enabled false`, with `--local`, `--global`, `--add`, `--unset`, `--unset-all`, `--remove-section`, `set`, or `unset`. Also with `-C <dir>`, `-c <key>=<value>`, `--git-dir=<dir>`, a quoted key, a key in other case, `/usr/bin/git`, `sudo`, after `cd <dir> &&`, and in `bash -c`.
+- **Allowed:** `git config --get`, `--get-all`, `--get-regexp`, `get`, `--list`, `list`, `-l`, and `git config user.name <name>`.
+
+The pack does not catch a write that does not name the key: an edit of `.git/config`, `git config --edit`, or a key in a shell variable. dcg also reads the body of a heredoc in a command as shell text. So an agent command whose heredoc holds a line such as `git config agent-hook.x.enabled false`, for example a script that writes documentation, is blocked. Write such text with the file tools of the agent.
+
 ## Exceptions
 
 When dcg blocks a command that you want to run, you make the exception. The agent cannot: the `guardrails` pack blocks the commands below when an agent runs them. In Claude Code, type `!` and then the command in the prompt. The `!` prefix runs the command in the session shell as your command, not as a tool call of the agent. In Codex, pi, or omp, run the command in a second terminal in the same environment as the agent, the host or the devcontainer.

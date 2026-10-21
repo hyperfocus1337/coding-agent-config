@@ -23,3 +23,5 @@ enabled = [
   "secret_disclosure",
   "careful_company_running_windows.guardrails",
 ]
+# The packs of this repo, in dot_config/dcg/packs. README "Custom packs".
+custom_paths = ["~/.config/dcg/packs/*.yaml"]
