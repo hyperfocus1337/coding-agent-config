@@ -29,9 +29,14 @@ export interface Settings {
   hooksOff?: string;
 }
 
-/** The tool call: a Write or Edit names a file, a Bash call a command. */
+/**
+ * The tool call: a Write or Edit names a file, a Bash call a command. The
+ * format-staged-files pre-commit hook names all staged files in filePaths, so
+ * one run takes them all.
+ */
 export interface Call {
   filePath?: string;
+  filePaths?: string[];
   command?: string;
   cwd: string;
 }
@@ -70,18 +75,19 @@ async function targets(
   io: Io,
   settings: Settings,
 ): Promise<string[]> {
-  const paths = call.filePath
-    ? [call.filePath]
-    : [...(call.command ?? "").matchAll(NAMED)].map(([named]) =>
-        named.startsWith("/") ? named : `${call.cwd}/${named}`,
-      );
+  const given = call.filePaths ?? (call.filePath ? [call.filePath] : undefined);
+  const paths =
+    given ??
+    [...(call.command ?? "").matchAll(NAMED)].map(([named]) =>
+      named.startsWith("/") ? named : `${call.cwd}/${named}`,
+    );
   const kept: string[] = [];
   for (const file of new Set(paths)) {
     if (!TERRAFORM.test(file) || throwaway(file, settings)) continue;
     const stat = await io.stat(file);
     if (
       stat?.kind === "file" &&
-      (call.filePath || Date.now() - stat.mtimeMs <= 120_000)
+      (given || Date.now() - stat.mtimeMs <= 120_000)
     )
       kept.push(file);
   }

@@ -31,9 +31,14 @@ export interface Settings {
   hooksOff?: string;
 }
 
-/** The tool call: a Write or Edit names a file, a Bash call a command. */
+/**
+ * The tool call: a Write or Edit names a file, a Bash call a command. The
+ * format-staged-files pre-commit hook names all staged files in filePaths, so
+ * one run takes them all.
+ */
 export interface Call {
   filePath?: string;
+  filePaths?: string[];
   command?: string;
   cwd: string;
 }
@@ -119,17 +124,18 @@ async function targets(
 ): Promise<string[]> {
   const command = call.command ?? "";
   const folders = bases(command, call.cwd);
-  const named = call.filePath
-    ? [call.filePath]
-    : [...command.matchAll(NAMED)].flatMap(([path]) =>
-        path.startsWith("/") ? [path] : folders.map((dir) => `${dir}/${path}`),
-      );
+  const given = call.filePaths ?? (call.filePath ? [call.filePath] : undefined);
+  const named =
+    given ??
+    [...command.matchAll(NAMED)].flatMap(([path]) =>
+      path.startsWith("/") ? [path] : folders.map((dir) => `${dir}/${path}`),
+    );
   const kept: string[] = [];
   for (const file of new Set(named)) {
     if (!file.endsWith(".org") || throwaway(file, settings)) continue;
     const stat = await io.stat(file);
     if (stat?.kind !== "file") continue;
-    if (!call.filePath && Date.now() - stat.mtimeMs > 120_000) continue;
+    if (!given && Date.now() - stat.mtimeMs > 120_000) continue;
     if (/^[ \t]*\|/m.test((await io.read(file)) ?? "")) kept.push(file);
   }
   return kept;

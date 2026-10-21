@@ -14,13 +14,19 @@ import { nodeIo, nodeSettings } from "./io.ts";
 const payload = JSON.parse(readFileSync(0, "utf8")) as {
   cwd?: string;
   hook_event_name?: string;
-  tool_input?: { file_path?: unknown; command?: unknown };
+  tool_input?: { file_path?: unknown; file_paths?: unknown; command?: unknown };
 };
 const text = (value: unknown) =>
   typeof value === "string" ? value : undefined;
+// file_paths is not in an agent payload: format-staged-files sends it.
+const texts = (value: unknown) =>
+  Array.isArray(value) && value.every((item) => typeof item === "string")
+    ? value
+    : undefined;
 const hint = await align(
   {
     filePath: text(payload.tool_input?.file_path),
+    filePaths: texts(payload.tool_input?.file_paths),
     command: text(payload.tool_input?.command),
     cwd: payload.cwd || process.cwd(),
   },

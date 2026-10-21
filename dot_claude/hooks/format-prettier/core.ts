@@ -28,9 +28,14 @@ export interface Settings {
   hooksOff?: string;
 }
 
-/** The tool call: a Write or Edit names a file, a Bash call a command. */
+/**
+ * The tool call: a Write or Edit names a file, a Bash call a command. The
+ * format-staged-files pre-commit hook names all staged files in filePaths, so
+ * one run takes them all.
+ */
 export interface Call {
   filePath?: string;
+  filePaths?: string[];
   command?: string;
   cwd: string;
 }
@@ -154,8 +159,9 @@ async function targets(
   io: Io,
   settings: Settings,
 ): Promise<string[]> {
-  const candidates = call.filePath ? [call.filePath] : await sweep(call, io);
-  const extensions = call.filePath ? EDITED : MARKDOWN;
+  const named = call.filePaths ?? (call.filePath ? [call.filePath] : undefined);
+  const candidates = named ?? (await sweep(call, io));
+  const extensions = named ? EDITED : MARKDOWN;
   const kept: string[] = [];
   for (const file of new Set(candidates))
     if (
