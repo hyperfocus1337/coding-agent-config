@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Smoke test for scan.sh: each input form, the .txt rule, and the exit codes.
+# Smoke test for scan.sh: each input form, the .txt rule, --config, and the
+# exit codes.
 # Run: bash test.sh. Needs vale, fd, and git on PATH.
 set -u
 
@@ -57,5 +58,34 @@ check "--changed: only the changed file" 1 'new.org:1:'
 
 run missing.md
 check "a bad path stops the scan" 2 'no such file'
+
+# A custom config with a warning-level rule: Vale exits 0 on it, scan.sh 1.
+mkdir -p "$tmp/cfg/styles/Custom"
+printf 'extends: existence\nmessage: "Avoid %%s."\nlevel: warning\ntokens: [Short]\n' \
+  > "$tmp/cfg/styles/Custom/Short.yml"
+printf 'StylesPath = styles\n[*.{md,org}]\nBasedOnStyles = Custom\n' > "$tmp/cfg/custom.ini"
+printf 'Short.\n%s\n' "$long" > "$tmp/repo/new.org"
+run --config "$tmp/cfg/custom.ini" new.org
+check "--config: a warning counts as an alert" 1 'Custom.Short'
+[[ "$out" == *Writing.* ]] && { echo "FAIL --config still ran the hook's rules"; fail=1; } \
+  || echo "ok   --config replaces the hook's rules"
+
+run --config="$tmp/cfg/custom.ini" docs
+check "--config: no match, no alert" 0 ''
+
+run --changed --config "$tmp/cfg/custom.ini"
+check "--config combines with --changed" 1 'new.org:1:'
+
+run --config repo
+check "--config repo: no repository config" 2 'no .vale.ini'
+
+cp -r "$tmp/cfg/styles" "$tmp/repo/styles"
+cp "$tmp/cfg/custom.ini" "$tmp/repo/.vale.ini"
+printf 'Short.\n' > "$tmp/repo/docs/short.md"
+run --config repo docs
+check "--config repo: the repository's .vale.ini" 1 'short.md:1:'
+
+run --config missing.ini
+check "a bad config stops the scan" 2 'no such config'
 
 exit "$fail"
