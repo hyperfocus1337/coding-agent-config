@@ -2,17 +2,17 @@
  * Git pre-commit hook, not an agent hook: formats the staged files through
  * the command.ts of format-prettier, format-org-tables, and
  * format-terraform, then stages the result, so the commit holds the
- * formatted text. A Bash command that
- * writes a file and commits it in one call gets past the PostToolUse
- * formatters, which run after the commit. ~/.config/git/config sets this hook
- * for every commit, and the gate below limits it to agent sessions. Never
- * stops a commit: always exits 0. Design notes: README.md.
+ * formatted text. A Bash command that writes a file and commits it in one
+ * call gets past the PostToolUse formatters, which run after the commit.
+ * ~/.config/git/config sets this hook for every commit, and the gate below
+ * limits it to agent sessions. Never stops a commit: always exits 0. Design
+ * notes: README.md.
  *
  * Run: node main.ts, from git as a pre-commit hook.
  */
 
 import { spawnSync } from "node:child_process";
-import { lstatSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 
 // Each agent sets its own variable in the processes it starts. Your own
@@ -25,16 +25,21 @@ const agent =
   !!env.CODEX_THREAD_ID;
 if (!agent) process.exit(0);
 
-const git = (...args: string[]) =>
-  spawnSync("git", args, { cwd: root, encoding: "utf8" });
+const git = (args: string[], input?: string) =>
+  spawnSync("git", args, {
+    cwd: root,
+    encoding: "utf8",
+    input,
+  });
 // Git runs a pre-commit hook at the root already. `git hook run` from a
 // subfolder does not, and the formatters find .prettierignore from here.
 let root = process.cwd();
-const top = git("rev-parse", "--show-toplevel");
+const top = git(["rev-parse", "--show-toplevel"]);
 if (top.status !== 0) process.exit(0);
 root = top.stdout.trim();
+const fields = (out: string) => out.split("\0").filter(Boolean);
+const fromStdin = ["--pathspec-from-file=-", "--pathspec-file-nul"];
 
-const hooks = `${homedir()}/.claude/hooks`;
 const read = (file: string) => {
   try {
     return readFileSync(file, "utf8");
@@ -45,51 +50,60 @@ const read = (file: string) => {
 
 // --cached reads $GIT_INDEX_FILE, so `commit -a` and `commit <path>`, which
 // build a temporary index, get the files they are about to commit. Each
-// child gets the git variables through the environment.
-// shortcut: one formatter run for each file, about 0.4 s each for Prettier.
-// The upgrade is a list mode in format-prettier, so one Prettier run
-// takes every file.
-const staged = git(
-  "diff",
-  "--cached",
-  "--name-only",
-  "--diff-filter=ACMR",
-  "-z",
+// child gets the git variables through the environment. --raw gives the
+// mode of the index side.
+const staged = fields(
+  git([
+    "diff",
+    "--cached",
+    "--raw",
+    "-z",
+    "--no-abbrev",
+    "--no-renames",
+    "--diff-filter=ACM",
+  ]).stdout,
 );
-for (const rel of staged.stdout.split("\0")) {
-  if (!rel) continue;
-  const file = `${root}/${rel}`;
-  try {
-    if (!lstatSync(file).isFile()) continue; // a symlink or a folder
-  } catch {
-    continue;
-  }
-  // Unstaged changes in the same file: `git add` would commit those too.
-  if (git("diff", "--quiet", "--", rel).status !== 0) continue;
-  const before = read(file);
-  const payload = JSON.stringify({
-    hook_event_name: "PostToolUse",
+// Unstaged changes in a file: `git add` would commit those too.
+const unstaged = new Set(fields(git(["diff", "--name-only", "-z"]).stdout));
+const files: string[] = [];
+for (let i = 0; i + 1 < staged.length; i += 2) {
+  // `:<old mode> <new mode> <old blob> <new blob> <status>`. A regular file
+  // has mode 100644 or 100755. A symlink or a submodule does not.
+  const [, mode = ""] = staged[i]!.split(" ");
+  const rel = staged[i + 1]!;
+  if (mode.startsWith("100") && !unstaged.has(rel)) files.push(rel);
+}
+if (!files.length) process.exit(0);
+
+const before = files.map((rel) => read(`${root}/${rel}`));
+// One run of each formatter for all files. file_paths is not in an agent
+// payload: the formatters take it from this hook only.
+const payload = JSON.stringify({
+  hook_event_name: "PostToolUse",
+  cwd: root,
+  tool_input: { file_paths: files.map((rel) => `${root}/${rel}`) },
+});
+const hooks = `${homedir()}/.claude/hooks`;
+for (const formatter of [
+  "format-prettier",
+  "format-org-tables",
+  "format-terraform",
+])
+  spawnSync(process.execPath, [`${hooks}/${formatter}/command.ts`], {
     cwd: root,
-    tool_input: { file_path: file },
+    // /toggle-hook turns off the agent hooks only, not this commit-time
+    // format. Node leaves an undefined variable out.
+    env: { ...env, CLAUDE_HOOKS_DISABLE: undefined },
+    input: payload,
+    stdio: ["pipe", "ignore", "ignore"],
   });
-  for (const formatter of [
-    "format-prettier",
-    "format-org-tables",
-    "format-terraform",
-  ])
-    spawnSync(process.execPath, [`${hooks}/${formatter}/command.ts`], {
-      cwd: root,
-      // /toggle-hook turns off the agent hooks only, not this commit-time
-      // format. Node leaves an undefined variable out.
-      env: { ...env, CLAUDE_HOOKS_DISABLE: undefined },
-      input: payload,
-      stdio: ["pipe", "ignore", "ignore"],
-    });
-  if (read(file) === before) continue;
-  git("add", "--", rel);
-  // Git passes pre-commit stderr through, also with `commit -q`. Without this
-  // line, a changed file size is the only trace of the restage.
+
+const changed = files.filter((rel, i) => read(`${root}/${rel}`) !== before[i]);
+if (!changed.length) process.exit(0);
+git(["add", ...fromStdin], changed.join("\0"));
+// Git passes pre-commit stderr through, also with `commit -q`. Without these
+// lines, a changed file size is the only trace of the restage.
+for (const rel of changed)
   process.stderr.write(
     `format-staged-files: reformatted and restaged ${rel}\n`,
   );
-}

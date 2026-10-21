@@ -140,6 +140,23 @@ check("commit -a formats the tracked file", () =>
 );
 check("the tree is clean after commit -a", () => assert.equal(dirty(), ""));
 
+// All staged files go to one formatter run, and each restage is reported.
+write("b.md", "*   b\n");
+write("c.md", "*   c\n");
+git(["add", "b.md", "c.md"]);
+ran = git(["commit", "-q", "-m", "two"]);
+check("several staged files are all committed formatted", () => {
+  assert.equal(committed("b.md"), "- b\n");
+  assert.equal(committed("c.md"), "- c\n");
+});
+check("each restaged file is reported", () =>
+  assert.equal(
+    ran.stderr,
+    "format-staged-files: reformatted and restaged b.md\n" +
+      "format-staged-files: reformatted and restaged c.md\n",
+  ),
+);
+
 // /toggle-hook turns off the agent hooks only, not this commit-time format.
 write("new.md", "*   toggled\n");
 git(["commit", "-q", "-a", "-m", "toggled"], {

@@ -7,6 +7,11 @@ In 205 sessions from 2026-08-30 to 2026-09-27, a formatter told the model to ame
 ## Cost
 
 - **A commit outside an agent:** one Node start, about 20 ms. `main.ts` exits at once when no agent variable is set.
-- **A commit in an agent session:** one formatter run for each file and formatter. A Node start costs about 20 ms, and Prettier about 0.4 s for each run, so a commit of 30 files adds about 13 s.
+- **A commit in an agent session:** one run of each formatter for all staged files. On 2026-10-21, in the devcontainer:
 
-[`decisions.md`](../../../../../docs/hooks/decisions.md#format-staged-files-runs-for-each-agent) gives a cost of about 18 ms for each file and formatter, and about 180 ms for a commit of 5 files.
+| Commit                                  | One run for each file | One run for all files |
+| --------------------------------------- | --------------------- | --------------------- |
+| 10 Markdown files that Prettier changes | 1277 ms               | 334 ms                |
+| 10 text files that no formatter handles | 538 ms                | 77 ms                 |
+
+Before, each file cost three Node starts of about 18 ms, plus about 120 ms for each Prettier run.

@@ -15,11 +15,11 @@ Git starts the hook on each `git commit`, in each repository. The hook formats o
 | omp         | `OMPCODE=1`                  |
 | Codex       | `CODEX_THREAD_ID`, any value |
 
-The hook takes the staged files that the commit adds, copies, modifies, or renames. It gives each file to the formatters of [`format-prettier`](../../../../dot_claude/hooks/format-prettier/README.md), [`format-org-tables`](../../../../dot_claude/hooks/format-org-tables/README.md), and [`format-terraform`](../../../../dot_claude/hooks/format-terraform/README.md). The formatting rules stay in those hooks: the extensions, `.prettierignore`, `--prose-wrap preserve`, and the skip of `/tmp` and `$TMPDIR`.
+The hook takes the staged files that the commit adds, copies, modifies, or renames. It gives all of these files to the formatters of [`format-prettier`](../../../../dot_claude/hooks/format-prettier/README.md), [`format-org-tables`](../../../../dot_claude/hooks/format-org-tables/README.md), and [`format-terraform`](../../../../dot_claude/hooks/format-terraform/README.md). The formatting rules stay in those hooks: the extensions, `.prettierignore`, `--prose-wrap preserve`, and the skip of `/tmp` and `$TMPDIR`.
 
 The hook skips these files, and the commit takes them as staged:
 
-- A symlink, or another path that is not a regular file.
+- A symlink, a submodule, or another path that is not a regular file.
 - A file that has unstaged changes.
 
 The hook runs no linters. [Design notes](#design-notes) gives the reason.
@@ -49,9 +49,9 @@ A repository's own `.git/hooks/pre-commit` or `core.hooksPath` hook still runs. 
 ### What the hook does
 
 1. [`main.ts`](main.ts) exits at once when no agent variable is set. A commit outside an agent costs one Node start, see [research](docs/research.md).
-2. It lists the staged files with `git diff --cached`. For `git commit -a` and `git commit <path>`, git builds a temporary index and sets `GIT_INDEX_FILE`, so the list holds the files that this commit takes.
-3. For each regular file without unstaged changes, it runs the `command.ts` of `format-prettier`, `format-org-tables`, and `format-terraform`. Each run gets a `PostToolUse` payload that names the file in `tool_input.file_path`.
-4. When a formatter changed the file, it runs `git add` on that file. Git reads the index again after the `pre-commit` hook, so the commit takes the formatted version.
+2. It lists the staged files with `git diff --cached --raw`. For `git commit -a` and `git commit <path>`, git builds a temporary index and sets `GIT_INDEX_FILE`, so the list holds the files that this commit takes.
+3. It runs the `command.ts` of `format-prettier`, `format-org-tables`, and `format-terraform` once each. Each run gets a `PostToolUse` payload that names all regular files without unstaged changes in `tool_input.file_paths`.
+4. It runs `git add` on the files that a formatter changed. Git reads the index again after the `pre-commit` hook, so the commit takes the formatted version.
 5. It prints one line to stderr for each file that it staged again.
 
 ## What the model sees
@@ -112,5 +112,4 @@ A `git add` of a file with unstaged changes would also stage those changes and p
 
 ### Limits
 
-- The hook runs each formatter once for each file. A commit of many files adds seconds, see [research](docs/research.md). `main.ts` marks this as a shortcut: a list mode in `format-prettier` would let one Prettier run take every file.
 - The linters do not run here. `lint-code` and `lint-prose` check whole files, so a linter at `pre-commit` would stop commits because of problems that were in the file before.

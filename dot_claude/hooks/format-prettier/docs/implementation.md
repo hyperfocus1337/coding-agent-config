@@ -28,7 +28,7 @@ The Bash sweep is Markdown-only on purpose, for the reason the README gives unde
 
 The cost of that choice is that a non-Markdown file written by a shell heredoc, by `jq`, or by a script stays unformatted until an `Edit` touches it. It is a real case, not a hypothetical one: a `jq ... | sponge dot_claude/settings.json` edit in this repo is exactly it. Such a file only hurts when it reaches a commit, and until then the next `Edit` fixes it for free.
 
-The [`format-staged-files`](../../../../dot_config/git/hooks/format-staged-files/README.md) git hook closes the gap. In an agent session it runs `command.ts` on each staged file before git writes the commit, with the full extension set.
+The [`format-staged-files`](../../../../dot_config/git/hooks/format-staged-files/README.md) git hook closes the gap. In an agent session it runs `command.ts` once on all staged files before git writes the commit, with the full extension set.
 
 This also covers the case that a check before the Bash call cannot: in `cat > README.md <<'EOF' ... && git commit -am docs`, the file exists only after the call starts. The amend hint stays for a commit that skips the git hook, such as `git commit --no-verify`.
 
