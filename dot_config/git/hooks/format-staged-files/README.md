@@ -20,7 +20,7 @@ The hook takes the staged files that the commit adds, copies, modifies, or renam
 The hook skips these files, and the commit takes them as staged:
 
 - A symlink, a submodule, or another path that is not a regular file.
-- A file that has unstaged changes.
+- A file that has unstaged changes, see [Partly staged files](#partly-staged-files).
 
 The hook runs no linters. [Design notes](#design-notes) gives the reason.
 
@@ -114,9 +114,11 @@ A `pre-commit` hook runs inside `git commit`, after the command wrote the file a
 
 The value of `command` is in quotes, because git reads a `;` outside quotes as the start of a comment. The command exits 0 when `node` is missing, and `|| true` keeps a failed run from stopping the commit.
 
-### Skipped files
+### Partly staged files
 
 A `git add` of a file with unstaged changes would also stage those changes and put them in the commit. So the hook commits that file as staged.
+
+[`git-format-staged`](https://github.com/hallettj/git-format-staged), from the [Prettier pre-commit page](https://prettier.io/docs/precommit), formats the staged part instead: it sends the staged blob through the formatter on stdin and merges the change back into the working tree. The three formatter hooks read files, not stdin, and agents seldom stage part of a file, so this hook does not do that.
 
 ### git commit \<path\>
 
