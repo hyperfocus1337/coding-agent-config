@@ -1,0 +1,33 @@
+# Testing format-staged-files
+
+Run the check from the hook folder:
+
+```sh
+node test/check.ts
+```
+
+`just hooks-check` also runs it. The check prints `all pass`, or one `FAIL` line for each failed case and exits 1.
+
+## Setup
+
+[`test/check.ts`](../test/check.ts) makes real commits in a temporary repository under `$HOME`, because the formatters skip `/tmp` and `$TMPDIR`.
+
+- **The hook command:** the check reads it from `dot_config/git/config` and sets it through `GIT_CONFIG_*` variables, so it does not depend on `~/.config/git/config`.
+- **`HOME`:** a temporary folder that links to the hook folders of this repository, so the check runs this source and not the deployed copy.
+- **Agent variables:** the check removes them from the environment of the session that runs it. Each commit sets the variable that the case needs, by default `CLAUDECODE=1`.
+- **`PATH`:** the check removes the mise shim folder. A mise shim reads its config under the real `HOME`, and under the temporary `HOME` it fails before it falls back to the real program.
+
+## Cases
+
+- **Formatting:** a staged new file, `git commit -a`, an Org table, a Terraform file, and a file that no formatter handles.
+- **Output:** the stderr line for a file that the hook staged again, and no line for an unchanged file.
+- **Skipped files:** a partly staged file is committed as staged, and its unstaged change stays in the tree. A symlink stays a symlink.
+- **Agent detection:** each agent variable turns the hook on, and a commit outside an agent is not formatted.
+- **`CLAUDE_HOOKS_DISABLE`:** a commit is still formatted when the variable names `format-prettier`.
+- **No `node`:** a commit with no `node` on `PATH` continues, with no output.
+
+## Requirements
+
+The check needs git and Prettier on `PATH`. Without one of them, it prints `SKIP` and exits 0. The Org case also needs Emacs, and the Terraform case needs terraform. The check skips each of these cases when its program is not installed.
+
+On a git without config-based hooks, the hook does not run, so the first case fails.
