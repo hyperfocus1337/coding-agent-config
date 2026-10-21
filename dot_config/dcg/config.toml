@@ -1,0 +1,25 @@
+# dcg packs to enable in addition to the default core.filesystem, core.git,
+# and system.disk. See dot_claude/hooks/block-destructive-commands/README.md.
+[packs]
+enabled = [
+  "containers.docker",
+  "containers.compose",
+  "kubernetes.kubectl",
+  "kubernetes.helm",
+  "kubernetes.kustomize",
+  "infrastructure.terraform",
+  "infrastructure.ansible",
+  "platform.github",
+  "platform.gitlab",
+  "cloud.aws",
+  "cloud.azure",
+  "database.postgresql",
+  "database.sqlite",
+  "system.permissions",
+  "system.services",
+  "package_managers",
+  "remote.rsync",
+  "secrets.vault",
+  "secret_disclosure",
+  "careful_company_running_windows.guardrails",
+]

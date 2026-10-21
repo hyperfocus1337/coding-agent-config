@@ -30,6 +30,7 @@ README.md
 .codex/skills/**/test/**
 .config/vale/**/README.md
 .config/git/hooks/**/README.md
+.config/dcg/README.md
 .config/git/hooks/**/test/**
 .omp/agent/README.md
 .pi/agent/README.md

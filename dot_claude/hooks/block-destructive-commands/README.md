@@ -34,7 +34,7 @@ omp loads the same `pi.ts`, not the extension that `dcg install --omp` writes. T
 
 ## Configuration
 
-dcg reads `~/.config/dcg/config.toml` and a `.dcg.toml` in the project. This repository tracks neither. `dcg explain "<command>"` shows the rule that blocks a command.
+dcg reads `~/.config/dcg/config.toml` and a `.dcg.toml` in the project. This repository tracks the first one as [`dot_config/dcg/config.toml`](../../../dot_config/dcg/config.toml). Its [README](../../../dot_config/dcg/README.md) explains each enabled pack and why some packs stay disabled. Its [Exceptions](../../../dot_config/dcg/README.md#exceptions) section tells you how to allow a blocked command. `dcg explain "<command>"` shows the rule that blocks a command.
 
 ## Tests
 

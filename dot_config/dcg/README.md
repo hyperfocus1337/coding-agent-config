@@ -1,0 +1,90 @@
+# dcg configuration
+
+[`config.toml`](config.toml) sets the rule packs that [dcg](https://github.com/Dicklesworthstone/destructive_command_guard) uses to block a shell command. chezmoi installs it at `~/.config/dcg/config.toml` on the host and in the devcontainer. The hook that runs dcg is in [`dot_claude/hooks/block-destructive-commands`](../../dot_claude/hooks/block-destructive-commands/README.md).
+
+The pack links go to the upstream documentation at tag `v0.15.3`, the version that `.chezmoiexternal.toml` pins. When you upgrade dcg, change the tag in the links.
+
+## Default packs
+
+dcg enables these packs when no configuration exists.
+
+| Pack              | Blocks                                                                                         | Source                                                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `core.filesystem` | `rm -rf` outside a temporary directory, `find -delete`, `shred`, `dd` over a file, a fork bomb | [core.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/core.md#core-filesystem)     |
+| `core.git`        | `reset --hard`, `clean -f`, `checkout -- <path>`, `push --force`, `branch -D`, `stash clear`   | [core.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/core.md#core-git)            |
+| `system.disk`     | `mkfs`, `wipefs`, `fdisk`, `dd` to a device, `lvremove`, `zfs destroy`                         | [system.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/system.md#disk-operations) |
+
+## Enabled packs
+
+`config.toml` enables these packs. Each one is for a CLI that the host or the devcontainer has.
+
+| Pack                                         | Blocks                                                                                                                                                        | Why enabled                                                                              | Source                                                                                                                                                                                              |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `containers.docker`                          | `system prune`, `volume prune`, `volume rm`, `rm -f`, `rmi -f`, stop all containers                                                                           | The host runs the devcontainer. A prune can delete its volumes.                          | [containers.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/containers.md#docker)                                                                        |
+| `containers.compose`                         | `down -v`, `down --rmi all`, `rm -v`, `rm -f`                                                                                                                 | Same as `containers.docker`.                                                             | [containers.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/containers.md#docker-compose)                                                                |
+| `kubernetes.kubectl`                         | `delete namespace`, `delete --all`, `drain`, `cordon`, `scale --replicas=0`, `apply --prune`, PVC deletion                                                    | `kubectl` is installed.                                                                  | [kubernetes.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/kubernetes.md#kubectl)                                                                       |
+| `kubernetes.helm`                            | `uninstall`, `rollback`, `upgrade --force`, `upgrade --reset-values`                                                                                          | `helm` is installed. `list`, `status`, `template`, `diff`, and `--dry-run` still work.   | [kubernetes.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/kubernetes.md#helm)                                                                          |
+| `kubernetes.kustomize`                       | `kustomize build \| kubectl delete`, `kubectl delete -k`                                                                                                      | `kustomize` is installed.                                                                | [kubernetes.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/kubernetes.md#kustomize)                                                                     |
+| `infrastructure.terraform`                   | `destroy`, `plan -destroy`, `apply -auto-approve`, `taint`, `state rm`, `state mv`, `force-unlock`                                                            | `terraform` and `tofu` are installed. The pack covers both.                              | [infrastructure.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/infrastructure.md#terraform)                                                             |
+| `infrastructure.ansible`                     | An ad hoc `rm -rf` or reboot, a playbook on all hosts                                                                                                         | `ansible` is installed.                                                                  | [infrastructure.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/infrastructure.md#ansible)                                                               |
+| `platform.github`                            | `gh repo delete`, `gh repo archive`, a visibility change, release, secret, and gist deletion, `gh api -X DELETE`                                              | `gh` is installed. `list` and `view` still work.                                         | [platform.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/platform.md#github-platform)                                                                   |
+| `platform.gitlab`                            | `glab repo delete`, `glab repo archive`, release and variable deletion, deletion through `glab api`                                                           | `glab` is installed. `list` and `view` still work.                                       | [platform.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/platform.md#gitlab-platform)                                                                   |
+| `cloud.aws`                                  | `ec2 terminate-instances`, `s3 rm --recursive`, `s3 rb`, deletion of RDS, IAM, EKS, KMS, and CloudFormation resources                                         | `aws` is installed.                                                                      | [cloud.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/cloud.md#aws-cli)                                                                                 |
+| `cloud.azure`                                | `group delete`, `vm delete`, `aks delete`, `keyvault purge`, `role assignment delete`, `account subscription cancel`                                          | `az` is installed.                                                                       | [cloud.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/cloud.md#azure-cli)                                                                               |
+| `database.postgresql`                        | `DROP`, `TRUNCATE`, `DELETE` or `UPDATE` without `WHERE`, `dropdb`, `pg_dump --clean`                                                                         | `psql` is installed.                                                                     | [database.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/database.md#postgresql)                                                                        |
+| `database.sqlite`                            | `DROP TABLE`, `DELETE` or `UPDATE` without `WHERE`, `DROP COLUMN`, SQL from stdin                                                                             | `sqlite3` is installed.                                                                  | [database.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/database.md#sqlite)                                                                            |
+| `system.permissions`                         | `chmod 777`, recursive `chmod`, `chown`, or `chgrp` on a system directory                                                                                     | Very few false positives.                                                                | [system.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/system.md#permissions)                                                                           |
+| `system.services`                            | `systemctl stop`, `systemctl isolate`, `shutdown`, `reboot`, a runlevel change                                                                                | Very few false positives. `status`, `list`, and `journalctl` still work.                 | [system.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/system.md#services)                                                                              |
+| `package_managers`                           | `npm`, `yarn`, and `pnpm` publish, `npm unpublish`, a system `pip uninstall`, `pip install` from a URL                                                        | Blocks publish and system removals only. `pnpm install` still works.                     | [package_managers.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/package_managers.md)                                                                   |
+| `remote.rsync`                               | `rsync --delete` and its variants                                                                                                                             | `rsync` is the preferred sync tool. `--dry-run` still works.                             | [remote.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/remote.md#rsync)                                                                                 |
+| `secrets.vault`                              | `vault kv destroy`, `vault kv delete`, `vault kv metadata delete`, `secrets disable`, `auth disable`, token and lease revocation                              | For Vault use on the host. `vault status` and `list` still work.                         | [secrets.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/secrets.md#hashicorp-vault)                                                                     |
+| `secret_disclosure`                          | `vault read`, `vault kv get`, `op read`, `op item get`, `aws secretsmanager get-secret-value`, Infisical and Doppler reads                                    | Stops a secret value from going into the agent context or a file that the agent selects. | [secret_disclosure.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/secret_disclosure.md)                                                                 |
+| `careful_company_running_windows.guardrails` | `dcg allow-once`, `dcg allowlist add`, `dcg allowlist add-command`, `dcg uninstall`, a write to an agent's hook config. The other rules are for Windows only. | Stops an agent from approving its own exception. See [Exceptions](#exceptions).          | [careful_company_running_windows.md](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/careful_company_running_windows.md#careful-company-guardrail-tampering) |
+
+## Exceptions
+
+When dcg blocks a command that you want to run, you make the exception. The agent cannot: the `guardrails` pack blocks the commands below when an agent runs them. In Claude Code, type `!` and then the command in the prompt. The `!` prefix runs the command in the session shell as your command, not as a tool call of the agent. In Codex, pi, or omp, run the command in a second terminal in the same environment as the agent, the host or the devcontainer.
+
+| Scope                        | Command                                                                    | Effect                                                                                                                 |
+| ---------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| One command, one run         | `dcg allow-once <code>`                                                    | Allows the exact blocked command, in the same directory. The first run uses it. An unused code expires after 24 hours. |
+| One command, more runs       | `dcg allow-once <code> --reusable`                                         | The same, but the agent can run the command again until the code expires.                                              |
+| One exact command, permanent | `dcg allowlist add-command "<command>" -r "<reason>"`                      | Allows that exact command text in all projects.                                                                        |
+| One rule, in one project     | `dcg allowlist add <rule-id> -r "<reason>" --path <repo-root>`             | Allows all commands that the rule matches, in that directory and its subdirectories.                                   |
+| One rule, for a limited time | `dcg allowlist add <rule-id> -r "<reason>" --expires 2026-11-01T00:00:00Z` | Allows the rule until that time. You can combine `--expires` with `--path`.                                            |
+| One command, no checks       | `DCG_BYPASS=1 <command>`                                                   | Turns off all packs for that command. Use it only in your own terminal. In an agent command, it has no effect.         |
+
+The code is in the last line of the block message, for example `dcg allow-once 059674`. The rule ID is in the `Rule:` line, for example `kubernetes.helm:rollback`.
+
+dcg writes `allow-once` codes to `~/.config/dcg/pending_exceptions.jsonl` and allowlist entries to `~/.config/dcg/allowlist.toml`. chezmoi does not manage these files, so `just chezmoi` keeps them. The host and the devcontainer each have their own files, so an exception on one does not apply on the other.
+
+To see or remove exceptions:
+
+```
+dcg allow-once list
+dcg allow-once revoke <code>
+dcg allowlist list
+dcg allowlist remove <rule-id>
+dcg allowlist prune
+```
+
+`prune` removes expired allowlist entries. An agent can run `dcg allowlist list`, `remove`, and `prune`, because these commands do not give more permissions. `dcg allow-once list` is blocked for an agent.
+
+## Packs not enabled
+
+| Pack                                                                                                                 | Reason                                                                                                                                                                                          |
+| -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`strict_git`](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/strict_git.md) | It blocks `git rebase`, `git commit --amend`, `git cherry-pick`, `--force-with-lease`, and `git add .`. `/git:commit:extend`, `/git:rewrite:*`, and `/git:branches:cleanup` use these commands. |
+| `windows.*`, other `careful_company_running_windows.*` packs                                                         | The host and the devcontainer do not run Windows.                                                                                                                                               |
+| Vendor packs: payment, email, CDN, monitoring, messaging, search, feature flags, API gateway, backup, DNS, storage   | Their CLIs are not installed. Enable a pack when you install its CLI.                                                                                                                           |
+
+The upstream [pack index](https://github.com/Dicklesworthstone/destructive_command_guard/blob/v0.15.3/docs/packs/README.md) lists all packs.
+
+## Check
+
+```
+dcg packs --enabled
+dcg explain "<command>"
+```
+
+The first command lists the enabled packs. The second shows the rule that blocks a command, or why dcg allows it.
