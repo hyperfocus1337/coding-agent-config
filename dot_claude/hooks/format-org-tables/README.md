@@ -1,6 +1,6 @@
 # format-org-tables
 
-Aligns the [Org mode](https://orgmode.org/) tables in the `.org` files that a Write, an Edit, or a Bash call changed, with Emacs in batch mode. This README holds the design notes, and the comments in [`core.ts`](core.ts) name the sections below.
+Aligns the [Org mode](https://orgmode.org/) tables in the `.org` files that a Write, an Edit, or a Bash call changed, with Emacs in batch mode. The model writes files outside an editor, so nothing else runs `org-table-align`, and each table that the model touches stays without column padding.
 
 One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
@@ -13,110 +13,135 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
 The git pre-commit hook [`format-staged-files`](../../../dot_config/git/hooks/format-staged-files/README.md) also runs `command.ts`, once for each staged file.
 
-## Why this is a separate hook
+## What it checks
 
-[`format-prettier`](../format-prettier/) formats the Prettier languages in its extension list, and Prettier has no Org parser, so `.org` is not in its extension list and never will be. Org table alignment is `org-table-align`, an Emacs function, so the tool, the invocation, and the failure modes share nothing with the Prettier hook. Keeping it standalone means it needs none of that hook's machinery (no git sweep, no markdown/code split, no `--print-width` reasoning) and can be turned off alone.
+The hook runs after each Write, Edit, and Bash call. It also runs after a call that failed, because a Bash command that exits with a code other than 0 can still have written a file. An interrupted command counts too: it can leave a half-written file, and `org-table-align` is safe to run on one.
 
-## The problem it solves
+### Write and Edit
 
-Claude writes files through `Write` and `Edit`, not through an editor, so nothing runs `org-table-align`. Every table Claude touches lands with its columns unpadded:
+The call names one file in `file_path`. The hook aligns that file.
 
-```org
-| Key | Action | Note |
-|---|---|---|
-| ⌘ ⇧ P | command palette | wide glyphs |
-| a | short | x |
+### Bash
+
+A Bash call names no file, but a shell command (a heredoc, `sed`, a redirect) often writes `.org` files. The hook takes each `.org` path that the command text names, absolute or relative to the session cwd (the working folder of the session before the command). A relative path also resolves against each folder that a `cd` in the command moves to, in order: `cd pkg && cd sub && sed -i … notes.org` tries `notes.org` in the session cwd, in `pkg`, and in `pkg/sub`.
+
+A named path counts only when its mtime is at most 120 s old. Thus a file that the command only read stays as it is, and so does a file of the same name in another folder. [`lint-code`](../lint-code/README.md) uses the same 120 s window.
+
+The hook misses these Bash writes, and the file stays without alignment until the next Edit:
+
+- A command that writes a `.org` file without its name, for example a script that it calls or a `find -exec`.
+- A relative path after a `cd` to `~`, to `-`, or to a folder with a variable. The hook does not follow such a `cd`.
+- A command that writes the file and then runs for more than 120 s.
+
+### Skipped files
+
+The hook skips each of these files, with no output:
+
+- A file that is not `.org`.
+- A path that does not exist or is not a regular file.
+- A path under `/tmp`, `/var/tmp`, or `$TMPDIR`. The scratchpad of the agent is there, and a file that the agent will throw away is not project prose.
+- A file with no line that starts with `|`. See [Files without tables](#files-without-tables).
+
+## Requirements
+
+- **Emacs** on `PATH`. Org mode comes with Emacs, so nothing else is necessary. Tested with GNU Emacs 30.1, 30.2, and 31.1. Without Emacs, the hook does nothing.
+- **git**, for the amend hint.
+- **Node 23.6 or later** for `command.ts`, which Codex and `format-staged-files` run. With no `node`, the Codex entry exits 0, and the `SessionStart` check of Codex shows a warning. The mod and `pi.ts` need no `node` of their own.
+
+To install Emacs on macOS:
+
+```sh
+brew install emacs
 ```
 
-Valid Org, unreadable as plain text. Emacs realigns it on the next manual edit, but only if you open the file, and only for the table the cursor sits in. VSCode `editor.formatOnSave` cannot help either: the file is written outside the editor, so no save event fires.
+## How it works
 
-## Triggers
+1. The hook stops when `CLAUDE_HOOKS_DISABLE` names it.
+2. It finds the target files, as [What it checks](#what-it-checks) tells.
+3. If the call is a Bash command that commits, it keeps the text of each target file.
+4. It aligns all target files in one `emacs --batch --no-init-file` run, and stops Emacs after 10 s.
+5. If it kept the text in step 3, it compares the text and sends the [amend hint](#write-and-commit-in-one-command) when necessary.
 
-The hook runs after each Write, Edit, and Bash call. It tells them apart by whether the call names a file: a Write or an Edit names one in `file_path`, a Bash call names none. On both paths, anything that is not an existing `.org` file is a clean skip.
+`--no-init-file` keeps your Emacs init (Doom, in this setup) out of the run, so only the Org mode that comes with Emacs loads. Without it, each run takes much longer than the timeout. One Emacs run costs about 1.4 s, and almost all of it is the start of Emacs, see [`docs/research.md`](docs/research.md).
 
-### Write and Edit (one file)
+### One Emacs run for every file
 
-The call names exactly one file. The hook aligns that file.
+A Bash call can name several files. The hook gives all of them to one Emacs run, in the `ORG_TABLE_FILES` environment variable, one path for each line. Five files take 1.6 s in one run and 6.7 s in five runs.
 
-### Bash (the paths the command names)
+### Files without tables
 
-A Bash call carries no `file_path`, but a shell command (a heredoc, `sed`, a redirect) writes `.org` files often enough to matter. This hook used to skip them all: a literate Emacs configuration written through heredocs kept two misaligned tables until they were found by hand.
+Before it starts Emacs, the hook reads each file and looks for a line that starts with `|`. A file with no such line has no table, so the hook does not start Emacs for it. Most Org files are prose, so this check keeps Emacs out of the common case.
 
-So on the Bash matcher the hook takes every `.org` path the command text names, absolute or relative to the session cwd, and aligns those. It asks git nothing, unlike the markdown sweep in [`format-prettier`](../format-prettier/README.md), because a command that writes an Org file names the file. A command that rewrites one without naming it (a script it calls, a `find -exec`) is still missed, and that file stays misaligned until the next `Edit` touches it.
+### Alignment only
 
-The session cwd is the one from before the command, so a relative path also resolves against each folder that a `cd` in the command moves to, in order: `cd pkg && cd sub && sed -i … notes.org` tries `notes.org` in the cwd, in `pkg` and in `pkg/sub`. The mtime check below keeps a file of the same name that the command did not write as it is. A `cd` to `~`, to `-`, or to a folder with a variable is not followed, and a path after it is still a silent miss.
+The hook calls `org-table-align` on each table, and does nothing else. It does not evaluate a `#+TBLFM` formula, because a formatter must not recalculate data. A `|` line in a `#+begin_example` block, or in a similar block, is not a table, and the hook does not change it.
 
-A command names a file it only reads as often as one it writes, and aligning a file the command read is an edit nobody asked for: `sed -n '1,20p' config.org > copy.org` names the live configuration and writes a copy. So a named path counts only when its mtime is inside a 120 s window, the test [`lint-code`](../lint-code/README.md) applies for the same reason. A command that writes early and then runs for minutes falls outside the window and is missed; the upgrade is a `PreToolUse` hook that stamps the start time of the matching call.
+The alignment follows the rules of Org, not of Prettier:
 
-#### A Bash command that writes a file and then fails
+- The padding uses the display width, so wide glyphs such as `⌘ ⇧ ⌃ ⌥` align correctly.
+- A column with only numbers is aligned to the right.
+- A second pass over an aligned file changes no byte.
 
-A shell command that exits with a code other than 0 can still have written a file: `cat > notes.org <<'EOF' ... EOF && just fmt-check` writes the file, then fails the check. Measured on 2026-09-19 with the old command hook, which Claude Code ran only on `PostToolUse`: the exit 0 file came back realigned, the exit 1 file was untouched. The hook then got a second entry on `PostToolUseFailure`.
+Emacs writes no backup file (`file.org~`) and no lock file next to the Org file.
 
-Each adapter now runs on a failed call too. The mod runs after `next` for each result, pi sends `tool_result` for each result, and Codex runs `PostToolUse` also after a Bash command that exits with a code other than 0. An interrupted command counts too: it can leave a half-written file, and `org-table-align` is safe to run on one.
+### Links count at their raw width
 
-`command.ts` sends the amend hint below as `hookSpecificOutput`, whose `hookEventName` is the discriminant of a schema for each event. So it reads `hook_event_name` from the payload and echoes it back, and uses `PostToolUse` only when the payload has none.
+By default, Org hides the brackets and the target of a link such as `[[*Cache][Cache]]`, and `org-table-align` measures only the text that it shows. The table is then straight in Emacs, but not straight in a diff, in Magit, or in a different editor. The hook counts each link at its raw width, so each `|` is at the same column in the file.
 
-#### Write and commit in one command
+In Emacs, the `org-markup-kinds` package of the Doom config aligns the same way, and pads the hidden link text on the screen.
 
-A single Bash call can write a file, commit it, and push it. Aligning the file afterwards fixes the file, not the commit: the commit still holds the unaligned version, and the working tree is now dirty. Only the agent can amend, so the hook tells the model, with a hint that names the files Emacs changed: `context` in the mod, an appended text block in pi, and `hookSpecificOutput.additionalContext` in Codex. In an agent session, the [`format-staged-files`](../../../dot_config/git/hooks/format-staged-files/README.md) pre-commit hook aligns the file before the commit, so this notice appears only when that hook skipped the file: a file with unstaged changes, a `--no-verify` commit, or a machine with no `node` for git. A test of the notice must turn that hook off, or the notice never appears.
+## What the model sees
 
-Two conditions gate the hint, and both are needed. The file has to be one Emacs itself rewrote, which is a compare of the text of each target before and after the run. And the file has to be one the last commit holds, which is `git diff-tree --no-commit-id --name-only -r --root HEAD`; `--root` is what makes the first commit of a repo answer, since it has no `HEAD~1`. A file outside a repo answers nothing and does not report.
+Usually nothing. The hook changes the file and adds no output. The only output for the model is the amend hint.
 
-The first condition replaced a `git diff --quiet` test on the working tree, which could not tell the hook's own alignment from a change that was already there. A second session editing the same file, or an unrelated edit of the same file earlier in the session, made the hook report a commit that held nothing to amend, and following the hint would have folded another author's work into the agent's commit.
+### Write and commit in one command
 
-## One Emacs run for every file
+A Bash call can write a file and commit it in one command. Alignment after the call fixes the file, but not the commit: the commit holds the version without alignment, and the working tree is dirty. Only the model can amend the commit, so the hook gives the model an amend hint that names the files.
 
-The Bash path can name several files, and the cost of alignment is Emacs startup, not the work. So every target goes into one `emacs --batch` call, through the `ORG_TABLE_FILES` environment variable, and the elisp loops over the list. Five files cost 1.6s in one run against 6.7s in five runs.
+The hook sends the amend hint only when all of these conditions are true:
 
-Passing the files as command line arguments would work as well, since batch Emacs visits each one, but then the elisp has to find them again in the buffer list. The variable is the list, so the loop reads it directly.
+- The call is a Bash command that commits: `git`, then optional global options such as `-C <dir>`, then `commit`. A Write or an Edit never gets the amend hint.
+- Emacs changed the file in this run.
+- The last commit holds the file: `git diff-tree --no-commit-id --name-only -r --root HEAD`. A file outside a git repository does not count.
 
-## Alignment only
+The amend hint is this text, with the paths:
 
-The hook loops over the buffer and calls `org-table-align` on each table:
-
-```elisp
-(progn
-  (setq make-backup-files nil create-lockfiles nil org-link-descriptive nil)
-  (dolist (file (split-string (getenv "ORG_TABLE_FILES") "\n" t))
-    (with-current-buffer (find-file-noselect file)
-      (org-mode)
-      (goto-char (point-min))
-      (while (re-search-forward "^[ \t]*|" nil t)
-        (when (org-at-table-p)
-          (org-table-align)
-          (goto-char (org-table-end))))
-      (save-buffer))))
+```text
+Emacs realigned Org tables after your commit, so the commit holds the unaligned version and the working tree is now dirty: <files>. Fold the alignment into that commit (amend, or a fixup commit if it is already pushed).
 ```
 
-Org ships a one-call alternative, `org-table-recalculate-buffer-tables`, which produces byte-identical output and is not used here. It also **evaluates every `#+TBLFM` formula in the file**. Silently recomputing spreadsheet formulas on every edit is a real way to lose data, and it is not what a formatter was asked to do. The explicit loop is alignment and nothing else. It is also faster: ~1.4s versus ~3.3s on a ~1000 line file with ~90 tables.
+Each adapter sends it in a different way:
 
-The `org-at-table-p` guard matters because the regexp also matches `|` lines inside `#+begin_example` and similar blocks, where alignment must not apply. `(goto-char (org-table-end))` skips past each table so its body rows are not rescanned.
+| Adapter           | How the model gets the amend hint                                                               |
+| ----------------- | ----------------------------------------------------------------------------------------------- |
+| Mod               | `context` on the tool result                                                                    |
+| `pi.ts`, `omp.ts` | A text block added after the content of the tool result                                         |
+| `command.ts`      | `hookSpecificOutput.additionalContext` on stdout, with `hookEventName` from the payload, exit 0 |
 
-Alignment is Org's own, so it follows Org's conventions rather than Prettier's: display width is used for the padding, which is why `⌘ ⇧ ⌃ ⌥` glyphs line up correctly, and columns holding only numbers are right-aligned.
+In an agent session, the [`format-staged-files`](../../../dot_config/git/hooks/format-staged-files/README.md) pre-commit hook aligns the file before the commit. Thus the amend hint appears only when that hook skipped the file: a file with unstaged changes, a `--no-verify` commit, or a machine with no `node` for git. A test of the amend hint must turn that hook off, or the amend hint never appears.
 
-The pass is idempotent. An already-aligned file comes out byte-identical.
+## What you see
 
-## Links count at their raw width
+Nothing, when the hook works. The aligned table shows in the diff of the file. The hook drops the stderr of Emacs, so the locale warning of Emacs batch runs (`LANG=… cannot be used, using en_US.UTF-8 instead`) does not show.
 
-`org-link-descriptive` is `t` by default, and then Org hides the brackets and the target of a link such as `[[*Cache][Cache]]`, also in a batch Emacs. `org-table-align` measures a cell by its shown text, so the cell gets 12 fewer pad characters than its raw width needs. The table is straight in an Org buffer that hides links, and crooked in a diff, in Magit and in every other editor. The hook sets `org-link-descriptive` to `nil`, so a link counts at its raw width and each `|` is at the same column in the file. In Emacs, the `org-markup-kinds` package of the Doom config aligns the same way and pads the hidden link text on screen.
+## Settings
 
-`make-backup-files` and `create-lockfiles` are switched off before the buffer is touched. Both default to on, and with backups on, `save-buffer` drops a `file.org~` next to every Org file the hook formats, which is exactly the kind of litter a background hook must not leave behind.
+To turn the hook off until you quit the agent, run [`/toggle-hook`](../toggle-hook/README.md), or add `format-org-tables` to `CLAUDE_HOOKS_DISABLE`. This variable holds a list of hook names, separated by spaces or commas. In Codex, set it before you start Codex.
 
-## Files without tables
+To turn the hook off for good, remove it from the agent config:
 
-Before starting Emacs at all, the hook reads the file and looks for a line that starts with `|`. No match means no table, so there is nothing to align and the hook stops: 0.02s instead of 1.4s. Most Org files are prose, so this is the common case. The test is deliberately loose (a `|` inside an `#+begin_example` block is enough to pass it); it only decides whether starting Emacs is worthwhile, and `org-at-table-p` makes the real per-table decision.
+| Agent       | Remove                                                                      |
+| ----------- | --------------------------------------------------------------------------- |
+| Claude Code | `format-org-tables` from `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`  |
+| pi          | The `format-org-tables/pi.ts` line in `dot_pi/agent/modify_settings.json`   |
+| omp         | The `format-org-tables` lines in `dot_omp/private_agent/private_config.yml` |
+| Codex       | The two `format-org-tables` entries in `dot_codex/modify_hooks.json`        |
 
-## Throwaway files
+The hook reads `TMPDIR` to find the scratch files that it skips. It has no config file.
 
-A path under `/tmp`, `/var/tmp` or `$TMPDIR` is skipped: the scratchpad of the agent lives there, and a file it is about to throw away is not project prose. macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/...`, and the path a payload carries holds that prefix while `$TMPDIR` does not, so both sides of the comparison drop a leading `/private`.
+## Failure behavior
 
-## `--no-init-file` is required
-
-Without it, Emacs loads the user's full init (Doom, in this setup) on every hook run, and the hook goes from ~1.4s to far past its timeout. With it, only bundled Org loads. The ~1.4s is almost entirely Emacs startup; the alignment work itself is negligible, which is why the core stops Emacs after 10 s. Codex stops `command.ts` after 10 s, the `timeout` of its entry.
-
-## Never blocks
-
-The hook never blocks a call and never marks a result as an error. A missing `emacs` or a failed Emacs run leaves the file as it is. A formatter should reshape working files, not reject an edit.
+The hook fails open: it never blocks a call and never marks a result as an error. A formatter changes working files, and must not reject an edit. A missing `emacs`, a failed Emacs run, or a run longer than 10 s leaves the file as it is. Codex also stops `command.ts` after 10 s, the `timeout` of its entry.
 
 | Adapter           | On a failure                                                                                  |
 | ----------------- | --------------------------------------------------------------------------------------------- |
@@ -124,48 +149,6 @@ The hook never blocks a call and never marks a result as an error. A missing `em
 | `pi.ts`, `omp.ts` | The handler catches the error and returns nothing.                                            |
 | `command.ts`      | Node exits 1, which Codex shows as a failed hook and does not block. A missing Emacs exits 0. |
 
-Emacs batch runs emit a harmless locale warning on `stderr` (`LANG=… cannot be used, using en_US.UTF-8 instead`); the hook drops the stderr of Emacs, so it never shows as hook noise.
+## Testing
 
-## Installing Emacs
-
-Any `emacs` on `PATH` works, and Org mode is bundled with it, so there is nothing else to install:
-
-```sh
-brew install emacs
-```
-
-Tested against GNU Emacs 30.1 and 30.2. Without Emacs installed the hook does nothing.
-
-## Requirements
-
-- **Emacs** on `PATH`, see above.
-- **git**, for the amend hint.
-- **Node 23.6 or later** for `command.ts`, which Codex and `format-staged-files` run. With no `node`, the Codex entry exits 0, and the `SessionStart` check of Codex shows a warning. The mod and `pi.ts` need no `node` of their own.
-
-## Tests
-
-```sh
-node test/check.ts
-```
-
-[`test/check.ts`](test/check.ts) runs `command.ts` with the real Emacs and git, in a fixture under `$HOME`, because the hook skips `/tmp` and `$TMPDIR`:
-
-- **A Write or Edit:** the named file, a file that is not `.org`, a path that does not exist, a second pass over an aligned file, no backup files, a file in a temp folder, a `|` line inside a block, a `#+TBLFM` formula, and a link at its raw width.
-- **A Bash call:** a relative and two absolute paths in a command, a relative path after an absolute `cd` and after two relative ones, a command that names no `.org` file, a path that does not exist, and a path the command only read.
-- **The amend hint:** after a commit, and none for a file the run left alone or without a commit.
-- **`CLAUDE_HOOKS_DISABLE`:** a value that names the hook stops the core before it reads a file.
-- **The adapters:** `pi.ts`, `omp.ts`, and `hooks/register.ts` with stubs over the real files.
-
-The check turns off `format-staged-files` with `GIT_CONFIG_*` variables, and skips with a message when git or Emacs is missing.
-
-## Files
-
-| File                                                             | Role                                                                      |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [`core.ts`](core.ts)                                             | Finds the files and runs Emacs. No Node imports.                          |
-| [`io.ts`](io.ts)                                                 | The file and process functions of the core under Node                     |
-| [`command.ts`](command.ts)                                       | The command hook for Codex and `format-staged-files`                      |
-| [`pi.ts`](pi.ts)                                                 | The pi extension, which omp also loads                                    |
-| [`omp.ts`](omp.ts)                                               | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see |
-| [`hooks/register.ts`](hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                                       |
-| [`dot_claude-plugin/plugin.json`](dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json`             |
+`node test/check.ts` runs `command.ts` and the adapters with the real Emacs and git, see [`docs/testing.md`](docs/testing.md).

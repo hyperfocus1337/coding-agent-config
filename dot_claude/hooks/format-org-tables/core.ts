@@ -7,7 +7,7 @@
  *
  * Adapters: hooks/register.ts (Claude Code mod), pi.ts (pi and omp), omp.ts
  * (omp only), command.ts (Codex, and the format-staged-files pre-commit hook).
- * Design notes: README.md.
+ * Design notes: docs/implementation.md.
  */
 
 export interface Io {
