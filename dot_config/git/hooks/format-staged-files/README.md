@@ -60,6 +60,8 @@ A repository's own `.git/hooks/pre-commit` or `core.hooksPath` hook still runs. 
 5. It writes the path and the old blob ID of each staged file to `format-staged-files` in the git folder, and prints one line to stderr for each file.
 6. After the commit, the `post-commit` run reads that record and deletes it. When the real index still holds the old blob of a file, it copies the committed version into the index with `git reset`.
 
+Each git call uses `--literal-pathspecs`, so a file named `[a].md` does not also stage `a.md`.
+
 ## What the model sees
 
 The model sees the output of `git commit` in the Bash result. For each file that the hook changed, the output holds this line:

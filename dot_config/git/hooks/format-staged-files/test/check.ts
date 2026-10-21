@@ -164,22 +164,28 @@ check("the post-commit run removes its record", () =>
   ),
 );
 
-// All staged files go to one formatter run, and each restage is reported.
+// All staged files go to one formatter run, and each restage is reported. A
+// file name with glob characters names that file only.
 write("b.md", "*   b\n");
-write("c.md", "*   c\n");
-git(["add", "b.md", "c.md"]);
+write("[c].md", "*   c\n");
+write("c.md", "*   untouched\n");
+git(["--literal-pathspecs", "add", "b.md", "[c].md"]);
 ran = git(["commit", "-q", "-m", "two"]);
 check("several staged files are all committed formatted", () => {
   assert.equal(committed("b.md"), "- b\n");
-  assert.equal(committed("c.md"), "- c\n");
+  assert.equal(committed("[c].md"), "- c\n");
 });
 check("each restaged file is reported", () =>
   assert.equal(
     ran.stderr,
-    "format-staged-files: reformatted and restaged b.md\n" +
-      "format-staged-files: reformatted and restaged c.md\n",
+    "format-staged-files: reformatted and restaged [c].md\n" +
+      "format-staged-files: reformatted and restaged b.md\n",
   ),
 );
+check("a glob name does not stage other files", () =>
+  assert.equal(dirty(), "?? c.md\n"),
+);
+fs.rmSync(`${work}/c.md`);
 
 // /toggle-hook turns off the agent hooks only, not this commit-time format.
 write("new.md", "*   toggled\n");

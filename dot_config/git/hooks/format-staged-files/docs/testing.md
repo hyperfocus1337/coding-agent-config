@@ -21,6 +21,7 @@ node test/check.ts
 
 - **Formatting:** a staged new file, `git commit -a`, `git commit <path>`, two files in one commit, an Org table, a Terraform file, and a file that no formatter handles.
 - **`git commit <path>`:** the tree and the index are clean after the commit, and the `post-commit` run deletes its record file.
+- **Literal paths:** a commit of `[c].md` does not stage an untracked `c.md`.
 - **Output:** one stderr line for each file that the hook staged again, and no line for an unchanged file.
 - **Skipped files:** a partly staged file is committed as staged, and its unstaged change stays in the tree. A symlink stays a symlink.
 - **Agent detection:** each agent variable turns the hook on, and a commit outside an agent is not formatted.

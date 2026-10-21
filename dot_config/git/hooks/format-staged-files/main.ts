@@ -27,8 +27,9 @@ const agent =
   !!env.CODEX_THREAD_ID;
 if (!agent) process.exit(0);
 
+// --literal-pathspecs: a file named `*.md` names that file only.
 const git = (args: string[], input?: string) =>
-  spawnSync("git", args, {
+  spawnSync("git", ["--literal-pathspecs", ...args], {
     cwd: root,
     encoding: "utf8",
     input,
