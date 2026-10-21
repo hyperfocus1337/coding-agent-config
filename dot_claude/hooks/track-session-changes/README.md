@@ -1,6 +1,6 @@
 # track-session-changes
 
-A hook that logs each file a session changes, with the tool, the call window, the first changed line, and the git blobs of the file before and after the call. The [`session-files`](../../skills/session-files/) skill and the `agent-changed-files` package read the log.
+A hook that logs each file that an agent session changes, with the tool, the call window, the first changed line, and the git blobs of the file before and after the call. The `session-files` skill and the `agent-changed-files` package of the chezmoi repo read the log to find the changes of one session.
 
 One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
@@ -11,25 +11,9 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters:
 | omp         | [`omp.ts`](omp.ts): the `track` of `pi.ts` with the omp tools, which adds a git snapshot around `eval` and a write to `xd://resolve` | `extensions` in `dot_omp/private_agent/private_config.yml`   |
 | Codex       | [`command.ts`](command.ts): a command hook, `node command.ts codex`                                                                  | `dot_codex/modify_hooks.json`                                |
 
-## Log
-
-Each session writes one log: `~/.local/state/agent-changes/<agent>/<session id>.tsv`, with `claude`, `codex`, `pi`, or `omp` as the agent. Subagent calls carry the session ID of the main session, so they go to the same log. In pi and omp, the session ID is `ctx.sessionManager.getSessionId()`, which is also part of the name of the session file. One line per file per call, tab-separated:
-
-| Field  | Example                    | Note                                                          |
-| ------ | -------------------------- | ------------------------------------------------------------- |
-| start  | `2026-10-14T09:12:03.120Z` | UTC with milliseconds                                         |
-| end    | `2026-10-14T09:12:03.480Z` | UTC with milliseconds                                         |
-| tool   | `Bash`                     | The tool name of the agent, such as `Edit` or pi's `edit`     |
-| status | `M`                        | `A`, `M`, or `D`. A type change, such as file to link, is `M` |
-| repo   | `/Users/me/repo`           | Top of the git work tree. Empty outside a repo                |
-| path   | `/Users/me/repo/x.org`     | Absolute                                                      |
-| line   | `412`                      | First changed line after the call. Empty for `D` or unknown   |
-| before | `3b18e512dbc8…`            | Git blob ID of the file before the call. Empty for `A`        |
-| after  | `9daeafb9864c…`            | Git blob ID of the file after the call. Empty for `D`         |
-
-A line with 7 fields has no `before` and `after`. A blob ID is empty also when the hook cannot know it, see [Blobs](#blobs). The `agent-changed-files` package of the chezmoi repo reads the blobs to find the changes of one session in a file.
-
 ## What it records
+
+### Tools and events
 
 | Agent and tool                              | Events                                                   | Files                                                    | Line                                                                             |
 | ------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -44,28 +28,49 @@ A line with 7 fields has no `before` and `after`. A blob ID is empty also when t
 | pi and omp `write`                          | `tool_call`, `tool_result`                               | The input `path`                                         | The old file, read at the call, against the file after it                        |
 | Each agent                                  | Session start                                            | None: deletes logs and state after 30 days               | None                                                                             |
 
-A failed Bash call logs its changes, because a command that fails can still write files. A tool that names its files also logs a file outside every repo and a git-ignored file. A failed Edit, Write, NotebookEdit, pi `edit`, or pi `write` logs nothing. In Claude Code, a call that another hook denies logs nothing. A pi `write` that leaves the file as it was logs nothing.
+A snapshot difference is the set of files that differ between the work tree after the call and a git index of the work tree before it, see [Snapshots](#snapshots).
 
-An omp edit can change several files, delete a file, or move one. A delete logs `D`, and a move logs the old path as `D` and the new path as `A`. An omp `ast_edit` changes files only when a `write` to `xd://resolve` applies its preview, and the snapshot of that write logs them. Other tools that write files, for example a tool of another extension, are not logged.
+### Failed and denied calls
 
-## Blobs
+- **Bash:** a failed call logs its changes, because a command that fails can still write files.
+- **Edit, Write, NotebookEdit, pi `edit`, and pi `write`:** a failed call logs nothing.
+- **Denied calls:** in Claude Code, a call that another hook denies logs nothing.
+- **Unchanged files:** a pi `write` that leaves the file as it was logs nothing.
 
-The hook stores the blobs of each logged file in `~/.local/state/agent-changes/<agent>/<session id>/objects/`, a git object directory beside the log. In the devcontainer, the bind mount of the log tree puts these blobs on the host disk too. The hook reads the objects of the repo as an alternate, so a blob that the repo holds is not copied. `git hash-object -w` writes each blob, so a blob gets the filters of the repo attributes, as with `git add`.
+A tool that names its files also logs a file outside every repo and a git-ignored file.
 
-| Tool                         | Before blob                                                                                | After blob       |
-| ---------------------------- | ------------------------------------------------------------------------------------------ | ---------------- |
-| Claude Code Edit and Write   | `originalFile` of the result, with the line endings of the file. Else a rebuild of an Edit | The file on disk |
-| Claude Code NotebookEdit     | `original_file` of the result                                                              | The file on disk |
-| pi and omp `edit`, `write`   | The files that the input names, read at the tool call                                      | The file on disk |
-| Bash, `apply_patch`          | The index entry of the file in the snapshot of the call                                    | The file on disk |
-| A file that the call made    | None                                                                                       | As above         |
-| A file that the call deleted | As above                                                                                   | None             |
+### omp edits and other tools
 
-A before blob is missing for a file with mixed line endings, for an Edit whose rebuild fails, for an omp edit that names its files only inside its patch, and for an `apply_patch` file outside every snapshot repo. An after blob is missing for a file that git cannot read.
+An omp edit can change several files, delete a file, or move one. A delete logs `D`, and a move logs the old path as `D` and the new path as `A`. An omp `ast_edit` changes files only when a `write` to `xd://resolve` applies its preview, and the snapshot of that write logs them.
 
-## Snapshots
+The hook does not log other tools that write files, for example a tool of another extension.
 
-Bash names no file, so the hook stores the work tree in a git index before the call, and after the call logs the files that differ from that index. It snapshots the repo of the working directory and each repo in the repo field of the session log. `apply_patch` also snapshots the repos of its files. The blobs of a snapshot go to the session `objects/`, see [Blobs](#blobs). The snapshot state is in `~/.cache/track-session-changes/<agent>/<session id>/`:
+### Limits
+
+- A Bash call snapshots only the repo of its working directory and the repos in the session log. So a Bash write to another repo is not logged until a tool that names its files changes that repo, or a call runs with its working directory there. Bash writes to git-ignored files are not logged.
+- A Bash snapshot cannot tell which process wrote a file. A file that another process changes during the call is logged as a change of the call. The overlap filter of the `agent-changed-files` package drops such a write when another session logged it with a tool path.
+- A background Bash call (`run_in_background`) returns before the command ends, so the hook misses its later writes.
+- In Claude Code, the mod reads a file through `$.fs`, which refuses a file over 4 MiB, and `$.process.run` keeps 4 MiB of output. So a session log over 4 MiB gives no touched repos, an Edit of a file over 4 MiB gets no before blob, and a patch over 4 MiB gives the paths with an empty line. `command.ts` and `pi.ts` read up to 64 MiB of output.
+- A Codex call that a hook denies leaves a pending file and its index links. A pi or omp call that gets no `tool_result` leaves its index links. The prune deletes them after one day.
+- The paths in an omp log keep the logical working directory, for example `/tmp/x`. pi logs the resolved path, `/private/tmp/x` on macOS.
+- The prune deletes the `objects/` of a session when both its log and its state are gone, so after 30 days of no use.
+- A blob ID is the SHA-1 of git. A repo with SHA-256 object names gets IDs that it does not hold.
+
+## Requirements
+
+- **git:** each adapter runs `git`.
+- **Node 23.6 or later:** `command.ts` needs it, because this version runs `.ts` files without a flag.
+- **Codex trust:** Codex runs a hook only after you trust its entry. After a change of an entry, trust the hooks again in the Codex TUI, on the host and in the devcontainer. See [`docs/agents/codex.md`](../../../docs/agents/codex.md#trust).
+
+## How it works
+
+A tool that names its files, such as Edit or pi `edit`, gives the path in its input, so the hook needs no snapshot. For Bash and the other tools that name no file, the hook compares the work tree before and after the call. In the devcontainer, the mod adds 17 to 28 ms at the start of a Bash call, 10 to 13 ms at its end, and 5 to 6 ms after an Edit or a Write, see [docs/research.md](docs/research.md).
+
+### Snapshots
+
+Bash names no file, so the hook stores the work tree in a git index before the call. After the call, it logs the files that differ from that index. It snapshots the repo of the working directory and each repo in the repo field of the session log, and `apply_patch` also snapshots the repos of its files.
+
+The blobs of a snapshot go to the session `objects/`, see [Blobs](#blobs). The snapshot state is in `~/.cache/track-session-changes/<agent>/<session id>/`:
 
 | Path                        | Content                                                                                                                |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -77,40 +82,74 @@ Bash names no file, so the hook stores the work tree in a git index before the c
 
 The mod and `pi.ts` keep the snapshot of a call in memory from the start of the call to its end. `command.ts` runs once for each event, so it keeps the snapshot in `pending/`.
 
-For how a snapshot works, how the line comes from the diff, and the measured cost, see [docs/implementation.md](docs/implementation.md).
+For how a snapshot works and how the line comes from the diff, see [docs/implementation.md](docs/implementation.md).
+
+### Blobs
+
+The hook stores the blobs of each logged file in `~/.local/state/agent-changes/<agent>/<session id>/objects/`, a git object directory beside the log. In the devcontainer, the bind mount of the log tree puts these blobs on the host disk too. The hook reads the objects of the repo as an alternate, so it does not copy a blob that the repo holds.
+
+`git hash-object -w` writes each blob, so a blob gets the filters of the repo attributes, as with `git add`.
+
+| Tool                         | Before blob                                                                                | After blob       |
+| ---------------------------- | ------------------------------------------------------------------------------------------ | ---------------- |
+| Claude Code Edit and Write   | `originalFile` of the result, with the line endings of the file. Else a rebuild of an Edit | The file on disk |
+| Claude Code NotebookEdit     | `original_file` of the result                                                              | The file on disk |
+| pi and omp `edit`, `write`   | The files that the input names, read at the tool call                                      | The file on disk |
+| Bash, `apply_patch`          | The index entry of the file in the snapshot of the call                                    | The file on disk |
+| A file that the call made    | None                                                                                       | As above         |
+| A file that the call deleted | As above                                                                                   | None             |
+
+A before blob is missing in these cases:
+
+- A file with mixed line endings.
+- An Edit whose rebuild fails.
+- An omp edit that names its files only inside its patch.
+- An `apply_patch` file outside every snapshot repo.
+
+An after blob is missing for a file that git cannot read.
+
+## What the model sees
+
+Nothing. The hook never blocks or changes a tool call, and it sends no output to the model. `command.ts` always exits 0 and prints nothing.
+
+## What you see
+
+The hook shows no message in the transcript or the terminal. Its only output is the session log.
+
+### Log
+
+Each session writes one log: `~/.local/state/agent-changes/<agent>/<session id>.tsv`, with `claude`, `codex`, `pi`, or `omp` as the agent. Subagent calls carry the session ID of the main session, so they go to the same log. In pi and omp, the session ID is `ctx.sessionManager.getSessionId()`, which is also part of the name of the session file.
+
+The log has one line per file per call, with tab-separated fields:
+
+| Field  | Example                    | Note                                                          |
+| ------ | -------------------------- | ------------------------------------------------------------- |
+| start  | `2026-10-14T09:12:03.120Z` | UTC with milliseconds                                         |
+| end    | `2026-10-14T09:12:03.480Z` | UTC with milliseconds                                         |
+| tool   | `Bash`                     | The tool name of the agent, such as `Edit` or pi's `edit`     |
+| status | `M`                        | `A`, `M`, or `D`. A type change, such as file to link, is `M` |
+| repo   | `/Users/me/repo`           | Top of the git work tree. Empty outside a repo                |
+| path   | `/Users/me/repo/x.org`     | Absolute                                                      |
+| line   | `412`                      | First changed line after the call. Empty for `D` or unknown   |
+| before | `3b18e512dbc8…`            | Git blob ID of the file before the call. Empty for `A`        |
+| after  | `9daeafb9864c…`            | Git blob ID of the file after the call. Empty for `D`         |
+
+A line with 7 fields has no `before` and `after`. A blob ID is empty also when the hook cannot know it, see [Blobs](#blobs). The `agent-changed-files` package reads the blobs to find the changes of one session in a file.
+
+## Settings
+
+The hook has no variables or config files, and it does not read `CLAUDE_HOOKS_DISABLE`. To turn it off for one agent, remove its entry from the file in the "Loaded by" column of the adapter table.
 
 ## Failure behavior
 
-The hook never blocks or changes a tool call. Each step of the mod and of `pi.ts` catches its own errors and drops them, and `command.ts` always exits 0 and prints nothing. The Codex entries exit 0 when `node` is not on `PATH`, and the `SessionStart` check of Codex then gives a warning. A failed snapshot skips that repo. A failed patch diff keeps the paths with an empty line.
+The hook fails open: no failure blocks or changes a tool call, and you see no message.
 
-## Limits
+- **Mod and `pi.ts`:** each step catches its own errors and drops them.
+- **`command.ts`:** always exits 0 and prints nothing.
+- **No `node` on `PATH`:** the Codex entries exit 0, and the `SessionStart` check of Codex gives a warning.
+- **Failed snapshot:** the hook skips that repo.
+- **Failed patch diff:** the hook keeps the paths, with an empty line.
 
-- A Bash call snapshots only the repo of its working directory and the repos in the session log. So a Bash write to another repo is not logged until a tool that names its files changes that repo, or a call runs with its working directory there. Bash writes to git-ignored files are not logged.
-- A Bash snapshot cannot tell which process wrote a file. A file that another process changes during the call is logged as a change of the call. The overlap filter of the `agent-changed-files` package drops such a write when another session logged it with a tool path.
-- A background Bash call (`run_in_background`) returns before the command ends, so the hook misses its later writes.
-- In Claude Code, the mod reads a file through `$.fs`, which refuses a file over 4 MiB, and `$.process.run` keeps 4 MiB of output. So a session log over 4 MiB gives no touched repos, an Edit of a file over 4 MiB gets no before blob, and a patch over 4 MiB gives the paths with an empty line. `command.ts` and `pi.ts` read up to 64 MiB of output.
-- A Codex call that a hook denies leaves a pending file and its index links. A pi or omp call that gets no `tool_result` leaves its index links. The prune deletes them after one day.
-- The paths in an omp log keep the logical working directory, for example `/tmp/x`. pi logs the resolved path, `/private/tmp/x` on macOS.
-- The prune deletes the `objects/` of a session when both its log and its state are gone, so after 30 days of no use.
-- A blob ID is the SHA-1 of git. A repo with SHA-256 object names gets IDs that it does not hold.
+## Testing
 
-## Dependencies
-
-The hook needs `git`. `command.ts` needs Node 23.6 or later, which runs `.ts` files without a flag. Codex runs a hook only after you trust its entry. After a change of an entry, trust the hooks again in the Codex TUI, on the host and in the devcontainer. See [`docs/agents/codex.md`](../../../docs/agents/codex.md#trust).
-
-## Tests
-
-`node test/check.ts` checks the parsers in-process, runs `command.ts` as a child process with a scratch `HOME` around file changes in scratch repos, and runs the mod, `pi.ts`, and `omp.ts` with stubs over the real files. `TRACK_HOOK=<path>` runs the `command.ts` cases against another command hook. `just hooks-check` runs it.
-
-## Files
-
-| File                                                | Deployed to `~/.claude/hooks/track-session-changes/` | Role                                                                    |
-| --------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
-| `core.ts`                                           | Yes                                                  | Snapshots, blobs, the log, and the prune, over an `Io` from the adapter |
-| `hooks/register.ts`                                 | Yes                                                  | Claude Code mod, with the `Io` over `$`                                 |
-| `hooks/hooks.json`, `dot_claude-plugin/plugin.json` | Yes, the second as `.claude-plugin/plugin.json`      | Module list and plugin manifest                                         |
-| `pi.ts`                                             | Yes                                                  | The pi extension, and the `track` that `omp.ts` runs                    |
-| `omp.ts`                                            | Yes                                                  | The omp extension, in place of `pi.ts`                                  |
-| `command.ts`                                        | Yes                                                  | Codex command hook                                                      |
-| `io.ts`                                             | Yes                                                  | The `Io` under Node, for `pi.ts` and `command.ts`                       |
-| `README.md`, `docs/`, `test/`                       | No                                                   | Kept in the repo by `.chezmoiignore`                                    |
+`node test/check.ts` checks the parsers, `command.ts`, the mod, `pi.ts`, and `omp.ts`, see [docs/testing.md](docs/testing.md).

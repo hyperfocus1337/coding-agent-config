@@ -62,4 +62,4 @@ Codex 0.162.1 runs command hooks only. [`agents/codex.md`](../agents/codex.md#ho
 | The `enforce-cli-tools` matcher               | 0.03 ms                                                    |
 | One `command.ts` run (Node start, warm cache) | About 18 ms                                                |
 
-A mod and a pi extension start no program, so their cost is the `$` calls and the programs that the hook runs. Each `command.ts` run costs one Node start, so a Codex `apply_patch` costs one start for each file and hook. `track-session-changes/docs/implementation.md` gives the measured cost of the largest mod.
+A mod and a pi extension start no program, so their cost is the `$` calls and the programs that the hook runs. Each `command.ts` run costs one Node start, so a Codex `apply_patch` costs one start for each file and hook. `track-session-changes/docs/research.md` gives the measured cost of the largest mod.
