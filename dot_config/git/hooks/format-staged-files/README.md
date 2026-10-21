@@ -34,13 +34,18 @@ The hook runs no linters. [Design notes](#design-notes) gives the reason.
 
 ### How git starts the hook
 
-[`dot_config/git/config`](../../config) sets the hook in `~/.config/git/config`, the global config file that git reads with no include:
+[`dot_config/git/config`](../../config) sets two hooks in `~/.config/git/config`, the global config file that git reads with no include:
 
 ```ini
 [hook "claude-format-staged"]
 	event = pre-commit
 	command = "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.config/git/hooks/format-staged-files/main.ts\" || true"
+[hook "claude-format-staged-post"]
+	event = post-commit
+	command = "[ -f \"$(git rev-parse --git-path format-staged-files)\" ] || exit 0; command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.config/git/hooks/format-staged-files/main.ts\" post-commit || true"
 ```
+
+The `post-commit` hook starts `node` only when the `pre-commit` run left its record file, see [`git commit <path>`](#git-commit-path).
 
 `hook.<name>.command` with `hook.<name>.event` defines a config-based hook (see `git-config(1)` and `git-hook(1)`). Git runs the command in a shell for every commit. Because the hook is in the global config, it runs in every repository, with no install step for each repository.
 
@@ -52,7 +57,8 @@ A repository's own `.git/hooks/pre-commit` or `core.hooksPath` hook still runs. 
 2. It lists the staged files with `git diff --cached --raw`. For `git commit -a` and `git commit <path>`, git builds a temporary index and sets `GIT_INDEX_FILE`, so the list holds the files that this commit takes.
 3. It runs the `command.ts` of `format-prettier`, `format-org-tables`, and `format-terraform` once each. Each run gets a `PostToolUse` payload that names all regular files without unstaged changes in `tool_input.file_paths`.
 4. It runs `git add` on the files that a formatter changed. Git reads the index again after the `pre-commit` hook, so the commit takes the formatted version.
-5. It prints one line to stderr for each file that it staged again.
+5. It writes the path and the old blob ID of each staged file to `format-staged-files` in the git folder, and prints one line to stderr for each file.
+6. After the commit, the `post-commit` run reads that record and deletes it. When the real index still holds the old blob of a file, it copies the committed version into the index with `git reset`.
 
 ## What the model sees
 
@@ -70,7 +76,7 @@ You see the same line in the Bash output of the transcript. A commit that you ma
 
 ## Settings
 
-- **One repository:** run this command in the repository to turn the hook off there.
+- **One repository:** run this command in the repository to turn the hook off there. The `post-commit` hook then finds no record file and does not start `node`.
 
   ```sh
   git config hook.claude-format-staged.enabled false
@@ -109,6 +115,12 @@ The value of `command` is in quotes, because git reads a `;` outside quotes as t
 ### Skipped files
 
 A `git add` of a file with unstaged changes would also stage those changes and put them in the commit. So the hook commits that file as staged.
+
+### git commit \<path\>
+
+`git commit <path>` and `git commit --only` build a temporary index for the commit, and write the real index before the `pre-commit` hook runs. The `git add` of the hook changes only the temporary index. Without the `post-commit` run, the commit and the working tree hold the formatted file, but the real index holds the unformatted one, and `git status` shows `MM`. The next `git commit -a` would then commit the unformatted text again.
+
+Git writes the real index before `post-commit`, and runs that hook with `GIT_INDEX_FILE` set to it. The `post-commit` run changes only an entry that still holds the blob from before the format. So a stale record, for example from a commit that a `commit-msg` hook stopped, cannot change what you staged later.
 
 ### Limits
 

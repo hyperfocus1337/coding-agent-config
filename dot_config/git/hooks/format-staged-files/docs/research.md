@@ -14,4 +14,4 @@ In 205 sessions from 2026-08-30 to 2026-09-27, a formatter told the model to ame
 | 10 Markdown files that Prettier changes | 1277 ms               | 334 ms                |
 | 10 text files that no formatter handles | 538 ms                | 77 ms                 |
 
-Before, each file cost three Node starts of about 18 ms, plus about 120 ms for each Prettier run.
+Before, each file cost three Node starts of about 18 ms, plus about 120 ms for each Prettier run. The `post-commit` hook adds one `git rev-parse` to each commit, and one Node start only after a commit that the hook restaged.

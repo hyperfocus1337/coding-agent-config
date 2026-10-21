@@ -1,6 +1,6 @@
 /**
  * Self-check for ../main.ts: real commits in a temporary repository, with the
- * hook command from dot_config/git/config set through GIT_CONFIG_* variables.
+ * hook commands from dot_config/git/config set through GIT_CONFIG_* variables.
  * HOME is a temporary folder that links to the hook folders of this repo, so
  * the check runs this source and not the deployed copy.
  *
@@ -54,18 +54,21 @@ for (const [link, target] of [
 }
 // Git parses the value, as it does for ~/.config/git/config: a `;` outside
 // quotes starts a comment.
-const command = spawnSync(
-  "git",
-  [
-    "config",
-    "--file",
-    `${repo}/dot_config/git/config`,
-    "--get",
-    "hook.claude-format-staged.command",
-  ],
-  { encoding: "utf8" },
-).stdout.trim();
-assert.ok(command, "no hook command in dot_config/git/config");
+const hook = (name: string) => {
+  const command = spawnSync(
+    "git",
+    [
+      "config",
+      "--file",
+      `${repo}/dot_config/git/config`,
+      "--get",
+      `hook.${name}.command`,
+    ],
+    { encoding: "utf8" },
+  ).stdout.trim();
+  assert.ok(command, `no ${name} command in dot_config/git/config`);
+  return command;
+};
 
 // No agent variable from the session that runs this check.
 const base: Record<string, string | undefined> = { ...process.env };
@@ -82,11 +85,15 @@ Object.assign(base, {
   GIT_AUTHOR_EMAIL: "test@example.com",
   GIT_COMMITTER_NAME: "test",
   GIT_COMMITTER_EMAIL: "test@example.com",
-  GIT_CONFIG_COUNT: "2",
+  GIT_CONFIG_COUNT: "4",
   GIT_CONFIG_KEY_0: "hook.claude-format-staged.event",
   GIT_CONFIG_VALUE_0: "pre-commit",
   GIT_CONFIG_KEY_1: "hook.claude-format-staged.command",
-  GIT_CONFIG_VALUE_1: command,
+  GIT_CONFIG_VALUE_1: hook("claude-format-staged"),
+  GIT_CONFIG_KEY_2: "hook.claude-format-staged-post.event",
+  GIT_CONFIG_VALUE_2: "post-commit",
+  GIT_CONFIG_KEY_3: "hook.claude-format-staged-post.command",
+  GIT_CONFIG_VALUE_3: hook("claude-format-staged-post"),
 });
 // A mise shim reads the config under the real HOME, and under the fixture HOME
 // it fails on the trust check before it falls back to the next program on
@@ -139,6 +146,23 @@ check("commit -a formats the tracked file", () =>
   assert.equal(committed("new.md"), "- two\n"),
 );
 check("the tree is clean after commit -a", () => assert.equal(dirty(), ""));
+
+// `git commit <path>` commits a temporary index. The post-commit run puts the
+// committed version in the real index too, so the file is not left as MM.
+write("new.md", "*   path\n");
+git(["commit", "-q", "-m", "path", "new.md"]);
+check("commit <path> formats the file", () =>
+  assert.equal(committed("new.md"), "- path\n"),
+);
+check("the tree and the index are clean after commit <path>", () =>
+  assert.equal(dirty(), ""),
+);
+check("the post-commit run removes its record", () =>
+  assert.ok(
+    !fs.existsSync(`${work}/.git/format-staged-files`),
+    "record file left",
+  ),
+);
 
 // All staged files go to one formatter run, and each restage is reported.
 write("b.md", "*   b\n");

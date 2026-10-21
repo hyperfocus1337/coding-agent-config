@@ -6,3 +6,9 @@
 [hook "claude-format-staged"]
 	event = pre-commit
 	command = "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.config/git/hooks/format-staged-files/main.ts\" || true"
+# `git commit <path>` commits a temporary index, so the restage above
+# misses the real index. This hook puts the committed version back in it.
+# It starts node only when the pre-commit run left its record file.
+[hook "claude-format-staged-post"]
+	event = post-commit
+	command = "[ -f \"$(git rev-parse --git-path format-staged-files)\" ] || exit 0; command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.config/git/hooks/format-staged-files/main.ts\" post-commit || true"

@@ -12,14 +12,15 @@ node test/check.ts
 
 [`test/check.ts`](../test/check.ts) makes real commits in a temporary repository under `$HOME`, because the formatters skip `/tmp` and `$TMPDIR`.
 
-- **The hook command:** the check reads it from `dot_config/git/config` and sets it through `GIT_CONFIG_*` variables, so it does not depend on `~/.config/git/config`.
+- **The hook commands:** the check reads the `pre-commit` and `post-commit` commands from `dot_config/git/config` and sets them through `GIT_CONFIG_*` variables, so it does not depend on `~/.config/git/config`.
 - **`HOME`:** a temporary folder that links to the hook folders of this repository, so the check runs this source and not the deployed copy.
 - **Agent variables:** the check removes them from the environment of the session that runs it. Each commit sets the variable that the case needs, by default `CLAUDECODE=1`.
 - **`PATH`:** the check removes the mise shim folder. A mise shim reads its config under the real `HOME`, and under the temporary `HOME` it fails before it falls back to the real program.
 
 ## Cases
 
-- **Formatting:** a staged new file, `git commit -a`, two files in one commit, an Org table, a Terraform file, and a file that no formatter handles.
+- **Formatting:** a staged new file, `git commit -a`, `git commit <path>`, two files in one commit, an Org table, a Terraform file, and a file that no formatter handles.
+- **`git commit <path>`:** the tree and the index are clean after the commit, and the `post-commit` run deletes its record file.
 - **Output:** one stderr line for each file that the hook staged again, and no line for an unchanged file.
 - **Skipped files:** a partly staged file is committed as staged, and its unstaged change stays in the tree. A symlink stays a symlink.
 - **Agent detection:** each agent variable turns the hook on, and a commit outside an agent is not formatted.
