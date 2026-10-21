@@ -3,8 +3,8 @@
  * the Claude Code transcripts (~/.claude/projects/*\/*.jsonl) through the
  * core.ts of each hook in this process, and through its command.ts with the
  * payload on stdin. Writes the results to ~/.cache/hook-perf/results.json,
- * and with --write DIR, summary.csv and slowest.csv in DIR and the part of
- * DIR/README.md between the perf:begin and perf:end markers. Without
+ * and with --write DIR, summary.csv and slowest.csv in DIR/data and the part
+ * of DIR/README.md between the perf:begin and perf:end markers. Without
  * --write, prints summary.csv.
  *
  * The transcripts are only a source of input. Each session is rebuilt in a
@@ -1335,12 +1335,14 @@ function report(results: Results) {
   };
 }
 
-/** Writes the CSV files and the generated part of the README in DIR. */
+/** Writes the CSV files in DIR/data and the generated part of DIR/README.md. */
 function publish(results: Results) {
   const { block, summary, slowest } = report(results);
   if (!flags.write) return void process.stdout.write(summary);
-  writeFileSync(join(flags.write, "summary.csv"), summary);
-  writeFileSync(join(flags.write, "slowest.csv"), slowest);
+  const data = join(flags.write, "data");
+  mkdirSync(data, { recursive: true });
+  writeFileSync(join(data, "summary.csv"), summary);
+  writeFileSync(join(data, "slowest.csv"), slowest);
   const readme = join(flags.write, "README.md");
   const doc = readFileSync(readme, "utf8");
   const begin = "<!-- perf:begin -->";

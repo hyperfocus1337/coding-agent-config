@@ -119,10 +119,10 @@ Calls left out:
 
 ## Data
 
-| File                         | Rows                                              | Order                    |
-| ---------------------------- | ------------------------------------------------- | ------------------------ |
-| [`summary.csv`](summary.csv) | One row for each hook, path, and event            | `session_ms`, high first |
-| [`slowest.csv`](slowest.csv) | The 5 slowest calls of each hook, over both paths | `ms`, high first         |
+| File                              | Rows                                              | Order                    |
+| --------------------------------- | ------------------------------------------------- | ------------------------ |
+| [`summary.csv`](data/summary.csv) | One row for each hook, path, and event            | `session_ms`, high first |
+| [`slowest.csv`](data/slowest.csv) | The 5 slowest calls of each hook, over both paths | `ms`, high first         |
 
 Columns of `summary.csv`:
 
