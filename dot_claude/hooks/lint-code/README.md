@@ -1,8 +1,8 @@
 # lint-code
 
-Lints each file that a Write, an Edit, or a Bash call changed, with the linter for its extension, and gives the errors to the model.
+Lints each file that a Write, an Edit, or a Bash call changed, with the linter for its extension, and gives the errors to the model. The model then sees a lint error in the result of the call that caused it, not only when a later edit touches the same file.
 
-One core, [`core.ts`](core.ts), serves four agents through three adapters:
+One core, [`core.ts`](core.ts), serves four agents through three adapters. An adapter is the code that connects the core to one agent:
 
 | Agent       | Adapter                                                                                                                                                                 | Loaded by                                                                            |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
@@ -11,9 +11,9 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters:
 | omp         | [`pi.ts`](pi.ts) as in pi, and [`omp.ts`](omp.ts): `tool_result` on an omp edit of more than one file, an `ast_edit` that a write to `xd://resolve` applies, and `eval` | `extensions` in `dot_omp/private_agent/private_config.yml`                           |
 | Codex       | [`command.ts`](command.ts): exit code 2 with the errors on stderr                                                                                                       | `PostToolUse` on Bash, and on `apply_patch` through `dot_codex/hooks/apply-patch.ts` |
 
-## How it works
+## What it checks
 
-The core finds the files that the call changed, then runs the linter for the extension of each file:
+The hook lints these files, by extension:
 
 | Extension                                             | Linter                                                  | Invocation                                | Documentation                                 |
 | ----------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------- | --------------------------------------------- |
@@ -23,44 +23,19 @@ The core finds the files that the call changed, then runs the linter for the ext
 | `.yml` `.yaml` (plain)                                | [yamllint](https://github.com/adrienverge/yamllint)     | `yamllint -c config/.yamllint`            | https://yamllint.readthedocs.io/              |
 | `.yml` `.yaml` (Ansible)                              | [ansible-lint](https://github.com/ansible/ansible-lint) | `ansible-lint -c config/.ansible-lint -q` | https://ansible.readthedocs.io/projects/lint/ |
 
-YAML goes to one of two linters, see [YAML routing](#yaml-routing). [`format-terraform`](../format-terraform/README.md) formats `.tf` and `.tfvars` files, because `terraform fmt` is a formatter, not a linter. A linter that is not installed is skipped, so a linter you do not install does nothing. A linter that exits with a code other than 0 is a failure, and the model gets its output. The mod stops each linter after 30 s, the default of `$.process.run`. Codex stops the whole hook after 15 s.
+YAML goes to one of two linters, see [YAML routing](#yaml-routing). The hook does not check `.tf` and `.tfvars` files. [`format-terraform`](../format-terraform/README.md) formats them, because `terraform fmt` is a formatter, not a linter.
 
-## Bash (the paths the command just wrote)
+The hook runs after each of these calls, also after a call that failed, because a failed Bash call can still have written a file:
 
-A `Write` or `Edit` payload names the file in `tool_input.file_path`. A Bash payload names none, so a file a shell command wrote (`cat > setup.py <<'EOF'`, a `sed -i`, a redirect) reached no linter at all, and the error surfaced only when a later `Edit` happened to touch the same file.
+- **Write and Edit:** the file that the call names.
+- **Bash:** the files that the command names and just wrote. See [Bash calls](#bash-calls).
+- **omp only:** each file of an `edit` of more than one file, each file that an applied `ast_edit` changed, and the files that the code of an `eval` call names.
 
-So on the Bash matchers the hook reads the paths out of `tool_input.command`, the way [`format-org-tables`](../format-org-tables/README.md) does, and keeps the ones with a supported extension. A relative path resolves against the session cwd.
+The hook skips files under `/tmp`, `/var/tmp`, and `$TMPDIR`. A scratchpad file is not project code, so a lint error in it must not block a tool result.
 
-Naming a path is not the same as writing to it. `cat app.py` names it too, and blocking a read on an error that was already in the file helps nobody. So a named file is linted only when its mtime is within 120 seconds of the hook run, which is what separates a file the command wrote from a file it read. A command that writes early and then runs for minutes falls outside that window and is missed; the file is linted again on the next edit. The trade-off is marked with a `shortcut:` comment in `core.ts`.
+## Requirements
 
-A Bash call that exits with a code other than 0 can still have written a file, as in `cat > setup.py <<'EOF' ... EOF && python setup.py`. The mod runs after `next` for each result, and pi sends `tool_result` for each result, so a failed call is linted too. Codex sends `PostToolUse` for each Bash call.
-
-Every target is linted before the hook exits, so one command reports every file it wrote instead of stopping at the first failure. Files under `/tmp`, `/var/tmp`, or `$TMPDIR` are skipped on both matchers: a scratchpad file is not project code, so a lint error there should not block a tool result. macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/...`, and the path a payload carries holds that prefix while `$TMPDIR` does not, so both sides of the comparison drop a leading `/private`. Without that, a scratchpad script blocked the tool result on lint errors nobody had to fix.
-
-## Turning linters off or tuning them
-
-Set `CLAUDE_LINT_DISABLE` to a space/comma list of keys to skip: `py`, `js`, `sh`, `yaml`, or `all` to disable the hook entirely. The hook reads it at run time, so export it in your shell, or set it in `env` in `settings.json`.
-
-```sh
-export CLAUDE_LINT_DISABLE="yaml"      # stop linting YAML
-export CLAUDE_LINT_DISABLE="yaml,sh"   # skip YAML and shell
-export CLAUDE_LINT_DISABLE="all"       # off
-```
-
-To turn the whole hook off in a running agent, run `/toggle-hook lint-code`. See [`toggle-hook`](../toggle-hook/README.md).
-
-To _tune_ YAML rather than disable it, edit the bundled configs in [`config/`](config/); the hook passes them with `-c` on each run, so a repo's own `.yamllint` / `.ansible-lint` is ignored and there is nothing to copy per project:
-
-- [`config/dot_yamllint`](config/dot_yamllint), deployed as `.yamllint`, sets the relaxed indentation and line-length rules for plain YAML ([yamllint config docs](https://yamllint.readthedocs.io/en/stable/configuration.html)).
-- [`config/dot_ansible-lint`](config/dot_ansible-lint), deployed as `.ansible-lint`, downgrades the noisy `yaml[indentation]` / `yaml[line-length]` findings to non-blocking warnings for Ansible files ([ansible-lint config docs](https://ansible.readthedocs.io/projects/lint/configuring/)). ansible-lint discovers its embedded yamllint config by directory search, so indentation for Ansible is tuned here via `warn_list`, not in `config/dot_yamllint`.
-
-## YAML routing
-
-YAML is split: a file is treated as Ansible (and sent to `ansible-lint`, which runs yamllint internally) when it sits under a standard Ansible directory (`roles/`, `tasks/`, `handlers/`, `playbooks/`, `group_vars/`, `host_vars/`, `molecule/`), has an entrypoint name (`site.yml`, `playbook.yml`, `main.yml`, `requirements.yml`), or contains a top-level Ansible marker (`hosts:`, `tasks:`, `roles:`, `ansible.builtin.`). Everything else goes to `yamllint`.
-
-## Installing the linters
-
-The hook calls each binary directly (no `npx`-fetched fallback). Install whichever you want active.
+The hook calls each linter binary directly, with no `npx` fallback. Install the linters that you want active. The hook skips a linter that is not installed.
 
 macOS (Homebrew):
 
@@ -69,7 +44,7 @@ brew install ruff shellcheck yamllint ansible-lint
 pnpm add -g oxlint
 ```
 
-Debian / Ubuntu:
+Debian and Ubuntu:
 
 ```sh
 apt install -y shellcheck yamllint
@@ -78,46 +53,110 @@ uv tool install ansible-lint
 npm install -g oxlint
 ```
 
-`ruff` via `uv tool install` on Debian/Ubuntu keeps it isolated from system Python and tracks the current release, whereas `apt install ruff` works on recent distros but ships an older build. `oxlint` is zero-config: it ships a full recommended ruleset built in and lints JS/TS/JSX standalone with no project-level config, so configless projects lint cleanly instead of erroring the way flat-config eslint does. A project `.oxlintrc.json` is still picked up from the file's directory if present.
+On Debian and Ubuntu, install ruff with `uv`, because `apt` ships an older build. [`docs/research.md`](docs/research.md) compares the install methods and tells why the hook uses oxlint.
 
-## How the model sees the errors
+The adapters have these requirements:
 
-A Write or an Edit has already run when the hook starts, so the hook cannot block it. It gives the errors to the model in the way each agent allows:
+- **Claude Code 2.1.296 or later** for the mod. It is the oldest version tested.
+- **Node 23.6 or later** on `PATH` for `command.ts` and `dot_codex/hooks/apply-patch.ts`, which Codex runs. Node 23.6 runs `.ts` files without a flag. The mod, `pi.ts`, and `omp.ts` run in the runtime of their agent and need no `node`.
+- **Codex trust:** Codex runs a hook only after you trust its entry. After the change from `hook.sh` to `command.ts`, trust the hooks again in the Codex TUI, on the host and in the devcontainer. See [`docs/agents/codex.md`](../../../docs/agents/codex.md#trust).
 
-- **Claude Code:** the mod adds the errors to the `context` of the result. The model gets them with the result.
-- **pi and omp:** the extension appends the errors to the result content and marks the result as an error.
-- **Codex:** `command.ts` exits 2. A `PostToolUse` hook reaches the model only with exit code 2. With exit code 0, its output goes to the transcript only.
+## How it works
 
-The hook reports only when a linter exits with a code other than 0. `oxlint` 1.87.0 reports its built-in rules as warnings, also a real bug such as an assignment to a `const`, and exits 0 for warnings. So the hook passes `--deny-warnings`, which makes oxlint exit 1 on a warning. A rule that a project `.oxlintrc.json` sets to `off` stays off. If a linter reports too much, change its severity, for example `shellcheck -S error`.
+For each tool call, the core does these steps:
+
+1. It finds the target files of the call. A Write or an Edit names one file, which the hook lints at any age. For a Bash call, see [Bash calls](#bash-calls). A relative path resolves against the session working directory.
+2. It drops each path under `/tmp`, `/var/tmp`, or `$TMPDIR`, each path that does not exist, and each path that is not a regular file.
+3. It picks the linter for the extension of each file. It skips a file when `CLAUDE_LINT_DISABLE` turns its linter off, or when no linter is installed.
+4. It runs the linters one file after the other, and lints every target before it stops. So one Bash command reports every file that it wrote, not only the first failure.
+5. When at least one linter exits with a code other than 0, it gives the output of all the linters that ran to the model.
+
+### Bash calls
+
+A Bash payload names no file. So the hook reads the paths out of `tool_input.command`, the way [`format-org-tables`](../format-org-tables/README.md) does, and keeps the paths with a supported extension.
+
+A command also names the files that it only reads, as in `cat app.py`. So the hook lints a named file only when its mtime is at most 120 seconds old, which shows that the command wrote it. A command that writes a file early and then runs for minutes falls outside that window, and the hook lints the file again on the next edit.
+
+[`docs/implementation.md`](docs/implementation.md#paths-in-a-bash-command) gives the reasons for this design.
+
+### YAML routing
+
+The hook treats a YAML file as Ansible and sends it to `ansible-lint`, which runs yamllint internally, when one of these is true:
+
+- The path holds a standard Ansible directory: `roles/`, `tasks/`, `handlers/`, `playbooks/`, `group_vars/`, `host_vars/`, or `molecule/`.
+- The file has an entry point name: `site`, `playbook`, `main`, or `requirements`, with the extension `.yml` or `.yaml`.
+- A line of the file starts with the key `hosts:`, `tasks:`, or `roles:`, after optional spaces and an optional `- `.
+
+All other YAML goes to `yamllint`.
+
+## What the model sees
+
+A Write or an Edit has already run when the hook starts, so the hook cannot block it. The hook gives the errors to the model in the way that each agent allows:
+
+- **Claude Code:** the mod adds the errors to the `context` of the result, after the line `Lint errors in the files this call changed. Fix them:`. The model gets them with the result.
+- **pi and omp:** the extension appends a text block that starts with `Lint errors:` to the result content, and marks the result as an error.
+- **Codex:** `command.ts` writes the errors to stderr and exits 2. A `PostToolUse` hook reaches the model only with exit code 2. With exit code 0, its output goes to the transcript only.
+
+`command.ts` uses these exit codes:
+
+- **0:** no linter failed, or the call changed no file to lint. No output.
+- **1:** the payload is not valid JSON. The model does not see it.
+- **2:** at least one linter failed. The output of all the linters that ran is on stderr.
+
+The hook reports only when a linter exits with a code other than 0. `oxlint` 1.87.0 reports its built-in rules as warnings, also a real bug such as an assignment to a `const`, and exits 0 for warnings. So the hook passes `--deny-warnings`, which makes oxlint exit 1 on a warning.
+
+## What you see
+
+In Codex, when Node 23.6 or later is not on `PATH`, a `SessionStart` check shows a warning. The warning lists `lint-code` with the other hooks that are off.
+
+## Settings
+
+### Turn the hook off
+
+To turn the whole hook off in a running agent, run `/toggle-hook lint-code`. The command adds `lint-code` to `CLAUDE_HOOKS_DISABLE`. Codex has no such command, so set `CLAUDE_HOOKS_DISABLE=lint-code` when you start it. See [`toggle-hook`](../toggle-hook/README.md).
+
+To remove the hook from one agent for good, remove its entry from the file in the "Loaded by" column of the table at the top.
+
+### Turn off one linter
+
+`CLAUDE_LINT_DISABLE` holds a list of keys, separated by spaces or commas. The hook reads it at run time, so export it in your shell, or set it in `env` in `settings.json`.
+
+| Key    | Turns off                                                        |
+| ------ | ---------------------------------------------------------------- |
+| `py`   | ruff                                                             |
+| `js`   | oxlint                                                           |
+| `sh`   | shellcheck                                                       |
+| `yaml` | yamllint and ansible-lint                                        |
+| `all`  | The whole hook, and also [`lint-prose`](../lint-prose/README.md) |
+
+```sh
+export CLAUDE_LINT_DISABLE="yaml"      # stop linting YAML
+export CLAUDE_LINT_DISABLE="yaml,sh"   # skip YAML and shell
+export CLAUDE_LINT_DISABLE="all"       # off
+```
+
+### Tune the linters
+
+To tune YAML instead of turning it off, edit the bundled configs in [`config/`](config/). The hook passes them with `-c` on each run. So the hook ignores the `.yamllint` and `.ansible-lint` of a repository, and you do not copy a config into each project.
+
+- [`config/dot_yamllint`](config/dot_yamllint), deployed as `.yamllint`, sets relaxed indentation and line-length rules for plain YAML ([yamllint config docs](https://yamllint.readthedocs.io/en/stable/configuration.html)).
+- [`config/dot_ansible-lint`](config/dot_ansible-lint), deployed as `.ansible-lint`, silences the noisy `yaml[indentation]` and `yaml[line-length]` findings for Ansible files with `skip_list` ([ansible-lint config docs](https://ansible.readthedocs.io/projects/lint/configuring/)). To get them as warnings that do not block, use the `warn_list` that the file holds as a comment. ansible-lint finds its embedded yamllint config by a directory search, so you tune the indentation for Ansible in this file, not in `config/dot_yamllint`.
+
+oxlint finds a project `.oxlintrc.json` in the directory of the file. A rule that this file sets to `off` stays off, also with `--deny-warnings`.
+
+If a linter reports too much, change its severity in [`core.ts`](core.ts), for example to `shellcheck -S error`.
 
 ## Failure behavior
 
-The hook fails open in every agent, so a broken lint run never changes the result:
+The hook fails open in every agent: when the lint run breaks, the tool result stays as it is.
 
-- Claude Code skips a mod hook that throws, and the result stands.
-- `pi.ts` catches its own errors.
-- `command.ts` exits 1 on a bad payload. Only exit code 2 reaches the model.
+- **A linter is not installed:** the hook skips its files.
+- **The mod throws in Claude Code:** Claude Code skips the mod hook, and the result stands.
+- **`pi.ts` or `omp.ts` throws:** `pi.ts` catches its own errors, and the result stays as it is. `omp.ts` runs through the same code.
+- **`command.ts` gets a bad payload:** it exits 1. Only exit code 2 reaches the model.
+- **A linter runs too long:** the mod stops each linter after 30 s, the default timeout of `$.process.run`. Codex stops the whole hook after 15 s.
+- **Codex has no `node`:** the Codex entries start with `command -v node >/dev/null || exit 0`, so a machine without Node is not blocked.
 
-## Dependencies
+## Testing
 
-The mod needs Claude Code 2.1.296 or later, the oldest version tested. `pi.ts`, `command.ts`, and `apply-patch.ts` need Node 23.6 or later, which runs `.ts` files without a flag. The Codex entries start with `command -v node || exit 0`, so a machine without Node is not blocked.
-
-Codex runs a hook only after you trust its entry. After the change from `hook.sh` to `command.ts`, trust the hooks again in the Codex TUI, on the host and in the devcontainer. See [`docs/agents/codex.md`](../../../docs/agents/codex.md#trust).
-
-## Tests
-
-`node test/check.ts` checks the core with stub I/O, `command.ts` with the real shellcheck, and the pi, omp, and mod adapters with stubs. `just hooks-check` runs it.
-
-## Files
-
-| File                                             | Deployed to `~/.claude/hooks/lint-code/` | Role                                                                      |
-| ------------------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------- |
-| `core.ts`                                        | Yes                                      | Finds the files, picks the linter, and runs it through an `Io`            |
-| `hooks/register.ts`, `hooks/hooks.json`          | Yes                                      | Claude Code mod                                                           |
-| `dot_claude-plugin/plugin.json`                  | Yes, as `.claude-plugin/plugin.json`     | Plugin manifest                                                           |
-| `pi.ts`                                          | Yes                                      | The pi extension, which omp also loads                                    |
-| `omp.ts`                                         | Yes                                      | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see |
-| `command.ts`                                     | Yes                                      | Codex command hook                                                        |
-| `io.ts`                                          | Yes                                      | The `Io` and the settings under Node, for `pi.ts` and `command.ts`        |
-| `config/dot_yamllint`, `config/dot_ansible-lint` | Yes, as `.yamllint` and `.ansible-lint`  | Linter configs                                                            |
-| `README.md`, `test/`                             | No                                       | Kept in the repo by `.chezmoiignore`                                      |
+`node test/check.ts` tests the core and each adapter, and `just hooks-check` runs it. [`docs/testing.md`](docs/testing.md) tells how to run it, what each group of cases checks, and what it needs on `PATH`.

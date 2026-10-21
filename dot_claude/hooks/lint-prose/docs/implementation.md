@@ -88,7 +88,7 @@ To find the files a command wrote, the hook must compare the disk before and aft
 
 ## Why it blocks
 
-An `error` alert makes Vale exit 1, and the hook then exits 2. A `PostToolUse` hook reaches the model only when it exits 2. On exit 0 its output goes to the transcript, and Claude never sees it. [`lint-code`](../../lint-code/README.md#how-the-model-sees-the-errors) gives the full reason.
+An `error` alert makes Vale exit 1, and the hook then exits 2. A `PostToolUse` hook reaches the model only when it exits 2. On exit 0 its output goes to the transcript, and Claude never sees it. [`lint-code`](../../lint-code/README.md#what-the-model-sees) gives the full reason.
 
 Vale exits 2 when it fails, for example on a rule it cannot load or on input it cannot parse. `check.sh` passes that code through, and the hook then exits 1 with `lint-prose: Vale failed` and Vale's error. Exit 1 shows the message to the user and does not block. The error is not in the prose, so a block would tell Claude to fix text that is correct.
 
