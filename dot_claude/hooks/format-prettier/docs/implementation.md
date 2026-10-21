@@ -28,15 +28,21 @@ The Bash sweep is Markdown-only on purpose, for the reason the README gives unde
 
 The cost of that choice is that a non-Markdown file written by a shell heredoc, by `jq`, or by a script stays unformatted until an `Edit` touches it. It is a real case, not a hypothetical one: a `jq ... | sponge dot_claude/settings.json` edit in this repo is exactly it. Such a file only hurts when it reaches a commit, and until then the next `Edit` fixes it for free.
 
-The [`format-staged-files`](../../../../dot_config/git/hooks/format-staged-files/README.md) git hook closes the gap. In an agent session it runs `command.ts` on each staged file before git writes the commit, with the full extension set. This also covers the case that a check before the Bash call cannot: in `cat > README.md <<'EOF' ... && git commit -am docs`, the file exists only after the call starts. The amend hint stays for a commit that skips the git hook, such as `git commit --no-verify`.
+The [`format-staged-files`](../../../../dot_config/git/hooks/format-staged-files/README.md) git hook closes the gap. In an agent session it runs `command.ts` on each staged file before git writes the commit, with the full extension set.
+
+This also covers the case that a check before the Bash call cannot: in `cat > README.md <<'EOF' ... && git commit -am docs`, the file exists only after the call starts. The amend hint stays for a commit that skips the git hook, such as `git commit --no-verify`.
 
 ## Why a failed Bash call is formatted too
 
 A `PostToolUse` command hook fires only after a tool call succeeds. A Bash command that exits non-zero raises `PostToolUseFailure`, a separate event.
 
-Measured on 2026-09-19. Two Bash calls wrote the same unaligned table to a literal path and differed only in the exit code. The exit 0 file came back column-aligned; the exit 1 file was untouched. The gap covers the write-then-verify shape, which is most of what a shell command does here: the file is written, a later step in the chain fails, and the formatting never ran on the file that is about to be edited again.
+Measured on 2026-09-19. Two Bash calls wrote the same unaligned table to a literal path and differed only in the exit code. The exit 0 file came back column-aligned; the exit 1 file was untouched.
 
-The mod on `tool.call` gets the result of each call after `next`, a failed one too, so Claude Code needs no second entry. A half-written file from an interrupted command is still a file worth formatting, and a Prettier failure on one is ignored.
+The gap covers the write-then-verify shape, which is most of what a shell command does here: the file is written, a later step in the chain fails, and the formatting never ran on the file that is about to be edited again.
+
+The old command hook ran in Claude Code only on `PostToolUse`, so it then got a second entry on `PostToolUseFailure`. The mod on `tool.call` gets the result of each call after `next`, a failed one too, so Claude Code needs no second entry. pi sends `tool_result` for each result, and Codex runs `PostToolUse` also after a Bash command that exits with a code other than 0.
+
+The sweep also runs after you interrupt a shell command. That is wanted: a half-written file from an interrupted command is still a file worth formatting, and a Prettier failure on one is ignored.
 
 `command.ts` still echoes `hook_event_name` back as `hookEventName`, because `hookSpecificOutput` must name the event that fired, or the output is invalid.
 
@@ -47,3 +53,35 @@ The mod on `tool.call` gets the result of each call after `next`, a failed one t
 `PostToolBatch` fires once after a batch of parallel tool calls resolves, so it would merge several sweeps into one. The sweep is already cheap and idempotent, so this buys speed, not correctness.
 
 An `async: true` command hook would move the sweep off the critical path. It is the wrong trade here: the hook would then rewrite files while the model is already reading them.
+
+## How the Bash sweep grew
+
+The first sweep covered only the git top level of the session folder. A command that wrote Markdown in a different repository (`cd /other/repo && cat > UPGRADING.md <<'EOF'`) was invisible, and the file stayed unformatted until something else changed it. The roots from the absolute paths in the command fixed that, see [Cross-repo Bash edits](../README.md#cross-repo-bash-edits).
+
+The file filter then dropped the folder entries of an embedded repository and of a submodule, so their Markdown stayed unformatted. The queue of roots fixed that, see [Nested repos and submodules](../README.md#nested-repos-and-submodules).
+
+## Why named paths skip git
+
+A file that the command names and git ignores is the same failure as [Write and commit in one command](../README.md#write-and-commit-in-one-command), from the other side. There, git already has the file as clean. Here, git has an instruction to ignore the file, and the hook formats a named path without a question to git.
+
+[`format-org-tables`](../../format-org-tables/README.md) reads the command text in the same way, for `.org` paths, and stops there: it has no git sweep. A command that writes an Org file names that file, so a sweep gives that hook nothing more than the name.
+
+## Why not `--prose-wrap never`
+
+`--prose-wrap never` joins the lines of each paragraph into one line. It also stops Prettier from padding a table that is wider than `printWidth` (default `80`): the table collapses to the compact `| --- |` form. `--prose-wrap preserve` pads each table, see [Prose wrapping](../README.md#prose-wrapping).
+
+## The `/private` prefix on macOS
+
+macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/...`. The path in a payload holds that prefix, but `$TMPDIR` does not. So both sides of the comparison drop a leading `/private`.
+
+## Files
+
+| File                                                                | Role                                                                      |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [`core.ts`](../core.ts)                                             | Finds the files and runs Prettier. No Node imports.                       |
+| [`io.ts`](../io.ts)                                                 | The file and process functions of the core under Node                     |
+| [`command.ts`](../command.ts)                                       | The command hook for Codex and `format-staged-files`                      |
+| [`pi.ts`](../pi.ts)                                                 | The pi extension, which omp also loads                                    |
+| [`omp.ts`](../omp.ts)                                               | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see |
+| [`hooks/register.ts`](../hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                                       |
+| [`dot_claude-plugin/plugin.json`](../dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json`             |
