@@ -24,6 +24,7 @@ check() { # name, command that must succeed
 cat >"$in" <<'EOF'
 model = "drift-model"
 model_reasoning_effort = "low"
+web_search = "cached"
 
 notify = ["a", "turn-ended"]
 
@@ -56,7 +57,8 @@ run <"$in" >"$out"
 check "repo model wins" 'rg -qx "model = \"gpt-6.1-sol\"" "$out" && rg -qx "model_reasoning_effort = \"high\"" "$out"'
 check "repo array replaces current" 'rg -qxF "args = [\"-y\", \"@upstash/context7-mcp\"]" "$out" && rg -qx "command = \"npx\"" "$out"'
 check "adds key at end of table" 'rg -A1 -x "js_repl = false" "$out" | rg -qx "memories = true"'
-check "changes only repo keys" '[ "$(diff "$in" "$out" | rg -c "^[<>]")" = 8 ]'
+check "live web search stays at root" 'python3 -c '\''import sys, tomllib; assert tomllib.load(open(sys.argv[1], "rb"))["web_search"] == "live"'\'' "$out"'
+check "changes only repo keys" '[ "$(diff "$in" "$out" | rg -c "^[<>]")" = 10 ]'
 check "keeps cmux markers" 'rg -qx "# cmux-codex-hook-trust-1 end" "$out" && rg -qx "# cmux-codex-hooks-feature-1 end" "$out"'
 check "keeps literal string" 'rg -qxF "SERVICES = '"'"'{\"browser\":\"x\"}'"'"'" "$out"'
 check "keeps table order" '[ "$(rg -n -x "\[tui\]" "$out" | cut -d: -f1)" -lt "$(rg -n -F "[hooks.state.\"/a:stop:1:0\"]" "$out" | cut -d: -f1)" ]'
@@ -64,6 +66,7 @@ check "second apply changes nothing" 'run <"$out" | diff -q "$out" -'
 
 run </dev/null >"$out"
 check "empty stdin gives repo keys only" '! rg -q "tui|projects" "$out" && rg -qx "\[mcp_servers.context7\]" "$out"'
+check "new config has live web search at root" 'python3 -c '\''import sys, tomllib; assert tomllib.load(open(sys.argv[1], "rb"))["web_search"] == "live"'\'' "$out"'
 
 # Context7 API key: none keeps the current key, else .envrc wins.
 printf '[mcp_servers.context7.env]\nCONTEXT7_API_KEY = "old-key"\n' >"$in"

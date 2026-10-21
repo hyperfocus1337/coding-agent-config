@@ -19,6 +19,7 @@ OURS = tomllib.loads("""
 
 model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
+web_search = "live"
 
 [mcp_servers.context7]
 command = "npx"
