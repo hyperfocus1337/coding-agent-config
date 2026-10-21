@@ -191,6 +191,29 @@ await check("AGENT_HOOKS_DISABLE that names the hook: no targets", async () =>
   ),
 );
 
+// --- git config agent-hook.lint-code.enabled, with stub I/O ---
+
+for (const [config, want] of [
+  ["false\n", []],
+  ["", ["/x/a.py"]],
+] as const)
+  await check(`git config prints ${JSON.stringify(config)}`, async () => {
+    const ran: string[][] = [];
+    const io: Io = {
+      stat: async () => ({ isFile: true, mtimeMs: 0 }),
+      read: async () => "",
+      run: async (argv) => {
+        ran.push(argv);
+        return { exitCode: 0, output: config };
+      },
+    };
+    assert.deepEqual(
+      await targets({ filePath: "/x/a.py", cwd: "/x" }, io, settings),
+      want,
+    );
+    assert.deepEqual(ran[0]?.slice(0, 4), ["git", "-C", "/x", "config"]);
+  });
+
 // --- command.ts, with the real shellcheck ---
 
 const tmp = fs.mkdtempSync(path.join(os.homedir(), ".lint-hook-check-"));

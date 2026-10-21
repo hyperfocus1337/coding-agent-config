@@ -50,9 +50,10 @@ Codex runs a hook only after you trust its entry. After the change from `hook.sh
 
 After each Write or Edit, the hook does these steps:
 
-1. It runs [`check.sh`](../../../dot_config/vale/scripts/check.sh) on the whole file. `check.sh` runs Vale with the shared [`vale.ini`](../../../dot_config/vale/vale.ini) in `~/.config/vale/`.
-2. It keeps only the alerts on the paragraphs that changed.
-3. It gives each new alert to the model. It gives an alert that this session already reported to you only.
+1. It stops when the repository of the file sets `agent-hook.lint-prose.enabled` to `false` in git config. It runs this `git config` only for a prose file that exists outside a temp folder.
+2. It runs [`check.sh`](../../../dot_config/vale/scripts/check.sh) on the whole file. `check.sh` runs Vale with the shared [`vale.ini`](../../../dot_config/vale/vale.ini) in `~/.config/vale/`.
+3. It keeps only the alerts on the paragraphs that changed.
+4. It gives each new alert to the model. It gives an alert that this session already reported to you only.
 
 ### The shared Vale config
 
@@ -116,7 +117,9 @@ The hook reads these variables at run time, so export them in your shell, or set
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `CLAUDE_LINT_DISABLE` | Turns the hook off when its list holds `prose` or `all`. `all` also turns off `lint-code`. Separate the items with spaces or commas. |
 | `AGENT_HOOKS_DISABLE` | Turns the hook off when its list holds `lint-prose`. `/toggle-hook` sets it.                                                         |
-| `LINT_PROSE_VALE_DIR` | Replaces `~/.config/vale` as the directory of the config and `scripts/check.sh`. The tests set it to `dot_config/vale`.              |
+
+The hook also reads `git config agent-hook.lint-prose.enabled` in the repository of the file. The value `false` turns the hook off in that repository, across sessions. Outside git, or with a value that is not a boolean, the hook stays on.
+| `LINT_PROSE_VALE_DIR` | Replaces `~/.config/vale` as the directory of the config and `scripts/check.sh`. The tests set it to `dot_config/vale`. |
 
 To turn the hook off for all sessions, run:
 
@@ -125,6 +128,8 @@ export CLAUDE_LINT_DISABLE="prose"
 ```
 
 To turn the hook off in a running agent, run `/toggle-hook lint-prose`. See [`toggle-hook`](../toggle-hook/README.md).
+
+To turn the hook off in one repository, run `/toggle-hook --repo lint-prose`. In Codex, run `git config agent-hook.lint-prose.enabled false` in your own terminal. The dcg pack `local.agent_hook` blocks an agent command that writes this key.
 
 ## Failure behavior
 

@@ -26,6 +26,7 @@ node test/check.ts
 - **Skipped files:** a partly staged file is committed as staged, and its unstaged change stays in the tree. A symlink stays a symlink.
 - **Agent detection:** each agent variable turns the hook on, and a commit outside an agent is not formatted.
 - **`AGENT_HOOKS_DISABLE`:** a commit is still formatted when the variable names `format-prettier`.
+- **Repository key:** a commit is not formatted when `agent-hook.format-prettier.enabled` is `false` in the repository.
 - **No `node`:** a commit with no `node` on `PATH` continues, with no output.
 
 ## Requirements

@@ -118,8 +118,9 @@ const hooks = `${homedir()}/.claude/hooks`;
 for (const formatter of ["format-prettier", "format-org-tables", "format-code"])
   spawnSync(process.execPath, [`${hooks}/${formatter}/command.ts`], {
     cwd: root,
-    // /toggle-hook turns off the agent hooks only, not this commit-time
-    // format. Node leaves an undefined variable out.
+    // The session toggle of /toggle-hook turns off the agent hooks only, not
+    // this commit-time format. Node leaves an undefined variable out. The
+    // git config of /toggle-hook --repo still applies: each formatter reads it.
     env: { ...env, AGENT_HOOKS_DISABLE: undefined },
     input: payload,
     stdio: ["pipe", "ignore", "ignore"],

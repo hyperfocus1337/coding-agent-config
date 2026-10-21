@@ -177,6 +177,13 @@ await expect(
   run(repo, {}, { AGENT_HOOKS_DISABLE: "lint-code,type-check-pyrefly" }),
   0,
 );
+git(repo, "config", "agent-hook.type-check-pyrefly.enabled", "false");
+await expect(
+  "git config that turns the hook off lets the stop pass",
+  run(repo),
+  0,
+);
+git(repo, "config", "--unset", "agent-hook.type-check-pyrefly.enabled");
 const gitDir = process.env.PATH?.split(":").find((dir) =>
   fs.existsSync(`${dir}/git`),
 );

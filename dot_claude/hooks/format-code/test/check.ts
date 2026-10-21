@@ -275,6 +275,26 @@ await check("AGENT_HOOKS_DISABLE that names the hook: nothing runs", async () =>
   ),
 );
 
+// --- git config agent-hook.format-code.* ---
+
+git(repo, "config", "agent-hook.format-code.shfmt", "false");
+fs.writeFileSync(`${repo}/off.sh`, RAW_SH);
+unformatted(`${repo}/on.tf`);
+edit(`${repo}/off.sh`);
+edit(`${repo}/on.tf`);
+await shfmtFile("the repository turns off shfmt", `${repo}/off.sh`, RAW_SH);
+await formatted("terraform fmt stays on", `${repo}/on.tf`);
+git(repo, "config", "agent-hook.format-code.shfmt", "banana");
+edit(`${repo}/off.sh`);
+await check("shfmt: a value that is not a boolean keeps shfmt on", () =>
+  assert.notEqual(read(`${repo}/off.sh`), RAW_SH),
+);
+git(repo, "config", "agent-hook.format-code.enabled", "no");
+unformatted(`${repo}/on.tf`);
+edit(`${repo}/on.tf`);
+await untouched("the repository turns off the hook", `${repo}/on.tf`);
+git(repo, "config", "--remove-section", "agent-hook.format-code");
+
 // --- pi.ts and hooks/register.ts, with stubs over the real files ---
 
 type Handler = (event: unknown, ctx: unknown) => Promise<unknown>;

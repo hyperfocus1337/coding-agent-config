@@ -173,6 +173,13 @@ await expect(
   run(repo, {}, { AGENT_HOOKS_DISABLE: "lint-code,type-check-tsc" }),
   0,
 );
+git(repo, "config", "agent-hook.type-check-tsc.enabled", "false");
+await expect(
+  "git config that turns the hook off lets the stop pass",
+  run(repo),
+  0,
+);
+git(repo, "config", "--unset", "agent-hook.type-check-tsc.enabled");
 const gitDir = path.dirname(
   spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout,
 );

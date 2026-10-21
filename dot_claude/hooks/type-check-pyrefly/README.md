@@ -17,6 +17,7 @@ The hook runs once when the agent stops: on `Stop` in Claude Code and Codex, on 
 The hook skips these cases with no output:
 
 - A folder that is not in a git work tree.
+- A repository that sets `agent-hook.type-check-pyrefly.enabled` to `false`.
 - No changed Python file. A deleted `.py` file does not count.
 - pyrefly that is not on `PATH`.
 - pyrefly that exits 1 with `No Python files matched`. Its config then matches no files, which is not a type error.
@@ -41,10 +42,11 @@ Codex runs a hook only after you trust its entry. After a hook entry changes, tr
 
 1. The hook stops when `AGENT_HOOKS_DISABLE` names `type-check-pyrefly`.
 2. It finds the repository root with `git rev-parse --show-toplevel`, because the session folder can be a subdirectory.
-3. It lists the changed paths: `git diff --name-only HEAD` plus the untracked files, without deleted files. Before the first commit, the diff fails, so only the untracked files count.
-4. It stops when no path in the list ends in `.py`.
-5. It runs `pyrefly check` at the root, on the whole project, because a type checker needs the whole project.
-6. When pyrefly exits non-zero, the hook gives the pyrefly output to the model.
+3. It stops when the repository sets `agent-hook.type-check-pyrefly.enabled` to `false` in git config.
+4. It lists the changed paths: `git diff --name-only HEAD` plus the untracked files, without deleted files. Before the first commit, the diff fails, so only the untracked files count.
+5. It stops when no path in the list ends in `.py`.
+6. It runs `pyrefly check` at the root, on the whole project, because a type checker needs the whole project.
+7. When pyrefly exits non-zero, the hook gives the pyrefly output to the model.
 
 The hook stops each program (`git` or pyrefly) after 60 s and counts it as missing.
 
@@ -85,6 +87,7 @@ A skip shows nothing.
 ## Settings
 
 - **Turn off for the session:** run [`/toggle-hook`](../toggle-hook/README.md), or set `AGENT_HOOKS_DISABLE` to a list that holds `type-check-pyrefly`. Separate the names with spaces or commas. In Codex, set the variable at launch.
+- **Turn off in one repository:** run `/toggle-hook --repo type-check-pyrefly`. In Codex, run `git config agent-hook.type-check-pyrefly.enabled false` in your own terminal. Outside git, or with a value that is not a boolean, the hook stays on. The dcg pack `local.agent_hook` blocks an agent command that writes this key.
 - **Turn off for good:** remove the entry from the file in the "Loaded by" column of the agent table.
 - **Files to check:** the hook gives no options to `pyrefly check`, so the pyrefly config at the repository root sets which files pyrefly checks.
 

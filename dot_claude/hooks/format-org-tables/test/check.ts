@@ -33,10 +33,39 @@ async function check(what: string, run: () => void | Promise<void>) {
   }
 }
 
+// --- git config agent-hook.format-org-tables.enabled, with stub I/O ---
+
+// Before the SKIP below, so that it runs also with no Emacs.
+/** I/O over one Org file with a table. `git config` prints `config`. */
+const configIo = (config: string, ran: string[][]) => ({
+  stat: async () => ({ kind: "file", mtimeMs: Date.now() }),
+  read: async () => "| a |\n",
+  run: async (argv: string[]) => {
+    ran.push(argv);
+    return { stdout: argv[1] === "config" ? config : "" };
+  },
+});
+for (const [config, programs] of [
+  ["false\n", ["git"]],
+  ["", ["git", "emacs"]],
+] as const)
+  await check(`git config prints ${JSON.stringify(config)}`, async () => {
+    const ran: string[][] = [];
+    await align(
+      { filePath: "/x/a.org", cwd: "/x" },
+      configIo(config, ran) as never,
+      {},
+    );
+    assert.deepEqual(
+      ran.map(([program]) => program),
+      programs,
+    );
+  });
+
 for (const program of ["git", "emacs"])
   if (spawnSync(program, ["--version"]).error) {
     console.log(`SKIP no ${program} on PATH`);
-    process.exit(0);
+    process.exit(failures ? 1 : 0);
   }
 
 const tmp = fs.mkdtempSync(path.join(os.homedir(), ".org-hook-test."));

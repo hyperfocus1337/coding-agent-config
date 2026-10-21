@@ -97,6 +97,29 @@ await check("AGENT_HOOKS_DISABLE that names the hook: nothing runs", async () =>
   ),
 );
 
+// --- git config agent-hook.lint-prose.enabled, with stub I/O ---
+
+for (const [config, programs] of [
+  ["false\n", ["git"]],
+  ["", ["git", "vale"]],
+] as const)
+  await check(`git config prints ${JSON.stringify(config)}`, async () => {
+    const ran: string[][] = [];
+    const io = {
+      isFile: async () => true,
+      run: async (argv: string[]) => {
+        ran.push(argv);
+        // vale --version fails, so the hook stops there.
+        return { exitCode: 1, stdout: config, stderr: "" };
+      },
+    };
+    await lintProse("/x/a.md", "s", io as never, { valeDir: "/x" });
+    assert.deepEqual(
+      ran.map(([program]) => program),
+      programs,
+    );
+  });
+
 // --- Markdown ---
 const longMd = write(
   `${tmp}/long.md`,

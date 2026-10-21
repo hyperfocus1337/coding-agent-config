@@ -108,6 +108,19 @@ function throwaway(file: string, settings: Settings): boolean {
 }
 
 /**
+ * Whether the git config of the repository that holds `dir` sets
+ * agent-hook.format-org-tables.enabled to false, as /toggle-hook --repo does.
+ * Outside git, a missing key, or a value that is not a boolean: false.
+ */
+async function repoOff(dir: string, io: Io): Promise<boolean> {
+  const key = "agent-hook.format-org-tables.enabled";
+  const ran = await io.run(["git", "config", "--type=bool", "--get", key], {
+    cwd: dir,
+  });
+  return ran?.stdout.trim() === "false";
+}
+
+/**
  * The files to align, each once. A Write or Edit: the file it names. A Bash
  * call: the .org paths its command names that it just wrote, by an mtime of
  * at most 120 s, so a file the command only read stays as it is. A relative
@@ -115,7 +128,8 @@ function throwaway(file: string, settings: Settings): boolean {
  * command that writes early and then runs for minutes falls outside the
  * window. The upgrade is a start time stamped before the call. Only a file
  * with a line that starts with `|` counts, which keeps Emacs out of the
- * common case. README "Files without tables".
+ * common case. README "Files without tables". A file whose repository turns
+ * off the hook stays as it is.
  */
 async function targets(
   call: Call,
@@ -131,12 +145,17 @@ async function targets(
       path.startsWith("/") ? [path] : folders.map((dir) => `${dir}/${path}`),
     );
   const kept: string[] = [];
+  // One git run for each folder: a commit can name many files.
+  const asked = new Map<string, Promise<boolean>>();
   for (const file of new Set(named)) {
     if (!file.endsWith(".org") || throwaway(file, settings)) continue;
     const stat = await io.stat(file);
     if (stat?.kind !== "file") continue;
     if (!given && Date.now() - stat.mtimeMs > 120_000) continue;
-    if (/^[ \t]*\|/m.test((await io.read(file)) ?? "")) kept.push(file);
+    if (!/^[ \t]*\|/m.test((await io.read(file)) ?? "")) continue;
+    const dir = file.slice(0, file.lastIndexOf("/")) || "/";
+    if (!asked.has(dir)) asked.set(dir, repoOff(dir, io));
+    if (!(await asked.get(dir))) kept.push(file);
   }
   return kept;
 }

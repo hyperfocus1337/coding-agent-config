@@ -66,7 +66,7 @@ The adapters have these requirements:
 For each tool call, the core does these steps:
 
 1. It finds the target files of the call. A Write or an Edit names one file, which the hook lints at any age. For a Bash call, see [Bash calls](#bash-calls). A relative path resolves against the session working directory.
-2. It drops each path under `/tmp`, `/var/tmp`, or `$TMPDIR`, each path that does not exist, and each path that is not a regular file.
+2. It drops each path under `/tmp`, `/var/tmp`, or `$TMPDIR`, each path that does not exist, and each path that is not a regular file. Then it drops each file whose repository sets `agent-hook.lint-code.enabled` to `false` in git config, with one `git -C <folder> config` for each folder.
 3. It picks the linter for the extension of each file. It skips a file when `CLAUDE_LINT_DISABLE` turns its linter off, or when no linter is installed.
 4. It runs the linters one file after the other, and lints every target before it stops. So one Bash command reports every file that it wrote, not only the first failure.
 5. When at least one linter exits with a code other than 0, it gives the output of all the linters that ran to the model.
@@ -114,6 +114,8 @@ In Codex, when Node 23.6 or later is not on `PATH`, a `SessionStart` check shows
 ### Turn the hook off
 
 To turn the whole hook off in a running agent, run `/toggle-hook lint-code`. The command adds `lint-code` to `AGENT_HOOKS_DISABLE`. Codex has no such command, so set `AGENT_HOOKS_DISABLE=lint-code` when you start it. See [`toggle-hook`](../toggle-hook/README.md).
+
+To turn the hook off in one repository, across sessions, run `/toggle-hook --repo lint-code`. In Codex, run `git config agent-hook.lint-code.enabled false` in your own terminal. Outside git, or with a value that is not a boolean, the hook stays on. The dcg pack `local.agent_hook` blocks an agent command that writes this key.
 
 To remove the hook from one agent for good, remove its entry from the file in the "Loaded by" column of the table at the top.
 

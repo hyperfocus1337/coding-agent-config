@@ -27,6 +27,7 @@ The fixtures are in a temporary folder under `$HOME`, because the hook skips `/t
 - **The amend hint:** after a commit, after `git -C <dir> commit`, on `PostToolUseFailure` with that event name, and on the first commit of a repository. No hint without a commit, for an uncommitted file, or when Prettier changed nothing.
 - **A Write or Edit:** the hook formats `.ts`, `.mts`, and `.cts`. It does not format `.org`, `.py`, or a temp file, and a file that does not exist gives no output.
 - **`AGENT_HOOKS_DISABLE`:** a value that names the hook stops the core before its first file or process call.
+- **`agent-hook.format-prettier.enabled`:** with stub I/O, a `git config` that prints `false` stops the hook before Prettier, and a `git config` that prints nothing lets Prettier run.
 - **The adapters:** `pi.ts`, `omp.ts`, and `hooks/register.ts` with stubs over the real files.
 
 ## Settings that the check changes

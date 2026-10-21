@@ -58,9 +58,10 @@ brew install emacs
 
 1. The hook stops when `AGENT_HOOKS_DISABLE` names it.
 2. It finds the target files, as [What it checks](#what-it-checks) tells.
-3. If the call is a Bash command that commits, it keeps the text of each target file.
-4. It aligns all target files in one `emacs --batch --no-init-file` run, and stops Emacs after 10 s.
-5. If it kept the text in step 3, it compares the text and sends the [amend hint](#write-and-commit-in-one-command) when necessary.
+3. It drops each target whose repository sets `agent-hook.format-org-tables.enabled` to `false` in git config. It runs one `git config` for each folder, and only for the files with a table.
+4. If the call is a Bash command that commits, it keeps the text of each target file.
+5. It aligns all target files in one `emacs --batch --no-init-file` run, and stops Emacs after 10 s.
+6. If it kept the text in step 4, it compares the text and sends the [amend hint](#write-and-commit-in-one-command) when necessary.
 
 `--no-init-file` keeps your Emacs init (Doom, in this setup) out of the run, so only the Org mode that comes with Emacs loads. Without it, each run takes much longer than the timeout. One Emacs run costs about 1.4 s, and almost all of it is the start of Emacs, see [`docs/research.md`](docs/research.md).
 
@@ -127,6 +128,8 @@ Nothing, when the hook works. The aligned table shows in the diff of the file. T
 ## Settings
 
 To turn the hook off until you quit the agent, run [`/toggle-hook`](../toggle-hook/README.md), or add `format-org-tables` to `AGENT_HOOKS_DISABLE`. This variable holds a list of hook names, separated by spaces or commas. In Codex, set it before you start Codex.
+
+To turn the hook off in one repository, across sessions, run `/toggle-hook --repo format-org-tables`. In Codex, run `git config agent-hook.format-org-tables.enabled false` in your own terminal. The key also applies in `format-staged-files`. Outside git, or with a value that is not a boolean, the hook stays on. The dcg pack `local.agent_hook` blocks an agent command that writes this key.
 
 To turn the hook off for good, remove it from the agent config:
 

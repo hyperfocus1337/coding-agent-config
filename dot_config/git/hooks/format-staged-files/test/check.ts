@@ -194,6 +194,15 @@ check("AGENT_HOOKS_DISABLE does not turn off the commit-time format", () =>
   assert.equal(committed("new.md"), "- toggled\n"),
 );
 
+// /toggle-hook --repo turns off the commit-time format too.
+git(["config", "agent-hook.format-prettier.enabled", "false"]);
+write("new.md", "*   repo off\n");
+git(["commit", "-q", "-a", "-m", "repo off"], { CLAUDECODE: "1" });
+check("agent-hook.format-prettier.enabled false keeps the file as staged", () =>
+  assert.equal(committed("new.md"), "*   repo off\n"),
+);
+git(["config", "--unset", "agent-hook.format-prettier.enabled"]);
+
 // A file with unstaged changes stays as staged, and the unstaged part stays out.
 write("new.md", "*   three\n");
 git(["add", "new.md"]);

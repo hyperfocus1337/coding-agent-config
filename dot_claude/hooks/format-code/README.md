@@ -2,12 +2,12 @@
 
 Formats the files that a Write, an Edit, or a Bash call changed, with the formatter for the extension of each file. It covers the languages that Prettier has no parser for, so [`format-prettier`](../format-prettier/README.md) cannot format them:
 
-| Extensions      | Formatter                                                                   | Command                          |
-| --------------- | --------------------------------------------------------------------------- | -------------------------------- |
-| `.tf` `.tfvars` | [terraform fmt](https://developer.hashicorp.com/terraform/cli/commands/fmt) | `terraform fmt -no-color <file>` |
-| `.sh` `.bash`   | [shfmt](https://github.com/mvdan/sh)                                        | `shfmt -l -w [-i 2 -ci] <file>`  |
+| Extensions      | Formatter                                                                   | Command                          | Key         |
+| --------------- | --------------------------------------------------------------------------- | -------------------------------- | ----------- |
+| `.tf` `.tfvars` | [terraform fmt](https://developer.hashicorp.com/terraform/cli/commands/fmt) | `terraform fmt -no-color <file>` | `terraform` |
+| `.sh` `.bash`   | [shfmt](https://github.com/mvdan/sh)                                        | `shfmt -l -w [-i 2 -ci] <file>`  | `shfmt`     |
 
-To add a formatter, add a row to `FORMATTERS` in [`core.ts`](core.ts) and its extensions to `NAMED`.
+The key turns off one formatter in one repository, see [Settings](#settings). To add a formatter, add a row to `FORMATTERS` in [`core.ts`](core.ts), its extensions to `NAMED`, and its key to `PARTS` in [`toggle-hook/core.ts`](../toggle-hook/core.ts). The toggle-hook test fails when the keys differ.
 
 One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
@@ -31,6 +31,7 @@ The hook skips these paths, with no output:
 
 - A path that is not an existing file with an extension from the table.
 - A path under `/tmp`, `/var/tmp`, or `$TMPDIR`, because the scratchpad of the agent is there.
+- A file in a repository whose git config turns off the hook or the formatter of the file, see [Settings](#settings).
 
 The hook misses a Bash command that writes a file but does not name it, for example a script, `terraform init`, or a `find -exec`. It also misses a shell script with no extension, such as a file with only a `#!/bin/sh` line. A relative path resolves against the session cwd only, not against a folder that a `cd` in the command moves to.
 
@@ -52,9 +53,10 @@ brew install hashicorp/tap/terraform shfmt
 
 1. The hook stops when `AGENT_HOOKS_DISABLE` names `format-code`.
 2. It finds the files to format, as "What it checks" tells.
-3. It runs the command of the formatter once for each file, in the folder of the file, with a limit of 10 s.
-4. When the call is a Bash command that commits, it asks git whether the last commit holds each file that a formatter changed.
-5. It sends the amend hint for each file that the last commit holds.
+3. For each file, it reads `agent-hook.format-code.enabled` and the key of the formatter with `git config --type=bool --get`, in the folder of the file. It skips the file when either key is `false`. It runs git once for each folder and key, and only for a file that passed the checks of step 2.
+4. It runs the command of the formatter once for each file, in the folder of the file, with a limit of 10 s.
+5. When the call is a Bash command that commits, it asks git whether the last commit holds each file that a formatter changed.
+6. It sends the amend hint for each file that the last commit holds.
 
 Each formatter prints the name of a file only when it changed the file: `terraform fmt` always, and shfmt because of `-l`. The hook uses that output to find the changed files, and reads no file text.
 
@@ -84,10 +86,12 @@ The hook shows you no message when it formats a file. It drops the stderr of the
 
 ## Settings
 
-| Setting               | Effect                                                                                                               |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `AGENT_HOOKS_DISABLE` | A list of the hooks that are off, separated by spaces or commas. When it names `format-code`, the hook does nothing. |
-| `TMPDIR`              | The hook skips the files under this folder.                                                                          |
+| Setting                                           | Effect                                                                                                               |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `AGENT_HOOKS_DISABLE`                             | A list of the hooks that are off, separated by spaces or commas. When it names `format-code`, the hook does nothing. |
+| `git config agent-hook.format-code.enabled false` | Turns the hook off in one repository, across sessions.                                                               |
+| `git config agent-hook.format-code.<key> false`   | Turns off one formatter in one repository, by the key in the table at the top. The other formatter still runs.       |
+| `TMPDIR`                                          | The hook skips the files under this folder.                                                                          |
 
 To turn the hook off until you quit, run [`/toggle-hook`](../toggle-hook/README.md) in Claude Code, pi, or omp. Codex has no command, so set the variable when you start it:
 
@@ -95,7 +99,9 @@ To turn the hook off until you quit, run [`/toggle-hook`](../toggle-hook/README.
 AGENT_HOOKS_DISABLE=format-code codex
 ```
 
-To turn the hook off for good in one agent, remove it from the setting in the "Loaded by" column of the table at the top. `format-staged-files` removes `AGENT_HOOKS_DISABLE` before it runs the formatters, so the pre-commit run still formats.
+To turn off the hook or one formatter in one repository, run `/toggle-hook --repo format-code` or `/toggle-hook --repo format-code.shfmt`. In Codex, run the `git config` command of the table in your own terminal. A value that is not a boolean, such as `banana`, keeps the formatter on. The dcg pack `local.agent_hook` blocks an agent command that writes the key.
+
+To turn the hook off for good in one agent, remove it from the setting in the "Loaded by" column of the table at the top. `format-staged-files` removes `AGENT_HOOKS_DISABLE` before it runs the formatters, so the pre-commit run still formats. The git config keys still apply in the pre-commit run, because the hook reads them itself.
 
 ## Failure behavior
 

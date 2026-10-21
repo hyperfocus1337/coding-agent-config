@@ -37,15 +37,17 @@ A stop carries no file path, so the hook asks git which files changed. `tsc` sta
 1. The adapter applies the [loop guard](#the-loop-guard). In pi and omp, the adapter also does nothing when you stopped the run or the run failed.
 2. The core does nothing when `AGENT_HOOKS_DISABLE` names `type-check-tsc`.
 3. `git rev-parse --show-toplevel` finds the repository root. The session folder can be a subdirectory.
-4. `git diff --name-only HEAD` plus the untracked files, without deleted files, gives the changed-file list. Before the first commit, only the untracked files count.
-5. If the list holds a TypeScript file and the root holds a `tsconfig.json`, `tsc --noEmit` runs at the root. The changed-file list covers the whole repository, and from a subdirectory, `tsc` would see only that subdirectory.
-6. If `tsc` exits with a code other than 0, the adapter gives its output to the model.
+4. The core does nothing when the repository sets `agent-hook.type-check-tsc.enabled` to `false` in git config.
+5. `git diff --name-only HEAD` plus the untracked files, without deleted files, gives the changed-file list. Before the first commit, only the untracked files count.
+6. If the list holds a TypeScript file and the root holds a `tsconfig.json`, `tsc --noEmit` runs at the root. The changed-file list covers the whole repository, and from a subdirectory, `tsc` would see only that subdirectory.
+7. If `tsc` exits with a code other than 0, the adapter gives its output to the model.
 
 ### Skips
 
 The hook skips these cases with no output:
 
 - A folder that is not in a git work tree.
+- A repository that sets `agent-hook.type-check-tsc.enabled` to `false`.
 - No changed TypeScript file.
 - `tsc` that is not on `PATH`.
 - A root with no `tsconfig.json`. Without one, `tsc` prints its whole help text and exits 1.
@@ -87,6 +89,8 @@ Type check failed. Fix the errors above, then stop.
 The hook has no config file. The 60 s limit for `tsc` is fixed in [`io.ts`](io.ts).
 
 To turn the hook off until you quit the agent, put `type-check-tsc` in `AGENT_HOOKS_DISABLE`. In Claude Code, pi, and omp, [`/toggle-hook`](../toggle-hook/README.md) changes the variable in the running agent. In Codex, set the variable at launch.
+
+To turn the hook off in one repository, across sessions, run `/toggle-hook --repo type-check-tsc`. In Codex, run `git config agent-hook.type-check-tsc.enabled false` in your own terminal. Outside git, or with a value that is not a boolean, the hook stays on. The dcg pack `local.agent_hook` blocks an agent command that writes this key.
 
 To turn the hook off for good, remove its entry:
 

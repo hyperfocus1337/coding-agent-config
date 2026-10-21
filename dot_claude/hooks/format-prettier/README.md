@@ -60,8 +60,9 @@ pnpm install -g prettier
 1. If `AGENT_HOOKS_DISABLE` names `format-prettier`, the hook stops.
 2. The hook collects the candidate files: the file of a Write or an Edit, or the Markdown files of the [Bash sweep](#bash-markdown-sweep).
 3. It keeps each candidate once, and only if the extension matches, the path is not a throwaway path, and the path is a regular file.
-4. It runs Prettier one time on all the files that it kept, in the session folder, and stops Prettier after 20 s.
-5. If a Bash command committed, it compares each file before and after Prettier and can give the [amend hint](#write-and-commit-in-one-command).
+4. It drops each file whose repository sets `agent-hook.format-prettier.enabled` to `false` in git config. It runs one `git config` for each folder, and only for the files that step 3 kept.
+5. It runs Prettier one time on all the files that it kept, in the session folder, and stops Prettier after 20 s.
+6. If a Bash command committed, it compares each file before and after Prettier and can give the [amend hint](#write-and-commit-in-one-command).
 
 The Prettier command is:
 
@@ -185,16 +186,19 @@ When the hook works, you see only the formatted files. A missing Prettier, a par
 
 ## Settings
 
-| Setting                                              | Effect                                                                                                                  |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `AGENT_HOOKS_DISABLE`                                | A value that names `format-prettier`, separated by spaces or commas, turns the hook off. The hook reads it on each run. |
-| `.prettierrc`                                        | Prettier finds it in the folder tree of the file, so the style of the project overrides the defaults of Prettier.       |
-| `.prettierignore`                                    | Prettier skips the files that it lists.                                                                                 |
-| `git config hook.claude-format-staged.enabled false` | Turns off `format-staged-files` in one repository. That hook ignores `AGENT_HOOKS_DISABLE`.                             |
+| Setting                                               | Effect                                                                                                                                                       |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `AGENT_HOOKS_DISABLE`                                 | A value that names `format-prettier`, separated by spaces or commas, turns the hook off. The hook reads it on each run.                                      |
+| `git config agent-hook.format-prettier.enabled false` | Turns the hook off in one repository, across sessions, also in `format-staged-files`. Outside git, or with a value that is not a boolean, the hook stays on. |
+| `.prettierrc`                                         | Prettier finds it in the folder tree of the file, so the style of the project overrides the defaults of Prettier.                                            |
+| `.prettierignore`                                     | Prettier skips the files that it lists.                                                                                                                      |
+| `git config hook.claude-format-staged.enabled false`  | Turns off `format-staged-files` in one repository. That hook ignores `AGENT_HOOKS_DISABLE`.                                                                  |
 
 A `proseWrap` in a project `.prettierrc` does not change `--prose-wrap preserve`, because a command-line option overrides the config file.
 
 To turn the hook off until you quit the agent, use [`/toggle-hook`](../toggle-hook/README.md) in Claude Code, pi, or omp. In Codex, set `AGENT_HOOKS_DISABLE` when you start Codex.
+
+To turn the hook off in one repository, run `/toggle-hook --repo format-prettier`. In Codex, run `git config agent-hook.format-prettier.enabled false` in your own terminal. The dcg pack `local.agent_hook` blocks an agent command that writes this key.
 
 To remove the hook from one agent, remove its entry from the file in the "Loaded by" column of the adapter table. In Codex, remove the two entries in `dot_codex/modify_hooks.json`, one for Bash and one for `apply_patch`.
 

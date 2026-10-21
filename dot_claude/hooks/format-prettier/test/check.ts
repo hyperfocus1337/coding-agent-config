@@ -341,6 +341,34 @@ await check("AGENT_HOOKS_DISABLE that names the hook: nothing runs", async () =>
   ),
 );
 
+// --- git config agent-hook.format-prettier.enabled, with stub I/O ---
+
+/** I/O over one Markdown file. `git config` prints `config`. */
+const configIo = (config: string, ran: string[][]) => ({
+  stat: async () => ({ kind: "file" }),
+  read: async () => "# a\n",
+  run: async (argv: string[]) => {
+    ran.push(argv);
+    return { exitCode: 0, stdout: argv[1] === "config" ? config : "" };
+  },
+});
+for (const [config, programs] of [
+  ["false\n", ["git"]],
+  ["", ["git", "prettier"]],
+] as const)
+  await check(`git config prints ${JSON.stringify(config)}`, async () => {
+    const ran: string[][] = [];
+    await format(
+      { filePath: "/x/a.md", cwd: "/x" },
+      configIo(config, ran) as never,
+      {},
+    );
+    assert.deepEqual(
+      ran.map(([program]) => program),
+      programs,
+    );
+  });
+
 // --- pi.ts and hooks/register.ts, with stubs over the real files ---
 
 type Handler = (event: unknown, ctx: unknown) => Promise<unknown>;

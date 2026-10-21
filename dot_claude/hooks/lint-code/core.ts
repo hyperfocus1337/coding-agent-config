@@ -43,12 +43,33 @@ const NAMED =
   /[^\s:;|&"'`()<>=]+\.(?:py|jsx?|tsx?|mjs|cjs|mts|cts|sh|bash|ya?ml)\b/g;
 
 /**
+ * Whether the git config of the repository that holds `dir` sets
+ * agent-hook.lint-code.enabled to false, as /toggle-hook --repo does.
+ * Outside git, a missing key, or a value that is not a boolean: false. -C,
+ * because `run` runs in the session folder.
+ */
+async function repoOff(dir: string, io: Io): Promise<boolean> {
+  const key = "agent-hook.lint-code.enabled";
+  const ran = await io.run([
+    "git",
+    "-C",
+    dir,
+    "config",
+    "--type=bool",
+    "--get",
+    key,
+  ]);
+  return ran?.output.trim() === "false";
+}
+
+/**
  * The files to lint. A Write or Edit: the one file it names. A Bash call: the
  * paths its command names that it just wrote, by an mtime of at most 120 s.
  * A path the command only read is not linted, so `cat app.py` never blocks
- * on an error that was already there. shortcut: a command that writes early
- * and then runs for minutes falls outside the window. The upgrade is a start
- * time stamped before the call.
+ * on an error that was already there. A file whose repository turns off the
+ * hook is not linted. shortcut: a command that writes early and then runs
+ * for minutes falls outside the window. The upgrade is a start time stamped
+ * before the call.
  */
 export async function targets(
   call: Call,
@@ -65,13 +86,18 @@ export async function targets(
   // /private/tmp, so both sides drop that prefix.
   const tmpdir = (settings.tmpdir || "/nonexistent").replace(/^\/private/, "");
   const kept = new Set<string>();
+  // One git run for each folder.
+  const asked = new Map<string, Promise<boolean>>();
   for (const path of named) {
     const file = path.startsWith("/") ? path : `${call.cwd}/${path}`;
     const plain = file.replace(/^\/private/, "");
     if (/^\/(var\/)?tmp\//.test(plain) || plain.startsWith(tmpdir)) continue;
     const stat = await io.stat(file);
-    if (stat?.isFile && (call.filePath || now - stat.mtimeMs <= 120_000))
-      kept.add(file);
+    if (!stat?.isFile || (!call.filePath && now - stat.mtimeMs > 120_000))
+      continue;
+    const dir = file.slice(0, file.lastIndexOf("/")) || "/";
+    if (!asked.has(dir)) asked.set(dir, repoOff(dir, io));
+    if (!(await asked.get(dir))) kept.add(file);
   }
   return [...kept];
 }

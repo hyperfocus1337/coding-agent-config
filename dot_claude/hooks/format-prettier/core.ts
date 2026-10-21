@@ -151,8 +151,22 @@ async function sweep(call: Call, io: Io): Promise<string[]> {
 }
 
 /**
+ * Whether the git config of the repository that holds `dir` sets
+ * agent-hook.format-prettier.enabled to false, as /toggle-hook --repo does.
+ * Outside git, a missing key, or a value that is not a boolean: false.
+ */
+async function repoOff(dir: string, io: Io): Promise<boolean> {
+  const key = "agent-hook.format-prettier.enabled";
+  const ran = await io.run(["git", "config", "--type=bool", "--get", key], {
+    cwd: dir,
+  });
+  return ran?.stdout.trim() === "false";
+}
+
+/**
  * The files to format, each once. A Write or Edit: the file it names, by the
  * extensions Prettier formats. A Bash call: the Markdown files of the sweep.
+ * A file whose repository turns off the hook stays as it is.
  */
 async function targets(
   call: Call,
@@ -163,13 +177,19 @@ async function targets(
   const candidates = named ?? (await sweep(call, io));
   const extensions = named ? EDITED : MARKDOWN;
   const kept: string[] = [];
-  for (const file of new Set(candidates))
+  // One git run for each folder: a commit can name many files.
+  const asked = new Map<string, Promise<boolean>>();
+  for (const file of new Set(candidates)) {
     if (
-      extensions.test(file) &&
-      !throwaway(file, settings) &&
-      (await io.stat(file))?.kind === "file"
+      !extensions.test(file) ||
+      throwaway(file, settings) ||
+      (await io.stat(file))?.kind !== "file"
     )
-      kept.push(file);
+      continue;
+    const dir = parent(file);
+    if (!asked.has(dir)) asked.set(dir, repoOff(dir, io));
+    if (!(await asked.get(dir))) kept.push(file);
+  }
   return kept;
 }
 

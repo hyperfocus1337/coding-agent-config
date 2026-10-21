@@ -89,6 +89,8 @@ You see the same line in the Bash output of the transcript. A commit that you ma
 
 `AGENT_HOOKS_DISABLE` does not turn this hook off. The hook removes the variable before it runs the formatters, so a formatter that [`/toggle-hook`](../../../../dot_claude/hooks/toggle-hook/README.md) turned off in the agent still formats the commit.
 
+The repository keys of `/toggle-hook --repo` do apply. Each formatter reads `agent-hook.<hook>.enabled` itself, and `format-code` also reads the key of each of its formatters. So a formatter that is off for a repository does not format a commit there either.
+
 ## Failure behavior
 
 The hook fails open: a failure never stops the commit.

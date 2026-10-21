@@ -49,6 +49,8 @@ export interface Call {
  */
 interface Formatter {
   name: string;
+  /** The git config key that turns it off: agent-hook.format-code.<key>. */
+  key: string;
   files: RegExp;
   argv(file: string, io: Io): Promise<string[]>;
 }
@@ -56,11 +58,13 @@ interface Formatter {
 const FORMATTERS: Formatter[] = [
   {
     name: "terraform fmt",
+    key: "terraform",
     files: /\.(tf|tfvars)$/,
     argv: async (file) => ["terraform", "fmt", "-no-color", file],
   },
   {
     name: "shfmt",
+    key: "shfmt",
     files: /\.(sh|bash)$/,
     // Any printer flag makes shfmt ignore .editorconfig. So the flags only
     // where no .editorconfig applies, else shfmt indents with tabs. README
@@ -99,9 +103,24 @@ function throwaway(file: string, { tmpdir }: Settings): boolean {
 }
 
 /**
+ * Whether the git config of the repository that holds `dir` sets
+ * agent-hook.format-code.<key> to false. /toggle-hook --repo writes the
+ * `enabled` key for the whole hook, and a FORMATTERS key for one formatter.
+ * Outside git, a missing key, or a value that is not a boolean: false.
+ */
+async function repoOff(dir: string, key: string, io: Io): Promise<boolean> {
+  const ran = await io.run(
+    ["git", "config", "--type=bool", "--get", `agent-hook.format-code.${key}`],
+    { cwd: dir },
+  );
+  return ran?.stdout.trim() === "false";
+}
+
+/**
  * The files to format, each once. A Write or Edit: the file it names. A Bash
  * call: the paths its command names that it just wrote, by an mtime of at
- * most 120 s, so a file the command only read stays as it is.
+ * most 120 s, so a file the command only read stays as it is. A file whose
+ * repository turns off the hook or its formatter stays as it is.
  * shortcut: a command that writes early and then runs for minutes falls
  * outside the window. The upgrade is a start time stamped before the call.
  */
@@ -117,14 +136,26 @@ async function targets(
       named.startsWith("/") ? named : `${call.cwd}/${named}`,
     );
   const kept: string[] = [];
+  // One git run for each folder and key: a commit can name many files.
+  const asked = new Map<string, Promise<boolean>>();
+  const off = (dir: string, key: string) => {
+    const id = `${dir}\0${key}`;
+    if (!asked.has(id)) asked.set(id, repoOff(dir, key, io));
+    return asked.get(id)!;
+  };
   for (const file of new Set(paths)) {
-    if (!formatterOf(file) || throwaway(file, settings)) continue;
+    const formatter = formatterOf(file);
+    if (!formatter || throwaway(file, settings)) continue;
     const stat = await io.stat(file);
     if (
-      stat?.kind === "file" &&
-      (given || Date.now() - stat.mtimeMs <= 120_000)
+      stat?.kind !== "file" ||
+      (!given && Date.now() - stat.mtimeMs > 120_000)
     )
-      kept.push(file);
+      continue;
+    const dir = parent(file);
+    if ((await off(dir, "enabled")) || (await off(dir, formatter.key)))
+      continue;
+    kept.push(file);
   }
   return kept;
 }

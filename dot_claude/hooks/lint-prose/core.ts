@@ -94,6 +94,17 @@ function paragraph(lines: string[], start: number): string[] {
   return lines.slice(start - 1, end < 0 ? undefined : end);
 }
 
+/**
+ * Whether the git config of the repository that holds `dir` sets
+ * agent-hook.lint-prose.enabled to false, as /toggle-hook --repo does.
+ * Outside git, a missing key, or a value that is not a boolean: false.
+ */
+async function repoOff(dir: string, io: Io): Promise<boolean> {
+  const key = "agent-hook.lint-prose.enabled";
+  const ran = await io.run(["git", "config", "--type=bool", "--get", key], dir);
+  return ran?.stdout.trim() === "false";
+}
+
 /** Lints one file. The session id keys the once-per-session record. */
 export async function check(
   file: string | undefined,
@@ -115,6 +126,7 @@ export async function check(
   )
     return {};
   const dir = dirname(file);
+  if (await repoOff(dir, io)) return {};
   // Run it, not a PATH lookup: a mise shim with no version set for this
   // directory is on PATH but fails, and its error would block as an alert.
   if ((await io.run(["vale", "--version"], dir))?.exitCode !== 0) return {};

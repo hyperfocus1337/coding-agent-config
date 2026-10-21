@@ -24,6 +24,7 @@ The cases run `command.ts` with the real `terraform`, shfmt, and git:
 - **The amend hint:** after a commit and after `git -C <dir> commit`, and none for a file that the run left alone or without a commit.
 - **shfmt:** a 2-space indent and an indented `case` branch when no `.editorconfig` is above the fixture, the indent of an `.editorconfig` in the repo, a `.bash` path in a command, a file that does not parse, and the amend hint that names shfmt. An `.editorconfig` above `$HOME` changes the first case, so the check prints `SKIP` for it.
 - **`AGENT_HOOKS_DISABLE`:** a value that names the hook stops the core before it reads a file.
+- **git config:** `agent-hook.format-code.shfmt false` in the repo keeps a shell file as it is and still formats a `.tf` file, a value that is not a boolean keeps shfmt on, and `agent-hook.format-code.enabled no` keeps a `.tf` file as it is.
 
 Then the cases run the adapters with stubs over the real files:
 

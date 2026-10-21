@@ -34,6 +34,7 @@ The other linters are not necessary. The core cases use stub I/O and run no lint
 - **`CLAUDE_LINT_DISABLE`:** keys separated by a comma, and `all`.
 - **Missing linter:** the hook skips its file, and the output joins the output of every linter that ran.
 - **`AGENT_HOOKS_DISABLE`:** when it names `lint-code`, there are no targets, and the hook touches no file.
+- **`agent-hook.lint-code.enabled`:** a `git -C <folder> config` that prints `false` gives no targets, and one that prints nothing keeps the file.
 
 ### `command.ts`, with the real shellcheck
 
