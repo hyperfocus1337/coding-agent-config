@@ -124,6 +124,8 @@ Calls left out:
 | [`summary.csv`](data/summary.csv) | One row for each hook, path, and event            | `session_ms`, high first |
 | [`slowest.csv`](data/slowest.csv) | The 5 slowest calls of each hook, over both paths | `ms`, high first         |
 
+The tables below give a short meaning for each column. [`docs/columns.md`](docs/columns.md) explains each column with examples from the rows, and tells which column answers which question.
+
 Columns of `summary.csv`:
 
 | Column             | Meaning                                                                                          |
