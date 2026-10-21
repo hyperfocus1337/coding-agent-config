@@ -230,6 +230,15 @@ await check("hint: amend hint after a commit sweep", () => {
   assert.match(hint(ran)?.additionalContext ?? "", /C\.md/);
 });
 
+// `git -C <dir> commit` also commits, so the sweep covers the last commit.
+unaligned(`${committed}/G.md`);
+git(committed, "add", "-A");
+git(committed, "commit", "-qm", "dash-c");
+ran = bash(committed, `git -C ${committed} commit -m dash-c`);
+await check("hint: also after git -C <dir> commit", () =>
+  assert.match(hint(ran)?.additionalContext ?? "", /G\.md/),
+);
+
 // The failure event: the hint names the event that fired.
 unaligned(`${committed}/F.md`);
 git(committed, "add", "-A");

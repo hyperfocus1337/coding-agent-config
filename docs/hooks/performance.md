@@ -188,7 +188,7 @@ Each other hook takes 0.2 s or less for each session. For `type-check-tsc` and `
 
 Possible bugs. This task did not change a hook:
 
-- `format-prettier`, `format-org-tables`, and `format-terraform` find a commit with `command.includes("git commit")`. A command such as `git -C <dir> commit` does not match, so the amend hint does not come. `block-secret-commits` finds the same command with its `isCommit` pattern.
+- `format-prettier`, `format-org-tables`, and `format-terraform` find a commit with `command.includes("git commit")`. A command such as `git -C <dir> commit` does not match, so the amend hint does not come. `block-secret-commits` finds the same command with its `isCommit` pattern. Fixed after this run: the three hooks now use a `COMMIT` pattern that accepts global options between `git` and `commit`.
 - The `ABSOLUTE` pattern of `format-prettier` matches the end of a relative path: `docs/hooks/README.md` gives `/hooks/README.md`. Each such match costs one `git rev-parse` start and finds no root. A test with a counting `Io` gives 3 git starts for a command with one absolute and two relative paths.
 
 ## Limits

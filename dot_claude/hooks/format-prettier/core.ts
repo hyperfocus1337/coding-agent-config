@@ -44,6 +44,11 @@ const MARKDOWN = /\.(md|markdown)$/;
 const NAMED = /[^\s:;|&"'`()<>=]+\.(?:md|markdown)\b/g;
 /** An absolute path in a command: a root for the sweep. */
 const ABSOLUTE = /\/[^\s:;|&"'`()<>]+/g;
+/**
+ * A command that commits: `git`, then global options such as `-C <dir>`, then
+ * `commit` as a word, in one simple command. `git commit-tree` does not match.
+ */
+const COMMIT = /\bgit[ \t](?:[^;&|\n]*[ \t])?commit(?![\w-])/;
 /** The files of the last commit; --root also answers for the first commit. */
 const LAST_COMMIT = [
   "diff-tree",
@@ -55,7 +60,7 @@ const LAST_COMMIT = [
 
 /** Whether a command commits: the sweep then also covers the last commit. */
 const commits = (call: Call) =>
-  !call.filePath && (call.command ?? "").includes("git commit");
+  !call.filePath && COMMIT.test(call.command ?? "");
 
 /**
  * A file under /tmp, /var/tmp, or TMPDIR is a scratch file, not project code.

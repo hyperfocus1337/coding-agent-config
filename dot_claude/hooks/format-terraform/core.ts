@@ -36,6 +36,12 @@ export interface Call {
   cwd: string;
 }
 
+/**
+ * A command that commits: `git`, then global options such as `-C <dir>`, then
+ * `commit` as a word, in one simple command. `git commit-tree` does not match.
+ */
+const COMMIT = /\bgit[ \t](?:[^;&|\n]*[ \t])?commit(?![\w-])/;
+
 /** The extensions terraform fmt formats here. */
 const TERRAFORM = /\.(tf|tfvars)$/;
 /** A Terraform path that a command names. */
@@ -95,7 +101,7 @@ export async function format(
   if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("format-terraform"))
     return undefined;
   // A command that commits: the hint then checks the last commit.
-  const commits = !call.filePath && call.command?.includes("git commit");
+  const commits = !call.filePath && COMMIT.test(call.command ?? "");
   const dirty: string[] = [];
   for (const file of await targets(call, io, settings)) {
     // One run for each file: a file that does not parse makes terraform fmt

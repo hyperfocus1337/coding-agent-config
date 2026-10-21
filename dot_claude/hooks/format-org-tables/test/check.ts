@@ -216,6 +216,15 @@ await check("hint: names the file", () => {
   assert.match(out.hookSpecificOutput.additionalContext, /committed\.org/);
 });
 
+// `git -C <dir> commit` also commits, so the hint comes.
+unaligned(`${repo}/dash-c.org`);
+git(repo, "add", "-A");
+git(repo, "commit", "-qm", "dash-c");
+ran = bash(repo, `touch ${repo}/dash-c.org && git -C ${repo} commit -am docs`);
+await check("hint: also after git -C <dir> commit", () =>
+  assert.match(ran.stdout, /dash-c\.org/),
+);
+
 // A path the command only read stays as it is: its old mtime says so.
 unaligned(`${repo}/read-only.org`);
 fs.utimesSync(

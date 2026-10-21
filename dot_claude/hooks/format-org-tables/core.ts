@@ -41,6 +41,12 @@ export interface Call {
 /** An Org path that a command names. */
 const NAMED = /[^\s:;|&"'`()<>=]+\.org\b/g;
 
+/**
+ * A command that commits: `git`, then global options such as `-C <dir>`, then
+ * `commit` as a word, in one simple command. `git commit-tree` does not match.
+ */
+const COMMIT = /\bgit[ \t](?:[^;&|\n]*[ \t])?commit(?![\w-])/;
+
 /** The folder of a `cd` in a command. */
 const CD = /(?:^|[\s;&|(])cd\s+["']?([^\s;&|()"']+)/g;
 
@@ -146,7 +152,7 @@ export async function align(
   // Only a command that commits gets the hint, and the hint names only the
   // files that Emacs itself changed, so keep the text from before the run.
   const watched =
-    !call.filePath && call.command?.includes("git commit") ? files : [];
+    !call.filePath && COMMIT.test(call.command ?? "") ? files : [];
   const before = await Promise.all(watched.map((file) => io.read(file)));
   // One Emacs for all files: the 1.4 s is the start of Emacs. --no-init-file
   // keeps the user's init out. README "One Emacs run for every file".
