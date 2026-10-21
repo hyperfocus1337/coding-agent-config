@@ -52,7 +52,7 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 ## format-code holds the formatters that are not Prettier
 
-**Decision:** on 2026-10-21, `format-terraform` became `format-code`, with a table of formatters in `core.ts`: `terraform fmt` for `.tf` and `.tfvars`, and shfmt for `.sh` and `.bash`. **Why:** each formatter runs one command on one file and prints the name of a changed file, so a new formatter is one row and not a new folder with about 300 lines of adapters and test, as [`lint-code`](#each-hook-name-says-what-it-covers) does for linters. **Cost:** you can turn off only all of `format-code`, not one of its formatters. The rename changes the Codex hook entries, so you trust them again in the Codex TUI. `format-prettier` and `format-org-tables` stay apart, because each finds the files of a Bash call in its own way.
+**Decision:** on 2026-10-21, `format-terraform` became `format-code`, with a table of formatters in `core.ts`: `terraform fmt` for `.tf` and `.tfvars`, and shfmt for `.sh` and `.bash`. **Why:** each formatter runs one command on one file and prints the name of a changed file, so a new formatter is one row and not a new folder with about 300 lines of adapters and test, as [`lint-code`](#each-hook-name-says-what-it-covers) does for linters. **Cost:** a formatter has no session toggle of its own, only a [repository key](#advisory-hooks-also-turn-off-per-repository-through-git-config). The rename changes the Codex hook entries, so you trust them again in the Codex TUI. `format-prettier` and `format-org-tables` stay apart, because each finds the files of a Bash call in its own way.
 
 ## track-session-changes runs as a mod
 
@@ -83,6 +83,16 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 **Decision:** `/toggle-hook` sets `AGENT_HOOKS_DISABLE` in the agent process, and each advisory hook reads it on each run. **Why:** a mod can change the environment of Claude Code with `$.env.set`, and an extension can change `process.env` of pi and omp. One variable then reaches the mods, the extensions, and the command hooks, with no state shared between hook folders. A setting in `settings.json` would drift from chezmoi, and stay on after the session. **Cost:** Codex has no extension commands, so it gets the variable at launch only. The guards have no toggle, so that a command cannot turn one off.
 
 **Name:** until 2026-10-21 the variable was `CLAUDE_HOOKS_DISABLE`. It got the `AGENT_` prefix of `AGENT_ALLOW_*`, because 4 agents read it. The hooks no longer read the old name.
+
+## Advisory hooks also turn off per repository through git config
+
+**Decision:** on 2026-10-21, `/toggle-hook --repo <hook>` writes `agent-hook.<hook>.enabled false` to `.git/config` of the session repository, and `--repo format-code.shfmt` writes `agent-hook.format-code.shfmt false`. Each advisory hook reads the key with `git config --type=bool --get` in the repository of each file, and does nothing when the key or the session variable turns it off. `format-staged-files` obeys the key, but not the session variable. The dcg pack `local.agent_hook` blocks an agent command that writes a key.
+
+**Why:** a formatter that fights the style of a client repository is a fact about that repository, not about one session, and the variable is lost when you quit. The key is not committed, so a client repository gets no new file. The shape copies `hook.<name>.enabled` of git, and leaves room for one key for each formatter. Codex gets the key also, through `git config` in your terminal.
+
+**Cost:** each hook starts one git process for each folder of the files it keeps, about 1 ms, and only after its cheap checks. A model can still change `.git/config` with a tool that is not Bash.
+
+**Rejected:** a session toggle that turns on a hook that the repository turns off. It would need a second variable. The command tells you to use `--repo` instead.
 
 ## Behavior that the move dropped
 

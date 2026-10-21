@@ -1,24 +1,29 @@
 # toggle-hook
 
-Adds the `/toggle-hook` command, which turns an advisory hook off or on until you quit the agent. Use it when a formatter fights the style of a repo, or when a linter reports on a file that you do not own, and you do not want to restart the agent.
+Adds the `/toggle-hook` command, which turns an advisory hook off or on. Without a flag, the change lasts until you quit the agent. With `--repo`, the change goes in the git config of the session repository and lasts across sessions. Use it when a formatter fights the style of a repo, or when a linter reports on a file that you do not own, and you do not want to restart the agent.
 
-| Agent       | Adapter                                                                                                      | Loaded by                                                                                          |
-| ----------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `$.command.register` and a `command.run` hook               | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
-| pi and omp  | [`pi.ts`](pi.ts): `registerCommand`, with completion of the hook names                                       | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
-| Codex       | None. Codex has no extension commands, so set the variable at launch: `AGENT_HOOKS_DISABLE=lint-prose codex` | Not applicable                                                                                     |
+| Agent       | Adapter                                                                                                                                                | Loaded by                                                                                          |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `$.command.register` and a `command.run` hook                                                         | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
+| pi and omp  | [`pi.ts`](pi.ts): `registerCommand`, with completion of `--repo` and the hook names                                                                    | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
+| Codex       | None. Codex has no extension commands, so set the variable at launch, `AGENT_HOOKS_DISABLE=lint-prose codex`, or run `git config` in your own terminal | Not applicable                                                                                     |
 
 ## What it checks
 
 The hook checks nothing. It runs when you type `/toggle-hook`, and the argument selects the result:
 
-| Argument       | Result                                                                        |
-| -------------- | ----------------------------------------------------------------------------- |
-| None           | Lists the state of each hook                                                  |
-| A hook name    | Flips that hook, and prints its new state                                     |
-| `all`          | Turns all 7 hooks off, or turns all of them on again when one or more are off |
-| A guard name   | Changes nothing, and names the escape hatch of that guard                     |
-| Any other text | Changes nothing, and lists the hook names                                     |
+| Argument                          | Result                                                                                       |
+| --------------------------------- | -------------------------------------------------------------------------------------------- |
+| None, or `--repo` alone           | Lists the state of each hook and formatter, and the scope that turns it off                  |
+| A hook name                       | Flips that hook until you quit, and prints its new state                                     |
+| `all`                             | Turns all 7 hooks off until you quit, or turns all of them on again when one or more are off |
+| `--repo` and a hook name          | Flips that hook in the session repository                                                    |
+| `--repo` and `<hook>.<formatter>` | Flips one formatter in the session repository, for example `--repo format-code.shfmt`        |
+| `--repo all`                      | Turns all 7 hooks off in the session repository, or on again when one or more are off        |
+| A guard name                      | Changes nothing, and names the escape hatch of that guard                                    |
+| Any other text                    | Changes nothing, and lists the hook names                                                    |
+
+A hook that the repository turns off stays off when you flip it without `--repo`. The command then changes nothing and tells you to use `--repo`. A formatter name, such as `format-code.shfmt`, works only with `--repo`.
 
 ### Which hooks have a toggle
 
@@ -28,20 +33,34 @@ Only the advisory hooks have a toggle. An advisory hook formats, lints, or type-
 - `lint-code` and `lint-prose`
 - `type-check-tsc` and `type-check-pyrefly`
 
-The guards (`enforce-cli-tools`, `block-commit-attribution`, `block-secret-commits`) exist to stop the model, so they keep their own escape hatches and have no toggle. `track-session-changes` only writes a log. `format-staged-files`, the git `pre-commit` hook, removes the variable before it runs the formatters, so a commit is formatted also while a formatter is off.
+`PARTS` in [`core.ts`](core.ts) lists the formatters that have their own key: `terraform` and `shfmt` of `format-code`.
+
+The guards (`enforce-cli-tools`, `block-commit-attribution`, `block-secret-commits`) exist to stop the model, so they keep their own escape hatches and have no toggle. `track-session-changes` only writes a log.
+
+`format-staged-files`, the git `pre-commit` hook, removes the variable before it runs the formatters, so a commit is formatted also while a formatter is off for the session. The repository setting applies to that hook too: a formatter that is off for the repository does not format the commit.
 
 ## Requirements
 
 - **Claude Code:** the mod needs Claude Code 2.1.296 or later, the oldest version tested.
 - **pi and omp:** `pi.ts` runs in the runtime of the agent and needs no `node` on `PATH`.
+- **git**, for `--repo` and for the repository state in the list and the status line.
 
 ## How it works
 
-The state is one environment variable, `AGENT_HOOKS_DISABLE`: a list of hook names, separated by spaces or commas. The command changes the variable in the process of the agent itself. Nothing goes to disk, so the change does not reach another session, and chezmoi sees no drift.
+The command has two scopes:
 
-Each of the 7 hooks reads the variable on each run, and does nothing when the variable names it. In Claude Code, `type-check-tsc` and `type-check-pyrefly` are command hooks, which Claude Code starts as a new process: each one gets the variable as Claude Code has it when Claude Code starts the hook.
+| Scope      | State                                                                                                                    | Lasts                      |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------- |
+| Session    | `AGENT_HOOKS_DISABLE`, a list of hook names, separated by spaces or commas, in the process of the agent                  | Until you quit the agent   |
+| Repository | `agent-hook.<hook>.enabled false`, and `agent-hook.<hook>.<formatter> false`, in `.git/config` of the session repository | Until you turn it on again |
 
-`/clear` in Claude Code and `/new` in pi keep the process, so they also keep the toggle. Quit the agent to turn all hooks on again.
+A hook does nothing when either scope turns it off. Each of the 7 hooks reads the variable and the git config on each run. It reads the git config in the repository of each file, with `git config --type=bool --get`, so a session can edit files in more than one repository. A value that is not a boolean, such as `banana`, keeps the hook on.
+
+The session scope changes the variable in the process of the agent itself. Nothing goes to disk, so the change does not reach another session, and chezmoi sees no drift. In Claude Code, `type-check-tsc` and `type-check-pyrefly` are command hooks, which Claude Code starts as a new process: each one gets the variable as Claude Code has it when Claude Code starts the hook.
+
+The repository scope runs `git config --local` in the session folder. To turn a key off, it writes `false`. To turn a key on, it removes the key from the repository. When a config outside the repository, such as `~/.config/git/config`, still sets `false`, the command writes `true` in the repository, which wins. A key in `~/.config/git/config` turns the hook off in all repositories, but chezmoi manages that file, so the command never writes there.
+
+`/clear` in Claude Code and `/new` in pi keep the process, so they also keep the session toggle. Quit the agent to turn all session toggles on again.
 
 ## What the model sees
 
@@ -53,25 +72,32 @@ The model sees no output from this hook, because the model cannot run the comman
 
 A Bash call cannot change the environment of the agent. The model can read the variable, and can set it for one command, but a hook that the agent runs does not see that value.
 
+A Bash call can run `git config`, so the dcg pack [`local.agent_hook`](../../../dot_config/dcg/packs/agent-hook.yaml) blocks an agent command that writes an `agent-hook.*` key. A command that reads a key passes. The pack does not catch a write that does not name the key, such as an edit of `.git/config` or a key in a shell variable. See [`dot_config/dcg/README.md`](../../../dot_config/dcg/README.md#custom-packs).
+
 ## What you see
 
 The command prints the state of the hooks, or the new state of one hook:
 
 ```
 > /toggle-hook
-on   format-prettier
-on   format-org-tables
-on   format-code
-on   lint-code
-off  lint-prose
-on   type-check-tsc
-on   type-check-pyrefly
+on            format-prettier
+on            format-org-tables
+on            format-code
+  on            terraform
+  off  repo     shfmt
+on            lint-code
+off  session  lint-prose
+on            type-check-tsc
+on            type-check-pyrefly
 
 > /toggle-hook format-prettier
 format-prettier is off until you quit the agent.
+
+> /toggle-hook --repo format-code.shfmt
+format-code.shfmt is on for this repository.
 ```
 
-While a hook is off, the status line shows `hooks off: <names>`.
+While a hook is off, the status line shows `hooks off: <names>`. A name that the repository turns off has `(repo)` after it, for example `hooks off: format-code.shfmt (repo), lint-prose`. The status line reads the repository state when the session starts and after each command, not when the session folder changes.
 
 ## Settings
 
@@ -81,13 +107,22 @@ You can set `AGENT_HOOKS_DISABLE` before you start an agent. This command starts
 AGENT_HOOKS_DISABLE=lint-prose claude
 ```
 
-In Codex, this is the only way to turn a hook off.
+You can also write the repository keys yourself, in your own terminal:
+
+```sh
+git config agent-hook.lint-prose.enabled false
+git config agent-hook.format-code.shfmt false
+git config --unset agent-hook.lint-prose.enabled
+```
+
+In Codex, these are the only ways to turn a hook off.
 
 ## Failure behavior
 
 - **The mod throws:** Claude Code skips a hook that throws, so the command does nothing.
 - **The engine refuses the write:** for example because of an organization policy. The command prints `Not changed:` and the reason.
-- **pi and omp:** `pi.ts` does no I/O that can fail.
+- **`--repo` outside a git repository:** `git config --local` fails, and the command prints `Not changed:` and changes nothing.
+- **git is not on `PATH`:** the list and the status line show no repository state, and `--repo` prints `Not changed:`.
 
 ## Testing
 
@@ -95,12 +130,12 @@ In Codex, this is the only way to turn a hook off.
 
 ## Design notes
 
-The mod changes the variable with `$.env.set`, and `pi.ts` changes `process.env`. The other mods read it with `$.env.get`, and the other extensions and `command.ts` read it through `io.ts`.
+The mod changes the variable with `$.env.set`, and runs git with `$.process.run`. `pi.ts` changes `process.env`, and runs git with `spawnSync`. The other mods read the variable with `$.env.get`, and the other extensions and `command.ts` read it through `io.ts`. Each hook reads the git config through the process function of its own `Io`. [`docs/hooks/decisions.md`](../../../docs/hooks/decisions.md#advisory-hooks-also-turn-off-per-repository-through-git-config) gives the reasons for the repository scope.
 
-| File                                    | Deployed to `~/.claude/hooks/toggle-hook/` | Role                                                      |
-| --------------------------------------- | ------------------------------------------ | --------------------------------------------------------- |
-| `core.ts`                               | Yes                                        | The hook list, the command logic, the status text. No I/O |
-| `hooks/register.ts`, `hooks/hooks.json` | Yes                                        | Claude Code mod                                           |
-| `dot_claude-plugin/plugin.json`         | Yes, as `.claude-plugin/plugin.json`       | Plugin manifest                                           |
-| `pi.ts`                                 | Yes                                        | pi and omp extension                                      |
-| `README.md`, `docs/`, `test/`           | No                                         | Kept in the repo by `.chezmoiignore`                      |
+| File                                    | Deployed to `~/.claude/hooks/toggle-hook/` | Role                                                                                                      |
+| --------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `core.ts`                               | Yes                                        | The hook list, the command logic, the git config reads and writes through a git function, the status text |
+| `hooks/register.ts`, `hooks/hooks.json` | Yes                                        | Claude Code mod                                                                                           |
+| `dot_claude-plugin/plugin.json`         | Yes, as `.claude-plugin/plugin.json`       | Plugin manifest                                                                                           |
+| `pi.ts`                                 | Yes                                        | pi and omp extension                                                                                      |
+| `README.md`, `docs/`, `test/`           | No                                         | Kept in the repo by `.chezmoiignore`                                                                      |
