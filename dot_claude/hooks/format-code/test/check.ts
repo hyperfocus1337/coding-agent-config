@@ -1,11 +1,11 @@
 /**
  * Self-check for ../core.ts and its adapters: the cases through command.ts
- * with the real git, terraform, and shfmt, then the pi and mod adapters with
+ * with the real git, terraform, shfmt, and ruff, then the pi and mod adapters with
  * stubs over the real files.
  *
  * Run: node test/check.ts, from the hook directory. Fixtures live under $HOME,
- * because the hook skips /tmp and $TMPDIR. Without git, terraform, or shfmt
- * the hook does nothing, so the check skips with a message instead of
+ * because the hook skips /tmp and $TMPDIR. Without git, terraform, shfmt, or
+ * ruff the hook does nothing, so the check skips with a message instead of
  * passing.
  */
 
@@ -34,7 +34,7 @@ async function check(what: string, run: () => void | Promise<void>) {
   }
 }
 
-for (const program of ["git", "terraform", "shfmt"])
+for (const program of ["git", "terraform", "shfmt", "ruff"])
   if (spawnSync(program, ["--version"]).error) {
     console.log(`SKIP no ${program} on PATH`);
     process.exit(0);
@@ -262,6 +262,59 @@ await check("shfmt: the hint names the file and shfmt", () =>
   assert.match(shCommit.stdout, /shfmt reformatted.*committed\.sh/),
 );
 fs.rmSync(`${repo}/.editorconfig`);
+
+// --- ruff format ---
+
+/** Python that ruff format changes: no spaces around `=`. */
+const RAW_PY = "x=1\n";
+const ruffFile = (what: string, file: string, want: string) =>
+  check(`ruff: ${what}`, () => assert.equal(read(file), want));
+
+fs.writeFileSync(`${tmp}/edit.py`, RAW_PY);
+await quiet("ruff: edit prints nothing", edit(`${tmp}/edit.py`));
+await ruffFile("a .py file the payload names", `${tmp}/edit.py`, "x = 1\n");
+
+fs.writeFileSync(`${repo}/stub.pyi`, "def f(a:int)->int: ...\n");
+bash(repo, "touch stub.pyi");
+await ruffFile(
+  "a .pyi path that a command names",
+  `${repo}/stub.pyi`,
+  "def f(a: int) -> int: ...\n",
+);
+
+fs.writeFileSync(`${repo}/bad.py`, "x=(\n");
+await quiet("ruff: a file that does not parse", edit(`${repo}/bad.py`));
+await ruffFile("skip a file that does not parse", `${repo}/bad.py`, "x=(\n");
+
+// --force-exclude: the exclude list of the ruff config applies.
+fs.mkdirSync(`${repo}/py`);
+fs.writeFileSync(`${repo}/py/ruff.toml`, 'exclude = ["skip.py"]\n');
+fs.writeFileSync(`${repo}/py/skip.py`, RAW_PY);
+await quiet(
+  "ruff: an excluded file prints nothing",
+  edit(`${repo}/py/skip.py`),
+);
+await ruffFile(
+  "skip a file the ruff config excludes",
+  `${repo}/py/skip.py`,
+  RAW_PY,
+);
+
+fs.writeFileSync(`${repo}/committed.py`, RAW_PY);
+git(repo, "add", "-A");
+git(repo, "commit", "-qm", "python");
+const pyCommit = bash(repo, "touch committed.py && git commit -am python");
+await check("ruff: the hint names the file and ruff format", () =>
+  assert.match(pyCommit.stdout, /ruff format reformatted.*committed\.py/),
+);
+
+// ruff prints "1 file left unchanged" for a formatted file: no hint.
+git(repo, "commit", "-qam", "formatted");
+fs.appendFileSync(`${repo}/committed.py`, "y = 2\n");
+await quiet(
+  "ruff: no hint for a file ruff format left as it was",
+  bash(repo, "touch committed.py && git commit -am settled"),
+);
 
 // --- AGENT_HOOKS_DISABLE ---
 

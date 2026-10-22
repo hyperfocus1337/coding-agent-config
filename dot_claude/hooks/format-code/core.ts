@@ -1,7 +1,7 @@
 /**
  * The format-code logic: finds the files a tool call changed and formats
  * each one with the formatter for its extension, from FORMATTERS: terraform
- * fmt and shfmt. Prettier has no parser for these languages, so
+ * fmt, shfmt, and ruff format. Prettier has no parser for these languages, so
  * format-prettier skips them. Never blocks: a missing formatter or a file
  * that does not parse stays as it is. The adapters pass in the file and
  * process functions, because a mod reaches them only through `$`.
@@ -44,8 +44,8 @@ export interface Call {
 
 /**
  * A formatter: the files it takes, and its command for one file. Each
- * command writes the file in place, exits 0, and prints the file name only
- * when it changed the file. A file that does not parse exits other than 0.
+ * command writes the file in place and exits 0. A file that does not parse
+ * exits other than 0.
  */
 interface Formatter {
   name: string;
@@ -53,6 +53,8 @@ interface Formatter {
   key: string;
   files: RegExp;
   argv(file: string, io: Io): Promise<string[]>;
+  /** Whether the stdout of a run tells of a change; default: not empty. */
+  changed?(stdout: string): boolean;
 }
 
 const FORMATTERS: Formatter[] = [
@@ -77,6 +79,16 @@ const FORMATTERS: Formatter[] = [
       }
     },
   },
+  {
+    name: "ruff format",
+    key: "ruff",
+    files: /\.pyi?$/,
+    // --force-exclude: the exclude list of the ruff config applies also to a
+    // file that the command names. Ruff prints a summary for each run, also
+    // "1 file left unchanged", so only "reformatted" tells of a change.
+    argv: async (file) => ["ruff", "format", "--force-exclude", file],
+    changed: (stdout) => stdout.includes("reformatted"),
+  },
 ];
 
 /**
@@ -86,7 +98,7 @@ const FORMATTERS: Formatter[] = [
 const COMMIT = /\bgit[ \t](?:[^;&|\n]*[ \t])?commit(?![\w-])/;
 
 /** A path that a command names, with an extension of FORMATTERS. */
-const NAMED = /[^\s:;|&"'`()<>=]+\.(?:tfvars|tf|bash|sh)\b/g;
+const NAMED = /[^\s:;|&"'`()<>=]+\.(?:tfvars|tf|bash|sh|pyi|py)\b/g;
 
 const plain = (path: string) => path.replace(/^\/private/, "");
 const parent = (path: string) => path.slice(0, path.lastIndexOf("/")) || "/";
@@ -185,7 +197,8 @@ export async function format(
       cwd: dir,
       timeoutMs: 10_000,
     });
-    if (!commits || ran?.exitCode !== 0 || !ran.stdout.trim()) continue;
+    const changed = formatter.changed ?? ((stdout) => stdout.trim() !== "");
+    if (!commits || ran?.exitCode !== 0 || !changed(ran.stdout)) continue;
     // Only a file that the last commit holds needs an amend. diff-tree --root
     // also answers for the first commit of a repository.
     const held = await io.run(

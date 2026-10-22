@@ -29,7 +29,7 @@ export const HOOKS = [
  * `--repo format-code.shfmt` turns off one formatter. The same keys are in
  * FORMATTERS in format-code/core.ts, and test/check.ts keeps them the same.
  */
-export const PARTS = new Map([["format-code", ["terraform", "shfmt"]]]);
+export const PARTS = new Map([["format-code", ["terraform", "shfmt", "ruff"]]]);
 
 /** The names that `--repo` takes: each hook, then its formatters. */
 export const NAMES = HOOKS.flatMap((hook) => [

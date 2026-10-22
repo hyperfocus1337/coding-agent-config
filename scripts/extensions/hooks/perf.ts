@@ -524,7 +524,7 @@ interface Trace {
   refused: boolean;
 }
 
-/** The programs that write the files they name. */
+/** The programs that write the files they name. ruff only as `ruff format`. */
 const WRITERS = new Set(["prettier", "emacs", "terraform", "shfmt"]);
 /** The Io functions that change the disk. */
 const MUTATORS = new Set([
@@ -558,7 +558,8 @@ function watch<T extends object>(io: T, trace: Trace): T {
             ...(options?.env?.ORG_TABLE_FILES?.split("\n") ?? []),
           ];
           if (
-            WRITERS.has(program) &&
+            (WRITERS.has(program) ||
+              (program === "ruff" && argv[1] === "format")) &&
             files.some((file) => file.startsWith("/") && !inside(file))
           ) {
             trace.refused = true;
@@ -674,7 +675,7 @@ const typeCheck = (name: string, tool: string): Hook => ({
 const HOOK_LIST: Hook[] = [
   formatter("format-prettier", "format", ["prettier"]),
   formatter("format-org-tables", "align", ["emacs"]),
-  formatter("format-code", "format", ["terraform", "shfmt"]),
+  formatter("format-code", "format", ["terraform", "shfmt", "ruff"]),
   {
     name: "lint-code",
     on: { Write: ["post"], Edit: ["post"], Bash: ["post"] },

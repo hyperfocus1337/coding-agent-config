@@ -365,6 +365,7 @@ await check("pi.ts: completes --repo, the hook names, and all", () => {
   assert.deepEqual(complete("--repo format-code."), [
     "--repo format-code.terraform",
     "--repo format-code.shfmt",
+    "--repo format-code.ruff",
   ]);
 });
 

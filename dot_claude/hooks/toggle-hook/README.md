@@ -33,7 +33,7 @@ Only the advisory hooks have a toggle. An advisory hook formats, lints, or type-
 - `lint-code` and `lint-prose`
 - `type-check-tsc` and `type-check-pyrefly`
 
-`PARTS` in [`core.ts`](core.ts) lists the formatters that have their own key: `terraform` and `shfmt` of `format-code`.
+`PARTS` in [`core.ts`](core.ts) lists the formatters that have their own key: `terraform`, `shfmt`, and `ruff` of `format-code`.
 
 The guards (`enforce-cli-tools`, `block-commit-attribution`, `block-secret-commits`) exist to stop the model, so they keep their own escape hatches and have no toggle. `track-session-changes` only writes a log.
 
@@ -85,6 +85,7 @@ on            format-org-tables
 on            format-code
   on            terraform
   off  repo     shfmt
+  on            ruff
 on            lint-code
 off  session  lint-prose
 on            type-check-tsc

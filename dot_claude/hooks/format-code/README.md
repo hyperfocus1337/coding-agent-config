@@ -2,10 +2,11 @@
 
 Formats the files that a Write, an Edit, or a Bash call changed, with the formatter for the extension of each file. It covers the languages that Prettier has no parser for, so [`format-prettier`](../format-prettier/README.md) cannot format them:
 
-| Extensions      | Formatter                                                                   | Command                          | Key         |
-| --------------- | --------------------------------------------------------------------------- | -------------------------------- | ----------- |
-| `.tf` `.tfvars` | [terraform fmt](https://developer.hashicorp.com/terraform/cli/commands/fmt) | `terraform fmt -no-color <file>` | `terraform` |
-| `.sh` `.bash`   | [shfmt](https://github.com/mvdan/sh)                                        | `shfmt -l -w [-i 2 -ci] <file>`  | `shfmt`     |
+| Extensions      | Formatter                                                                   | Command                              | Key         |
+| --------------- | --------------------------------------------------------------------------- | ------------------------------------ | ----------- |
+| `.tf` `.tfvars` | [terraform fmt](https://developer.hashicorp.com/terraform/cli/commands/fmt) | `terraform fmt -no-color <file>`     | `terraform` |
+| `.sh` `.bash`   | [shfmt](https://github.com/mvdan/sh)                                        | `shfmt -l -w [-i 2 -ci] <file>`      | `shfmt`     |
+| `.py` `.pyi`    | [ruff format](https://docs.astral.sh/ruff/formatter/)                       | `ruff format --force-exclude <file>` | `ruff`      |
 
 The key turns off one formatter in one repository, see [Settings](#settings). To add a formatter, add a row to `FORMATTERS` in [`core.ts`](core.ts), its extensions to `NAMED`, and its key to `PARTS` in [`toggle-hook/core.ts`](../toggle-hook/core.ts). The toggle-hook test fails when the keys differ.
 
@@ -32,6 +33,7 @@ The hook skips these paths, with no output:
 - A path that is not an existing file with an extension from the table.
 - A path under `/tmp`, `/var/tmp`, or `$TMPDIR`, because the scratchpad of the agent is there.
 - A file in a repository whose git config turns off the hook or the formatter of the file, see [Settings](#settings).
+- A Python file that the `exclude` list of the ruff config holds, see [ruff format](#ruff-format).
 
 The hook misses a Bash command that writes a file but does not name it, for example a script, `terraform init`, or a `find -exec`. It also misses a shell script with no extension, such as a file with only a `#!/bin/sh` line. A relative path resolves against the session cwd only, not against a folder that a `cd` in the command moves to.
 
@@ -39,6 +41,7 @@ The hook misses a Bash command that writes a file but does not name it, for exam
 
 - **terraform** on `PATH`, for `.tf` and `.tfvars`. Tested with Terraform 1.16.5 and 1.16.6.
 - **shfmt** on `PATH`, for `.sh` and `.bash`. Tested with shfmt 3.14.1.
+- **ruff** on `PATH`, for `.py` and `.pyi`. Tested with ruff 0.17.0. [`lint-code`](../lint-code/README.md#requirements) tells how to install it.
 
 Without a formatter, the hook leaves its files as they are.
 
@@ -46,7 +49,7 @@ Without a formatter, the hook leaves its files as they are.
 - **Node 23.6 or later** for `command.ts`, which Codex and `format-staged-files` run. The mod, `pi.ts`, and `omp.ts` run in the process of the agent and need no `node` of their own.
 
 ```sh
-brew install hashicorp/tap/terraform shfmt
+brew install hashicorp/tap/terraform shfmt ruff
 ```
 
 ## How it works
@@ -58,7 +61,7 @@ brew install hashicorp/tap/terraform shfmt
 5. When the call is a Bash command that commits, it asks git whether the last commit holds each file that a formatter changed.
 6. It sends the amend hint for each file that the last commit holds.
 
-Each formatter prints the name of a file only when it changed the file: `terraform fmt` always, and shfmt because of `-l`. The hook uses that output to find the changed files, and reads no file text.
+The hook finds the changed files from the stdout of each formatter, and reads no file text. `terraform fmt` always prints the name of a file that it changed, and shfmt prints it because of `-l`. Both print nothing for a file that they left as it was. ruff prints a summary on each run, so for ruff only a summary with `reformatted` counts as a change, see [ruff format](#ruff-format).
 
 ## What the model sees
 
@@ -108,10 +111,10 @@ To turn the hook off for good in one agent, remove it from the setting in the "L
 The hook fails open: it never blocks a call and never marks a result as an error. Each of these failures leaves the file as it is, with no message:
 
 - The formatter is not on `PATH`.
-- The file does not parse. `terraform fmt` exits 2, and shfmt exits 1.
+- The file does not parse. `terraform fmt` and ruff exit 2, and shfmt exits 1.
 - A run takes more than 10 s, and the hook stops it.
 
-[`lint-code`](../lint-code/README.md) reports the parse error to the model: tflint for a `.tf` file, and shellcheck for a shell file. Nothing reports a parse error in a `.tfvars` file.
+[`lint-code`](../lint-code/README.md) reports the parse error to the model: tflint for a `.tf` file, shellcheck for a shell file, and `ruff check` for a `.py` file. Nothing reports a parse error in a `.tfvars` file.
 
 When an adapter throws an error, each agent does a different thing:
 
@@ -125,7 +128,7 @@ With no `node`, the Codex entry exits 0 and the hook does not run. Then the `Ses
 
 ## Testing
 
-[`test/check.ts`](test/check.ts) runs `command.ts` and the adapters against the real `terraform`, shfmt, and git. [`docs/testing.md`](docs/testing.md) tells how to run it and what it covers.
+[`test/check.ts`](test/check.ts) runs `command.ts` and the adapters against the real `terraform`, shfmt, ruff, and git. [`docs/testing.md`](docs/testing.md) tells how to run it and what it covers.
 
 ## Design notes
 
@@ -147,6 +150,15 @@ shfmt reads its style from `.editorconfig`, but only when the command gives no p
 - **Not found:** the hook adds `-i 2 -ci`: a 2-space indent, and an indent for each branch of a `case`. These are the flags of `just fmt` in this repo. With the defaults, shfmt changed 21 of the 23 shell files in this repo. With `-i 2 -ci`, it changed 8, and only in small ways, such as `(( rc > status ))` to `((rc > status))`.
 
 A `~/.editorconfig` does not replace the fallback, because the devcontainer repositories are under `/workspaces`, outside `$HOME`.
+
+### ruff format
+
+ruff format was chosen over Black because `lint-code` already uses ruff, so it adds no tool. It reads the same config as `ruff check` (`[tool.ruff]` and `[tool.ruff.format]` in `pyproject.toml` or `ruff.toml`). Its default style is the Black style: a line length of 88 and double quotes.
+
+- **`--force-exclude`:** ruff formats a file that its command names, also when the `exclude` list of the project config holds it. With this flag, the list applies. ruff then prints `warning: No Python files found` and exits 0.
+- **The change test:** ruff prints `1 file reformatted` or `1 file left unchanged`, and it has no flag that prints only the changed files. `--quiet` prints nothing in both cases. So the ruff row of `FORMATTERS` has a `changed` function that looks for `reformatted`. The other rows have no `changed` function, and for them any stdout counts as a change.
+
+ruff format does not sort imports. That is the lint rule `I` of `ruff check --fix`, and the hook does not run it.
 
 ### Files
 
