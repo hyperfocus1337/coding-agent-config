@@ -525,7 +525,7 @@ interface Trace {
 }
 
 /** The programs that write the files they name. */
-const WRITERS = new Set(["prettier", "emacs", "terraform"]);
+const WRITERS = new Set(["prettier", "emacs", "terraform", "shfmt"]);
 /** The Io functions that change the disk. */
 const MUTATORS = new Set([
   "write",
