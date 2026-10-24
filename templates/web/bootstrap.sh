@@ -5,8 +5,8 @@
 # https and pipes it to bash, so it must be self-contained.
 #
 # It installs the portable config: the whole ~/.claude (skills, commands, rules,
-# hooks, CLAUDE.md) plus the full APM manifest (skill bundles, MCP
-# servers, and the pyright LSP). It deliberately skips the Claude plugin
+# hooks, CLAUDE.md) plus the cloud APM manifest in this folder (MCP servers
+# and the pyright LSP, no skills). It deliberately skips the Claude plugin
 # marketplace and playwright browsers, which would turn a per-session hook into a
 # multi-minute install. The statusline is left out: chezmoi drops it when
 # CLAUDE_CODE_REMOTE=true. See README.md for the trade-off and MCP secret setup.
@@ -97,20 +97,20 @@ else
   echo "WARN: 'npm' not found; skipping node hook deps. Markdown/format hooks may fail." >&2
 fi
 
-# --- APM dependencies (full manifest) ---
+# --- APM dependencies (cloud manifest) ---
 # `apm install -g` reads the GLOBAL manifest at ~/.apm/apm.yml, not ./apm.yml,
-# so seed it from the repo's apm.yml first (deterministic across apm builds and
-# cwd). --refresh is omitted (not valid with -g); --force keeps re-runs
-# idempotent. This resolves the skills, MCP servers, and pyright LSP. See
+# so seed it from templates/web/apm.yml first (deterministic across apm builds
+# and cwd). That manifest has the MCP servers and the pyright LSP, but no skills.
+# --refresh is omitted (not valid with -g); --force keeps re-runs idempotent. See
 # README "Lessons learned" for the manifest-resolution and secrets details.
 if command -v apm &>/dev/null; then
-  echo "==> Installing APM dependencies (skills, MCP, LSP)"
+  echo "==> Installing APM dependencies (MCP, LSP)"
   mkdir -p "$HOME/.apm"
-  cp "$REPO_DIR/apm.yml" "$HOME/.apm/apm.yml"
+  cp "$REPO_DIR/templates/web/apm.yml" "$HOME/.apm/apm.yml"
   apm install -g --force ||
-    echo "WARN: apm install failed; skills/MCP/LSP from apm.yml not installed." >&2
+    echo "WARN: apm install failed; MCP/LSP from apm.yml not installed." >&2
 else
-  echo "WARN: 'apm' not found; skipping APM manifest (skills, MCP, LSP)." >&2
+  echo "WARN: 'apm' not found; skipping APM manifest (MCP, LSP)." >&2
 fi
 
 echo "==> Bootstrap complete"

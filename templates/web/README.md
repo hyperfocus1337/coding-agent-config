@@ -4,11 +4,11 @@ Drop-in pack that brings the full coding-agent-config environment into a Claude 
 
 Cloud sessions start from a minimal base image. None of the config in this repo is present until something installs it. This pack wires a `SessionStart` hook that runs once at the beginning of every session and installs the config before the agent starts working.
 
-Cloud sessions are usually ephemeral, so the hook re-runs from scratch every time. This pack installs the portable config plus the full APM manifest (skill bundles, MCP servers, and the pyright LSP). It deliberately skips the four user-scope Claude plugins from the marketplace and playwright browser binaries, which would push a per-session hook past 5 minutes. See [What gets installed](#what-gets-installed) for the exact scope, and [MCP servers and secrets](#mcp-servers-and-secrets) for the env vars the MCP servers need.
+Cloud sessions are usually ephemeral, so the hook re-runs from scratch every time. This pack installs the portable config plus the cloud APM manifest in [`apm.yml`](apm.yml) (MCP servers and the pyright LSP, no skills). It deliberately skips the four user-scope Claude plugins from the marketplace and playwright browser binaries, which would push a per-session hook past 5 minutes. See [What gets installed](#what-gets-installed) for the exact scope, and [MCP servers and secrets](#mcp-servers-and-secrets) for the env vars the MCP servers need.
 
 ## What is in here
 
-`bootstrap.sh` is the real installer. It is self-contained: it installs its own prerequisites (mise, the CLI tools in [`mise.toml`](mise.toml) such as chezmoi, and apm), clones this repo, applies the config, and installs the full APM manifest. It is hosted in this public repo and fetched raw over https, so it always runs the latest version and lives in exactly one place.
+`bootstrap.sh` is the real installer. It is self-contained: it installs its own prerequisites (mise, the CLI tools in [`mise.toml`](mise.toml) such as chezmoi, and apm), clones this repo, applies the config, and installs the cloud APM manifest. It is hosted in this public repo and fetched raw over https, so it always runs the latest version and lives in exactly one place.
 
 Do not move or rename `bootstrap.sh`. Its path is part of the hook URL in every repository already bootstrapped, and `raw.githubusercontent.com` does not redirect.
 
@@ -51,7 +51,7 @@ Claude Code sets `CLAUDE_CODE_REMOTE=true` in cloud environments. `bootstrap.sh`
 - **mise install**, which installs the CLI tools in [`mise.toml`](mise.toml), such as chezmoi, from the URLs and checksums in [`mise.lock`](mise.lock)
 - **chezmoi apply**, which lays down the whole `~/.claude` (commands, skills, rules, hooks, `CLAUDE.md`), plus `~/.config` and `~/.gemini`
 - **node hook deps**, so the markdown and format hooks run
-- **the full APM manifest** from [`apm.yml`](../../apm.yml): the third-party skill bundles, the MCP servers, and the pyright LSP, via `apm install -g` with no `--only` filter (see the [apm install reference](https://microsoft.github.io/apm/reference/cli/install/)). MCP servers that interpolate secrets register with whatever env vars are set at session start; see [MCP servers and secrets](#mcp-servers-and-secrets). The pyright LSP registers only if `pyright-langserver` is on `$PATH`.
+- **the cloud APM manifest** from [`apm.yml`](apm.yml): the MCP servers and the pyright LSP, but no skill bundles, via `apm install -g` (see the [apm install reference](https://microsoft.github.io/apm/reference/cli/install/)). MCP servers that interpolate secrets register with whatever env vars are set at session start; see [MCP servers and secrets](#mcp-servers-and-secrets). The pyright LSP registers only if `pyright-langserver` is on `$PATH`.
 
 It deliberately **skips**, to keep session start fast:
 
@@ -59,7 +59,7 @@ It deliberately **skips**, to keep session start fast:
 - playwright browser binaries
 - the statusline: `settings.json` gets no `statusLine` block and `~/.config/ccstatusline` is not written, because chezmoi gates both on `CLAUDE_CODE_REMOTE`
 
-You keep every local skill, command, rule, hook, the APM skill bundles, and the APM MCP/LSP servers. You lose only the plugin-provided skills in cloud sessions. For the split between the chezmoi layer and the APM layer, see the root [README.md](../../README.md).
+You keep every local skill, command, rule, hook, and the APM MCP/LSP servers. You lose the plugin-provided skills and the APM skill bundles from the root [`apm.yml`](../../apm.yml) in cloud sessions. For the split between the chezmoi layer and the APM layer, see the root [README.md](../../README.md).
 
 ### Getting full parity
 
@@ -73,7 +73,7 @@ That adds the plugins, standalone skills, and playwright browsers on top of what
 
 ## MCP servers and secrets
 
-The bootstrap registers the user-scoped MCP servers from [`apm.yml`](../../apm.yml). The ones that interpolate secrets (`${TESSL_TOKEN}`, `${CONTEXT7_API_KEY}`) register regardless, but only work if those env vars are set in the cloud environment before the session starts. An unset var leaves that server registered but non-functional; it does not fail the install. Set the vars in the platform's environment settings to activate them.
+The bootstrap registers the user-scoped MCP servers from [`apm.yml`](apm.yml). The ones that interpolate secrets (`${CONTEXT7_API_KEY}`) register regardless, but only work if those env vars are set in the cloud environment before the session starts. An unset var leaves that server registered but non-functional; it does not fail the install. Set the vars in the platform's environment settings to activate them.
 
 To also add project-scoped MCP servers, install them per-project with the `install-mcp` skill (catalog in [`docs/scope/mcp-servers.md`](../../docs/scope/mcp-servers.md)) and set the referenced env vars in the cloud environment settings. Enabling MCP per platform is covered in [`docs/mcp/enabling/web.md`](../../docs/mcp/enabling/web.md).
 
@@ -89,7 +89,7 @@ The prerequisite steps look unusual because a cloud session is not a normal shel
 
 The script installs mise from npm, then runs `mise install` with `MISE_LOCKED=true` against [`mise.toml`](mise.toml). Locked mode takes each download URL and sha256 checksum from [`mise.lock`](mise.lock), so mise makes no API or versions-host request. To add or upgrade a tool, edit `mise.toml`, run `mise lock --platform linux-x64,linux-arm64` in this folder, run `just cloud-tools-check`, and commit both files. A tool with no lockfile entry for the platform fails the install.
 
-**`apm install -g` reads a global manifest, not the project one.** `-g` installs to user scope from the global manifest at `~/.apm/apm.yml`, not from the `apm.yml` in the current directory. Some apm builds never read the project manifest under `-g` and abort with "No `~/.apm/apm.yml` found" even when run from inside the repo, which is why the earlier `cd "$REPO_DIR" && apm install -g` produced a complete-but-empty install. The script now copies the repo's `apm.yml` to `~/.apm/apm.yml` before installing, which is deterministic across builds and cwd. It also drops `--refresh`, which the [apm install reference](https://microsoft.github.io/apm/reference/cli/install/) documents as not valid with `--global`.
+**`apm install -g` reads a global manifest, not the project one.** `-g` installs to user scope from the global manifest at `~/.apm/apm.yml`, not from the `apm.yml` in the current directory. Some apm builds never read the project manifest under `-g` and abort with "No `~/.apm/apm.yml` found" even when run from inside the repo, which is why the earlier `cd "$REPO_DIR" && apm install -g` produced a complete-but-empty install. The script now copies this folder's `apm.yml` to `~/.apm/apm.yml` before installing, which is deterministic across builds and cwd. It also drops `--refresh`, which the [apm install reference](https://microsoft.github.io/apm/reference/cli/install/) documents as not valid with `--global`.
 
 ## Tips
 

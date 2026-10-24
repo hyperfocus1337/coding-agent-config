@@ -1,0 +1,31 @@
+name: coding-agent-config-web
+version: 0.1.0
+description: Cloud-session dependency manifest (MCP servers + LSP)
+author: hyperfocus1337
+targets:
+  - claude
+dependencies:
+  # User-scoped MCP servers. Secrets come from the environment at install time
+  # (${VAR}) so this manifest stays committable.
+  mcp:
+    - name: context7
+      registry: false
+      transport: stdio
+      command: npx
+      args:
+        - -y
+        - "@upstash/context7-mcp"
+      env:
+        CONTEXT7_API_KEY: ${CONTEXT7_API_KEY}
+  # LSP servers. Binary must be on $PATH at install time.
+  lsp:
+    - name: pyright
+      command: pyright-langserver
+      args:
+        - --stdio
+      transport: stdio
+      extensionToLanguage:
+        .py: python
+        .pyi: python
+includes: auto
+scripts: {}
