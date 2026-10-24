@@ -79,7 +79,7 @@
       "global_args": "--path $HOME/$SKILLS_DIR"
     },
     {
-      "id": "antonbabenko/terraform-skill",
+      "id": "antonbabenko/terraform-skill/skills/terraform-skill",
       "channel": "apm",
       "scope": "user",
       "status": "user-keep",
