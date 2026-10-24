@@ -48,7 +48,7 @@ Claude Code sets `CLAUDE_CODE_REMOTE=true` in cloud environments. `bootstrap.sh`
 
 `bootstrap.sh` installs any missing prerequisites (mise and apm), clones this repo to `~/coding-agent-config`, and then:
 
-- **mise install**, which installs the CLI tools in [`mise.toml`](mise.toml), such as chezmoi, from the URLs and checksums in [`mise.lock`](mise.lock)
+- **mise install**, which installs the CLI tools in [`mise.toml`](mise.toml), such as chezmoi, from the URLs and checksums in [`mise.lock`](mise.lock). Each tool gets a symlink in `~/.local/bin`, and the script writes that folder to `CLAUDE_ENV_FILE`, so the session's Bash calls find mise, apm, and chezmoi after the hook exits.
 - **chezmoi apply**, which lays down the whole `~/.claude` (commands, skills, rules, hooks, `CLAUDE.md`), plus `~/.config` and `~/.gemini`
 - **node hook deps**, so the markdown and format hooks run
 - **the cloud APM manifest** from [`apm.yml`](apm.yml): the MCP servers and the pyright LSP, but no skill bundles, via `apm install -g` (see the [apm install reference](https://microsoft.github.io/apm/reference/cli/install/)). MCP servers that interpolate secrets register with whatever env vars are set at session start; see [MCP servers and secrets](#mcp-servers-and-secrets). The pyright LSP registers only if `pyright-langserver` is on `$PATH`.

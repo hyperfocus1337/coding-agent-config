@@ -72,7 +72,16 @@ fi
 echo "==> Installing CLI tools with mise"
 export MISE_LOCKED=true MISE_USE_VERSIONS_HOST=false
 mise -C "$REPO_DIR/templates/web" install
-eval "$(mise -C "$REPO_DIR/templates/web" env -s bash)"
+# Link each tool into ~/.local/bin, which CLAUDE_ENV_FILE puts on PATH for the
+# session's Bash calls below. A mise shim would not work there: the session's repo
+# has no mise config that selects these tools.
+ln -sf "$(mise -C "$REPO_DIR/templates/web" which chezmoi)" "$LOCAL_BIN/chezmoi"
+
+# Claude Code runs CLAUDE_ENV_FILE before each Bash command, so the binaries in
+# ~/.local/bin (mise, apm, chezmoi) resolve after this hook exits too.
+if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
+  echo "export PATH=\"$LOCAL_BIN:\$PATH\"" >>"$CLAUDE_ENV_FILE"
+fi
 
 # --- Apply portable config to $HOME ---
 echo "==> Applying config with chezmoi"
