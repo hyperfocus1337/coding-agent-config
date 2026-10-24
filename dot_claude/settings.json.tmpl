@@ -73,12 +73,14 @@
       }
     ]
   },
+{{- if ne (env `CLAUDE_CODE_REMOTE`) `true` }}
   "statusLine": {
     "type": "command",
     "command": "npx -y ccstatusline@latest",
     "padding": 0,
     "refreshInterval": 10
   },
+{{- end }}
   "enabledPlugins": {
     "ast-grep@ast-grep-marketplace": true,
     "astral@astral-sh": false,

@@ -48,7 +48,7 @@ Claude Code sets `CLAUDE_CODE_REMOTE=true` in cloud environments. `bootstrap.sh`
 
 `bootstrap.sh` installs any missing prerequisites (chezmoi, apm), clones this repo to `~/coding-agent-config`, and then:
 
-- **chezmoi apply**, which lays down the whole `~/.claude` (commands, skills, rules, hooks, `CLAUDE.md`, statusline), plus `~/.config` and `~/.gemini`
+- **chezmoi apply**, which lays down the whole `~/.claude` (commands, skills, rules, hooks, `CLAUDE.md`), plus `~/.config` and `~/.gemini`
 - **node hook deps**, so the markdown and format hooks run
 - **the full APM manifest** from [`apm.yml`](../../apm.yml): the third-party skill bundles, the MCP servers, and the pyright LSP, via `apm install -g` with no `--only` filter (see the [apm install reference](https://microsoft.github.io/apm/reference/cli/install/)). MCP servers that interpolate secrets register with whatever env vars are set at session start; see [MCP servers and secrets](#mcp-servers-and-secrets). The pyright LSP registers only if `pyright-langserver` is on `$PATH`.
 
@@ -56,6 +56,7 @@ It deliberately **skips**, to keep session start fast:
 
 - the four user-scope Claude plugins from the marketplace
 - playwright browser binaries
+- the statusline: `settings.json` gets no `statusLine` block and `~/.config/ccstatusline` is not written, because chezmoi gates both on `CLAUDE_CODE_REMOTE`
 
 You keep every local skill, command, rule, hook, the APM skill bundles, and the APM MCP/LSP servers. You lose only the plugin-provided skills in cloud sessions. For the split between the chezmoi layer and the APM layer, see the root [README.md](../../README.md).
 

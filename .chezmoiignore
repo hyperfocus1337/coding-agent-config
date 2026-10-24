@@ -40,3 +40,8 @@ README.md
 .pi/agent/extensions/**/test/**
 .pi/agent/test/**
 PLAN.md
+
+# Cloud sessions (templates/web/bootstrap.sh) run without the statusline.
+{{ if eq (env `CLAUDE_CODE_REMOTE`) `true` }}
+.config/ccstatusline
+{{ end }}

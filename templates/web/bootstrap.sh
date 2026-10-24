@@ -5,10 +5,11 @@
 # https and pipes it to bash, so it must be self-contained.
 #
 # It installs the portable config: the whole ~/.claude (skills, commands, rules,
-# hooks, CLAUDE.md, statusline) plus the full APM manifest (skill bundles, MCP
+# hooks, CLAUDE.md) plus the full APM manifest (skill bundles, MCP
 # servers, and the pyright LSP). It deliberately skips the Claude plugin
 # marketplace and playwright browsers, which would turn a per-session hook into a
-# multi-minute install. See README.md for the trade-off and MCP secret setup.
+# multi-minute install. The statusline is left out: chezmoi drops it when
+# CLAUDE_CODE_REMOTE=true. See README.md for the trade-off and MCP secret setup.
 #
 # No-op on local machines, where the config already exists.
 
@@ -44,8 +45,8 @@ if ! command -v apm &>/dev/null; then
   # Install the apm-cli wheel from PyPI with uv, not the aka.ms/apm-unix binary
   # installer (GitHub-scoped out in cloud sessions). Non-fatal so the config
   # still lands if it fails. See README "Lessons learned" for why.
-  uv tool install apm-cli \
-    || echo "WARN: apm-cli install failed; skipping APM manifest." >&2
+  uv tool install apm-cli ||
+    echo "WARN: apm-cli install failed; skipping APM manifest." >&2
 fi
 
 # --- Clone or update the config repo ---
@@ -93,8 +94,8 @@ if command -v apm &>/dev/null; then
   echo "==> Installing APM dependencies (skills, MCP, LSP)"
   mkdir -p "$HOME/.apm"
   cp "$REPO_DIR/apm.yml" "$HOME/.apm/apm.yml"
-  apm install -g --force \
-    || echo "WARN: apm install failed; skills/MCP/LSP from apm.yml not installed." >&2
+  apm install -g --force ||
+    echo "WARN: apm install failed; skills/MCP/LSP from apm.yml not installed." >&2
 else
   echo "WARN: 'apm' not found; skipping APM manifest (skills, MCP, LSP)." >&2
 fi
