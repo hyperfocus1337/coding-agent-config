@@ -25,40 +25,22 @@ fi
 REPO_URL="https://github.com/hyperfocus1337/coding-agent-config.git"
 REPO_DIR="$HOME/coding-agent-config"
 LOCAL_BIN="$HOME/.local/bin"
-CHEZMOI_VERSION="2.73.3"
+MISE_VERSION="2026.10.18"
 
 # The prereq installers below drop binaries into ~/.local/bin. Put it on PATH for
 # the rest of this run so they resolve.
 export PATH="$LOCAL_BIN:$PATH"
 
 # --- Prerequisites ---
-# Only chezmoi (config files) and apm (dependencies) are needed here. The cloud
-# base image ships git, npm, uv, and the claude CLI. Each guard lets a restarted
-# session skip work already done.
+# mise installs the CLI tools in templates/web/mise.toml (chezmoi), and apm
+# installs the dependencies. The cloud base image ships git, npm, uv, and the
+# claude CLI. Each guard lets a restarted session skip work already done.
 
-if ! command -v chezmoi &>/dev/null; then
-  echo "==> Installing chezmoi $CHEZMOI_VERSION"
-  # Download the pinned release asset directly, not through get.chezmoi.io. That
-  # installer first resolves the tag at github.com/twpayne/chezmoi/releases/<tag>,
-  # which the cloud proxy answers with 403. Release downloads go through.
-  case "$(uname -m)" in
-    x86_64) arch=amd64 ;;
-    aarch64 | arm64) arch=arm64 ;;
-    *)
-      echo "ERROR: no chezmoi build for $(uname -m)" >&2
-      exit 1
-      ;;
-  esac
-  tarball="chezmoi_${CHEZMOI_VERSION}_linux_${arch}.tar.gz"
-  release="https://github.com/twpayne/chezmoi/releases/download/v$CHEZMOI_VERSION"
-  tmp="$(mktemp -d)"
-  curl -fsSL -o "$tmp/$tarball" "$release/$tarball"
-  curl -fsSL -o "$tmp/checksums.txt" "$release/chezmoi_${CHEZMOI_VERSION}_checksums.txt"
-  (cd "$tmp" && grep " $tarball\$" checksums.txt | sha256sum -c --quiet -)
-  tar -xzf "$tmp/$tarball" -C "$tmp" chezmoi
-  mkdir -p "$LOCAL_BIN"
-  install -m 0755 "$tmp/chezmoi" "$LOCAL_BIN/chezmoi"
-  rm -rf "$tmp"
+if ! command -v mise &>/dev/null; then
+  echo "==> Installing mise $MISE_VERSION"
+  # The mise npm package gets its binary from the npm registry, which the cloud
+  # proxy allows. The mise.run installer needs mise.jdx.dev, which it does not.
+  npm install -g --prefix "$HOME/.local" --silent "mise@$MISE_VERSION"
 fi
 
 if ! command -v apm &>/dev/null; then
@@ -81,6 +63,16 @@ else
   echo "==> Cloning coding-agent-config"
   git clone --depth 1 "$REPO_URL" "$REPO_DIR"
 fi
+
+# --- CLI tools from templates/web/mise.toml ---
+# Locked mode takes each download URL and checksum from mise.lock, so mise skips
+# the GitHub release lookups that the cloud proxy answers with 403. With the
+# versions host off, mise sends no requests to mise-versions.jdx.dev, which is
+# not on the cloud allowlist.
+echo "==> Installing CLI tools with mise"
+export MISE_LOCKED=true MISE_USE_VERSIONS_HOST=false
+mise -C "$REPO_DIR/templates/web" install
+eval "$(mise -C "$REPO_DIR/templates/web" env -s bash)"
 
 # --- Apply portable config to $HOME ---
 echo "==> Applying config with chezmoi"

@@ -1,0 +1,6 @@
+# Tools that bootstrap.sh installs in cloud sessions. After you add or change a
+# tool, run `mise lock --platform linux-x64,linux-arm64` in this folder and commit
+# mise.lock. The bootstrap installs with --locked, which takes URLs and checksums
+# from the lockfile, because the cloud GitHub proxy refuses the release lookups.
+[tools]
+chezmoi = "2.73.3"

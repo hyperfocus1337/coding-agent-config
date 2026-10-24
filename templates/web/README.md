@@ -8,7 +8,7 @@ Cloud sessions are usually ephemeral, so the hook re-runs from scratch every tim
 
 ## What is in here
 
-`bootstrap.sh` is the real installer. It is self-contained: it installs its own prerequisites (chezmoi, apm), clones this repo, applies the config, and installs the full APM manifest. It is hosted in this public repo and fetched raw over https, so it always runs the latest version and lives in exactly one place.
+`bootstrap.sh` is the real installer. It is self-contained: it installs its own prerequisites (mise, the CLI tools in [`mise.toml`](mise.toml) such as chezmoi, and apm), clones this repo, applies the config, and installs the full APM manifest. It is hosted in this public repo and fetched raw over https, so it always runs the latest version and lives in exactly one place.
 
 Do not move or rename `bootstrap.sh`. Its path is part of the hook URL in every repository already bootstrapped, and `raw.githubusercontent.com` does not redirect.
 
@@ -46,8 +46,9 @@ Claude Code sets `CLAUDE_CODE_REMOTE=true` in cloud environments. `bootstrap.sh`
 
 ## What gets installed
 
-`bootstrap.sh` installs any missing prerequisites (chezmoi, apm), clones this repo to `~/coding-agent-config`, and then:
+`bootstrap.sh` installs any missing prerequisites (mise and apm), clones this repo to `~/coding-agent-config`, and then:
 
+- **mise install**, which installs the CLI tools in [`mise.toml`](mise.toml), such as chezmoi, from the URLs and checksums in [`mise.lock`](mise.lock)
 - **chezmoi apply**, which lays down the whole `~/.claude` (commands, skills, rules, hooks, `CLAUDE.md`), plus `~/.config` and `~/.gemini`
 - **node hook deps**, so the markdown and format hooks run
 - **the full APM manifest** from [`apm.yml`](../../apm.yml): the third-party skill bundles, the MCP servers, and the pyright LSP, via `apm install -g` with no `--only` filter (see the [apm install reference](https://microsoft.github.io/apm/reference/cli/install/)). MCP servers that interpolate secrets register with whatever env vars are set at session start; see [MCP servers and secrets](#mcp-servers-and-secrets). The pyright LSP registers only if `pyright-langserver` is on `$PATH`.
@@ -84,7 +85,9 @@ The prerequisite steps look unusual because a cloud session is not a normal shel
 
 **A failed apm step must not abort the rest.** The script runs under `set -euo pipefail`. apm is installed and used before the config clone and `chezmoi apply`, so when the apm install aborted, everything after it, the actually-portable config, never ran, and the failure was silent because `SessionStart` hook errors are not surfaced. Both apm invocations now warn and continue (`|| echo WARN`), so the config lands even when apm cannot.
 
-**chezmoi installs from a pinned release asset, not get.chezmoi.io.** The `get.chezmoi.io` installer resolves its tag at `github.com/twpayne/chezmoi/releases/<tag>` before it downloads, and the cloud proxy answers the default `latest` lookup with 403. A pinned `-t` tag still goes through that lookup path, while the `releases/download/` URLs go through. The script downloads `chezmoi_<version>_linux_<arch>.tar.gz` for `CHEZMOI_VERSION` directly and checks it against the release's `checksums.txt`. To upgrade chezmoi, change `CHEZMOI_VERSION`.
+**CLI tools install with mise in locked mode.** The `get.chezmoi.io` installer looks up its tag at `github.com/twpayne/chezmoi/releases/<tag>` before it downloads. The GitHub proxy only serves API requests for repositories attached to the session, so that lookup gets a 403. mise's aqua backend fails the same way: it reads release metadata from `mise-versions.jdx.dev`, which is not on the cloud allowlist, and then falls back to `api.github.com`. Only the `releases/download/` URLs go through.
+
+The script installs mise from npm, then runs `mise install` with `MISE_LOCKED=true` against [`mise.toml`](mise.toml). Locked mode takes each download URL and sha256 checksum from [`mise.lock`](mise.lock), so mise makes no API or versions-host request. To add or upgrade a tool, edit `mise.toml`, run `mise lock --platform linux-x64,linux-arm64` in this folder, and commit both files. A tool with no lockfile entry for the platform fails the install.
 
 **`apm install -g` reads a global manifest, not the project one.** `-g` installs to user scope from the global manifest at `~/.apm/apm.yml`, not from the `apm.yml` in the current directory. Some apm builds never read the project manifest under `-g` and abort with "No `~/.apm/apm.yml` found" even when run from inside the repo, which is why the earlier `cd "$REPO_DIR" && apm install -g` produced a complete-but-empty install. The script now copies the repo's `apm.yml` to `~/.apm/apm.yml` before installing, which is deterministic across builds and cwd. It also drops `--refresh`, which the [apm install reference](https://microsoft.github.io/apm/reference/cli/install/) documents as not valid with `--global`.
 
