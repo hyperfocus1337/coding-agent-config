@@ -116,8 +116,13 @@ if command -v apm &>/dev/null; then
   echo "==> Installing APM dependencies (MCP, LSP)"
   mkdir -p "$HOME/.apm"
   cp "$REPO_DIR/templates/web/apm.yml" "$HOME/.apm/apm.yml"
-  apm install -g --force ||
+  if apm install -g --force; then
+    # apm writes the LSP as the plugin ~/.claude/skills/apm-lsp. Claude Code
+    # scanned for plugins before this hook ran, so this session needs a reload.
+    echo "NOTE: run /reload-plugins --force to load the pyright LSP in this session."
+  else
     echo "WARN: apm install failed; MCP/LSP from apm.yml not installed." >&2
+  fi
 else
   echo "WARN: 'apm' not found; skipping APM manifest (MCP, LSP)." >&2
 fi
