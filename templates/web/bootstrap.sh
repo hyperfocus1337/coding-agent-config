@@ -25,6 +25,7 @@ fi
 REPO_URL="https://github.com/hyperfocus1337/coding-agent-config.git"
 REPO_DIR="$HOME/coding-agent-config"
 LOCAL_BIN="$HOME/.local/bin"
+CHEZMOI_VERSION="2.73.3"
 
 # The prereq installers below drop binaries into ~/.local/bin. Put it on PATH for
 # the rest of this run so they resolve.
@@ -36,8 +37,28 @@ export PATH="$LOCAL_BIN:$PATH"
 # session skip work already done.
 
 if ! command -v chezmoi &>/dev/null; then
-  echo "==> Installing chezmoi"
-  sh -c "$(curl -fsSL https://get.chezmoi.io)" -- -b "$LOCAL_BIN"
+  echo "==> Installing chezmoi $CHEZMOI_VERSION"
+  # Download the pinned release asset directly, not through get.chezmoi.io. That
+  # installer first resolves the tag at github.com/twpayne/chezmoi/releases/<tag>,
+  # which the cloud proxy answers with 403. Release downloads go through.
+  case "$(uname -m)" in
+    x86_64) arch=amd64 ;;
+    aarch64 | arm64) arch=arm64 ;;
+    *)
+      echo "ERROR: no chezmoi build for $(uname -m)" >&2
+      exit 1
+      ;;
+  esac
+  tarball="chezmoi_${CHEZMOI_VERSION}_linux_${arch}.tar.gz"
+  release="https://github.com/twpayne/chezmoi/releases/download/v$CHEZMOI_VERSION"
+  tmp="$(mktemp -d)"
+  curl -fsSL -o "$tmp/$tarball" "$release/$tarball"
+  curl -fsSL -o "$tmp/checksums.txt" "$release/chezmoi_${CHEZMOI_VERSION}_checksums.txt"
+  (cd "$tmp" && grep " $tarball\$" checksums.txt | sha256sum -c --quiet -)
+  tar -xzf "$tmp/$tarball" -C "$tmp" chezmoi
+  mkdir -p "$LOCAL_BIN"
+  install -m 0755 "$tmp/chezmoi" "$LOCAL_BIN/chezmoi"
+  rm -rf "$tmp"
 fi
 
 if ! command -v apm &>/dev/null; then
