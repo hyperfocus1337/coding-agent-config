@@ -1,5 +1,5 @@
 ---
-argument-hint: [question | keep [question]]
+argument-hint: "[question | keep [question]]"
 description: Put anything that compares items on shared attributes in a table.
 disable-model-invocation: true
 ---

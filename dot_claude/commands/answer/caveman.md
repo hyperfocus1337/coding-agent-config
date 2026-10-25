@@ -1,5 +1,5 @@
 ---
-argument-hint: [question | keep [question]]
+argument-hint: "[question | keep [question]]"
 description: Speak in compressed caveman prose.
 disable-model-invocation: true
 ---

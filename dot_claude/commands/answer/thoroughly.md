@@ -1,5 +1,5 @@
 ---
-argument-hint: [question | keep [question]]
+argument-hint: "[question | keep [question]]"
 description: Answer in full depth, with the reasoning, the edge cases, and the rejected options.
 disable-model-invocation: true
 ---

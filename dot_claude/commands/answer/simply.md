@@ -1,5 +1,5 @@
 ---
-argument-hint: [question | keep [question]]
+argument-hint: "[question | keep [question]]"
 description: Answer in plain language for a non-expert.
 disable-model-invocation: true
 ---

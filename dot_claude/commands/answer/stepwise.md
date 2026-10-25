@@ -1,5 +1,5 @@
 ---
-argument-hint: [question | keep [question]]
+argument-hint: "[question | keep [question]]"
 description: Answer as numbered, imperative steps in the order they occur.
 disable-model-invocation: true
 ---

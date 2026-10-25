@@ -1,6 +1,6 @@
 ---
 description: Explain code snippets step-by-step.
-argument-hint: [<file-path>[:<start>-<end>] | <code>]
+argument-hint: "[<file-path>[:<start>-<end>] | <code>]"
 disable-model-invocation: true
 ---
 

@@ -1,5 +1,5 @@
 ---
-argument-hint: [question | keep [question]]
+argument-hint: "[question | keep [question]]"
 description: Give the result only, without the reasoning or the process.
 disable-model-invocation: true
 ---

@@ -1,5 +1,5 @@
 ---
-argument-hint: [question | keep [question]]
+argument-hint: "[question | keep [question]]"
 description: Check each factual claim and tag it with its source.
 disable-model-invocation: true
 ---

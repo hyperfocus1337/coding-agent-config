@@ -1,6 +1,6 @@
 ---
 description: Review code for maintainability.
-argument-hint: [<file-path>[:<start>-<end>] | <code>]
+argument-hint: "[<file-path>[:<start>-<end>] | <code>]"
 disable-model-invocation: true
 ---
 
