@@ -1,7 +1,7 @@
 ---
 allowed-tools: Bash(git rebase:*), Bash(git log:*), Bash(git branch:*), Bash(git status:*)
 description: Rewrite the author of the whole branch (or the last N commits) via rebase.
-argument-hint: author-string (quoted), then optional commit count
+argument-hint: '"Firstname Lastname <firstname.lastname@company.com>" [count|all]'
 arguments: [author, count]
 disable-model-invocation: true
 ---
@@ -21,11 +21,11 @@ Rewrite commit authorship on the current branch to a new author.
 Arguments: `$ARGUMENTS`
 
 - `$author` (required): new author, formatted `"Firstname Lastname <firstname.lastname@company.com>"`.
-- `$count` (optional): number of commits back from HEAD to rewrite. Omit to rewrite the entire branch from the root.
+- `$count` (optional): number of commits back from HEAD to rewrite, or `all` to rewrite the entire branch from the root.
 
 You can pass these positionally, describe them in plain language, or run the command bare. If the author is missing, ask for it. If no count was given and it is not clear the user wants the whole branch, confirm the scope (entire branch vs last N) before running.
 
-An argument you do not pass expands to nothing, so `HEAD~\$count` becomes `HEAD~`, which git reads as `HEAD~1`. When the count is empty, run the entire-branch command. Never run a `HEAD~` with no number.
+An argument you do not pass expands to nothing, so `HEAD~\$count` becomes `HEAD~`, which git reads as `HEAD~1`. When the count is `all`, run the entire-branch command. When the count is empty, confirm the scope first. Never run a `HEAD~` with no number or with `all`.
 
 ## Safety
 
@@ -40,14 +40,14 @@ This rewrites history and changes every affected commit hash. Before running:
 
 `GIT_SEQUENCE_EDITOR=true` keeps the rebase non-interactive (no editor opens).
 
-Entire branch (no `$count` given):
+Entire branch (`$count` is `all`):
 
 ```bash
 GIT_SEQUENCE_EDITOR=true git rebase --root \
   --exec 'git commit --amend --author="$author" --no-edit'
 ```
 
-Last N commits (`$count` given):
+Last N commits (`$count` is a number):
 
 ```bash
 GIT_SEQUENCE_EDITOR=true git rebase -i HEAD~$count \
