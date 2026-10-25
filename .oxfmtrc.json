@@ -1,0 +1,3 @@
+{
+  "ignorePatterns": ["modify_*", ".chezmoiexternal.toml"]
+}
