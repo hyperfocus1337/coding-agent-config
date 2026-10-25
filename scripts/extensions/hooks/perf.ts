@@ -525,7 +525,7 @@ interface Trace {
 }
 
 /** The programs that write the files they name. ruff only as `ruff format`. */
-const WRITERS = new Set(["prettier", "emacs", "terraform", "shfmt"]);
+const WRITERS = new Set(["prettier", "oxfmt", "emacs", "terraform", "shfmt"]);
 /** The Io functions that change the disk. */
 const MUTATORS = new Set([
   "write",
@@ -553,8 +553,14 @@ function watch<T extends object>(io: T, trace: Trace): T {
           const options = args[1] as
             { env?: Record<string, string> } | undefined;
           const program = argv[0] ?? "";
+          // The value of `oxfmt -c` is the bundled config, which oxfmt reads.
           const files = [
-            ...argv.slice(1),
+            ...argv
+              .slice(1)
+              .filter(
+                (arg, i, all) =>
+                  program !== "oxfmt" || (arg !== "-c" && all[i - 1] !== "-c"),
+              ),
             ...(options?.env?.ORG_TABLE_FILES?.split("\n") ?? []),
           ];
           if (
@@ -645,7 +651,7 @@ const formatter = (name: string, fn: string, tools: string[]): Hook => ({
   on: { Write: ["post"], Edit: ["post"], Bash: ["post"] },
   tools,
   state: true,
-  mtime: !tools.includes("prettier"),
+  mtime: !tools.some((tool) => tool === "prettier" || tool === "oxfmt"),
   probe: "files",
   args: [],
   work: `${tools.join(" or ")} changed a file`,
@@ -674,6 +680,7 @@ const typeCheck = (name: string, tool: string): Hook => ({
 
 const HOOK_LIST: Hook[] = [
   formatter("format-prettier", "format", ["prettier"]),
+  formatter("format-oxfmt", "format", ["oxfmt"]),
   formatter("format-org-tables", "align", ["emacs"]),
   formatter("format-code", "format", ["terraform", "shfmt", "ruff"]),
   {
