@@ -92,7 +92,7 @@ The `research/hooks/` folder holds the source reading, tests, and transcript cou
 
 ### Formatting
 
-The `research/formatting/` folder compares the formatters that [`format-prettier`](../dot_claude/hooks/format-prettier/README.md) and the `format-staged-files` pre-commit hook can run. [`oxfmt-and-prettier-alternatives.md`](research/formatting/oxfmt-and-prettier-alternatives.md) tests oxfmt 0.74.0 and 11 other formatters on copies of this repository. oxfmt formats all file types of the hook, also Markdown, and gives the same output as Prettier on 349 of 365 files, at 65 ms for each run instead of 146 ms. Prettier stays for now, because oxfmt does not read `.prettierrc` and changes the front matter of 15 command files.
+The `research/formatting/` folder compares the formatters that the web format hook and the `format-staged-files` pre-commit hook can run. [`oxfmt-and-prettier-alternatives.md`](research/formatting/oxfmt-and-prettier-alternatives.md) tests oxfmt 0.74.0 and 11 other formatters on copies of this repository. oxfmt formats all file types of the hook, also Markdown, and gives the same output as Prettier on 349 of 365 files, at 65 ms for each run instead of 146 ms. On 2026-10-25, [`format-oxfmt`](../dot_claude/hooks/format-oxfmt/README.md) replaced `format-prettier`, see [`decisions.md`](hooks/decisions.md#format-oxfmt-replaces-format-prettier).
 
 | File                                                                                           | Description                                                              |
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |

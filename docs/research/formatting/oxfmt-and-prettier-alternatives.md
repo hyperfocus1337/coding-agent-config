@@ -1,5 +1,7 @@
 # Replacing Prettier with oxfmt in the format hooks, and formatters for the other file types (October 2026)
 
+**Outcome:** on 2026-10-25, `format-oxfmt` replaced `format-prettier`, before the `.prettierrc` condition in [When to migrate](#when-to-migrate) was true. See [`decisions.md`](../../hooks/decisions.md#format-oxfmt-replaces-format-prettier). The text below is as measured.
+
 Keep Prettier in `format-prettier` for now. oxfmt 0.74.0 formats every file type that the hook formats today, including Markdown, and on this repository its output is the same as Prettier's on 349 of 365 files. But oxfmt does not read `.prettierrc`, it uses a print width of 100 when no oxfmt config exists, its Markdown formatter is 17 days old, and it changes the text of 15 slash-command front matter blocks. The hook runs in every repository that an agent edits, so these differences reformat other projects against their own Prettier config, and the time saved is about 0.5 s for each session. Move to oxfmt when the conditions in [When to migrate](#when-to-migrate) are true, with the plan in [Migration plan](#migration-plan).
 
 ## TL;DR
