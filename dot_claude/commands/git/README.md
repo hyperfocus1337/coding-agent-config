@@ -128,7 +128,7 @@ Summarize or rewrite existing commits.
 Argument slots per command:
 
 - `rewrite:author` — author string (quoted, `"Firstname Lastname <email>"`), then an optional commit count. Omit the count to rewrite the entire branch from the root.
-- `rewrite:attribution`: the same slots as `rewrite:author`. It also removes every co-author trailer, for agents and humans, unless you ask to keep them.
+- `rewrite:attribution`: the same slots as `rewrite:author`. It also removes every co-author trailer, for agents and humans, and other agent lines such as `Claude-Session:` and "Generated with", unless you ask to keep them.
 - `rewrite:date` — a timestamp with a timezone offset, e.g. `"2026-07-14 09:30:00 +0200"`. Applies to the most recent commit only.
 - `rewrite:shift-dates` — signed hours (`+2`, `-3`), then how many commits back from HEAD to shift.
 

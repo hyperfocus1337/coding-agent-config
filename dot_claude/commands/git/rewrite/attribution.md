@@ -14,13 +14,18 @@ disable-model-invocation: true
 
 ## Your task
 
-Remove coding agent attribution from commits on the current branch. Set a new author, and remove every co-author trailer from each message.
+Remove coding agent attribution from commits on the current branch. Set a new author, and remove the attribution lines from each message.
 
 GitHub shows "<user> and <agent> committed" because of a co-author trailer for the agent in the message. The author field alone does not cause it. Each agent uses its own name and address, so the rewrite removes every line that starts with `Co-authored-by:` in any letter case, for any co-author.
 
-This needs no list of agents, but a human co-author also goes. When the user asks to keep the trailers, only the author changes.
+The rewrite also removes these agent lines:
 
-An agent that is the author, such as the Copilot cloud agent, goes with the author rewrite. The committer becomes the local git identity, so an agent committer such as `Jane Doe (aider)` also goes. Other agent lines, such as `Generated with` or a session ID trailer, stay.
+- The trailers `Assisted-by:`, `Claude-Session:`, `Amp-Thread-ID:`, `Agent-Logs-Url:`, and `Made-with:`.
+- A "Generated with" line that starts with an emoji, such as `🤖 Generated with [Claude Code](…)` or `💘 Generated with Crush`. A line without an emoji, such as "Generated with protoc", stays.
+
+The co-author rule needs no list of agents, but a human co-author also goes. When the user asks to keep the trailers, only the author changes.
+
+An agent that is the author, such as the Copilot cloud agent, goes with the author rewrite. The committer becomes the local git identity, so an agent committer such as `Jane Doe (aider)` also goes.
 
 ### Arguments
 
@@ -66,10 +71,10 @@ Note the backup name for the verify step. To recover, run `git reset --hard <bac
 Replace `<scope>` with `--root` when `$count` is `all`, or with `HEAD~$count` when it is a number:
 
 ```bash
-GIT_SEQUENCE_EDITOR=true git rebase -i --rebase-merges <scope> --exec 'dir="$(git rev-parse --git-path rebase-merge)" && orig="$(tail -n 2 "$dir/done" | head -n 1 | grep -oE "[0-9a-f]{40,}" | head -n 1)" && msg="$dir/attribution-msg" && git log -1 --format=%B > "$msg" && perl -0777 -i -pe "s/^co-author[a-z-]*:[^\n]*\n?//gim" "$msg" && GIT_COMMITTER_DATE="$(git log -1 --format=%cI "$orig")" git commit -q --amend --author="$author" -F "$msg"'
+GIT_SEQUENCE_EDITOR=true git rebase -i --rebase-merges <scope> --exec 'dir="$(git rev-parse --git-path rebase-merge)" && orig="$(tail -n 2 "$dir/done" | head -n 1 | grep -oE "[0-9a-f]{40,}" | head -n 1)" && msg="$dir/attribution-msg" && git log -1 --format=%B > "$msg" && perl -0777 -i -pe "s/^((co-author[a-z-]*|assisted-by|claude-session|amp-thread-id|agent-logs-url|made-with):|[^\x00-\x7f]+ *generated with )[^\n]*\n?//gim" "$msg" && GIT_COMMITTER_DATE="$(git log -1 --format=%cI "$orig")" git commit -q --amend --author="$author" -F "$msg"'
 ```
 
-Run it in one Bash call, with the text as written. To keep the trailers, remove the `msg=`, `git log -1 --format=%B`, and `perl` steps, and replace `-F "$msg"` with `--no-edit`.
+Run it in one Bash call, with the text as written. The verify step repeats the pattern, so change both together. To keep the trailers, remove the `msg=`, `git log -1 --format=%B`, and `perl` steps, and replace `-F "$msg"` with `--no-edit`.
 
 If the rebase stops on a conflict, run `git rebase --abort` and report the commit to the user. A merge that had a manual conflict resolution can cause this, because `--rebase-merges` merges again and does not keep the resolution.
 
@@ -91,10 +96,10 @@ If the rebase stops on a conflict, run `git rebase --abort` and report the commi
 
 1. Run `git diff <backup> HEAD`. It must print nothing. If it prints a diff, report it and recover from the backup.
 2. Show the log again with the Context format: `git log --graph --format='%h %an <%ae> | %cn <%ce> | %s | %(trailers:only,unfold,separator=; )' -15`.
-3. When the trailers were removed, this must print nothing. Use `HEAD` as `<range>` for `all`, and `HEAD~$count..HEAD` for a number:
+3. When the attribution lines were removed, this must print nothing. Use `HEAD` as `<range>` for `all`, and `HEAD~$count..HEAD` for a number:
 
    ```bash
-   git log --oneline -i -E --grep='^co-author[a-z-]*:' <range>
+   git log --oneline -i -P --grep='^((co-author[a-z-]*|assisted-by|claude-session|amp-thread-id|agent-logs-url|made-with):|[^\x00-\x7f]+ *generated with )' <range>
    ```
 
 ### 5. Push
