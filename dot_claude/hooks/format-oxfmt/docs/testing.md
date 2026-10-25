@@ -26,10 +26,10 @@ The fixtures are in a temporary folder under `$HOME`, because the hook skips `/t
 - **Prose wrap:** a wide table stays padded, and sentence lines stay separate.
 - **The amend hint:** after a commit, with a text that names oxfmt, after `git -C <dir> commit`, on `PostToolUseFailure` with that event name, and on the first commit of a repository. No hint without a commit, for an uncommitted file, or when oxfmt changed nothing.
 - **A Write or Edit:** the hook formats `.ts`, `.mts`, `.cts`, `.toml`, and `.jsonc`. It does not format `.org`, `.py`, or a temp file, and a file that does not exist gives no output.
-- **Config:** a file with no oxfmt config gets a width of 80 from the bundled config. A file below an `.oxfmtrc.json` gets that config.
+- **Config:** a file with no oxfmt config gets the default width of 100. A file below an `.oxfmtrc.json` gets that config.
 - **`AGENT_HOOKS_DISABLE`:** a value that names the hook stops the core before its first file or process call.
 - **`agent-hook.format-oxfmt.enabled`:** with stub I/O, a `git config` that prints `false` stops the hook before oxfmt, and a `git config` that prints nothing or `true` lets oxfmt run.
-- **The adapters:** `pi.ts`, `omp.ts`, and `hooks/register.ts` with stubs over the real files. The mod gets the bundled config from `$.plugin.root`.
+- **The adapters:** `pi.ts`, `omp.ts`, and `hooks/register.ts` with stubs over the real files.
 
 The commit-time format is in the [`format-staged-files`](../../../../dot_config/git/hooks/format-staged-files/docs/testing.md) check.
 

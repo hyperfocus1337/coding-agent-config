@@ -194,9 +194,7 @@ const side = (hunks: unknown, mark: "-" | "+") =>
 /** `text` with the hunks applied by line number, last hunk first. */
 function patch(text: string, hunks: unknown): string {
   const lines = text.split("\n");
-  const list = (Array.isArray(hunks) ? [...hunks] : []).sort(
-    (a, b) => b.oldStart - a.oldStart,
-  );
+  const list = (Array.isArray(hunks) ? [...hunks] : []).sort((a, b) => b.oldStart - a.oldStart);
   for (const hunk of list) {
     const rows = (hunk.lines as string[])
       .filter((row) => row[0] === " " || row[0] === "+")
@@ -261,16 +259,11 @@ function plan(session: Session) {
       known.set(file.filePath, file.content);
     } else if (call.tool === "Write" && typeof path === "string" && result) {
       const before =
-        typeof result.originalFile === "string"
-          ? result.originalFile
-          : known.get(path);
+        typeof result.originalFile === "string" ? result.originalFile : known.get(path);
       first(path, result.type === "create" ? undefined : before);
       put(path, String(input.content ?? result.content ?? ""));
     } else if (call.tool === "Edit" && typeof path === "string" && result) {
-      let before =
-        typeof result.originalFile === "string"
-          ? result.originalFile
-          : known.get(path);
+      let before = typeof result.originalFile === "string" ? result.originalFile : known.get(path);
       call.edit =
         typeof result.originalFile === "string"
           ? "originalFile"
@@ -338,8 +331,7 @@ function plan(session: Session) {
       else if (call.file) files.set(call.file.path, call.file);
       else
         for (const { path, text } of call.puts)
-          if (text !== undefined)
-            files.set(path, { path, text, partial: false });
+          if (text !== undefined) files.set(path, { path, text, partial: false });
     session.stops.set(i, [...files.values()]);
   }
 }
@@ -415,8 +407,7 @@ class World {
   setup(state: boolean) {
     rmSync(this.dir, { recursive: true, force: true });
     rmSync(this.scratch, { recursive: true, force: true });
-    for (const dir of [this.root, this.home, this.scratch])
-      mkdirSync(dir, { recursive: true });
+    for (const dir of [this.root, this.home, this.scratch]) mkdirSync(dir, { recursive: true });
     mkdirSync(this.map(this.session.cwd), { recursive: true });
     if (!state) return;
     const old = new Date(Date.now() - DAY);
@@ -462,15 +453,7 @@ class World {
   commit(message = "replay") {
     if (!this.repo) return;
     git(this.repo, "add", "-A");
-    git(
-      this.repo,
-      "commit",
-      "-q",
-      "--allow-empty",
-      "--no-verify",
-      "-m",
-      message,
-    );
+    git(this.repo, "commit", "-q", "--allow-empty", "--no-verify", "-m", message);
   }
 
   /**
@@ -527,15 +510,7 @@ interface Trace {
 /** The programs that write the files they name. ruff only as `ruff format`. */
 const WRITERS = new Set(["oxfmt", "emacs", "terraform", "shfmt"]);
 /** The Io functions that change the disk. */
-const MUTATORS = new Set([
-  "write",
-  "append",
-  "copy",
-  "link",
-  "rename",
-  "remove",
-  "mkdir",
-]);
+const MUTATORS = new Set(["write", "append", "copy", "link", "rename", "remove", "mkdir"]);
 
 /**
  * The Io of a hook with each program start recorded. A write outside BASE is
@@ -550,23 +525,11 @@ function watch<T extends object>(io: T, trace: Trace): T {
       return async (...args: unknown[]) => {
         if (name === "run") {
           const argv = args[0] as string[];
-          const options = args[1] as
-            | { env?: Record<string, string> }
-            | undefined;
+          const options = args[1] as { env?: Record<string, string> } | undefined;
           const program = argv[0] ?? "";
-          // The value of `oxfmt -c` is the bundled config, which oxfmt reads.
-          const files = [
-            ...argv
-              .slice(1)
-              .filter(
-                (arg, i, all) =>
-                  program !== "oxfmt" || (arg !== "-c" && all[i - 1] !== "-c"),
-              ),
-            ...(options?.env?.ORG_TABLE_FILES?.split("\n") ?? []),
-          ];
+          const files = [...argv.slice(1), ...(options?.env?.ORG_TABLE_FILES?.split("\n") ?? [])];
           if (
-            (WRITERS.has(program) ||
-              (program === "ruff" && argv[1] === "format")) &&
+            (WRITERS.has(program) || (program === "ruff" && argv[1] === "format")) &&
             files.some((file) => file.startsWith("/") && !inside(file))
           ) {
             trace.refused = true;
@@ -584,9 +547,7 @@ function watch<T extends object>(io: T, trace: Trace): T {
         }
         if (
           MUTATORS.has(String(name)) &&
-          args.some(
-            (a) => typeof a === "string" && a.startsWith("/") && !inside(a),
-          )
+          args.some((a) => typeof a === "string" && a.startsWith("/") && !inside(a))
         ) {
           trace.refused = true;
           return undefined;
@@ -634,11 +595,7 @@ interface Hook {
   none?: string;
   /** What "did work" means, for the report. */
   work: string;
-  core(
-    c: Ctx,
-    phase: Phase,
-    m: Modules,
-  ): Promise<{ acted?: boolean; off?: boolean }>;
+  core(c: Ctx, phase: Phase, m: Modules): Promise<{ acted?: boolean; off?: boolean }>;
 }
 
 /** The call of a formatter or of lint-code: a file, or a command. */
@@ -686,14 +643,7 @@ const HOOK_LIST: Hook[] = [
   {
     name: "lint-code",
     on: { Write: ["post"], Edit: ["post"], Bash: ["post"] },
-    tools: [
-      "ruff",
-      "oxlint",
-      "shellcheck",
-      "yamllint",
-      "ansible-lint",
-      "tflint",
-    ],
+    tools: ["ruff", "oxlint", "shellcheck", "yamllint", "ansible-lint", "tflint"],
     state: true,
     mtime: true,
     args: [],
@@ -715,12 +665,7 @@ const HOOK_LIST: Hook[] = [
     work: "blocked on alerts or gave a notice",
     core: async (c, _phase, m) => {
       const io = watch(m.io.nodeIo(), c.trace);
-      const { block, notice } = await m.core.check(
-        c.filePath,
-        c.session,
-        io,
-        m.io.nodeSettings(),
-      );
+      const { block, notice } = await m.core.check(c.filePath, c.session, io, m.io.nodeSettings());
       // A Vale that cannot start or fails `--version` turns the hook off.
       const vale = c.trace.runs.find((run) => run.program === "vale");
       return {
@@ -738,11 +683,7 @@ const HOOK_LIST: Hook[] = [
     work: "blocked the commit",
     core: async (c, _phase, m) => {
       const io = watch(m.io.nodeIo(c.cwd), c.trace);
-      const verdict = await m.core.check(
-        c.command,
-        io,
-        m.io.nodeSettings(c.cwd),
-      );
+      const verdict = await m.core.check(c.command, io, m.io.nodeSettings(c.cwd));
       return { acted: verdict.block !== undefined };
     },
   },
@@ -789,8 +730,7 @@ const HOOK_LIST: Hook[] = [
       if (!c.call) await m.core.prune(io, where.home);
       else if (c.call.tool === "Bash" && phase === "pre")
         c.world.pending = await m.core.beginCall(io, where, c.cwd);
-      else if (c.call.tool === "Bash")
-        await m.core.endCall(io, where, c.world.pending, "Bash");
+      else if (c.call.tool === "Bash") await m.core.endCall(io, where, c.world.pending, "Bash");
       else {
         const end = new Date();
         await m.core.recordTool(
@@ -885,17 +825,12 @@ function hookEnv(): NodeJS.ProcessEnv {
 /** The hook payload of a call, as Claude Code sends it. */
 function payload(c: Ctx, phase: Phase) {
   const base = { session_id: c.session, cwd: c.cwd };
-  if (!c.call)
-    return { ...base, hook_event_name: c.event, stop_hook_active: false };
+  if (!c.call) return { ...base, hook_event_name: c.event, stop_hook_active: false };
   const { call } = c;
   return {
     ...base,
     hook_event_name:
-      phase === "pre"
-        ? "PreToolUse"
-        : call.isError
-          ? "PostToolUseFailure"
-          : "PostToolUse",
+      phase === "pre" ? "PreToolUse" : call.isError ? "PostToolUseFailure" : "PostToolUse",
     tool_name: call.tool,
     tool_use_id: call.id,
     tool_input:
@@ -909,11 +844,7 @@ function payload(c: Ctx, phase: Phase) {
 }
 
 /** Runs command.ts once with the payload on stdin; its time and exit code. */
-function command(
-  hook: Hook,
-  c: Ctx,
-  phase: Phase,
-): Promise<{ ms: number; code: number }> {
+function command(hook: Hook, c: Ctx, phase: Phase): Promise<{ ms: number; code: number }> {
   const env = hookEnv();
   // track-session-changes writes under the home folder.
   if (hook.name === "track-session-changes") {
@@ -930,9 +861,7 @@ function command(
     );
     child.stdin.on("error", () => undefined);
     child.stdin.end(input);
-    child.on("close", (code) =>
-      resolve({ ms: performance.now() - start, code: code ?? -1 }),
-    );
+    child.on("close", (code) => resolve({ ms: performance.now() - start, code: code ?? -1 }));
   });
 }
 
@@ -961,13 +890,10 @@ function describe(c: Ctx, stop?: File[]) {
     };
   }
   const files = stop ?? (c.call?.file ? [c.call.file] : []);
-  if (!c.call && !stop)
-    return { ext: "none", size: 0, lines: 0, partial: false };
+  if (!c.call && !stop) return { ext: "none", size: 0, lines: 0, partial: false };
   const exts = [...new Set(files.map((f) => extension(f.path)))].sort();
   return {
-    ext:
-      (exts.length > 3 ? [...exts.slice(0, 3), "more"] : exts).join(" ") ||
-      "none",
+    ext: (exts.length > 3 ? [...exts.slice(0, 3), "more"] : exts).join(" ") || "none",
     size: files.reduce((n, f) => n + Buffer.byteLength(f.text), 0),
     lines: files.reduce((n, f) => n + lineCount(f.text), 0),
     partial: files.some((f) => f.partial),
@@ -1060,14 +986,9 @@ async function replay(
     if (hook.probe) acted = probe() !== start;
     else if (path === "command.ts") acted = exit !== 0;
     const trace = c.trace;
-    off ||= trace.runs.some(
-      (run) => !run.ok && run.ms < 1000 && hook.tools.includes(run.program),
-    );
-    const ran = trace.runs.some(
-      (run) => run.ok && hook.tools.includes(run.program),
-    );
-    if (path === "in process")
-      pass.known.set(key, { ran, off, unsafe: trace.refused, acted });
+    off ||= trace.runs.some((run) => !run.ok && run.ms < 1000 && hook.tools.includes(run.program));
+    const ran = trace.runs.some((run) => run.ok && hook.tools.includes(run.program));
+    if (path === "in process") pass.known.set(key, { ran, off, unsafe: trace.refused, acted });
     if (off) return void pass.off++;
     if (trace.refused) return void pass.unsafe++;
     if (before && before.acted !== acted) pass.mismatch++;
@@ -1082,8 +1003,7 @@ async function replay(
       at,
     });
     count++;
-    if (count % 250 === 0)
-      process.stderr.write(`  ${hook.name} ${path}: ${count}\n`);
+    if (count % 250 === 0) process.stderr.write(`  ${hook.name} ${path}: ${count}\n`);
   };
 
   for (const session of sessions) {
@@ -1135,9 +1055,7 @@ async function replay(
           if (hook.skipFailed && (call.isError || !call.result)) pass.failed++;
           else {
             const c = ctx(call, call.tool as Event, cwd);
-            const file = (call.input.file_path ?? call.input.notebook_path) as
-              | string
-              | undefined;
+            const file = (call.input.file_path ?? call.input.notebook_path) as string | undefined;
             c.filePath = file === undefined ? undefined : world.map(file);
             if (call.result)
               c.result = {
@@ -1152,13 +1070,7 @@ async function replay(
       }
       const stop = session.stops.get(i);
       if (stop && hook.on.Stop && count < max)
-        await measure(
-          ctx(undefined, "Stop", cwd),
-          "Stop",
-          hook.on.Stop,
-          undefined,
-          stop,
-        );
+        await measure(ctx(undefined, "Stop", cwd), "Stop", hook.on.Stop, undefined, stop);
     }
     world.remove();
   }
@@ -1171,8 +1083,7 @@ async function replay(
 const percentile = (sorted: number[], p: number) =>
   sorted[Math.max(Math.ceil((p / 100) * sorted.length) - 1, 0)] ?? 0;
 const round = (value: number) => Math.round(value * 100) / 100;
-const pct = (part: number, all: number) =>
-  all ? Math.round((100 * part) / all) : 0;
+const pct = (part: number, all: number) => (all ? Math.round((100 * part) / all) : 0);
 /** A call slower than this is a stall: the mean leaves it out. */
 const STALL = 2000;
 
@@ -1181,9 +1092,7 @@ const csv = (rows: (string | number | boolean)[][]) =>
     .map((row) =>
       row
         .map((value) =>
-          /[",\n]/.test(String(value))
-            ? `"${String(value).replaceAll('"', '""')}"`
-            : value,
+          /[",\n]/.test(String(value)) ? `"${String(value).replaceAll('"', '""')}"` : value,
         )
         .join(","),
     )
@@ -1246,8 +1155,7 @@ function report(results: Results) {
     `- Input: ${meta.transcripts} transcripts, ${meta.writes} Write, ${meta.edits} Edit, and ${meta.notebooks} NotebookEdit calls, ${meta.sample} of ${meta.bash} Bash calls (seed ${SEED}), ${meta.stops} turns that changed files.`,
     `- Edit rebuilds: ${meta.editOriginal} from \`originalFile\`, ${meta.editState} from the text that earlier calls left, ${meta.editHunks} from the patch hunks only.`,
   ];
-  const summary: { session_ms: number; [column: string]: string | number }[] =
-    [];
+  const summary: { session_ms: number; [column: string]: string | number }[] = [];
   const slowest: Sample[] = [];
   const notes: string[] = [];
   for (const hook of results.hooks) {
@@ -1271,9 +1179,7 @@ function report(results: Results) {
         const kept = sorted.filter((ms) => ms <= STALL);
         const mean = kept.reduce((sum, ms) => sum + ms, 0) / kept.length;
         // A Bash row holds a sample of the Bash calls: scale it to all of them.
-        const scale = event.endsWith("Bash")
-          ? Number(meta.bash) / Number(meta.sample)
-          : 1;
+        const scale = event.endsWith("Bash") ? Number(meta.bash) / Number(meta.sample) : 1;
         const perSession = (rows.length * scale) / Number(meta.transcripts);
         // The key order is the column order: the columns to rank by first.
         summary.push({
@@ -1296,8 +1202,7 @@ function report(results: Results) {
       notes.push(
         ...[
           pass.off && `${pass.off} calls where the tool could not start`,
-          pass.unsafe &&
-            `${pass.unsafe} unsafe (a write outside the fixture, refused)`,
+          pass.unsafe && `${pass.unsafe} unsafe (a write outside the fixture, refused)`,
           pass.failed && `${pass.failed} failed calls that the adapter skips`,
           pass.mismatch &&
             `${pass.mismatch} calls where command.ts and the core in process disagree on "did work"`,
@@ -1309,30 +1214,17 @@ function report(results: Results) {
     slowest.push(...all.sort((a, b) => b.ms - a.ms).slice(0, 5));
   }
   block.push("", '"Did work" per hook:', "");
-  for (const hook of results.hooks)
-    if (!hook.none) block.push(`- ${hook.name}: ${hook.work}.`);
+  for (const hook of results.hooks) if (!hook.none) block.push(`- ${hook.name}: ${hook.work}.`);
   if (notes.length) block.push("", "Calls left out:", "", ...notes);
   return {
     block: block.join("\n"),
     summary: csv([
       Object.keys(summary[0] ?? {}),
       // The most expensive rows first.
-      ...summary
-        .sort((a, b) => b.session_ms - a.session_ms)
-        .map((row) => Object.values(row)),
+      ...summary.sort((a, b) => b.session_ms - a.session_ms).map((row) => Object.values(row)),
     ]),
     slowest: csv([
-      [
-        "hook",
-        "path",
-        "agents",
-        "event",
-        "ms",
-        "extension",
-        "hunks_only",
-        "bytes",
-        "lines",
-      ],
+      ["hook", "path", "agents", "event", "ms", "extension", "hunks_only", "bytes", "lines"],
       ...slowest
         .sort((a, b) => b.ms - a.ms)
         .map((s) => [
@@ -1360,10 +1252,7 @@ function publish(results: Results) {
   writeFileSync(join(data, "slowest.csv"), slowest);
   const intro =
     "`scripts/extensions/hooks/perf.ts` writes this file and the CSV files in this folder, so do not edit them. The [README](../README.md) tells how to read them.";
-  writeFileSync(
-    join(data, "README.md"),
-    `# Run data\n\n${intro}\n\n${block}\n`,
-  );
+  writeFileSync(join(data, "README.md"), `# Run data\n\n${intro}\n\n${block}\n`);
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -1380,8 +1269,7 @@ function random(seed: number) {
 
 async function main() {
   const saved = join(BASE, "results.json");
-  if (flags.render)
-    return publish(JSON.parse(readFileSync(saved, "utf8")) as Results);
+  if (flags.render) return publish(JSON.parse(readFileSync(saved, "utf8")) as Results);
   if (!existsSync(HOOKS)) {
     const src = join(BASE, "src", HEAD);
     mkdirSync(src, { recursive: true });
@@ -1405,10 +1293,7 @@ async function main() {
   mkdirSync(SCRATCH, { recursive: true });
   mkdirSync(LINT_CONFIG, { recursive: true });
   for (const name of ["yamllint", "ansible-lint", "tflint.hcl"])
-    copyFileSync(
-      join(HOOKS, "lint-code/config", `dot_${name}`),
-      join(LINT_CONFIG, `.${name}`),
-    );
+    copyFileSync(join(HOOKS, "lint-code/config", `dot_${name}`), join(LINT_CONFIG, `.${name}`));
 
   const files = readdirSync(PROJECTS, { withFileTypes: true })
     .filter((e) => e.isDirectory())
@@ -1453,14 +1338,10 @@ async function main() {
   if (flags.hook && existsSync(saved)) {
     const last = JSON.parse(readFileSync(saved, "utf8")) as Results;
     if (last.meta.commit === HEAD)
-      results.hooks = last.hooks.filter(
-        (hook) => !flags.hook!.includes(hook.name),
-      );
+      results.hooks = last.hooks.filter((hook) => !flags.hook!.includes(hook.name));
   }
 
-  const chosen = HOOK_LIST.filter(
-    (hook) => !flags.hook || flags.hook.includes(hook.name),
-  );
+  const chosen = HOOK_LIST.filter((hook) => !flags.hook || flags.hook.includes(hook.name));
   for (const hook of chosen) {
     const entry: Results["hooks"][number] = {
       name: hook.name,

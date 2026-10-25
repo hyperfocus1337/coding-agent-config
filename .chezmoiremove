@@ -20,3 +20,4 @@
 .claude/hooks/format-terraform
 .claude/hooks/format-prettier
 .claude/hooks/format-oxfmt/shared.ts
+.claude/hooks/format-oxfmt/config

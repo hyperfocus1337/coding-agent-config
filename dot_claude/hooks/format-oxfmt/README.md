@@ -65,15 +65,8 @@ The hook starts the `oxfmt` binary directly, as `lint-code` starts its linters. 
 2. The hook collects the candidate files: the file of a Write or an Edit, or the Markdown files of the [Bash sweep](#bash-markdown-sweep).
 3. It keeps each candidate once, and only if the extension matches, the path is not a throwaway path, and the path is a regular file.
 4. It drops each file whose repository sets `agent-hook.format-oxfmt.enabled` to `false` in git config. It runs one `git config` for each folder, and only for the files that step 3 kept.
-5. It splits the files by config, see [Config](#config), and runs oxfmt once for each set, in the session folder. It stops oxfmt after 20 s.
+5. It runs `oxfmt <files>` once, in the session folder. oxfmt finds the config of each file, see [Config](#config). The hook stops oxfmt after 20 s.
 6. If a Bash command committed, it compares each file before and after oxfmt and can give the [amend hint](#write-and-commit-in-one-command).
-
-The oxfmt commands are:
-
-```sh
-oxfmt <files with an oxfmt config>
-oxfmt -c <hook folder>/config/oxfmtrc.json <files without one>
-```
 
 ### Bash (markdown sweep)
 
@@ -149,9 +142,9 @@ The hook skips a path under `/tmp`, `/var/tmp`, or `$TMPDIR`, for a Write, an Ed
 
 oxfmt does not read `.prettierrc`. It looks for `.oxfmtrc.json`, `.oxfmtrc.jsonc`, `oxfmt.config.ts`, or `oxfmt.config.mts`, from the folder of each file up, and the nearest config wins.
 
-With no config, oxfmt uses a print width of 100 and sorts the keys of `package.json`. Prettier uses 80 and does not sort. So the hook gives each file that has no oxfmt config the bundled [`config/oxfmtrc.json`](config/oxfmtrc.json): `printWidth` 80 and `sortPackageJson` false. `-c` turns off the config search, so a call with both kinds of files starts two oxfmt runs.
+With no config, oxfmt uses its defaults: a print width of 100, and it sorts the keys of `package.json`. Prettier uses 80 and does not sort. So in a project that Prettier formats with no oxfmt config, each file that the hook formats can reflow to 100 columns.
 
-A project with a `.prettierrc` and no oxfmt config gets the bundled config, not its Prettier style. To keep the style, run `oxfmt --migrate prettier` in that project, which writes `.oxfmtrc.json` from a JSON or JS Prettier config. Or turn the hook off there with `/toggle-hook --repo format-oxfmt`.
+To keep the Prettier style of a project, run `oxfmt --migrate prettier` in that project, which writes `.oxfmtrc.json` from a JSON or JS Prettier config. Or turn the hook off there with `/toggle-hook --repo format-oxfmt`.
 
 `proseWrap` is `preserve` by default in oxfmt, so oxfmt keeps the line breaks that the author wrote. A paragraph on one line, as `writing.md` asks, stays on one line, and oxfmt pads each table also when it is wider than the print width. [Why not `proseWrap` never](docs/implementation.md#why-not-prosewrap-never) gives the rejected alternative.
 
@@ -195,7 +188,7 @@ When the hook works, you see only the formatted files. A missing oxfmt, a parse 
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AGENT_HOOKS_DISABLE`                               | A value that names `format-oxfmt`, separated by spaces or commas, turns the hook off. The hook reads it on each run. `format-staged-files` ignores it.                    |
 | `git config agent-hook.format-oxfmt.enabled false`  | Turns the hook off in one repository, or globally, across sessions, also in `format-staged-files`. Outside git, or with a value that is not a boolean, the hook stays on. |
-| `.oxfmtrc.json` and the other oxfmt configs         | The style of the project. A file with none gets the bundled config.                                                                                                       |
+| `.oxfmtrc.json` and the other oxfmt configs         | The style of the project. A file with none gets the oxfmt defaults.                                                                                                       |
 | `.prettierignore`                                   | oxfmt skips the files that it lists.                                                                                                                                      |
 | `git config hook.format-staged-files.enabled false` | Turns off `format-staged-files` in one repository. That hook ignores `AGENT_HOOKS_DISABLE`.                                                                               |
 

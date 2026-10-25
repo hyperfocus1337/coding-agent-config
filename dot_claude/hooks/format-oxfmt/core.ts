@@ -22,8 +22,6 @@ export interface Io {
 }
 
 export interface Settings {
-  /** The folder of oxfmtrc.json, the config for a file that has none. */
-  configDir: string;
   /** TMPDIR: files under it are throwaway and not formatted. */
   tmpdir?: string;
   /** AGENT_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
@@ -47,13 +45,6 @@ const EDITED =
   /\.(md|markdown|js|jsx|ts|tsx|mts|cts|mjs|cjs|json|jsonc|json5|css|scss|less|html|yml|yaml|toml)$/;
 /** The Bash sweep takes Markdown only. README "Bash (markdown sweep)". */
 const MARKDOWN = /\.(md|markdown)$/;
-/** The config files oxfmt looks for, from the folder of each file up. */
-const CONFIGS = [
-  ".oxfmtrc.json",
-  ".oxfmtrc.jsonc",
-  "oxfmt.config.ts",
-  "oxfmt.config.mts",
-];
 /** A Markdown path that a command names. */
 const NAMED = /[^\s:;|&"'`()<>=]+\.(?:md|markdown)\b/g;
 /**
@@ -67,17 +58,10 @@ const ABSOLUTE = /(?<![^\s"'`=(;|&<>])\/[^\s:;|&"'`()<>]+/g;
  */
 const COMMIT = /\bgit[ \t](?:[^;&|\n]*[ \t])?commit(?![\w-])/;
 /** The files of the last commit; --root also answers for the first commit. */
-const LAST_COMMIT = [
-  "diff-tree",
-  "--no-commit-id",
-  "--name-only",
-  "-r",
-  "--root",
-];
+const LAST_COMMIT = ["diff-tree", "--no-commit-id", "--name-only", "-r", "--root"];
 
 /** Whether a command commits: the sweep then also covers the last commit. */
-const commits = (call: Call) =>
-  !call.filePath && COMMIT.test(call.command ?? "");
+const commits = (call: Call) => !call.filePath && COMMIT.test(call.command ?? "");
 
 /** Whether AGENT_HOOKS_DISABLE names the hook. */
 const sessionOff = (settings: Settings) =>
@@ -90,11 +74,7 @@ const sessionOff = (settings: Settings) =>
 function throwaway(file: string, settings: Settings): boolean {
   const tmpdir = (settings.tmpdir || "/nonexistent").replace(/^\/private/, "");
   const plain = file.replace(/^\/private/, "");
-  return (
-    plain.startsWith("/tmp/") ||
-    plain.startsWith("/var/tmp/") ||
-    plain.startsWith(tmpdir)
-  );
+  return plain.startsWith("/tmp/") || plain.startsWith("/var/tmp/") || plain.startsWith(tmpdir);
 }
 
 const parent = (path: string) => path.slice(0, path.lastIndexOf("/")) || "/";
@@ -134,10 +114,7 @@ async function sweep(call: Call, io: Io): Promise<string[]> {
   // in the command never moves the cwd of the hook. shortcut: absolute paths
   // only, because a relative one is ambiguous after a cd.
   const roots = new Set<string>();
-  const paths = new Set([
-    call.cwd,
-    ...[...command.matchAll(ABSOLUTE)].map(([path]) => path),
-  ]);
+  const paths = new Set([call.cwd, ...[...command.matchAll(ABSOLUTE)].map(([path]) => path)]);
   for (const path of paths) {
     const dir = (await io.stat(path))?.kind === "dir" ? path : parent(path);
     const root = await toplevel(dir, io);
@@ -152,8 +129,7 @@ async function sweep(call: Call, io: Io): Promise<string[]> {
   ];
   // A command that writes and commits leaves a clean tree, so the sweep also
   // takes the files of the last commit. README "Write and commit in one command".
-  if (commits(call))
-    lists.push([...LAST_COMMIT, "-z", "--diff-filter=d", "HEAD"]);
+  if (commits(call)) lists.push([...LAST_COMMIT, "-z", "--diff-filter=d", "HEAD"]);
   for (const root of roots) {
     const changed = new Set<string>();
     for (const args of lists) {
@@ -181,11 +157,7 @@ async function sweep(call: Call, io: Io): Promise<string[]> {
  * repository sets agent-hook.format-oxfmt.enabled to false, as /toggle-hook
  * --repo does, stays as it is.
  */
-async function targets(
-  call: Call,
-  io: Io,
-  settings: Settings,
-): Promise<string[]> {
+async function targets(call: Call, io: Io, settings: Settings): Promise<string[]> {
   const named = call.filePaths ?? (call.filePath ? [call.filePath] : undefined);
   const candidates = named ?? (await sweep(call, io));
   const extensions = named ? EDITED : MARKDOWN;
@@ -200,57 +172,10 @@ async function targets(
     )
       continue;
     const dir = parent(file);
-    if (!asked.has(dir))
-      asked.set(dir, gitBool(dir, "agent-hook.format-oxfmt.enabled", io));
+    if (!asked.has(dir)) asked.set(dir, gitBool(dir, "agent-hook.format-oxfmt.enabled", io));
     if ((await asked.get(dir)) !== "false") kept.push(file);
   }
   return kept;
-}
-
-/** Whether `dir` or a folder above it holds an oxfmt config. */
-function configured(
-  dir: string,
-  io: Io,
-  seen: Map<string, Promise<boolean>>,
-): Promise<boolean> {
-  let found = seen.get(dir);
-  if (!found) {
-    found = (async () => {
-      for (const name of CONFIGS)
-        if (
-          (await io.stat(`${dir.replace(/\/$/, "")}/${name}`))?.kind === "file"
-        )
-          return true;
-      return dir !== "/" && configured(parent(dir), io, seen);
-    })();
-    seen.set(dir, found);
-  }
-  return found;
-}
-
-/**
- * The oxfmt command lines for `files`, each run in the session folder. A file
- * with an oxfmt config above it gets that config. Each other file gets the
- * bundled config, which sets the defaults of Prettier: with no config, oxfmt
- * uses a width of 100. -c turns off the search, so the two sets need two
- * runs. README "Config".
- */
-async function argvs(
-  files: string[],
-  io: Io,
-  settings: Settings,
-): Promise<string[][]> {
-  const seen = new Map<string, Promise<boolean>>();
-  const own: string[] = [];
-  const bundled: string[] = [];
-  for (const file of files)
-    ((await configured(parent(file), io, seen)) ? own : bundled).push(file);
-  return [
-    ...(own.length ? [["oxfmt", ...own]] : []),
-    ...(bundled.length
-      ? [["oxfmt", "-c", `${settings.configDir}/oxfmtrc.json`, ...bundled]]
-      : []),
-  ];
 }
 
 /**
@@ -258,11 +183,7 @@ async function argvs(
  * the call committed a Markdown file that oxfmt then changed, else undefined.
  * README "Write and commit in one command".
  */
-export async function format(
-  call: Call,
-  io: Io,
-  settings: Settings,
-): Promise<string | undefined> {
+export async function format(call: Call, io: Io, settings: Settings): Promise<string | undefined> {
   if (sessionOff(settings)) return undefined;
   const files = await targets(call, io, settings);
   if (!files.length) return undefined;
@@ -270,11 +191,13 @@ export async function format(
   // from before the run. A commit sweep holds only Markdown.
   const watched = commits(call) ? files : [];
   const before = await Promise.all(watched.map((file) => io.read(file)));
-  let started = false;
-  for (const argv of await argvs(files, io, settings))
-    if (await io.run(argv, { cwd: call.cwd, timeoutMs: 20_000 }))
-      started = true;
-  if (!started) return undefined;
+  // oxfmt uses the nearest config of each file, else its defaults. README
+  // "Config".
+  const ran = await io.run(["oxfmt", ...files], {
+    cwd: call.cwd,
+    timeoutMs: 20_000,
+  });
+  if (!ran) return undefined;
   const dirty: string[] = [];
   for (const [i, file] of watched.entries()) {
     if ((await io.read(file)) === before[i]) continue;

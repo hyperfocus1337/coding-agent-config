@@ -5,7 +5,6 @@
 
 import { spawn } from "node:child_process";
 import { readFile, stat } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
 import type { Io, Settings } from "./core.ts";
 
 export const nodeIo: Io = {
@@ -36,8 +35,6 @@ export const nodeIo: Io = {
 
 export function nodeSettings(): Settings {
   return {
-    // import.meta.url is the real path, also when pi loads pi.ts by setting.
-    configDir: fileURLToPath(new URL("./config", import.meta.url)),
     tmpdir: process.env.TMPDIR,
     hooksOff: process.env.AGENT_HOOKS_DISABLE,
   };

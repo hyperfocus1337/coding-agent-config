@@ -68,7 +68,7 @@ A file that the command names and git ignores is the same failure as [Write and 
 
 ## Why not `proseWrap` never
 
-`proseWrap` `never` joins the lines of each paragraph into one line. It also stops oxfmt from padding a table that is wider than `printWidth` (`80` in the bundled config): the table stays in the compact `| --- |` form. Prettier did the same. The default `preserve` pads each table, see [Config](../README.md#config).
+`proseWrap` `never` joins the lines of each paragraph into one line. It also stops oxfmt from padding a table that is wider than `printWidth` (`100` by default): the table stays in the compact `| --- |` form. Prettier did the same. The default `preserve` pads each table, see [Config](../README.md#config).
 
 ## The `/private` prefix on macOS
 
@@ -76,13 +76,12 @@ macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/.
 
 ## Files
 
-| File                                                                | Role                                                                                                        |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| [`core.ts`](../core.ts)                                             | The extensions, the sweep, the config lookup, the oxfmt command lines, and the amend hint. No Node imports. |
-| [`io.ts`](../io.ts)                                                 | The file and process functions of the core under Node, and the folder of the bundled config                 |
-| [`config/oxfmtrc.json`](../config/oxfmtrc.json)                     | The config for a file with no oxfmt config                                                                  |
-| [`command.ts`](../command.ts)                                       | The command hook for Codex and `format-staged-files`                                                        |
-| [`pi.ts`](../pi.ts)                                                 | The pi extension, which omp also loads                                                                      |
-| [`omp.ts`](../omp.ts)                                               | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see                                   |
-| [`hooks/register.ts`](../hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                                                                         |
-| [`dot_claude-plugin/plugin.json`](../dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json`                                               |
+| File                                                                | Role                                                                           |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| [`core.ts`](../core.ts)                                             | The extensions, the sweep, the oxfmt run, and the amend hint. No Node imports. |
+| [`io.ts`](../io.ts)                                                 | The file and process functions of the core under Node                          |
+| [`command.ts`](../command.ts)                                       | The command hook for Codex and `format-staged-files`                           |
+| [`pi.ts`](../pi.ts)                                                 | The pi extension, which omp also loads                                         |
+| [`omp.ts`](../omp.ts)                                               | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see      |
+| [`hooks/register.ts`](../hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                                            |
+| [`dot_claude-plugin/plugin.json`](../dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json`                  |

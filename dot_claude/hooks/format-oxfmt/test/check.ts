@@ -19,7 +19,6 @@ import ompExtension from "../omp.ts";
 import extension from "../pi.ts";
 
 const hook = path.dirname(import.meta.dirname);
-const configDir = `${hook}/config`;
 // A hook that /toggle-hook turned off in the agent that runs this check
 // still runs here.
 delete process.env.AGENT_HOOKS_DISABLE;
@@ -75,15 +74,14 @@ const edit = (file: string) =>
 
 /** A table oxfmt realigns: cells of unequal width, no padding yet. */
 const RAW = "| a | bbbbbbbbbbbb |\n| --- | --- |\n| ccccccccccccccc | d |\n";
-/** 93 characters: longer than 80, the width of the bundled config. */
+/** 111 characters: longer than 100, the width of the oxfmt defaults. */
 const LONG =
-  "const x = { alpha: 1, beta: 2, gamma: 3, delta: 4, epsilon: 5, zeta: 6, eta: 7, theta: 8 };\n";
+  "const x = { alpha: 1, beta: 2, gamma: 3, delta: 4, epsilon: 5, zeta: 6, eta: 7, theta: 8, iota: 9, kappa: 10 };\n";
 const unaligned = (file: string) => fs.writeFileSync(file, RAW);
 const read = (file: string) => fs.readFileSync(file, "utf8");
 const aligned = (file: string) => assert.match(read(file), /^\| a {2}/);
 const wrapped = (file: string) => assert.match(read(file), /^ {2}alpha: 1,$/m);
-const formatted = (what: string, file: string) =>
-  check(`format ${what}`, () => aligned(file));
+const formatted = (what: string, file: string) => check(`format ${what}`, () => aligned(file));
 const unchanged = (what: string, file: string, text: string) =>
   check(`skip ${what}`, () => assert.equal(read(file), text));
 const quiet = (what: string, ran: ReturnType<typeof hookRun>) =>
@@ -112,16 +110,7 @@ fs.mkdirSync(`${outer}/plain`, { recursive: true });
 fs.mkdirSync(`${outer}/nested/deeper`, { recursive: true });
 git(outer, "init", "-q");
 git(outer, "commit", "-q", "--allow-empty", "-m", "seed");
-git(
-  outer,
-  "-c",
-  "protocol.file.allow=always",
-  "submodule",
-  "add",
-  "-q",
-  sub,
-  "submod",
-);
+git(outer, "-c", "protocol.file.allow=always", "submodule", "add", "-q", sub, "submod");
 git(outer, "commit", "-qm", "submod");
 git(`${outer}/nested`, "init", "-q");
 git(`${outer}/nested/deeper`, "init", "-q");
@@ -143,11 +132,11 @@ fs.mkdirSync(`${outer}/vendor`);
 fs.writeFileSync(`${outer}/.gitignore`, "vendor/\n");
 unaligned(`${outer}/vendor/V.md`);
 fs.symlinkSync(".", `${outer}/self`);
-// A table whose padded width passes 80 columns, and one sentence per line:
+// A table whose padded width passes 100 columns, and one sentence per line:
 // under proseWrap never, the sentences join.
 fs.writeFileSync(
   `${outer}/WIDE.md`,
-  "| first-column-heading-here | second-column-heading-x | third-column-heading-yz |\n| --- | --- | --- |\n| first-column-cell-value | second-column-cell-value | third-column-cell-value |\n\nThe first sentence stays on its own line.\nThe second sentence also stays on its own line.\n",
+  "| first-column-heading-here-and-more | second-column-heading-x-and-more | third-column-heading-yz-and-more |\n| --- | --- | --- |\n| first-column-cell-value | second-column-cell-value | third-column-cell-value |\n\nThe first sentence stays on its own line.\nThe second sentence also stays on its own line.\n",
 );
 
 // The command names no path, so only the queue finds the roots.
@@ -159,20 +148,13 @@ await formatted("embedded repo at depth 2", `${outer}/nested/deeper/DEEP.md`);
 await formatted("dirty submodule", `${outer}/submod/SUB.md`);
 await formatted("worktree in the repo", `${outer}/.worktrees/feat/WT.md`);
 await unchanged("sweep leaves .ts", `${outer}/code.ts`, "const a  =  1\n");
-await unchanged(
-  "sweep leaves .json",
-  `${outer}/data.json`,
-  '{"a":1,   "b":2}\n',
-);
+await unchanged("sweep leaves .json", `${outer}/data.json`, '{"a":1,   "b":2}\n');
 await unchanged("ignored Markdown", `${outer}/vendor/V.md`, RAW);
 await check("prose wrap: a wide table stays padded", () =>
   assert.match(read(`${outer}/WIDE.md`), /^\| -{8}/m),
 );
 await check("prose wrap: sentence lines are kept", () =>
-  assert.match(
-    read(`${outer}/WIDE.md`),
-    /^The second sentence also stays on its own line\.$/m,
-  ),
+  assert.match(read(`${outer}/WIDE.md`), /^The second sentence also stays on its own line\.$/m),
 );
 
 // A repo with no commits has no HEAD, so `git diff HEAD` fails. Untracked
@@ -197,10 +179,7 @@ fs.mkdirSync(other);
 git(other, "init", "-q");
 git(other, "commit", "-q", "--allow-empty", "-m", "seed");
 unaligned(`${other}/OTHER.md`);
-await quiet(
-  "cross-repo sweep",
-  bash(outer, `cat > ${other}/OTHER.md <<EOF\nx\nEOF`),
-);
+await quiet("cross-repo sweep", bash(outer, `cat > ${other}/OTHER.md <<EOF\nx\nEOF`));
 await formatted("cross-repo absolute path", `${other}/OTHER.md`);
 
 // Only an absolute path is a root: the end of a relative path is not.
@@ -216,7 +195,7 @@ await check("sweep: no git start for a relative path", async () => {
         return { exitCode: 1, stdout: "" };
       },
     },
-    { configDir },
+    {},
   );
   assert.deepEqual(dirs, ["/repo", "/abs"]);
 });
@@ -225,10 +204,7 @@ await check("sweep: no git start for a relative path", async () => {
 // ignored in the same call is already ignored when the hook runs.
 unaligned(`${outer}/vendor/NAMED.md`);
 bash(outer, "cat > vendor/NAMED.md <<EOF\nx\nEOF");
-await formatted(
-  "ignored file named in the command",
-  `${outer}/vendor/NAMED.md`,
-);
+await formatted("ignored file named in the command", `${outer}/vendor/NAMED.md`);
 
 // .prettierignore still wins: that one is a formatting decision.
 fs.writeFileSync(`${outer}/.prettierignore`, "PIGNORED.md\n");
@@ -276,10 +252,7 @@ ran = bash(committed, "git add -A && git commit -m more && just fmt-check", {
   hook_event_name: "PostToolUseFailure",
   error: "exit 1",
 });
-await formatted(
-  "file committed by a command that then failed",
-  `${committed}/F.md`,
-);
+await formatted("file committed by a command that then failed", `${committed}/F.md`);
 await check("hint: names the event that fired", () =>
   assert.equal(hint(ran)?.hookEventName, "PostToolUseFailure"),
 );
@@ -297,10 +270,7 @@ await quiet("hint: none for a file the commit does not hold", ran);
 // A commit whose Markdown oxfmt leaves as it is needs no amend.
 git(committed, "add", "-A");
 git(committed, "commit", "-qm", "formatted");
-await quiet(
-  "hint: none when oxfmt changed nothing",
-  bash(committed, "git commit -m formatted"),
-);
+await quiet("hint: none when oxfmt changed nothing", bash(committed, "git commit -m formatted"));
 
 // A repo with one commit has no HEAD~1, and the hint still comes.
 const first = `${tmp}/first`;
@@ -351,17 +321,13 @@ await quiet("edit: a file that does not exist", edit(`${outer}/gone.md`));
 fs.mkdirSync(`${outer}/own`);
 fs.writeFileSync(`${outer}/wide.ts`, LONG);
 edit(`${outer}/wide.ts`);
-await check("config: a file with no oxfmt config gets width 80", () =>
+await check("config: a file with no oxfmt config gets width 100", () =>
   wrapped(`${outer}/wide.ts`),
 );
 fs.writeFileSync(`${outer}/own/.oxfmtrc.json`, '{ "printWidth": 120 }\n');
 fs.writeFileSync(`${outer}/own/wide.ts`, LONG);
 edit(`${outer}/own/wide.ts`);
-await unchanged(
-  "config: the nearest oxfmt config wins",
-  `${outer}/own/wide.ts`,
-  LONG,
-);
+await unchanged("config: the nearest oxfmt config wins", `${outer}/own/wide.ts`, LONG);
 
 // --- AGENT_HOOKS_DISABLE ---
 
@@ -370,7 +336,7 @@ await check("AGENT_HOOKS_DISABLE that names the hook: nothing runs", async () =>
     await format(
       { filePath: "/x/a.md", cwd: "/x" },
       new Proxy({}, { get: () => () => assert.fail("the hook ran") }) as never,
-      { configDir, hooksOff: "lint-code format-oxfmt" },
+      { hooksOff: "lint-code format-oxfmt" },
     ),
     undefined,
   ),
@@ -396,11 +362,7 @@ for (const [what, config, programs] of [
 ] as const)
   await check(`git config: ${what}`, async () => {
     const ran: string[][] = [];
-    await format(
-      { filePath: "/x/a.md", cwd: "/x" },
-      configIo(config, ran) as never,
-      { configDir },
-    );
+    await format({ filePath: "/x/a.md", cwd: "/x" }, configIo(config, ran) as never, {});
     assert.deepEqual(
       ran.map(([program]) => program),
       programs,
@@ -433,17 +395,11 @@ await check("pi.ts: appends the amend hint to the result", async () => {
     { cwd: committed },
   )) as { content: { text: string }[] };
   assert.equal(result.content[0]?.text, "committed");
-  assert.match(
-    result.content[1]?.text ?? "",
-    /amend[\s\S]*PI\.md|PI\.md[\s\S]*amend/,
-  );
+  assert.match(result.content[1]?.text ?? "", /amend[\s\S]*PI\.md|PI\.md[\s\S]*amend/);
 });
 await check("pi.ts: leaves other tools alone", async () => {
   unaligned(`${outer}/read.md`);
-  await piHandler?.(
-    { toolName: "read", input: { path: "read.md" }, content: [] },
-    { cwd: outer },
-  );
+  await piHandler?.({ toolName: "read", input: { path: "read.md" }, content: [] }, { cwd: outer });
   assert.equal(read(`${outer}/read.md`), RAW);
 });
 
@@ -487,8 +443,7 @@ await check("omp.ts: leaves the calls of pi.ts alone", async () => {
 type Hook = (...args: unknown[]) => Promise<unknown>;
 let modHook: Hook | undefined;
 register(
-  ((_event: string, _matcher: unknown, hook: Hook) =>
-    (modHook = hook)) as never,
+  ((_event: string, _matcher: unknown, hook: Hook) => (modHook = hook)) as never,
   {} as never,
 );
 const stub$ = (cwd: string) => ({
@@ -517,7 +472,7 @@ const stub$ = (cwd: string) => ({
 });
 const result = { result: "ok", text: "written" };
 fs.writeFileSync(`${outer}/mod.ts`, LONG);
-await check("register.ts: formats with the bundled config", async () => {
+await check("register.ts: formats the file of a Write", async () => {
   assert.equal(
     await modHook?.(
       stub$(outer),
@@ -543,11 +498,7 @@ await check("register.ts: adds the amend hint as context", async () => {
 await check("register.ts: passes a deny through", async () => {
   const denied = { deny: "no" };
   assert.equal(
-    await modHook?.(
-      stub$(outer),
-      { tool: "Bash", command: "x" },
-      async () => denied,
-    ),
+    await modHook?.(stub$(outer), { tool: "Bash", command: "x" }, async () => denied),
     denied,
   );
 });
