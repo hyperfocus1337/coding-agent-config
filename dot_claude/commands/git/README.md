@@ -108,17 +108,18 @@ Remove stale branches and worktrees, and configure worktree paths.
 
 Summarize or rewrite existing commits.
 
-| Command               | Description                                          |
-| --------------------- | ---------------------------------------------------- |
-| `changelog`           | Generate a changelog for a time period               |
-| `revert`              | Undo the commits this conversation made              |
-| `rewrite:author`      | Rewrite author of the whole branch or last N commits |
-| `rewrite:date`        | Set an absolute date on the most recent commit       |
-| `rewrite:shift-dates` | Shift dates of the last N commits by hours           |
+| Command               | Description                                                |
+| --------------------- | ---------------------------------------------------------- |
+| `changelog`           | Generate a changelog for a time period                     |
+| `revert`              | Undo the commits this conversation made                    |
+| `rewrite:author`      | Rewrite author of the whole branch or last N commits       |
+| `rewrite:attribution` | Remove agent attribution from the branch or last N commits |
+| `rewrite:date`        | Set an absolute date on the most recent commit             |
+| `rewrite:shift-dates` | Shift dates of the last N commits by hours                 |
 
 `revert` is the counterpart to the commit commands: it selects the commits by the same conversation boundary they use, then undoes them. It takes a scope argument the same way `commit:task` does, and also accepts a plain commit count. It keeps the file changes in the working directory, unstaged, so the undo loses nothing. The method depends on the commits: unpushed commits that sit contiguous at `HEAD` are dropped with `git reset --mixed`, and pushed commits or a non-contiguous set get `git revert` commits instead. Ask for the changes to be discarded if you want that; the command never does it on its own.
 
-`rewrite:author`, `rewrite:date`, and `rewrite:shift-dates` rewrite git history, so they all show current commits, warn about force-pushing, and confirm before running. There is no named-argument (`--flag`) syntax in slash commands, only positional slots and free text, so each command is written to be called three ways:
+`rewrite:author`, `rewrite:attribution`, `rewrite:date`, and `rewrite:shift-dates` rewrite git history, so they all show current commits, warn about force-pushing, and confirm before running. There is no named-argument (`--flag`) syntax in slash commands, only positional slots and free text, so each command is written to be called three ways:
 
 - Bare, then interviewed: run the command with no arguments and answer the questions it asks. You never need to remember argument order, and you see the affected commits before anything changes. This is the safest default.
 - Natural language: describe the values after the command, e.g. `/git:rewrite:author "Jane Doe <jane@x.com>" last 5 commits`. The intent is parsed, so order does not have to be exact.
@@ -127,6 +128,7 @@ Summarize or rewrite existing commits.
 Argument slots per command:
 
 - `rewrite:author` — author string (quoted, `"Firstname Lastname <email>"`), then an optional commit count. Omit the count to rewrite the entire branch from the root.
+- `rewrite:attribution`: the same slots as `rewrite:author`. It also removes every co-author trailer, for agents and humans, unless you ask to keep them.
 - `rewrite:date` — a timestamp with a timezone offset, e.g. `"2026-07-14 09:30:00 +0200"`. Applies to the most recent commit only.
 - `rewrite:shift-dates` — signed hours (`+2`, `-3`), then how many commits back from HEAD to shift.
 
