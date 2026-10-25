@@ -20,17 +20,13 @@ export const register: Register = (on) => {
     });
     // The engine only takes $ calls spelled at the call site. The process
     // runs in the session folder.
-    const git: Git = (args) =>
-      $.process.run(["git", ...args]).catch(() => undefined);
+    const git: Git = (args) => $.process.run(["git", ...args]).catch(() => undefined);
     // A value set at launch and the git config state show from the start.
-    $.ui.status(
-      status(await $.env.get("AGENT_HOOKS_DISABLE"), await readConfig(git)),
-    );
+    $.ui.status(status(await $.env.get("AGENT_HOOKS_DISABLE"), await readConfig(git)));
     return next(e);
   });
   on("command.run", { command: "toggle-hook" }, async ($, e) => {
-    const git: Git = (args) =>
-      $.process.run(["git", ...args]).catch(() => undefined);
+    const git: Git = (args) => $.process.run(["git", ...args]).catch(() => undefined);
     const { value, text, config } = await command(
       await $.env.get("AGENT_HOOKS_DISABLE"),
       e.args,

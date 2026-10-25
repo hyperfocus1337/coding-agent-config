@@ -11,24 +11,14 @@
 
 import { spawnSync } from "node:child_process";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import {
-  command,
-  globalFile,
-  HOOKS,
-  NAMES,
-  readConfig,
-  status,
-  type Git,
-} from "./core.ts";
+import { command, globalFile, HOOKS, NAMES, readConfig, status, type Git } from "./core.ts";
 
 /** git in `cwd`; undefined when git cannot start. */
 const gitIn =
   (cwd: string): Git =>
   async (args) => {
     const ran = spawnSync("git", args, { cwd, encoding: "utf8" });
-    return ran.error
-      ? undefined
-      : { exitCode: ran.status ?? 1, stdout: ran.stdout };
+    return ran.error ? undefined : { exitCode: ran.status ?? 1, stdout: ran.stdout };
   };
 
 export default function (pi: ExtensionAPI) {

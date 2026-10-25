@@ -16,11 +16,7 @@ export default function (pi: ExtensionAPI) {
     if (typeof command !== "string") return;
     // check() catches the errors of each scan itself: the binary scan blocks
     // and the content scan allows. pi blocks the call when a handler throws.
-    const verdict = await check(
-      command,
-      nodeIo(ctx.cwd),
-      nodeSettings(ctx.cwd),
-    );
+    const verdict = await check(command, nodeIo(ctx.cwd), nodeSettings(ctx.cwd));
     for (const warning of verdict.warnings) ctx.ui.notify(warning, "warning");
     if (verdict.block) return { block: true, reason: verdict.block };
   });

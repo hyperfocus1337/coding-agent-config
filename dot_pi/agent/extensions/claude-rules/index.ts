@@ -72,12 +72,7 @@ export function discover(root: string): Rule[] {
   }
   return fs
     .readdirSync(root, { withFileTypes: true, recursive: true })
-    .filter(
-      (entry) =>
-        entry.isFile() &&
-        entry.name.endsWith(".md") &&
-        entry.name !== "README.md",
-    )
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".md") && entry.name !== "README.md")
     .map((entry) => {
       const filePath = path.join(entry.parentPath, entry.name);
       const parsed = parseFile(fs.readFileSync(filePath, "utf-8"));
@@ -98,17 +93,12 @@ export function matches(rule: Rule, relativePath: string): boolean {
   }
   // A trailing slash names a directory, so it stands for everything below it.
   return rule.paths.some((pattern) =>
-    path.matchesGlob(
-      relativePath,
-      pattern.endsWith("/") ? `${pattern}**` : pattern,
-    ),
+    path.matchesGlob(relativePath, pattern.endsWith("/") ? `${pattern}**` : pattern),
   );
 }
 
 /** Structured instruction-file records for unscoped rules only. */
-export function instructionFiles(
-  rules: Rule[],
-): Array<{ path: string; content: string }> {
+export function instructionFiles(rules: Rule[]): Array<{ path: string; content: string }> {
   return rules
     .filter((rule) => rule.paths.length === 0)
     .map((rule) => ({ path: rule.filePath, content: rule.body }));
@@ -129,9 +119,7 @@ export default function claudeRules(pi: ExtensionAPI): void {
           source: path.join(root, rule.name),
         }))
       : [];
-    scoped = [...rules, ...projectRules].filter(
-      (rule) => rule.paths.length > 0,
-    );
+    scoped = [...rules, ...projectRules].filter((rule) => rule.paths.length > 0);
     files = instructionFiles([...rules, ...projectRules]);
   }
   // The project coordinator announces approval on the shared event bus.
@@ -160,11 +148,7 @@ export default function claudeRules(pi: ExtensionAPI): void {
 
   pi.on("tool_result", (event, ctx) => {
     const target = event.input.path;
-    if (
-      event.isError ||
-      !FILE_TOOLS.has(event.toolName) ||
-      typeof target !== "string"
-    ) {
+    if (event.isError || !FILE_TOOLS.has(event.toolName) || typeof target !== "string") {
       return;
     }
     const relativePath = path.relative(ctx.cwd, path.resolve(ctx.cwd, target));

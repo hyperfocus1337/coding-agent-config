@@ -23,11 +23,7 @@ export default function (pi: ExtensionAPI) {
     }
     // A run that you stopped, or that failed, does not start another.
     const last = event.messages.at(-1);
-    if (
-      last?.role === "assistant" &&
-      ["aborted", "error"].includes(last.stopReason)
-    )
-      return;
+    if (last?.role === "assistant" && ["aborted", "error"].includes(last.stopReason)) return;
     try {
       const errors = await check(ctx.cwd, nodeIo(), nodeSettings());
       if (errors === undefined) return;

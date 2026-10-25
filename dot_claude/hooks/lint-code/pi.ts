@@ -43,8 +43,7 @@ export async function lintCalls(
     const io = nodeIo(cwd);
     const settings = nodeSettings();
     const found = new Set<string>();
-    for (const call of calls)
-      for (const file of await targets(call, io, settings)) found.add(file);
+    for (const call of calls) for (const file of await targets(call, io, settings)) found.add(file);
     const output = await lint([...found], io, settings);
     if (output === undefined) return;
     return {

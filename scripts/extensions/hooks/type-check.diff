@@ -22,8 +22,7 @@
 +const HOOK = "type-check-pyrefly";
 -  // root, so tsc sees the same scope as the changed-path list.
 +  // root, so pyrefly sees the same scope as the changed-path list.
--  if (!changed.some((path) => /\.(ts|tsx|mts|cts)$/.test(path)))
--    return undefined;
+-  if (!changed.some((path) => /\.(ts|tsx|mts|cts)$/.test(path))) return undefined;
 +  if (!changed.some((path) => path.endsWith(".py"))) return undefined;
 -  // tsc with no tsconfig.json prints its whole help text and exits 1. A
 -  // missing tsc is a skip.

@@ -52,10 +52,7 @@ const read = (file: string) => {
 
 // The files the pre-commit run restaged, as `<blob before>\0<path>\0`. In
 // the git folder, so each worktree has its own.
-const record = resolve(
-  root,
-  git(["rev-parse", "--git-path", "format-staged-files"]).stdout.trim(),
-);
+const record = resolve(root, git(["rev-parse", "--git-path", "format-staged-files"]).stdout.trim());
 
 // `git commit <path>` commits a temporary index, so the restage misses the
 // real index, and `git status` shows the file as MM. Git writes the real
@@ -68,10 +65,7 @@ if (process.argv[2] === "post-commit") {
   const stale: string[] = [];
   for (let i = 0; i + 1 < entries.length; i += 2) {
     const [blob, rel] = [entries[i]!, entries[i + 1]!];
-    if (
-      git(["rev-parse", "-q", "--verify", `:0:${rel}`]).stdout.trim() === blob
-    )
-      stale.push(rel);
+    if (git(["rev-parse", "-q", "--verify", `:0:${rel}`]).stdout.trim() === blob) stale.push(rel);
   }
   if (stale.length) git(["reset", "-q", ...fromStdin], stale.join("\0"));
   process.exit(0);
@@ -83,15 +77,8 @@ rmSync(record, { force: true });
 // child gets the git variables through the environment. --raw gives the
 // mode and the blob of the index side.
 const staged = fields(
-  git([
-    "diff",
-    "--cached",
-    "--raw",
-    "-z",
-    "--no-abbrev",
-    "--no-renames",
-    "--diff-filter=ACM",
-  ]).stdout,
+  git(["diff", "--cached", "--raw", "-z", "--no-abbrev", "--no-renames", "--diff-filter=ACM"])
+    .stdout,
 );
 // Unstaged changes in a file: `git add` would commit those too.
 const unstaged = new Set(fields(git(["diff", "--name-only", "-z"]).stdout));
@@ -129,13 +116,8 @@ for (const formatter of ["format-oxfmt", "format-org-tables", "format-code"])
 const changed = files.filter((rel, i) => read(`${root}/${rel}`) !== before[i]);
 if (!changed.length) process.exit(0);
 git(["add", ...fromStdin], changed.join("\0"));
-writeFileSync(
-  record,
-  changed.map((rel) => `${blobs.get(rel)}\0${rel}\0`).join(""),
-);
+writeFileSync(record, changed.map((rel) => `${blobs.get(rel)}\0${rel}\0`).join(""));
 // Git passes pre-commit stderr through, also with `commit -q`. Without these
 // lines, a changed file size is the only trace of the restage.
 for (const rel of changed)
-  process.stderr.write(
-    `format-staged-files: reformatted and restaged ${rel}\n`,
-  );
+  process.stderr.write(`format-staged-files: reformatted and restaged ${rel}\n`);

@@ -1,7 +1,4 @@
-import type {
-  ExtensionAPI,
-  ExtensionContext,
-} from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 const PROVIDER = "openai-codex";
 const URL = "https://chatgpt.com/backend-api/wham/usage";
@@ -24,15 +21,9 @@ export function parseUsage(value: unknown, now = Date.now()): Usage {
     if (!window) continue;
     const percent = window.used_percent;
     const seconds = window.limit_window_seconds;
-    if (
-      typeof percent !== "number" ||
-      !Number.isFinite(percent) ||
-      percent < 0 ||
-      percent > 100
-    )
+    if (typeof percent !== "number" || !Number.isFinite(percent) || percent < 0 || percent > 100)
       continue;
-    const key =
-      seconds === 18000 ? "session" : seconds === 604800 ? "weekly" : undefined;
+    const key = seconds === 18000 ? "session" : seconds === 604800 ? "weekly" : undefined;
     if (!key) continue;
     const reset = window.reset_at;
     const after = window.reset_after_seconds;
@@ -44,16 +35,11 @@ export function parseUsage(value: unknown, now = Date.now()): Usage {
           : undefined;
     usage[key] = { percent, resetAt };
   }
-  if (!usage.session && !usage.weekly)
-    throw new Error("No supported Codex quota windows");
+  if (!usage.session && !usage.weekly) throw new Error("No supported Codex quota windows");
   return usage;
 }
 
-export function status(
-  label: string,
-  window?: Window,
-  now = Date.now(),
-): string {
+export function status(label: string, window?: Window, now = Date.now()): string {
   return `${label} ${
     window && (window.resetAt === undefined || window.resetAt > now)
       ? `${Math.round(window.percent)}%`
@@ -63,20 +49,14 @@ export function status(
 
 function claims(token: string): Record<string, unknown> | undefined {
   try {
-    return record(
-      JSON.parse(
-        atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
-      ),
-    );
+    return record(JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))));
   } catch {
     return undefined;
   }
 }
 
 export function accountId(token: string): string | undefined {
-  const id = record(
-    claims(token)?.["https://api.openai.com/auth"],
-  )?.chatgpt_account_id;
+  const id = record(claims(token)?.["https://api.openai.com/auth"])?.chatgpt_account_id;
   return typeof id === "string" && /^[\w-]+$/.test(id) ? id : undefined;
 }
 
@@ -95,10 +75,7 @@ export function clientId(token: string): string | undefined {
 
 export function matchesApp(value: unknown, id: string): boolean {
   const items = record(value)?.items;
-  return (
-    Array.isArray(items) &&
-    items.filter((item) => record(item)?.id === id).length === 1
-  );
+  return Array.isArray(items) && items.filter((item) => record(item)?.id === id).length === 1;
 }
 
 async function readJson(
@@ -136,18 +113,13 @@ async function readJson(
   }
 }
 
-export async function readUsage(
-  token: string,
-  id: string,
-  signal: AbortSignal,
-): Promise<Usage> {
+export async function readUsage(token: string, id: string, signal: AbortSignal): Promise<Usage> {
   return parseUsage(await readJson(URL, token, id, signal));
 }
 
 function supported(ctx: ExtensionContext): boolean {
   return (
-    ctx.mode === "tui" &&
-    (ctx.model?.provider === PROVIDER || ctx.model?.provider === "openai")
+    ctx.mode === "tui" && (ctx.model?.provider === PROVIDER || ctx.model?.provider === "openai")
   );
 }
 
@@ -181,31 +153,23 @@ export default function codexUsage(pi: ExtensionAPI): void {
       const modern = ctx.model.provider === "openai";
       let app: string | undefined;
       if (modern) {
-        failure =
-          "Usage requires the official OpenAI subscription login, not an API key or proxy.";
+        failure = "Usage requires the official OpenAI subscription login, not an API key or proxy.";
         if (!ctx.modelRegistry.isUsingOAuth(ctx.model)) throw new Error();
-        const active = (await ctx.modelRegistry.getProviderAuth("openai"))
-          ?.auth;
+        const active = (await ctx.modelRegistry.getProviderAuth("openai"))?.auth;
         for (const baseUrl of [active?.baseUrl, ctx.model.baseUrl]) {
-          if (
-            baseUrl &&
-            new globalThis.URL(baseUrl).origin !== "https://api.openai.com"
-          )
+          if (baseUrl && new globalThis.URL(baseUrl).origin !== "https://api.openai.com")
             throw new Error();
         }
         app = active?.apiKey && clientId(active.apiKey);
         if (!app) throw new Error();
       }
       const backend = modern
-        ? ctx.modelRegistry
-            .getAll()
-            .find((model) => model.provider === PROVIDER)
+        ? ctx.modelRegistry.getAll().find((model) => model.provider === PROVIDER)
         : ctx.model;
       failure =
         "Run /login, select OpenAI Codex (legacy), and use the same ChatGPT account/workspace as OpenAI. Keep your current model.";
       needsLogin = true;
-      if (!backend || !ctx.modelRegistry.isUsingOAuth(backend))
-        throw new Error();
+      if (!backend || !ctx.modelRegistry.isUsingOAuth(backend)) throw new Error();
       const auth = (await ctx.modelRegistry.getProviderAuth(PROVIDER))?.auth;
       const token = auth?.apiKey;
       const id = token && accountId(token);
@@ -214,20 +178,12 @@ export default function codexUsage(pi: ExtensionAPI): void {
       failure = "Usage checks reject custom Codex origins.";
       // Only the backend credential is sent to ChatGPT; the app token stays local.
       for (const baseUrl of [auth?.baseUrl, backend.baseUrl]) {
-        if (
-          baseUrl &&
-          new globalThis.URL(baseUrl).origin !== "https://chatgpt.com"
-        )
+        if (baseUrl && new globalThis.URL(baseUrl).origin !== "https://chatgpt.com")
           throw new Error();
       }
       failure = "Codex usage unavailable. Check /login or try again later.";
       if (app) {
-        const apps = await readJson(
-          `${URL}/chatpass/apps`,
-          token,
-          id,
-          controller.signal,
-        );
+        const apps = await readJson(`${URL}/chatpass/apps`, token, id, controller.signal);
         failure =
           "OpenAI app not found in the quota account. Sign in to OpenAI and OpenAI Codex (legacy) with the same ChatGPT account/workspace.";
         if (!matchesApp(apps, app)) throw new Error();
@@ -239,10 +195,7 @@ export default function codexUsage(pi: ExtensionAPI): void {
       ctx.ui.setStatus(KEYS[1], status("Weekly", usage.weekly));
     } catch {
       if (current !== generation) return;
-      ctx.ui.setStatus(
-        KEYS[0],
-        needsLogin ? "Session: login required" : "Session --",
-      );
+      ctx.ui.setStatus(KEYS[0], needsLogin ? "Session: login required" : "Session --");
       ctx.ui.setStatus(KEYS[1], "Weekly --");
       if (force) ctx.ui.notify(failure, "warning");
     } finally {
@@ -271,10 +224,7 @@ export default function codexUsage(pi: ExtensionAPI): void {
   pi.registerCommand("codex-usage", {
     description: "Refresh Codex session and weekly quota percentages",
     handler: async (_args, ctx) => {
-      if (
-        ctx.model?.provider !== PROVIDER &&
-        ctx.model?.provider !== "openai"
-      ) {
+      if (ctx.model?.provider !== PROVIDER && ctx.model?.provider !== "openai") {
         ctx.ui.notify("Select an OpenAI or Codex model first.", "info");
         return;
       }

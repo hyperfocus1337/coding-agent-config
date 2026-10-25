@@ -42,17 +42,13 @@ function check(what: string, patch: string, status: number, files: string[]) {
   try {
     assert.equal(ran.status, status, ran.stderr);
     const logged = fs.readFileSync(log, "utf8").split("\n").filter(Boolean);
-    assert.deepEqual(
-      logged.sort(),
-      files.map((file) => `Write ${path.join(tmp, file)}`).sort(),
-    );
+    assert.deepEqual(logged.sort(), files.map((file) => `Write ${path.join(tmp, file)}`).sort());
   } catch (error) {
     failures += 1;
     console.error(`FAIL ${what}\n  ${(error as Error).message}`);
   }
 }
-const write = (file: string, code: number) =>
-  fs.writeFileSync(path.join(tmp, file), `${code}\n`);
+const write = (file: string, code: number) => fs.writeFileSync(path.join(tmp, file), `${code}\n`);
 
 // Add, Update, Delete, and Update with Move to; one relative path with a space.
 fs.mkdirSync(path.join(tmp, "sub dir"));
@@ -82,21 +78,17 @@ check(
 
 write("a.md", 2);
 write("b.md", 127);
-check(
-  "exit 2 wins over a higher code",
-  "*** Add File: a.md\n*** Add File: b.md",
-  2,
-  ["a.md", "b.md"],
-);
+check("exit 2 wins over a higher code", "*** Add File: a.md\n*** Add File: b.md", 2, [
+  "a.md",
+  "b.md",
+]);
 
 write("a.md", 1);
 write("b.md", 0);
-check(
-  "highest code wins without a block",
-  "*** Add File: a.md\n*** Add File: b.md",
-  1,
-  ["a.md", "b.md"],
-);
+check("highest code wins without a block", "*** Add File: a.md\n*** Add File: b.md", 1, [
+  "a.md",
+  "b.md",
+]);
 
 check("no file lines, no hook run", "not a patch", 0, []);
 

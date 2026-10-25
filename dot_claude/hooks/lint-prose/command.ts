@@ -17,8 +17,7 @@ const payload = JSON.parse(readFileSync(0, "utf8")) as {
   session_id?: unknown;
   tool_input?: { file_path?: unknown };
 };
-const text = (value: unknown) =>
-  typeof value === "string" ? value : undefined;
+const text = (value: unknown) => (typeof value === "string" ? value : undefined);
 const { block, notice } = await check(
   text(payload.tool_input?.file_path),
   text(payload.session_id),

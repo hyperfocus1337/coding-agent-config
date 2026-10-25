@@ -13,13 +13,8 @@ export const register: Register = (on) => {
     // The engine only takes $ calls spelled at the call site, so each read is
     // inline. A missing file reads as "", which allows.
     const rules = await $.fs.read(`${$.plugin.root}/rules`).catch(() => "");
-    const allowFile = await $.fs
-      .read(`${root}/.agent-allow-cli-tools`)
-      .catch(() => "");
-    const allowed = allowList(
-      allowFile,
-      await $.env.get("AGENT_ALLOW_CLI_TOOLS"),
-    );
+    const allowFile = await $.fs.read(`${root}/.agent-allow-cli-tools`).catch(() => "");
+    const allowed = allowList(allowFile, await $.env.get("AGENT_ALLOW_CLI_TOOLS"));
     const rule = violation(e.command, parseRules(rules), allowed);
     return rule ? { deny: blockMessage(e.command, rule, root) } : next(e);
   });

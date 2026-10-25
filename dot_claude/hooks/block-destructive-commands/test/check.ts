@@ -27,10 +27,7 @@ const deny = JSON.stringify({
 
 // core: exit 1 blocks with the dcg reason; everything else allows.
 assert.equal(await check("ls", stub(0)), undefined);
-assert.equal(
-  await check("x", stub(1, deny)),
-  "reset discards work [git.reset]",
-);
+assert.equal(await check("x", stub(1, deny)), "reset discards work [git.reset]");
 assert.equal(await check("x", stub(1, '{"reason":"r"}')), "r");
 assert.equal(await check("x", stub(1, "not json")), FALLBACK);
 assert.equal(await check("x", stub(1, '{"reason":""}')), FALLBACK);
@@ -60,8 +57,7 @@ type Handler = (event: unknown, ctx: unknown) => Promise<unknown>;
 let handler: Handler | undefined;
 extension({ on: (_: string, h: Handler) => (handler = h) } as never);
 assert.ok(handler);
-const call = (toolName: string, input: unknown) =>
-  handler!({ toolName, input }, { cwd: tmp });
+const call = (toolName: string, input: unknown) => handler!({ toolName, input }, { cwd: tmp });
 assert.equal(await call("read", { command: "rm -rf /" }), undefined);
 assert.equal(await call("bash", { command: 1 }), undefined);
 

@@ -84,9 +84,7 @@ export interface Io {
   run(
     argv: string[],
     options?: { env?: Record<string, string>; stdin?: string },
-  ): Promise<
-    { exitCode: number; stdout: string; truncated: boolean } | undefined
-  >;
+  ): Promise<{ exitCode: number; stdout: string; truncated: boolean } | undefined>;
 }
 
 /** The log of one session: the home folder, the agent, and the session id. */
@@ -115,16 +113,13 @@ function normalize(path: string): string {
 /** `file` against the absolute folder `dir`, as `path.resolve` does. */
 export const resolve = (dir: string, file: string) =>
   normalize(file.startsWith("/") ? file : `${dir}/${file}`);
-const dirname = (path: string) =>
-  path.slice(0, Math.max(path.lastIndexOf("/"), 0)) || "/";
+const dirname = (path: string) => path.slice(0, Math.max(path.lastIndexOf("/"), 0)) || "/";
 
 const logRoot = (home: string) => `${home}/.local/state/agent-changes`;
 const stateRoot = (home: string) => `${home}/.cache/track-session-changes`;
 
-const logFile = ({ home, agent, session }: Where) =>
-  `${logRoot(home)}/${agent}/${session}.tsv`;
-const stateDir = ({ home, agent, session }: Where) =>
-  `${stateRoot(home)}/${agent}/${session}`;
+const logFile = ({ home, agent, session }: Where) => `${logRoot(home)}/${agent}/${session}.tsv`;
+const stateDir = ({ home, agent, session }: Where) => `${stateRoot(home)}/${agent}/${session}`;
 const objectsDir = ({ home, agent, session }: Where) =>
   `${logRoot(home)}/${agent}/${session}/objects`;
 
@@ -140,9 +135,7 @@ async function sha1(text: string): Promise<string> {
     "SHA-1",
     new TextEncoder().encode(text) as Uint8Array<ArrayBuffer>,
   );
-  return [...new Uint8Array(digest)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 /** Makes `dir` unless it is there: a `$.fs.exists` costs less than a `mkdir`. */
@@ -216,8 +209,7 @@ async function cachedRepos(
   const holds = async (dir: string, { top }: Repo) => {
     if (!(await io.exists(`${top}/.git`))) return false;
     for (; dir !== top; dir = dirname(dir))
-      if (dir === dirname(dir) || (await io.exists(`${dir}/.git`)))
-        return false;
+      if (dir === dirname(dir) || (await io.exists(`${dir}/.git`))) return false;
     return true;
   };
   let changed = false;
@@ -313,10 +305,10 @@ async function storeFiles(
   const ids = new Map<string, string>();
   let rest = files.filter((file) => !file.includes("\n"));
   while (rest.length) {
-    const ran = await io.run(
-      ["git", "-C", repo.top, "hash-object", "-w", "--stdin-paths"],
-      { env, stdin: rest.map((file) => `${file}\n`).join("") },
-    );
+    const ran = await io.run(["git", "-C", repo.top, "hash-object", "-w", "--stdin-paths"], {
+      env,
+      stdin: rest.map((file) => `${file}\n`).join(""),
+    });
     if (!ran) break;
     const found = ran.stdout.split("\n").filter(Boolean);
     found.forEach((id, i) => ids.set(rest[i] ?? "", id));
@@ -332,12 +324,7 @@ async function storeFiles(
  * repo, so `git add -A` hashes only the files whose stat changed since the
  * last call. It stores their blobs, so the end of the call can diff them.
  */
-async function snapshot(
-  io: Io,
-  where: Where,
-  repo: Repo,
-  link: string,
-): Promise<boolean> {
+async function snapshot(io: Io, where: Where, repo: Repo, link: string): Promise<boolean> {
   const state = stateDir(where);
   const objects = objectsDir(where);
   const index = `${state}/index/${await sha1(repo.top)}`;
@@ -355,8 +342,7 @@ async function snapshot(
     if (!(await io.exists(tmp))) return true;
     // git replaces the index file on each write, so the link keeps this one.
     await ensureDir(io, dirname(link));
-    if (!(await io.link(tmp, link)) && !(await io.copy(tmp, link)))
-      return false;
+    if (!(await io.link(tmp, link)) && !(await io.copy(tmp, link))) return false;
     renamed = await io.rename(tmp, index);
     return true;
   } finally {
@@ -410,12 +396,7 @@ export function hunkLine(header: string): number | undefined {
  * and the before blobs in one process, one `hash-object` writes the after
  * blobs, and a patch runs only when a tracked file changed.
  */
-async function diffCall(
-  io: Io,
-  where: Where,
-  repo: Repo,
-  link: string,
-): Promise<Change[]> {
+async function diffCall(io: Io, where: Where, repo: Repo, link: string): Promise<Change[]> {
   const { top } = repo;
   const env = {
     ...objectEnv(objectsDir(where), stateDir(where), repo),
@@ -457,8 +438,7 @@ async function diffCall(
     const xy = fields[1] ?? "";
     if (entry.startsWith("1 ") && xy[1] !== ".")
       add(xy[1] === "D" ? "D" : "M", fields.slice(8).join(" "), fields[7]);
-    else if (entry.startsWith("? ") && !entry.endsWith("/"))
-      add("A", entry.slice(2));
+    else if (entry.startsWith("? ") && !entry.endsWith("/")) add("A", entry.slice(2));
   }
   const ids = await storeFiles(
     io,
@@ -495,8 +475,7 @@ async function diffCall(
     else if (file !== undefined && text.startsWith("@@ ") && !lines.has(file))
       lines.set(file, hunkLine(text));
   }
-  for (const change of changes)
-    if (change.status === "M") change.line = lines.get(change.path);
+  for (const change of changes) if (change.status === "M") change.line = lines.get(change.path);
   return changes;
 }
 
@@ -515,9 +494,7 @@ async function append(
   const repos = await cachedRepos(
     io,
     stateDir(where),
-    changes
-      .filter((change) => change.repo === undefined)
-      .map((change) => dirname(change.path)),
+    changes.filter((change) => change.repo === undefined).map((change) => dirname(change.path)),
   );
   const text = changes.map((change) => {
     const fields = [
@@ -559,9 +536,7 @@ async function touchedRepos(io: Io, where: Where): Promise<string[]> {
 export function patchLine(hunks: Hunk[] | undefined): number {
   const hunk = hunks?.[0];
   if (!hunk) return 1;
-  const context = hunk.lines.findIndex(
-    (line) => line.startsWith("+") || line.startsWith("-"),
-  );
+  const context = hunk.lines.findIndex((line) => line.startsWith("+") || line.startsWith("-"));
   return hunk.newStart + Math.max(context, 0);
 }
 
@@ -575,8 +550,7 @@ export function changedLine(before: string, after: string): number | undefined {
   const old = before.split("\n");
   const now = after.split("\n");
   let line = 0;
-  while (line < old.length && line < now.length && old[line] === now[line])
-    line++;
+  while (line < old.length && line < now.length && old[line] === now[line]) line++;
   return line + 1;
 }
 
@@ -586,10 +560,7 @@ export function changedLine(before: string, after: string): number | undefined {
  * CRLF endings of the file. So when each line of `after` ends in CRLF, each LF
  * of `original` becomes CRLF. Undefined for a file with mixed line endings.
  */
-export function lineEndings(
-  original: string,
-  after: string,
-): string | undefined {
+export function lineEndings(original: string, after: string): string | undefined {
   if (!after.includes("\r\n") || original.includes("\r")) return original;
   const lines = after.split("\n").slice(0, -1);
   if (!lines.every((line) => line.endsWith("\r"))) return undefined;
@@ -630,17 +601,11 @@ function hunksFit(text: string, hunks: Hunk[]): boolean {
  * and 3 context lines. Undefined when no occurrence passes, so the rebuild
  * never gives a wrong text.
  */
-export function rebuildOriginal(
-  after: string,
-  edit: Edit,
-  hunks: Hunk[],
-): string | undefined {
+export function rebuildOriginal(after: string, edit: Edit, hunks: Hunk[]): string | undefined {
   const { oldString, newString, replaceAll } = edit;
-  if (oldString === undefined || newString === undefined || !hunks.length)
-    return undefined;
+  if (oldString === undefined || newString === undefined || !hunks.length) return undefined;
   const starts = [0];
-  for (let i = after.indexOf("\n"); i !== -1; i = after.indexOf("\n", i + 1))
-    starts.push(i + 1);
+  for (let i = after.indexOf("\n"); i !== -1; i = after.indexOf("\n", i + 1)) starts.push(i + 1);
   const lineOf = (offset: number) => {
     let [low, high] = [0, starts.length - 1];
     while (low < high) {
@@ -651,8 +616,7 @@ export function rebuildOriginal(
     return low + 1;
   };
   const ranges = hunks.map((hunk) => {
-    const count =
-      hunk.newLines ?? hunk.lines.filter((line) => line[0] !== "-").length;
+    const count = hunk.newLines ?? hunk.lines.filter((line) => line[0] !== "-").length;
     return [hunk.newStart, hunk.newStart + Math.max(count, 1) - 1] as const;
   });
   const overlaps = (from: number, to: number) =>
@@ -662,11 +626,7 @@ export function rebuildOriginal(
     // A deletion leaves no text to find, so each offset of a hunk is a spot.
     if (replaceAll) return undefined;
     for (const [first, last] of ranges)
-      for (
-        let i = starts[first - 1] ?? after.length;
-        i <= (starts[last] ?? after.length);
-        i++
-      )
+      for (let i = starts[first - 1] ?? after.length; i <= (starts[last] ?? after.length); i++)
         spots.push(i);
   } else
     for (
@@ -719,10 +679,7 @@ export async function recordFiles(
     const repo = repos.get(dirname(change.path));
     change.repo ??= repo?.top ?? "";
     const blobs = await storeBlobs(io, where, repo, change.path, {
-      old:
-        change.status === "A" || change.before !== undefined
-          ? undefined
-          : change.old,
+      old: change.status === "A" || change.before !== undefined ? undefined : change.old,
       after: change.status !== "D" && change.after === undefined,
     });
     change.after ??= blobs.after;
@@ -760,12 +717,8 @@ export async function recordTool(
   // after blob comes from the file on disk, because `updated_file` can format
   // the JSON in another way.
   if (tool === "NotebookEdit") {
-    if (!file || !result || result.error || result.original_file === undefined)
-      return;
-    const line = changedLine(
-      result.original_file ?? "",
-      result.updated_file ?? "",
-    );
+    if (!file || !result || result.error || result.original_file === undefined) return;
+    const line = changedLine(result.original_file ?? "", result.updated_file ?? "");
     const path = resolve(cwd, file);
     return recordFiles(io, where, tool, start, end, [
       { status: "M", path, line, old: result.original_file },
@@ -774,12 +727,7 @@ export async function recordTool(
 
   // A successful Edit or Write returns structuredPatch. A failed one returns an error string.
   file ??= result?.filePath;
-  if (
-    (tool !== "Edit" && tool !== "Write") ||
-    !file ||
-    !result?.structuredPatch
-  )
-    return;
+  if ((tool !== "Edit" && tool !== "Write") || !file || !result?.structuredPatch) return;
   const status = result.type === "create" ? "A" : "M";
   const path = resolve(cwd, file);
   // The text before the call: `originalFile`, else a rebuild of the Edit.
@@ -789,11 +737,7 @@ export async function recordTool(
     const original =
       result.originalFile ??
       (tool === "Edit"
-        ? rebuildOriginal(
-            after.replace(/\r\n/g, "\n"),
-            result,
-            result.structuredPatch,
-          )
+        ? rebuildOriginal(after.replace(/\r\n/g, "\n"), result, result.structuredPatch)
         : undefined);
     if (original !== undefined) old = lineEndings(original, after);
   }
@@ -839,8 +783,7 @@ export async function beginCall(
   for (const repo of repos.values()) {
     const n = pending.repos.length;
     const link = `${state}/calls/${id}.${n}.${Date.now()}.index`;
-    if (await snapshot(io, where, repo, link))
-      pending.repos.push({ ...repo, link });
+    if (await snapshot(io, where, repo, link)) pending.repos.push({ ...repo, link });
   }
   return pending.repos.length ? pending : undefined;
 }
@@ -880,9 +823,7 @@ export async function endCall(
     if (change.status === "D") continue;
     change.line ??= snap?.line ?? (change.status === "A" ? 1 : undefined);
     change.after ??= snap?.after;
-    change.after ??= (
-      await storeBlobs(io, where, undefined, change.path, { after: true })
-    ).after;
+    change.after ??= (await storeBlobs(io, where, undefined, change.path, { after: true })).after;
   }
   await append(io, where, tool, start, end, named);
 }
@@ -892,9 +833,7 @@ export async function endCall(
  * Undefined for an id that is not a safe file name.
  */
 export const pendingFile = (where: Where, callId: string) =>
-  safeName(where.agent, where.session, callId)
-    ? `${stateDir(where)}/pending/${callId}`
-    : undefined;
+  safeName(where.agent, where.session, callId) ? `${stateDir(where)}/pending/${callId}` : undefined;
 
 /**
  * The files of a Codex apply_patch call. Relative paths resolve against `cwd`.
@@ -940,8 +879,7 @@ export async function prune(io: Io, home: string, now = Date.now()) {
   for (const agent of await io.list(logs))
     for (const name of await io.list(`${logs}/${agent}`)) {
       const log = `${logs}/${agent}/${name}`;
-      if (name.endsWith(".tsv") && (await age(log)) > KEEP)
-        await io.remove(log);
+      if (name.endsWith(".tsv") && (await age(log)) > KEEP) await io.remove(log);
     }
   for (const agent of await io.list(states))
     for (const name of await io.list(`${states}/${agent}`)) {
@@ -960,8 +898,7 @@ export async function prune(io: Io, home: string, now = Date.now()) {
           await io.remove(`${session}/pending/${call}`);
       for (const call of await io.list(`${session}/calls`)) {
         const made = Number(/\.(\d+)\.index$/.exec(call)?.[1] ?? 0);
-        if (now - made > KEEP_PENDING)
-          await io.remove(`${session}/calls/${call}`);
+        if (now - made > KEEP_PENDING) await io.remove(`${session}/calls/${call}`);
       }
     }
   // containers/ holds the logs of each container, which its own prune keeps.

@@ -49,10 +49,7 @@ export async function checkFiles(
     }
     if (!blocks.length) return;
     return {
-      content: [
-        ...content,
-        { type: "text", text: `Prose lint errors:\n${blocks.join("")}` },
-      ],
+      content: [...content, { type: "text", text: `Prose lint errors:\n${blocks.join("")}` }],
       isError: true,
     };
   } catch {

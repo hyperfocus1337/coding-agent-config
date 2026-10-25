@@ -19,11 +19,11 @@ export function nodeIo(cwd: string, bin = DCG): Io {
         // Bun, which runs pi and omp, throws a failed spawn here instead of
         // emitting an error event, and can give a child with no stdout.
         try {
-          child = spawn(
-            bin,
-            ["--robot", "test", "--dialect", "posix", command],
-            { cwd, stdio: ["ignore", "pipe", "ignore"], timeout: 5000 },
-          );
+          child = spawn(bin, ["--robot", "test", "--dialect", "posix", command], {
+            cwd,
+            stdio: ["ignore", "pipe", "ignore"],
+            timeout: 5000,
+          });
         } catch {
           return done(undefined);
         }

@@ -29,9 +29,7 @@ export function nodeIo(): Io {
         child.stderr.on("data", (chunk) => (stderr += chunk));
         // A program that cannot start (not installed) counts as missing.
         child.on("error", () => resolve(undefined));
-        child.on("close", (code) =>
-          resolve({ exitCode: code ?? 1, stdout, stderr }),
-        );
+        child.on("close", (code) => resolve({ exitCode: code ?? 1, stdout, stderr }));
       }),
   };
 }

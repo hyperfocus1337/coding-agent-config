@@ -51,10 +51,7 @@ export async function alignCalls(
     }
     if (!hints.length) return;
     return {
-      content: [
-        ...content,
-        ...hints.map((text) => ({ type: "text" as const, text })),
-      ],
+      content: [...content, ...hints.map((text) => ({ type: "text" as const, text }))],
     };
   } catch {
     // Never blocks: a broken align run must not change the result.

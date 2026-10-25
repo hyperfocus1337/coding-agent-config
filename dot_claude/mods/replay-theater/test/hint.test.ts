@@ -57,9 +57,9 @@ test("the hint is hidden by default", async ($, on) => {
 test("/replay hint toggles the hint and stores the choice", async ($, on) => {
   const store = engine(on);
   await oneEdit($);
-  expect(
-    await $.command.run({ command: "replay", args: "hint" }),
-  ).toMatchObject({ text: "Replay Theater: hint on" });
+  expect(await $.command.run({ command: "replay", args: "hint" })).toMatchObject({
+    text: "Replay Theater: hint on",
+  });
   expect(store.showHint).toBe(true);
   const ui = await $.ui.mount({
     plugin: "replay-theater",
@@ -68,9 +68,9 @@ test("/replay hint toggles the hint and stores the choice", async ($, on) => {
     props: {},
   });
   expect(await ui.find({ text: /Replay: 1 edit/ })).toBeDefined();
-  expect(
-    await $.command.run({ command: "replay", args: "hint off" }),
-  ).toMatchObject({ text: "Replay Theater: hint off" });
+  expect(await $.command.run({ command: "replay", args: "hint off" })).toMatchObject({
+    text: "Replay Theater: hint off",
+  });
   expect(store.showHint).toBe(false);
 });
 

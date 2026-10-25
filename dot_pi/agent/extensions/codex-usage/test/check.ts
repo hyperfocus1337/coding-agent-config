@@ -16,12 +16,7 @@ assert.equal(clientId(token), undefined);
 assert.equal(clientId("invalid"), undefined);
 assert.ok(matchesApp({ items: [{ id: "oaiapp_test" }] }, "oaiapp_test"));
 assert.ok(!matchesApp({ items: [{ id: "oaiapp_other" }] }, "oaiapp_test"));
-assert.ok(
-  !matchesApp(
-    { items: [{ id: "oaiapp_test" }, { id: "oaiapp_test" }] },
-    "oaiapp_test",
-  ),
-);
+assert.ok(!matchesApp({ items: [{ id: "oaiapp_test" }, { id: "oaiapp_test" }] }, "oaiapp_test"));
 assert.ok(!matchesApp({}, "oaiapp_test"));
 const window = (percent, seconds, reset = 2000000000) => ({
   used_percent: percent,
@@ -42,12 +37,9 @@ assert.equal(status("Weekly"), "Weekly --");
 assert.equal(accountId(token), "test-account");
 assert.equal(accountId("invalid"), undefined);
 assert.equal(accountId(`h.${btoa("{}")}.s`), undefined);
-assert.deepEqual(
-  parseUsage({ rate_limit: { primary_window: window(9, 604800) } }),
-  {
-    weekly: { percent: 9, resetAt: 2000000000000 },
-  },
-);
+assert.deepEqual(parseUsage({ rate_limit: { primary_window: window(9, 604800) } }), {
+  weekly: { percent: 9, resetAt: 2000000000000 },
+});
 assert.deepEqual(
   parseUsage(
     {
@@ -94,9 +86,7 @@ const ctx = {
   model: { provider: "openai-codex" },
   modelRegistry: {
     isUsingOAuth: () => true,
-    getAll: () => [
-      { provider: "openai-codex", baseUrl: "https://chatgpt.com/backend-api" },
-    ],
+    getAll: () => [{ provider: "openai-codex", baseUrl: "https://chatgpt.com/backend-api" }],
     getProviderAuth: async () => ({
       auth: { apiKey: token, baseUrl: "https://chatgpt.com/backend-api" },
     }),
@@ -109,10 +99,7 @@ const ctx = {
 };
 const flush = () => new Promise((resolve) => setTimeout(resolve, 20));
 try {
-  assert.deepEqual(
-    await readUsage(token, "test-account", new AbortController().signal),
-    parsed,
-  );
+  assert.deepEqual(await readUsage(token, "test-account", new AbortController().signal), parsed);
   codexUsage({
     on: (event, handler) => handlers.set(event, handler),
     registerCommand: (name, command) => commands.set(name, command),
@@ -138,11 +125,7 @@ try {
   });
   handlers.get("model_select")({}, ctx);
   await flush();
-  assert.equal(
-    calls,
-    before + 1,
-    "custom-origin auth never reaches official endpoint",
-  );
+  assert.equal(calls, before + 1, "custom-origin auth never reaches official endpoint");
   assert.equal(statuses.get("codex-session"), "Session --");
   ctx.modelRegistry.getProviderAuth = async () => ({ auth: { apiKey: token } });
   globalThis.fetch = async () => new Response("denied", { status: 401 });
@@ -150,10 +133,7 @@ try {
   assert.equal(statuses.get("codex-weekly"), "Weekly --");
   assert.equal(notifications.length, 1);
   globalThis.fetch = async () => new Response("x".repeat(65537));
-  await assert.rejects(
-    readUsage(token, "test-account", new AbortController().signal),
-    /too large/,
-  );
+  await assert.rejects(readUsage(token, "test-account", new AbortController().signal), /too large/);
 
   let release;
   globalThis.fetch = () =>
@@ -166,11 +146,7 @@ try {
   handlers.get("model_select")({}, ctx);
   release(Response.json(payload));
   await flush();
-  assert.equal(
-    statuses.size,
-    0,
-    "late responses cannot republish after model switch",
-  );
+  assert.equal(statuses.size, 0, "late responses cannot republish after model switch");
   ctx.model = { provider: "openai", baseUrl: "https://api.openai.com/v1" };
   ctx.modelRegistry.getProviderAuth = async (provider) =>
     provider === "openai" ? { auth: { apiKey: appToken } } : undefined;
@@ -208,20 +184,12 @@ try {
   modernRequests.length = 0;
   await commands.get("codex-usage").handler("", ctx);
   assert.equal(statuses.get("codex-session"), "Session --");
-  assert.equal(
-    modernRequests.length,
-    1,
-    "mismatched account never reaches plan quota read",
-  );
+  assert.equal(modernRequests.length, 1, "mismatched account never reaches plan quota read");
   assert.match(notifications.at(-1), /app not found/);
   ctx.modelRegistry.isUsingOAuth = () => false;
   modernRequests.length = 0;
   await commands.get("codex-usage").handler("", ctx);
-  assert.equal(
-    modernRequests.length,
-    0,
-    "OpenAI API-key auth is not sent to quota endpoints",
-  );
+  assert.equal(modernRequests.length, 0, "OpenAI API-key auth is not sent to quota endpoints");
   ctx.modelRegistry.isUsingOAuth = () => true;
   ctx.model.baseUrl = "https://example.com";
   await commands.get("codex-usage").handler("", ctx);
@@ -235,9 +203,7 @@ try {
   globalThis.fetch = originalFetch;
 }
 
-const config = JSON.parse(
-  readFileSync(new URL("../../pi-footer.json", import.meta.url), "utf8"),
-);
+const config = JSON.parse(readFileSync(new URL("../../pi-footer.json", import.meta.url), "utf8"));
 for (const key of ["codex-session", "codex-weekly"]) {
   const widget = config.lines[2].find((item) => item.id === key);
   assert.equal(widget.type, "external-status");

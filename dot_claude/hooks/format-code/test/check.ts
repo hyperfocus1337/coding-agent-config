@@ -66,8 +66,7 @@ const hookRun = (payload: object) =>
     env,
     timeout: 60_000,
   });
-const bash = (cwd: string, command: string) =>
-  hookRun({ cwd, tool_input: { command } });
+const bash = (cwd: string, command: string) => hookRun({ cwd, tool_input: { command } });
 const edit = (file: string) => hookRun({ tool_input: { file_path: file } });
 
 /** Terraform that terraform fmt changes: the `=` signs are not aligned. */
@@ -121,17 +120,11 @@ fs.mkdirSync(`${repo}/infra`, { recursive: true });
 git(repo, "init", "-q");
 unformatted(`${repo}/infra/heredoc.tf`);
 bash(repo, "cat > infra/heredoc.tf <<'EOF'\na = 1\nEOF");
-await formatted(
-  "a relative path, against the payload cwd",
-  `${repo}/infra/heredoc.tf`,
-);
+await formatted("a relative path, against the payload cwd", `${repo}/infra/heredoc.tf`);
 
 unformatted(`${repo}/one.tf`);
 unformatted(`${repo}/two.tfvars`);
-bash(
-  repo,
-  `sed -i '' s/x/y/ ${repo}/one.tf && sed -i '' s/x/y/ ${repo}/two.tfvars`,
-);
+bash(repo, `sed -i '' s/x/y/ ${repo}/one.tf && sed -i '' s/x/y/ ${repo}/two.tfvars`);
 await formatted("the first of two files in one command", `${repo}/one.tf`);
 await formatted("the second of two files in one command", `${repo}/two.tfvars`);
 
@@ -139,10 +132,7 @@ unformatted(`${repo}/notes.md`);
 bash(repo, `printf x > ${repo}/notes.md`);
 await untouched("a command that names no Terraform path", `${repo}/notes.md`);
 
-await quiet(
-  "a named path that does not exist",
-  bash(repo, `rm ${repo}/gone.tf`),
-);
+await quiet("a named path that does not exist", bash(repo, `rm ${repo}/gone.tf`));
 
 // Write and commit in one call: the commit holds the unformatted file, so
 // the hook names the file in the amend hint.
@@ -163,13 +153,8 @@ await check("hint: names the file", () => {
 unformatted(`${repo}/dash-c.tf`);
 git(repo, "add", "-A");
 git(repo, "commit", "-qm", "dash-c");
-const dashC = bash(
-  repo,
-  `touch ${repo}/dash-c.tf && git -C ${repo} commit -am infra`,
-);
-await check("hint: also after git -C <dir> commit", () =>
-  assert.match(dashC.stdout, /dash-c\.tf/),
-);
+const dashC = bash(repo, `touch ${repo}/dash-c.tf && git -C ${repo} commit -am infra`);
+await check("hint: also after git -C <dir> commit", () => assert.match(dashC.stdout, /dash-c\.tf/));
 
 // A path the command only read stays as it is: its old mtime says so.
 unformatted(`${repo}/read-only.tf`);
@@ -189,10 +174,7 @@ await quiet(
 );
 
 unformatted(`${repo}/quiet.tf`);
-await quiet(
-  "hint: none without a commit",
-  bash(repo, `touch ${repo}/quiet.tf`),
-);
+await quiet("hint: none without a commit", bash(repo, `touch ${repo}/quiet.tf`));
 await formatted("a file written with no commit", `${repo}/quiet.tf`);
 
 // --- shfmt ---
@@ -206,8 +188,7 @@ const shfmtFile = (what: string, file: string, want: string) =>
 // No .editorconfig above the fixture: the hook passes -i 2 -ci. An
 // .editorconfig above $HOME would make shfmt use it instead.
 const above = (dir: string): boolean =>
-  fs.existsSync(`${dir}/.editorconfig`) ||
-  (dir !== "/" && above(path.dirname(dir)));
+  fs.existsSync(`${dir}/.editorconfig`) || (dir !== "/" && above(path.dirname(dir)));
 if (above(tmp)) console.log("SKIP shfmt -i 2: an .editorconfig is above $HOME");
 else {
   fs.writeFileSync(`${tmp}/edit.sh`, RAW_SH);
@@ -240,19 +221,11 @@ await shfmtFile(
   RAW_SH.replace("echo  a", "echo a"),
 );
 bash(repo, "touch ec.bash");
-await shfmtFile(
-  "a .bash path that a command names",
-  `${repo}/ec.bash`,
-  "echo a\n",
-);
+await shfmtFile("a .bash path that a command names", `${repo}/ec.bash`, "echo a\n");
 
 fs.writeFileSync(`${repo}/bad.sh`, "if true; then\n");
 await quiet("shfmt: a file that does not parse", edit(`${repo}/bad.sh`));
-await shfmtFile(
-  "skip a file that does not parse",
-  `${repo}/bad.sh`,
-  "if true; then\n",
-);
+await shfmtFile("skip a file that does not parse", `${repo}/bad.sh`, "if true; then\n");
 
 fs.writeFileSync(`${repo}/committed.sh`, RAW_SH);
 git(repo, "add", "-A");
@@ -290,15 +263,8 @@ await ruffFile("skip a file that does not parse", `${repo}/bad.py`, "x=(\n");
 fs.mkdirSync(`${repo}/py`);
 fs.writeFileSync(`${repo}/py/ruff.toml`, 'exclude = ["skip.py"]\n');
 fs.writeFileSync(`${repo}/py/skip.py`, RAW_PY);
-await quiet(
-  "ruff: an excluded file prints nothing",
-  edit(`${repo}/py/skip.py`),
-);
-await ruffFile(
-  "skip a file the ruff config excludes",
-  `${repo}/py/skip.py`,
-  RAW_PY,
-);
+await quiet("ruff: an excluded file prints nothing", edit(`${repo}/py/skip.py`));
+await ruffFile("skip a file the ruff config excludes", `${repo}/py/skip.py`, RAW_PY);
 
 fs.writeFileSync(`${repo}/committed.py`, RAW_PY);
 git(repo, "add", "-A");
@@ -421,8 +387,7 @@ await check("omp.ts: leaves the calls of pi.ts alone", async () => {
 type Hook = (...args: unknown[]) => Promise<unknown>;
 let modHook: Hook | undefined;
 register(
-  ((_event: string, _matcher: unknown, hook: Hook) =>
-    (modHook = hook)) as never,
+  ((_event: string, _matcher: unknown, hook: Hook) => (modHook = hook)) as never,
   {} as never,
 );
 const stub$ = {
@@ -457,11 +422,7 @@ const result = { result: "ok", text: "written" };
 unformatted(`${repo}/mod.tf`);
 await check("register.ts: formats the file and passes the result", async () => {
   assert.equal(
-    await modHook?.(
-      stub$,
-      { tool: "Write", file_path: `${repo}/mod.tf` },
-      async () => result,
-    ),
+    await modHook?.(stub$, { tool: "Write", file_path: `${repo}/mod.tf` }, async () => result),
     result,
   );
   assert.equal(read(`${repo}/mod.tf`), FORMATTED);
@@ -480,10 +441,7 @@ await check("register.ts: adds the amend hint as context", async () => {
 });
 await check("register.ts: passes a deny through", async () => {
   const denied = { deny: "no" };
-  assert.equal(
-    await modHook?.(stub$, { tool: "Bash", command: "x" }, async () => denied),
-    denied,
-  );
+  assert.equal(await modHook?.(stub$, { tool: "Bash", command: "x" }, async () => denied), denied);
 });
 
 fs.rmSync(tmp, { recursive: true, force: true });

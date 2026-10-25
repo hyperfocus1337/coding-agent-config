@@ -51,11 +51,7 @@ for (const [config, programs] of [
 ] as const)
   await check(`git config prints ${JSON.stringify(config)}`, async () => {
     const ran: string[][] = [];
-    await align(
-      { filePath: "/x/a.org", cwd: "/x" },
-      configIo(config, ran) as never,
-      {},
-    );
+    await align({ filePath: "/x/a.org", cwd: "/x" }, configIo(config, ran) as never, {});
     assert.deepEqual(
       ran.map(([program]) => program),
       programs,
@@ -94,8 +90,7 @@ const hookRun = (payload: object) =>
     env,
     timeout: 60_000,
   });
-const bash = (cwd: string, command: string) =>
-  hookRun({ cwd, tool_input: { command } });
+const bash = (cwd: string, command: string) => hookRun({ cwd, tool_input: { command } });
 const edit = (file: string) => hookRun({ tool_input: { file_path: file } });
 
 /** A table Org realigns: cells of unequal width, no padding yet. */
@@ -104,8 +99,7 @@ const unaligned = (file: string) => fs.writeFileSync(file, RAW);
 const read = (file: string) => fs.readFileSync(file, "utf8");
 /** Aligned: the first cell is padded to the width of the widest one. */
 const isAligned = (file: string) => assert.match(read(file), /^\| a {2}/);
-const aligned = (what: string, file: string) =>
-  check(`align ${what}`, () => isAligned(file));
+const aligned = (what: string, file: string) => check(`align ${what}`, () => isAligned(file));
 const untouched = (what: string, file: string) =>
   check(`skip ${what}`, () => assert.match(read(file), /^\| a \| b/));
 const quiet = (what: string, ran: ReturnType<typeof hookRun>) =>
@@ -164,10 +158,7 @@ await check("align: a TBLFM formula is not evaluated", () =>
 );
 
 // A link counts at its raw width, so each | is at the same column in a diff.
-fs.writeFileSync(
-  `${tmp}/link.org`,
-  "| a | see [[*Cache][Cache]] |\n| b | x |\n",
-);
+fs.writeFileSync(`${tmp}/link.org`, "| a | see [[*Cache][Cache]] |\n| b | x |\n");
 edit(`${tmp}/link.org`);
 await check("align: a link counts at its raw width", () => {
   const widths = read(`${tmp}/link.org`)
@@ -184,37 +175,22 @@ fs.mkdirSync(`${repo}/docs`, { recursive: true });
 git(repo, "init", "-q");
 unaligned(`${repo}/docs/heredoc.org`);
 bash(repo, "cat > docs/heredoc.org <<'EOF'\n| a | b |\nEOF");
-await aligned(
-  "a relative path, against the payload cwd",
-  `${repo}/docs/heredoc.org`,
-);
+await aligned("a relative path, against the payload cwd", `${repo}/docs/heredoc.org`);
 
 // The payload cwd is the one from before the command, so a relative path
 // after a cd resolves against the folder of the cd.
 fs.mkdirSync(`${repo}/pkg/sub`, { recursive: true });
 unaligned(`${repo}/pkg/after-cd.org`);
-bash(
-  `${repo}/docs`,
-  `cd ${repo}/pkg && python3 - <<'EOF'\np='after-cd.org'\nEOF`,
-);
-await aligned(
-  "a relative path after an absolute cd",
-  `${repo}/pkg/after-cd.org`,
-);
+bash(`${repo}/docs`, `cd ${repo}/pkg && python3 - <<'EOF'\np='after-cd.org'\nEOF`);
+await aligned("a relative path after an absolute cd", `${repo}/pkg/after-cd.org`);
 
 unaligned(`${repo}/pkg/sub/two-cds.org`);
 bash(repo, `cd "pkg" && cd sub/ && sed -i '' s/x/y/ two-cds.org`);
-await aligned(
-  "a relative path after two relative cds",
-  `${repo}/pkg/sub/two-cds.org`,
-);
+await aligned("a relative path after two relative cds", `${repo}/pkg/sub/two-cds.org`);
 
 unaligned(`${repo}/one.org`);
 unaligned(`${repo}/two.org`);
-bash(
-  repo,
-  `sed -i '' s/x/y/ ${repo}/one.org && sed -i '' s/x/y/ ${repo}/two.org`,
-);
+bash(repo, `sed -i '' s/x/y/ ${repo}/one.org && sed -i '' s/x/y/ ${repo}/two.org`);
 await aligned("the first of two files in one command", `${repo}/one.org`);
 await aligned("the second of two files in one command", `${repo}/two.org`);
 
@@ -222,20 +198,14 @@ unaligned(`${repo}/prose.md`);
 bash(repo, `printf x > ${repo}/prose.md`);
 await untouched("a command that names no .org path", `${repo}/prose.md`);
 
-await quiet(
-  "a named path that does not exist",
-  bash(repo, `rm ${repo}/gone.org`),
-);
+await quiet("a named path that does not exist", bash(repo, `rm ${repo}/gone.org`));
 
 // Write and commit in one call: the commit holds the unaligned file, so the
 // hook names the file in the amend hint.
 unaligned(`${repo}/committed.org`);
 git(repo, "add", "-A");
 git(repo, "commit", "-qm", "seed");
-let ran = bash(
-  repo,
-  `cat > ${repo}/committed.org <<'EOF'\nEOF\ngit commit -am docs`,
-);
+let ran = bash(repo, `cat > ${repo}/committed.org <<'EOF'\nEOF\ngit commit -am docs`);
 await aligned("a file the command committed", `${repo}/committed.org`);
 await check("hint: names the file", () => {
   const out = JSON.parse(ran.stdout) as {
@@ -250,17 +220,11 @@ unaligned(`${repo}/dash-c.org`);
 git(repo, "add", "-A");
 git(repo, "commit", "-qm", "dash-c");
 ran = bash(repo, `touch ${repo}/dash-c.org && git -C ${repo} commit -am docs`);
-await check("hint: also after git -C <dir> commit", () =>
-  assert.match(ran.stdout, /dash-c\.org/),
-);
+await check("hint: also after git -C <dir> commit", () => assert.match(ran.stdout, /dash-c\.org/));
 
 // A path the command only read stays as it is: its old mtime says so.
 unaligned(`${repo}/read-only.org`);
-fs.utimesSync(
-  `${repo}/read-only.org`,
-  new Date(2020, 0, 1),
-  new Date(2020, 0, 1),
-);
+fs.utimesSync(`${repo}/read-only.org`, new Date(2020, 0, 1), new Date(2020, 0, 1));
 bash(repo, `sed -n '1,2p' ${repo}/read-only.org > ${repo}/copy.org`);
 await untouched("a path the command only read", `${repo}/read-only.org`);
 
@@ -366,8 +330,7 @@ await check("omp.ts: leaves the calls of pi.ts alone", async () => {
 type Hook = (...args: unknown[]) => Promise<unknown>;
 let modHook: Hook | undefined;
 register(
-  ((_event: string, _matcher: unknown, hook: Hook) =>
-    (modHook = hook)) as never,
+  ((_event: string, _matcher: unknown, hook: Hook) => (modHook = hook)) as never,
   {} as never,
 );
 const stub$ = {
@@ -384,10 +347,7 @@ const stub$ = {
     read: async (file: string) => fs.readFileSync(file, "utf8"),
   },
   process: {
-    run: async (
-      argv: string[],
-      init: { cwd: string; env?: Record<string, string> },
-    ) => {
+    run: async (argv: string[], init: { cwd: string; env?: Record<string, string> }) => {
       const done = spawnSync(argv[0]!, argv.slice(1), {
         cwd: init.cwd,
         env: { ...env, ...init.env },
@@ -402,11 +362,7 @@ const result = { result: "ok", text: "written" };
 unaligned(`${repo}/mod.org`);
 await check("register.ts: aligns the file and passes the result", async () => {
   assert.equal(
-    await modHook?.(
-      stub$,
-      { tool: "Write", file_path: `${repo}/mod.org` },
-      async () => result,
-    ),
+    await modHook?.(stub$, { tool: "Write", file_path: `${repo}/mod.org` }, async () => result),
     result,
   );
   isAligned(`${repo}/mod.org`);
@@ -425,10 +381,7 @@ await check("register.ts: adds the amend hint as context", async () => {
 });
 await check("register.ts: passes a deny through", async () => {
   const denied = { deny: "no" };
-  assert.equal(
-    await modHook?.(stub$, { tool: "Bash", command: "x" }, async () => denied),
-    denied,
-  );
+  assert.equal(await modHook?.(stub$, { tool: "Bash", command: "x" }, async () => denied), denied);
 });
 
 fs.rmSync(tmp, { recursive: true, force: true });

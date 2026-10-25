@@ -14,8 +14,7 @@ const payload = JSON.parse(readFileSync(0, "utf8")) as {
   cwd?: string;
   tool_input?: { file_path?: unknown; command?: unknown };
 };
-const text = (value: unknown) =>
-  typeof value === "string" ? value : undefined;
+const text = (value: unknown) => (typeof value === "string" ? value : undefined);
 const cwd = payload.cwd || process.cwd();
 const io = nodeIo(cwd);
 const settings = nodeSettings();

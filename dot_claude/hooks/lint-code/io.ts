@@ -29,9 +29,7 @@ export function nodeIo(cwd: string): Io {
         child.stderr.on("data", (chunk) => (stderr += chunk));
         // A program that cannot start (not installed) skips its file.
         child.on("error", () => resolve(undefined));
-        child.on("close", (code) =>
-          resolve({ exitCode: code ?? 1, output: stdout + stderr }),
-        );
+        child.on("close", (code) => resolve({ exitCode: code ?? 1, output: stdout + stderr }));
       }),
   };
 }

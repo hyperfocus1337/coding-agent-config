@@ -303,9 +303,7 @@ Codex hooks use Claude Code's event names and stdin payload shape ("same JSON sh
     ],
     "Stop": [
       {
-        "hooks": [
-          { "type": "command", "command": ".agents/hooks/lint-changed-docs.sh" }
-        ]
+        "hooks": [{ "type": "command", "command": ".agents/hooks/lint-changed-docs.sh" }]
       }
     ]
   }
@@ -357,9 +355,7 @@ Cursor reads `.cursor/hooks.json` (project) or `~/.cursor/hooks.json` with `"ver
   "version": 1,
   "hooks": {
     "afterFileEdit": [{ "command": ".cursor/hooks/fix-docs.sh" }],
-    "stop": [
-      { "command": ".cursor/hooks/lint-changed-docs.sh", "loop_limit": 3 }
-    ]
+    "stop": [{ "command": ".cursor/hooks/lint-changed-docs.sh", "loop_limit": 3 }]
   }
 }
 ```
@@ -643,11 +639,7 @@ module.exports = function (context, options = {}) {
   return {
     [Syntax.Paragraph](node) {
       const words = getSource(node).split(/\s+/).filter(Boolean).length;
-      if (words > max)
-        report(
-          node,
-          new RuleError(`Paragraph has ${words} words (max ${max})`),
-        );
+      if (words > max) report(node, new RuleError(`Paragraph has ${words} words (max ${max})`));
     },
   };
 };

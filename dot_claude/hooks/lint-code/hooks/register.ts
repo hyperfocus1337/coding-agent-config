@@ -40,10 +40,7 @@ export const register: Register = (on) => {
       tmpdir: await $.env.get("TMPDIR"),
       hooksOff: await $.env.get("AGENT_HOOKS_DISABLE"),
     };
-    const call =
-      e.tool === "Bash"
-        ? { command: e.command, cwd }
-        : { filePath: e.file_path, cwd };
+    const call = e.tool === "Bash" ? { command: e.command, cwd } : { filePath: e.file_path, cwd };
     const output = await lint(await targets(call, io, settings), io, settings);
     if (output === undefined) return ran;
     return {

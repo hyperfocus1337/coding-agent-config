@@ -12,9 +12,7 @@
 
 export interface Io {
   /** The kind of a path and its mtime; undefined if missing. */
-  stat(
-    path: string,
-  ): Promise<{ kind: "file" | "dir" | "other"; mtimeMs: number } | undefined>;
+  stat(path: string): Promise<{ kind: "file" | "dir" | "other"; mtimeMs: number } | undefined>;
   /** The text of a file; undefined if it cannot be read. */
   read(path: string): Promise<string | undefined>;
   /** The stdout of a program; undefined when it cannot start. */
@@ -100,11 +98,7 @@ const ELISP = `
 function throwaway(file: string, settings: Settings): boolean {
   const tmpdir = (settings.tmpdir || "/nonexistent").replace(/^\/private/, "");
   const plain = file.replace(/^\/private/, "");
-  return (
-    plain.startsWith("/tmp/") ||
-    plain.startsWith("/var/tmp/") ||
-    plain.startsWith(tmpdir)
-  );
+  return plain.startsWith("/tmp/") || plain.startsWith("/var/tmp/") || plain.startsWith(tmpdir);
 }
 
 /**
@@ -131,11 +125,7 @@ async function repoOff(dir: string, io: Io): Promise<boolean> {
  * common case. README "Files without tables". A file whose repository turns
  * off the hook stays as it is.
  */
-async function targets(
-  call: Call,
-  io: Io,
-  settings: Settings,
-): Promise<string[]> {
+async function targets(call: Call, io: Io, settings: Settings): Promise<string[]> {
   const command = call.command ?? "";
   const folders = bases(command, call.cwd);
   const given = call.filePaths ?? (call.filePath ? [call.filePath] : undefined);
@@ -165,30 +155,21 @@ async function targets(
  * the model when the call committed a file that Emacs then changed, else
  * undefined. README "Write and commit in one command".
  */
-export async function align(
-  call: Call,
-  io: Io,
-  settings: Settings,
-): Promise<string | undefined> {
-  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("format-org-tables"))
-    return undefined;
+export async function align(call: Call, io: Io, settings: Settings): Promise<string | undefined> {
+  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("format-org-tables")) return undefined;
   const files = await targets(call, io, settings);
   if (!files.length) return undefined;
   // Only a command that commits gets the hint, and the hint names only the
   // files that Emacs itself changed, so keep the text from before the run.
-  const watched =
-    !call.filePath && COMMIT.test(call.command ?? "") ? files : [];
+  const watched = !call.filePath && COMMIT.test(call.command ?? "") ? files : [];
   const before = await Promise.all(watched.map((file) => io.read(file)));
   // One Emacs for all files: the 1.4 s is the start of Emacs. --no-init-file
   // keeps the user's init out. README "One Emacs run for every file".
-  const ran = await io.run(
-    ["emacs", "--batch", "--no-init-file", "--eval", ELISP],
-    {
-      cwd: call.cwd,
-      env: { ORG_TABLE_FILES: files.join("\n") },
-      timeoutMs: 10_000,
-    },
-  );
+  const ran = await io.run(["emacs", "--batch", "--no-init-file", "--eval", ELISP], {
+    cwd: call.cwd,
+    env: { ORG_TABLE_FILES: files.join("\n") },
+    timeoutMs: 10_000,
+  });
   if (!ran) return undefined;
   const dirty: string[] = [];
   for (const [i, file] of watched.entries()) {
@@ -196,17 +177,7 @@ export async function align(
     // Only a file that the last commit holds needs an amend. diff-tree --root
     // also answers for the first commit of a repository.
     const held = await io.run(
-      [
-        "git",
-        "diff-tree",
-        "--no-commit-id",
-        "--name-only",
-        "-r",
-        "--root",
-        "HEAD",
-        "--",
-        file,
-      ],
+      ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", "HEAD", "--", file],
       { cwd: file.slice(0, file.lastIndexOf("/")) || "/" },
     );
     if (held?.stdout.trim()) dirty.push(file);

@@ -55,16 +55,7 @@ const CAP_MS = 4000;
 /** Above this size a binary keeps its own name, so its extension can exempt it. */
 const COPY_MAX = 100 * 1024 * 1024;
 /** Found leaks exit 9, so the error exit of 1 stays apart and allows. */
-const FLAGS = [
-  "--no-banner",
-  "--redact",
-  "--log-level",
-  "error",
-  "--exit-code",
-  "9",
-  "-f",
-  "json",
-];
+const FLAGS = ["--no-banner", "--redact", "--log-level", "error", "--exit-code", "9", "-f", "json"];
 
 /**
  * A `git commit`: `git` anywhere, and `commit` as a word with whitespace
@@ -72,9 +63,7 @@ const FLAGS = [
  * and `hooks/block-secret-commits/` do not.
  */
 function isCommit(command: string): boolean {
-  return (
-    command.includes("git") && /(^|\s)commit([^A-Za-z0-9_-]|$)/.test(command)
-  );
+  return command.includes("git") && /(^|\s)commit([^A-Za-z0-9_-]|$)/.test(command);
 }
 
 /**
@@ -95,19 +84,14 @@ const allowed = (list: string[], path: string) =>
  * The verdict for a Bash command. The binary scan fails closed: an error in
  * it blocks. The content scan fails open: an error in it allows.
  */
-export async function check(
-  command: string,
-  io: Io,
-  settings: Settings,
-): Promise<Verdict> {
+export async function check(command: string, io: Io, settings: Settings): Promise<Verdict> {
   const warnings: string[] = [];
   if (!isCommit(command)) return { warnings };
   let setup: Setup;
   try {
     setup = await prepare(io, settings);
     const offenders = await scanBinary(io, setup);
-    if (offenders.length)
-      return { block: binaryMessage(offenders, settings.root), warnings };
+    if (offenders.length) return { block: binaryMessage(offenders, settings.root), warnings };
   } catch (error) {
     return {
       block: `Blocked: the binary scan of this commit failed, so it could not clear the new binary files: ${(error as Error).message}`,
@@ -115,13 +99,7 @@ export async function check(
     };
   }
   try {
-    const block = await scanContent(
-      command,
-      io,
-      setup,
-      settings.root,
-      warnings,
-    );
+    const block = await scanContent(command, io, setup, settings.root, warnings);
     return { block, warnings };
   } catch {
     // Fail open: a broken content scan must not block every commit.
@@ -141,8 +119,7 @@ async function prepare(io: Io, settings: Settings) {
   // selected one, so this hook may pass its own.
   const picked = await io.run(["betterleaks", "config", "path"]);
   const config =
-    picked?.stdout.trim() === "default" &&
-    (await io.size(settings.config)) !== undefined
+    picked?.stdout.trim() === "default" && (await io.size(settings.config)) !== undefined
       ? ["--config", settings.config]
       : [];
   return { list, betterleaks: picked !== undefined, config };
@@ -156,14 +133,7 @@ type Setup = Awaited<ReturnType<typeof prepare>>;
  * that `betterleaks git` skips, and `betterleaks dir` reads them.
  */
 async function scanBinary(io: Io, setup: Setup): Promise<string[]> {
-  const diff = await io.run([
-    "git",
-    "diff",
-    "--cached",
-    "--numstat",
-    "-z",
-    "--diff-filter=A",
-  ]);
+  const diff = await io.run(["git", "diff", "--cached", "--numstat", "-z", "--diff-filter=A"]);
   const binaries = (diff?.exitCode === 0 ? diff.stdout.split("\0") : [])
     .filter((record) => record.startsWith("-\t-\t"))
     .map((record) => record.slice(4))
@@ -186,21 +156,11 @@ async function scanBinary(io: Io, setup: Setup): Promise<string[]> {
     const scan: string[] = [];
     for (const [i, { path, size }] of real.entries()) {
       const copy = `${stage}/${i}.dat`;
-      scan.push(
-        stage && size <= COPY_MAX && (await io.copy(path, copy)) ? copy : path,
-      );
+      scan.push(stage && size <= COPY_MAX && (await io.copy(path, copy)) ? copy : path);
     }
     const dir = (paths: string[]) =>
       io.run(
-        [
-          "betterleaks",
-          "dir",
-          ...paths,
-          ...setup.config,
-          ...FLAGS,
-          "-r",
-          "/dev/null",
-        ],
+        ["betterleaks", "dir", ...paths, ...setup.config, ...FLAGS, "-r", "/dev/null"],
         CAP_MS,
       );
     // One scan for all files. Only a dirty set pays to find which file.
@@ -277,10 +237,7 @@ async function scanContent(
   // The allowlist covers the content scan too, so one list covers every check.
   const lines = findings
     .filter((finding) => finding.File && !allowed(setup.list, finding.File))
-    .map(
-      (f) =>
-        `  - ${f.RuleID} in ${f.File}:${f.StartLine} (fingerprint: ${f.Fingerprint})`,
-    );
+    .map((f) => `  - ${f.RuleID} in ${f.File}:${f.StartLine} (fingerprint: ${f.Fingerprint})`);
   if (!lines.length) return undefined;
   return [
     `Blocked: betterleaks flagged the ${where}:`,

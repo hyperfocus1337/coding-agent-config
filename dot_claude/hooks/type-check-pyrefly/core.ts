@@ -30,13 +30,8 @@ export interface Settings {
 const HOOK = "type-check-pyrefly";
 
 /** Type-checks the repository that holds `cwd`; the errors, or undefined. */
-export async function check(
-  cwd: string,
-  io: Io,
-  settings: Settings,
-): Promise<string | undefined> {
-  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes(HOOK))
-    return undefined;
+export async function check(cwd: string, io: Io, settings: Settings): Promise<string | undefined> {
+  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes(HOOK)) return undefined;
   // Outside a work tree there is nothing to compare, so skip. Run from the
   // root, so pyrefly sees the same scope as the changed-path list.
   const top = await io.run(["git", "rev-parse", "--show-toplevel"], cwd);
@@ -45,10 +40,7 @@ export async function check(
   // /toggle-hook --repo turns the hook off in the git config of the
   // repository. A value that is not a boolean keeps it on.
   const key = `agent-hook.${HOOK}.enabled`;
-  const off = await io.run(
-    ["git", "config", "--type=bool", "--get", key],
-    root,
-  );
+  const off = await io.run(["git", "config", "--type=bool", "--get", key], root);
   if (off?.stdout.trim() === "false") return undefined;
   // Tracked edits against HEAD plus untracked files, without deleted files.
   // A diff with no HEAD (the first commit) fails and adds nothing.

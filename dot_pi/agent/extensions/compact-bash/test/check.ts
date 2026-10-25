@@ -19,16 +19,12 @@ function check(what: string, run: () => void): void {
   try {
     run();
   } catch (error) {
-    console.error(
-      `FAIL ${what}\n  ${error instanceof Error ? error.message : String(error)}`,
-    );
+    console.error(`FAIL ${what}\n  ${error instanceof Error ? error.message : String(error)}`);
     process.exitCode = 1;
   }
 }
 
-const text = (...lines: string[]): Block[] => [
-  { type: "text", text: lines.join("\n") },
-];
+const text = (...lines: string[]): Block[] => [{ type: "text", text: lines.join("\n") }];
 const collapsed = { expanded: false, isPartial: false };
 
 // ── The summary line ──────────────────────────────────────────────────────────
@@ -42,10 +38,7 @@ check("one line is singular", () => {
 });
 
 check("trailing blank lines do not count", () => {
-  assert.equal(
-    summary(text("a", "b", "", ""), collapsed, false, {}),
-    "2 lines",
-  );
+  assert.equal(summary(text("a", "b", "", ""), collapsed, false, {}), "2 lines");
 });
 
 check("a streaming result says so", () => {
@@ -70,10 +63,7 @@ check("a block that is not text counts for nothing", () => {
 // ── When pi's own renderer runs instead ───────────────────────────────────────
 
 check("an expanded row keeps the built-in output", () => {
-  assert.equal(
-    summary(text("a", "b"), { expanded: true, isPartial: false }, false, {}),
-    undefined,
-  );
+  assert.equal(summary(text("a", "b"), { expanded: true, isPartial: false }, false, {}), undefined);
 });
 
 check("a failed call keeps the built-in output", () => {
@@ -87,21 +77,12 @@ check("a result with no text keeps the built-in output", () => {
 
 // ── The off switch ────────────────────────────────────────────────────────────
 
-const source = fs.readFileSync(
-  new URL("../index.ts", import.meta.url),
-  "utf-8",
-);
-const readme = fs.readFileSync(
-  new URL("../README.md", import.meta.url),
-  "utf-8",
-);
+const source = fs.readFileSync(new URL("../index.ts", import.meta.url), "utf-8");
+const readme = fs.readFileSync(new URL("../README.md", import.meta.url), "utf-8");
 
 check("the off switch is the value the README documents", () => {
   assert.match(source, /process\.env\.PI_COMPACT_BASH === "0"/);
-  assert.ok(
-    readme.includes("PI_COMPACT_BASH=0"),
-    "README.md does not document PI_COMPACT_BASH=0",
-  );
+  assert.ok(readme.includes("PI_COMPACT_BASH=0"), "README.md does not document PI_COMPACT_BASH=0");
 });
 
 // ── The installed pi package ──────────────────────────────────────────────────
@@ -110,10 +91,7 @@ const piPackage = process.env.PI_PACKAGE;
 if (piPackage === undefined) {
   console.log("PI_PACKAGE unset, skipping the installed-package group");
 } else {
-  const types = fs.readFileSync(
-    path.join(piPackage, "dist", "index.d.ts"),
-    "utf-8",
-  );
+  const types = fs.readFileSync(path.join(piPackage, "dist", "index.d.ts"), "utf-8");
 
   check("pi exports createBashToolDefinition", () => {
     assert.ok(

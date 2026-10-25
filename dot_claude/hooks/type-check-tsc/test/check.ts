@@ -32,9 +32,7 @@ async function check(what: string, run: () => void | Promise<void>) {
 
 // Under the temp folder, so the global format-staged-files hook skips the
 // fixture commits. The real path, because git prints the real root.
-const tmp = fs.realpathSync(
-  fs.mkdtempSync(path.join(os.tmpdir(), "type-check-tsc-test.")),
-);
+const tmp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "type-check-tsc-test.")));
 const write = (file: string, text: string) => {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, text);
@@ -59,11 +57,7 @@ const env = {
 };
 
 /** Runs command.ts on a Stop payload; returns the exit code and output. */
-function run(
-  cwd: string,
-  extra: object = {},
-  vars: Record<string, string> = {},
-) {
+function run(cwd: string, extra: object = {}, vars: Record<string, string> = {}) {
   fs.rmSync(log, { force: true });
   const ran = spawnSync(process.execPath, [`${hook}/command.ts`], {
     input: JSON.stringify({
@@ -86,8 +80,7 @@ async function expect(
 ) {
   await check(what, () => {
     assert.equal(ran.status, status, ran.out);
-    for (const text of holds)
-      assert.ok(ran.out.includes(text), `output does not hold '${text}'`);
+    for (const text of holds) assert.ok(ran.out.includes(text), `output does not hold '${text}'`);
     if (!holds.length) assert.equal(ran.out, "");
   });
 }
@@ -101,22 +94,12 @@ write(`${repo}/README.md`, "Base.\n");
 write(`${repo}/src/old.ts`, "let x = 1;\n");
 git(repo, "init", "-q");
 git(repo, "add", ".");
-git(
-  repo,
-  "-c",
-  "user.name=t",
-  "-c",
-  "user.email=t@example.com",
-  "commit",
-  "-qm",
-  "base",
-);
+git(repo, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-qm", "base");
 /** Resets the repository to the base commit, then writes the files. */
 function fresh(files: Record<string, string> = {}) {
   git(repo, "reset", "-q", "--hard");
   git(repo, "clean", "-qfdx");
-  for (const [name, text] of Object.entries(files))
-    write(`${repo}/${name}`, text);
+  for (const [name, text] of Object.entries(files)) write(`${repo}/${name}`, text);
 }
 const tsconfig = { "tsconfig.json": "{}\n" };
 const edited = { ...tsconfig, "src/old.ts": "let x = 2;\n" };
@@ -143,11 +126,7 @@ for (const name of ["new.tsx", "new.mts", "new.cts"]) {
 fresh({ ...tsconfig, "src/é.ts": "" });
 await expect("a path that git quotes still counts", run(repo), 2, failed);
 fresh(edited);
-await expect(
-  "tsc that passes does not block",
-  run(repo, {}, { FAKE_TSC: "pass" }),
-  0,
-);
+await expect("tsc that passes does not block", run(repo, {}, { FAKE_TSC: "pass" }), 0);
 await check("tsc that passes: it started", () =>
   assert.equal(fs.readFileSync(log, "utf8"), "tsc\n"),
 );
@@ -163,31 +142,17 @@ await expect(
 );
 
 // --- Skips ---
-await expect(
-  "stop_hook_active lets the stop pass",
-  run(repo, { stop_hook_active: true }),
-  0,
-);
+await expect("stop_hook_active lets the stop pass", run(repo, { stop_hook_active: true }), 0);
 await expect(
   "AGENT_HOOKS_DISABLE that names the hook lets the stop pass",
   run(repo, {}, { AGENT_HOOKS_DISABLE: "lint-code,type-check-tsc" }),
   0,
 );
 git(repo, "config", "agent-hook.type-check-tsc.enabled", "false");
-await expect(
-  "git config that turns the hook off lets the stop pass",
-  run(repo),
-  0,
-);
+await expect("git config that turns the hook off lets the stop pass", run(repo), 0);
 git(repo, "config", "--unset", "agent-hook.type-check-tsc.enabled");
-const gitDir = path.dirname(
-  spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout,
-);
-await expect(
-  "a missing tsc is skipped",
-  run(repo, {}, { PATH: `${gitDir}:/usr/bin:/bin` }),
-  0,
-);
+const gitDir = path.dirname(spawnSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).stdout);
+await expect("a missing tsc is skipped", run(repo, {}, { PATH: `${gitDir}:/usr/bin:/bin` }), 0);
 write(`${tmp}/plain/a.ts`, "");
 write(`${tmp}/plain/tsconfig.json`, "{}\n");
 await expect("a folder outside git is skipped", run(`${tmp}/plain`), 0);
@@ -195,12 +160,7 @@ const first = `${tmp}/first`;
 write(`${first}/a.ts`, "");
 write(`${first}/tsconfig.json`, "{}\n");
 git(first, "init", "-q");
-await expect(
-  "before the first commit, untracked files count",
-  run(first),
-  2,
-  failed,
-);
+await expect("before the first commit, untracked files count", run(first), 2, failed);
 
 // --- pi.ts, with a stub ---
 
@@ -283,17 +243,14 @@ await check("omp.ts: a stopped or failed run starts nothing", async () => {
 
 // --- io.ts ---
 
-await check(
-  "io.ts: a character split across two chunks stays whole",
-  async () => {
-    // The two bytes of é, written 50 ms apart, arrive as two chunks.
-    const script =
-      "process.stdout.write(Buffer.from([0xc3]));" +
-      "setTimeout(() => process.stdout.write(Buffer.from([0xa9])), 50);";
-    const ran = await nodeIo().run([process.execPath, "-e", script], tmp);
-    assert.equal(ran?.stdout, "é");
-  },
-);
+await check("io.ts: a character split across two chunks stays whole", async () => {
+  // The two bytes of é, written 50 ms apart, arrive as two chunks.
+  const script =
+    "process.stdout.write(Buffer.from([0xc3]));" +
+    "setTimeout(() => process.stdout.write(Buffer.from([0xa9])), 50);";
+  const ran = await nodeIo().run([process.execPath, "-e", script], tmp);
+  assert.equal(ran?.stdout, "é");
+});
 
 fs.rmSync(tmp, { recursive: true });
 if (failures) {

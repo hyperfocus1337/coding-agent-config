@@ -50,9 +50,7 @@ async function run(agent: string, payload: Payload) {
   // Bash and apply_patch name no file, or no line, so they snapshot the repos.
   // The snapshot waits in a file for the end event, which is another process.
   const patch =
-    tool === "apply_patch"
-      ? patchFiles(payload.tool_input?.command ?? "", cwd)
-      : undefined;
+    tool === "apply_patch" ? patchFiles(payload.tool_input?.command ?? "", cwd) : undefined;
   if (tool === "Bash" || patch) {
     const file = pendingFile(where, callId);
     if (!file) return;
@@ -77,13 +75,8 @@ async function run(agent: string, payload: Payload) {
   const end = new Date();
   const start = new Date(end.getTime() - (payload.duration_ms ?? 0));
   const file =
-    tool === "NotebookEdit"
-      ? payload.tool_input?.notebook_path
-      : payload.tool_input?.file_path;
-  const result =
-    typeof payload.tool_response === "object"
-      ? payload.tool_response
-      : undefined;
+    tool === "NotebookEdit" ? payload.tool_input?.notebook_path : payload.tool_input?.file_path;
+  const result = typeof payload.tool_response === "object" ? payload.tool_response : undefined;
   await recordTool(io, where, tool, file, result, cwd, start, end);
 }
 

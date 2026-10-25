@@ -20,13 +20,9 @@ export const register: Register = (on) => {
       stat: (path) => $.fs.stat(path).catch(() => undefined),
       read: (path) => $.fs.read(path).catch(() => undefined),
       // A run fails when the program is not installed, or timed out.
-      run: (argv, options) =>
-        $.process.run(argv, options).catch(() => undefined),
+      run: (argv, options) => $.process.run(argv, options).catch(() => undefined),
     };
-    const call =
-      e.tool === "Bash"
-        ? { command: e.command, cwd }
-        : { filePath: e.file_path, cwd };
+    const call = e.tool === "Bash" ? { command: e.command, cwd } : { filePath: e.file_path, cwd };
     const hint = await align(call, io, {
       tmpdir: await $.env.get("TMPDIR"),
       hooksOff: await $.env.get("AGENT_HOOKS_DISABLE"),

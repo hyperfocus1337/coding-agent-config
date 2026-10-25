@@ -14,13 +14,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { registerHooks, stripTypeScriptTypes } from "node:module";
-import claudeRules, {
-  discover,
-  matches,
-  patterns,
-  instructionFiles,
-  type Rule,
-} from "../index.ts";
+import claudeRules, { discover, matches, patterns, instructionFiles, type Rule } from "../index.ts";
 
 let checks = 0;
 function check(what: string, run: () => void): void {
@@ -28,9 +22,7 @@ function check(what: string, run: () => void): void {
   try {
     run();
   } catch (error) {
-    console.error(
-      `FAIL ${what}\n  ${error instanceof Error ? error.message : String(error)}`,
-    );
+    console.error(`FAIL ${what}\n  ${error instanceof Error ? error.message : String(error)}`);
     process.exitCode = 1;
   }
 }
@@ -45,17 +37,11 @@ const rule = (...paths: string[]): Rule => ({
 // ── Frontmatter ───────────────────────────────────────────────────────────────
 
 check("a block list of quoted globs parses", () => {
-  assert.deepEqual(patterns('"dot_claude/**" "dot_config/**"'), [
-    "dot_claude/**",
-    "dot_config/**",
-  ]);
+  assert.deepEqual(patterns('"dot_claude/**" "dot_config/**"'), ["dot_claude/**", "dot_config/**"]);
 });
 
 check("a flow list parses", () => {
-  assert.deepEqual(patterns('["src/**/*.ts", lib/**]'), [
-    "src/**/*.ts",
-    "lib/**",
-  ]);
+  assert.deepEqual(patterns('["src/**/*.ts", lib/**]'), ["src/**/*.ts", "lib/**"]);
 });
 
 check("no paths: means unscoped", () => {
@@ -80,14 +66,8 @@ check("*.md matches the project root only", () => {
 });
 
 check("src/components/*.tsx matches one directory", () => {
-  assert.equal(
-    matches(rule("src/components/*.tsx"), "src/components/App.tsx"),
-    true,
-  );
-  assert.equal(
-    matches(rule("src/components/*.tsx"), "src/components/x/App.tsx"),
-    false,
-  );
+  assert.equal(matches(rule("src/components/*.tsx"), "src/components/App.tsx"), true);
+  assert.equal(matches(rule("src/components/*.tsx"), "src/components/x/App.tsx"), false);
 });
 
 check("braces expand", () => {
@@ -134,10 +114,7 @@ check("instruction files keep unscoped paths and bodies and are stable", () => {
   assert.deepEqual(instructionFiles(found), [
     { path: path.join(fixture, "b.md"), content: "### B\n\nbody b" },
   ]);
-  assert.deepEqual(
-    instructionFiles(found),
-    instructionFiles(discover(fixture)),
-  );
+  assert.deepEqual(instructionFiles(found), instructionFiles(discover(fixture)));
 });
 
 check("no unscoped rule means no instruction files", () => {
@@ -165,10 +142,7 @@ check("the handler preserves native files and adds project rules once", () => {
     path.join(local, "rules", "scoped.md"),
     "---\npaths: src/**\n---\nScoped instructions",
   );
-  handlers.get("session_start")(
-    {},
-    { sessionManager: { getBranch: () => [] } },
-  );
+  handlers.get("session_start")({}, { sessionManager: { getBranch: () => [] } });
   approved(local);
   const native = { path: "/project/AGENTS.md", content: "Native instructions" };
   const event = { systemPromptOptions: { contextFiles: [native] } };
@@ -177,14 +151,11 @@ check("the handler preserves native files and adds project rules once", () => {
   assert.ok(
     event.systemPromptOptions.contextFiles.some(
       (file) =>
-        file.path === path.join(local, "rules", "b.md") &&
-        file.content === "Project instructions",
+        file.path === path.join(local, "rules", "b.md") && file.content === "Project instructions",
     ),
   );
   assert.ok(
-    !event.systemPromptOptions.contextFiles.some(
-      (file) => file.content === "Scoped instructions",
-    ),
+    !event.systemPromptOptions.contextFiles.some((file) => file.content === "Scoped instructions"),
   );
   const count = event.systemPromptOptions.contextFiles.length;
   handlers.get("before_agent_start")(event);
@@ -192,11 +163,7 @@ check("the handler preserves native files and adds project rules once", () => {
   approved(undefined);
   const denied = { systemPromptOptions: { contextFiles: [native] } };
   handlers.get("before_agent_start")(denied);
-  assert.ok(
-    !denied.systemPromptOptions.contextFiles.some((file) =>
-      file.path.startsWith(local),
-    ),
-  );
+  assert.ok(!denied.systemPromptOptions.contextFiles.some((file) => file.path.startsWith(local)));
 });
 
 fs.rmSync(fixture, { recursive: true });
@@ -230,9 +197,7 @@ check("the three unscoped rules retain their paths and full bodies", () => {
 // Verify the native renderer and the installed context viewer, without a model call.
 if (process.env.PI_PACKAGE) {
   const { buildSystemPrompt } = await import(
-    pathToFileURL(
-      path.join(process.env.PI_PACKAGE, "dist/core/system-prompt.js"),
-    ).href
+    pathToFileURL(path.join(process.env.PI_PACKAGE, "dist/core/system-prompt.js")).href
   );
   const files = [
     { path: "/project/AGENTS.md", content: "Native instructions" },
@@ -266,9 +231,7 @@ if (process.env.PI_PACKAGE) {
         if (url.startsWith(prefix) && url.endsWith(".ts")) {
           return {
             format: "module",
-            source: stripTypeScriptTypes(
-              fs.readFileSync(fileURLToPath(url), "utf-8"),
-            ),
+            source: stripTypeScriptTypes(fs.readFileSync(fileURLToPath(url), "utf-8")),
             shortCircuit: true,
           };
         }
@@ -285,35 +248,26 @@ if (process.env.PI_PACKAGE) {
       cwd: options.cwd,
       contextFilePaths: files.map((file) => file.path),
     });
-    check(
-      "pi-context-view classifies all rule records as Instruction Files",
-      () => {
-        const instructions = items.find((item) => item.kind === "context-file");
-        assert.ok(instructions);
-        assert.deepEqual(
-          instructions.children.map((item) => item.id).sort(),
-          files.map((file) => `context-file:${file.path}`).sort(),
-        );
-        for (const file of files) {
-          const item = instructions.children.find(
-            (item) => item.id === `context-file:${file.path}`,
-          );
-          assert.equal(item.text, file.content);
-          assert.ok(item.tokens > 0);
-        }
-        assert.ok(
-          !items.some(
-            (item) =>
-              item.kind === "prompt-addition" &&
-              item.text.includes("Project instructions"),
-          ),
-        );
-      },
-    );
+    check("pi-context-view classifies all rule records as Instruction Files", () => {
+      const instructions = items.find((item) => item.kind === "context-file");
+      assert.ok(instructions);
+      assert.deepEqual(
+        instructions.children.map((item) => item.id).sort(),
+        files.map((file) => `context-file:${file.path}`).sort(),
+      );
+      for (const file of files) {
+        const item = instructions.children.find((item) => item.id === `context-file:${file.path}`);
+        assert.equal(item.text, file.content);
+        assert.ok(item.tokens > 0);
+      }
+      assert.ok(
+        !items.some(
+          (item) => item.kind === "prompt-addition" && item.text.includes("Project instructions"),
+        ),
+      );
+    });
   } else {
-    console.log(
-      "pi-context-view not installed, skipping viewer classification check",
-    );
+    console.log("pi-context-view not installed, skipping viewer classification check");
   }
 }
 

@@ -26,11 +26,7 @@ try {
   assert.equal(state(), "idle\n");
   handlers.get("agent_start")();
   assert.equal(state(), "running\n");
-  assert.equal(
-    handlers.has("agent_end"),
-    false,
-    "low-level completion is not idle",
-  );
+  assert.equal(handlers.has("agent_end"), false, "low-level completion is not idle");
   handlers.get("agent_settled")({}, { isIdle: () => false });
   assert.equal(state(), "running\n");
   handlers.get("agent_settled")({}, { isIdle: () => true });
@@ -50,17 +46,11 @@ try {
     };
     handlers.get("agent_start")();
     handlers.get("session_shutdown")();
-    assert.equal(
-      warnings.length,
-      1,
-      "transport failure does not stop Pi or repeat warnings",
-    );
+    assert.equal(warnings.length, 1, "transport failure does not stop Pi or repeat warnings");
   } finally {
     console.warn = warn;
   }
-  console.log(
-    "PASS: cmux lifecycle publication, settlement, reload, and failure handling",
-  );
+  console.log("PASS: cmux lifecycle publication, settlement, reload, and failure handling");
 } finally {
   if (original === undefined) delete process.env.CMUX_PI_STATE_FILE;
   else process.env.CMUX_PI_STATE_FILE = original;

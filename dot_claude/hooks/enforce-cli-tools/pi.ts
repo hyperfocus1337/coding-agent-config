@@ -16,8 +16,7 @@ export default function (pi: ExtensionAPI) {
     try {
       const { rules, allowed } = inputs(ctx.cwd);
       const rule = violation(command, rules, allowed);
-      if (rule)
-        return { block: true, reason: blockMessage(command, rule, ctx.cwd) };
+      if (rule) return { block: true, reason: blockMessage(command, rule, ctx.cwd) };
     } catch {
       // Fail open: pi blocks the call when a handler throws.
     }

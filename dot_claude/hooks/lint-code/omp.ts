@@ -40,9 +40,7 @@ interface Resolve {
 }
 
 const strings = (value: unknown) =>
-  Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string")
-    : [];
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 
 /** The calls of an omp tool result that ./pi.ts does not lint. */
 function ompCalls(
@@ -52,8 +50,7 @@ function ompCalls(
   cwd: string,
 ): Call[] {
   const file = (filePath: string): Call => ({ filePath, cwd });
-  if (tool === "eval")
-    return typeof input.code === "string" ? [{ command: input.code, cwd }] : [];
+  if (tool === "eval") return typeof input.code === "string" ? [{ command: input.code, cwd }] : [];
   if (tool === "edit")
     return strings(input.paths)
       .filter((path) => path !== input.path)

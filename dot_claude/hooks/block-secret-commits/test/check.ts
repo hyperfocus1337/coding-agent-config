@@ -10,14 +10,7 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import {
-  chmodSync,
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -96,11 +89,7 @@ const noNode = bin("no-node", tools);
 const oldNode = bin("old-node", { ...tools, node: "#!/bin/sh\nexit 1\n" });
 
 /** Runs guard.sh on a Bash payload, as Claude Code does. */
-const hook = (
-  repo: string,
-  command: string,
-  env: Record<string, string> = {},
-) =>
+const hook = (repo: string, command: string, env: Record<string, string> = {}) =>
   spawnSync("/bin/sh", [GUARD], {
     input: JSON.stringify({ tool_name: "Bash", tool_input: { command } }),
     env: { ...process.env, CLAUDE_PROJECT_DIR: repo, ...env },
@@ -142,11 +131,7 @@ for (const [what, PATH] of [
     assert.match(ran.stderr, /could not scan this commit/);
   });
   await check(`guard: allows other commands when ${what}`, () => {
-    for (const command of [
-      "ls -la",
-      "git add .git/hooks/commit-msg",
-      "git commits",
-    ])
+    for (const command of ["ls -la", "git add .git/hooks/commit-msg", "git commits"])
       allows(plain, command, { PATH: PATH! });
   });
 }
@@ -178,10 +163,7 @@ if (haveBetterleaks) {
   // An innocuous name with a secret inside: only the content of the binary
   // can catch it.
   await check("binary holding a secret blocked, and named", () => {
-    const ran = hook(
-      mkrepo("binsecret", { "payload.dat": secretBin }),
-      "git commit -m x",
-    );
+    const ran = hook(mkrepo("binsecret", { "payload.dat": secretBin }), "git commit -m x");
     assert.equal(ran.status, 2);
     assert.match(ran.stderr, /payload\.dat/);
   });
@@ -312,13 +294,9 @@ if (haveBetterleaks) {
   // --- Content scan ---
 
   const leak = mkrepo("leak", { "app.py": secret });
-  await check("block  staged secret on commit", () =>
-    blocks(leak, "git commit -m wip"),
-  );
+  await check("block  staged secret on commit", () => blocks(leak, "git commit -m wip"));
   // The hook acts on `git commit` alone, so a `git add` never reaches a scan.
-  await check("allow  staged secret on git add", () =>
-    allows(leak, "git add ."),
-  );
+  await check("allow  staged secret on git add", () => allows(leak, "git add ."));
   // `commit` inside a path is not the git subcommand.
   await check("allow  'commits' in an added path", () =>
     allows(leak, "git add hooks/block-secret-commits/test"),
@@ -326,20 +304,13 @@ if (haveBetterleaks) {
   await check("allow  'commit-msg' in an added path", () =>
     allows(leak, "git add .git/hooks/commit-msg"),
   );
-  await check("block  commit behind a git flag", () =>
-    blocks(leak, "git -C . commit -m wip"),
-  );
+  await check("block  commit behind a git flag", () => blocks(leak, "git -C . commit -m wip"));
   await check("allow  unrelated command", () => allows(leak, "ls -la"));
 
   await check("allow  clean staged content", () =>
-    allows(
-      mkrepo("clean", { "app.py": 'def main():\n    print("hello")\n' }),
-      "git commit -m wip",
-    ),
+    allows(mkrepo("clean", { "app.py": 'def main():\n    print("hello")\n' }), "git commit -m wip"),
   );
-  await check("allow  empty stage", () =>
-    allows(mkrepo("empty"), "git commit -m wip"),
-  );
+  await check("allow  empty stage", () => allows(mkrepo("empty"), "git commit -m wip"));
   await check("allow  unstaged secret", () => {
     const repo = mkrepo("unstaged");
     write(repo, { "app.py": secret });
@@ -352,10 +323,7 @@ if (haveBetterleaks) {
   });
 
   // The message must name the finding: a broken report parse still exits 2.
-  const message = hook(
-    mkrepo("message", { "app.py": secret }),
-    "git commit -m wip",
-  );
+  const message = hook(mkrepo("message", { "app.py": secret }), "git commit -m wip");
   await check("msg    names rule, file and line", () =>
     assert.match(message.stderr, /github-pat in app\.py:1/),
   );
@@ -369,10 +337,7 @@ if (haveBetterleaks) {
   // resort. The fingerprint above comes from the finding line, not from the
   // list of fixes.
   await check("msg    offers the portable ignore file", () =>
-    assert.match(
-      message.stderr,
-      /\* add the fingerprint above to .*\.betterleaksignore/,
-    ),
+    assert.match(message.stderr, /\* add the fingerprint above to .*\.betterleaksignore/),
   );
   await check("msg    marks .agent-allow-secrets as the fallback", () => {
     assert.match(message.stderr, /last resort/);
@@ -395,9 +360,7 @@ if (haveBetterleaks) {
     "git commit --all -m wip",
     "git commit -a",
   ])
-    await check(`block  ${command} on a tracked edit`, () =>
-      blocks(dirty, command),
-    );
+    await check(`block  ${command} on a tracked edit`, () => blocks(dirty, command));
   // Without -a the change is not part of the commit.
   for (const command of [
     "git commit -m wip",
@@ -463,14 +426,10 @@ if (haveBetterleaks) {
     assert.match(result.reason, /github-pat in app\.py:1/);
   });
   await check("pi.ts: allows clean content, and other tools", async () => {
-    assert.equal(
-      await piCall("bash", "git commit -m wip", mkrepo("piclean")),
-      undefined,
-    );
+    assert.equal(await piCall("bash", "git commit -m wip", mkrepo("piclean")), undefined);
     assert.equal(await piCall("write", "git commit -m wip", leak), undefined);
   });
-} else
-  console.log("skip: betterleaks missing, so only the cases without it ran");
+} else console.log("skip: betterleaks missing, so only the cases without it ran");
 
 if (failures) {
   console.error(`${failures} failed`);

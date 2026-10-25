@@ -44,20 +44,14 @@ function diffLines(oldText, newText) {
   const a = splitLines(oldText);
   const b = splitLines(newText);
   if (a.length > MAX_LCS_LINES || b.length > MAX_LCS_LINES) {
-    return [
-      ...a.map((t) => ({ op: "-", t })),
-      ...b.map((t) => ({ op: "+", t })),
-    ];
+    return [...a.map((t) => ({ op: "-", t })), ...b.map((t) => ({ op: "+", t }))];
   }
   const n = a.length,
     m = b.length;
   const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
   for (let i = n - 1; i >= 0; i--)
     for (let j = m - 1; j >= 0; j--)
-      dp[i][j] =
-        a[i] === b[j]
-          ? dp[i + 1][j + 1] + 1
-          : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
   const out = [];
   let i = 0,
     j = 0;
@@ -219,9 +213,7 @@ function replayView($, e, inBand) {
       }),
     );
   if (!shown.length)
-    diffRows.push(
-      Text({ key: "empty", dimColor: true, children: "  (no line changes)" }),
-    );
+    diffRows.push(Text({ key: "empty", dimColor: true, children: "  (no line changes)" }));
 
   const go = (to) => {
     state.index = Math.max(0, Math.min(to, total - 1));
@@ -338,8 +330,7 @@ export function register(on, options) {
   on("command.run", { command: "replay" }, async ($, e) => {
     const [sub, value] = e.args.trim().toLowerCase().split(/\s+/);
     if (sub === "hint") {
-      state.showHint =
-        value === "on" ? true : value === "off" ? false : !state.showHint;
+      state.showHint = value === "on" ? true : value === "off" ? false : !state.showHint;
       await $.store.set("showHint", state.showHint);
       $.ui.invalidate("ui.render");
       return { text: `Replay Theater: hint ${state.showHint ? "on" : "off"}` };

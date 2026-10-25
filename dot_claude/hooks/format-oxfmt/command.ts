@@ -16,13 +16,10 @@ const payload = JSON.parse(readFileSync(0, "utf8")) as {
   hook_event_name?: string;
   tool_input?: { file_path?: unknown; file_paths?: unknown; command?: unknown };
 };
-const text = (value: unknown) =>
-  typeof value === "string" ? value : undefined;
+const text = (value: unknown) => (typeof value === "string" ? value : undefined);
 // file_paths is not in an agent payload: format-staged-files sends it.
 const texts = (value: unknown) =>
-  Array.isArray(value) && value.every((item) => typeof item === "string")
-    ? value
-    : undefined;
+  Array.isArray(value) && value.every((item) => typeof item === "string") ? value : undefined;
 const hint = await format(
   {
     filePath: text(payload.tool_input?.file_path),

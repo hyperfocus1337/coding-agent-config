@@ -29,9 +29,7 @@ for (const line of [
   // The name is not read, so a human co-author is blocked too.
   "git commit -m 'fix: x' -m 'Co-Authored-By: Alice <alice@example.com>'",
 ])
-  await check(`blocks ${JSON.stringify(line)}`, () =>
-    assert.equal(violation(line), MESSAGE),
-  );
+  await check(`blocks ${JSON.stringify(line)}`, () => assert.equal(violation(line), MESSAGE));
 
 // No trailer, or no commit as a whole word.
 for (const line of [
@@ -40,9 +38,7 @@ for (const line of [
   "rg -n 'co-authored-by: claude' committed.txt",
   "git commit-tree HEAD^{tree} -m 'Co-Authored-By: Claude'",
 ])
-  await check(`allows ${JSON.stringify(line)}`, () =>
-    assert.equal(violation(line), undefined),
-  );
+  await check(`allows ${JSON.stringify(line)}`, () => assert.equal(violation(line), undefined));
 
 const blocked = "git commit -m 'x' -m 'Co-Authored-By: Claude'";
 
@@ -54,8 +50,7 @@ extension({
     if (name === "tool_call") piHandler = handler;
   },
 } as never);
-const piCall = (toolName: string, command: string) =>
-  piHandler?.({ toolName, input: { command } });
+const piCall = (toolName: string, command: string) => piHandler?.({ toolName, input: { command } });
 await check("pi.ts: blocks the trailer with the message", () =>
   assert.deepEqual(piCall("bash", blocked), { block: true, reason: MESSAGE }),
 );
@@ -76,11 +71,8 @@ register(
   {} as never,
 );
 const passed = { ran: true };
-const modCall = (command: string) =>
-  modHook?.({}, { tool: "Bash", command }, async () => passed);
-await check("register.ts: hooks Bash only", () =>
-  assert.deepEqual(modMatcher, { tool: "Bash" }),
-);
+const modCall = (command: string) => modHook?.({}, { tool: "Bash", command }, async () => passed);
+await check("register.ts: hooks Bash only", () => assert.deepEqual(modMatcher, { tool: "Bash" }));
 await check("register.ts: denies the trailer", async () =>
   assert.deepEqual(await modCall(blocked), { deny: MESSAGE }),
 );

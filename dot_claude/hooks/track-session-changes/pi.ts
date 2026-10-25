@@ -39,11 +39,7 @@ export interface Tools {
   /** The files that an edit or write input names, read at the call. */
   named(input: Record<string, unknown>): string[];
   /** The changes of a successful edit. */
-  edited(
-    details: unknown,
-    input: Record<string, unknown>,
-    cwd: string,
-  ): Change[];
+  edited(details: unknown, input: Record<string, unknown>, cwd: string): Change[];
 }
 
 export const piTools: Tools = {
@@ -56,8 +52,7 @@ export const piTools: Tools = {
           {
             status: "M",
             path: toolPath(path, cwd),
-            line: (details as { firstChangedLine?: number } | undefined)
-              ?.firstChangedLine,
+            line: (details as { firstChangedLine?: number } | undefined)?.firstChangedLine,
           },
         ]
       : [],
@@ -120,8 +115,7 @@ export function track(pi: ExtensionAPI, tools: Tools) {
       const session = where(ctx.sessionManager.getSessionId());
       const call = started.get(event.toolCallId);
       started.delete(event.toolCallId);
-      if (call?.pending)
-        return endCall(io, session, call.pending, event.toolName);
+      if (call?.pending) return endCall(io, session, call.pending, event.toolName);
       if (!call || event.isError) return;
       const end = new Date();
       if (event.toolName === "edit")

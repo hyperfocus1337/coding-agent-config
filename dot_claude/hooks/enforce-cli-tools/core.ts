@@ -117,14 +117,9 @@ export function commandsRun(line: string): string[] {
 }
 
 /** The first banned, not allowlisted tool the line runs, or undefined. */
-export function violation(
-  line: string,
-  rules: Rule[],
-  allowed: Set<string>,
-): Rule | undefined {
+export function violation(line: string, rules: Rule[], allowed: Set<string>): Rule | undefined {
   for (const command of commandsRun(line))
-    for (const rule of rules)
-      if (command === rule.tool && !allowed.has(command)) return rule;
+    for (const rule of rules) if (command === rule.tool && !allowed.has(command)) return rule;
   return undefined;
 }
 

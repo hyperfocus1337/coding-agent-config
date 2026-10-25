@@ -5,14 +5,7 @@
 
 import { spawn } from "node:child_process";
 import { constants } from "node:fs";
-import {
-  access,
-  copyFile,
-  mkdtemp,
-  readFile,
-  rm,
-  stat,
-} from "node:fs/promises";
+import { access, copyFile, mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -52,8 +45,7 @@ export function nodeIo(root: string): Io {
         return undefined;
       }
     },
-    tempDir: () =>
-      mkdtemp(join(tmpdir(), "block-secret-commits-")).catch(() => undefined),
+    tempDir: () => mkdtemp(join(tmpdir(), "block-secret-commits-")).catch(() => undefined),
     copy: (from, to) =>
       copyFile(at(from), to).then(
         () => true,

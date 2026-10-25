@@ -39,24 +39,17 @@ const NOW = 1_000_000_000;
  * Stub I/O over a map of path -> age in seconds; run records each argv, and
  * dirs the folder of each run.
  */
-function stub(
-  ages: Record<string, number>,
-  texts: Record<string, string> = {},
-) {
+function stub(ages: Record<string, number>, texts: Record<string, string> = {}) {
   const ran: string[][] = [];
   const dirs: (string | undefined)[] = [];
   const io: Io = {
     stat: async (file) =>
-      file in ages
-        ? { isFile: true, mtimeMs: NOW - ages[file]! * 1000 }
-        : undefined,
+      file in ages ? { isFile: true, mtimeMs: NOW - ages[file]! * 1000 } : undefined,
     read: async (file) => texts[file] ?? "",
     run: async (argv, options) => {
       ran.push(argv);
       dirs.push(options?.cwd);
-      return argv[0] === "missing"
-        ? undefined
-        : { exitCode: 1, output: `${argv[0]} says no\n` };
+      return argv[0] === "missing" ? undefined : { exitCode: 1, output: `${argv[0]} says no\n` };
     },
   };
   return { io, ran, dirs };
@@ -65,33 +58,22 @@ const settings = { configDir: "/cfg", tmpdir: "/var/folders/x/T/" };
 
 await check("write: the named file of any age, if it exists", async () => {
   const { io } = stub({ "/r/a.py": 999 });
-  assert.deepEqual(
-    await targets({ filePath: "/r/a.py", cwd: "/r" }, io, settings, NOW),
-    ["/r/a.py"],
-  );
-  assert.deepEqual(
-    await targets({ filePath: "/r/gone.sh", cwd: "/r" }, io, settings, NOW),
-    [],
-  );
+  assert.deepEqual(await targets({ filePath: "/r/a.py", cwd: "/r" }, io, settings, NOW), [
+    "/r/a.py",
+  ]);
+  assert.deepEqual(await targets({ filePath: "/r/gone.sh", cwd: "/r" }, io, settings, NOW), []);
 });
-await check(
-  "throwaway files are skipped, with and without /private",
-  async () => {
-    const files = [
-      "/tmp/a.sh",
-      "/private/tmp/b.sh",
-      "/var/tmp/c.sh",
-      "/private/var/folders/x/T/d.sh",
-    ];
-    const { io } = stub(Object.fromEntries(files.map((file) => [file, 0])));
-    for (const filePath of files)
-      assert.deepEqual(
-        await targets({ filePath, cwd: "/r" }, io, settings, NOW),
-        [],
-        filePath,
-      );
-  },
-);
+await check("throwaway files are skipped, with and without /private", async () => {
+  const files = [
+    "/tmp/a.sh",
+    "/private/tmp/b.sh",
+    "/var/tmp/c.sh",
+    "/private/var/folders/x/T/d.sh",
+  ];
+  const { io } = stub(Object.fromEntries(files.map((file) => [file, 0])));
+  for (const filePath of files)
+    assert.deepEqual(await targets({ filePath, cwd: "/r" }, io, settings, NOW), [], filePath);
+});
 await check("bash: fresh named files, relative to cwd, once each", async () => {
   const { io } = stub({
     "/r/new.sh": 5,
@@ -112,12 +94,7 @@ await check("bash: fresh named files, relative to cwd, once each", async () => {
 await check("bash: a command that names no source file", async () => {
   const { io } = stub({});
   assert.deepEqual(
-    await targets(
-      { command: "git status && ls -la", cwd: "/r" },
-      io,
-      settings,
-      NOW,
-    ),
+    await targets({ command: "git status && ls -la", cwd: "/r" }, io, settings, NOW),
     [],
   );
 });
@@ -147,13 +124,7 @@ await check("each extension runs its linter", async () => {
     ["shellcheck", "-S", "warning", "d.bash"],
     ["yamllint", "-c", "/cfg/.yamllint", "e.yml"],
     ["ansible-lint", "-c", "/cfg/.ansible-lint", "-q", "/r/roles/f.yaml"],
-    [
-      "tflint",
-      "--config=/cfg/.tflint.hcl",
-      "--filter=main.tf",
-      "--format=compact",
-      "--no-color",
-    ],
+    ["tflint", "--config=/cfg/.tflint.hcl", "--filter=main.tf", "--format=compact", "--no-color"],
   ]);
   assert.deepEqual(dirs.slice(-2), [undefined, "/m"]);
 });
@@ -164,21 +135,18 @@ await check("a .tflint.hcl or .tflint.json of the module wins", async () => {
     assert.deepEqual(ran[0]?.slice(1, 2), ["--filter=main.tf"], own);
   }
 });
-await check(
-  "a missing tflint plugin or a mise shim with no version skips the file",
-  async () => {
-    for (const output of [
-      'Failed to initialize plugins; Plugin "aws" not found. Did you run "tflint --init"?\n',
-      "mise ERROR No version is set for shim: tflint\n",
-    ]) {
-      const io: Io = {
-        ...stub({}).io,
-        run: async () => ({ exitCode: 1, output }),
-      };
-      assert.equal(await lint(["/m/main.tf"], io, settings), undefined);
-    }
-  },
-);
+await check("a missing tflint plugin or a mise shim with no version skips the file", async () => {
+  for (const output of [
+    'Failed to initialize plugins; Plugin "aws" not found. Did you run "tflint --init"?\n',
+    "mise ERROR No version is set for shim: tflint\n",
+  ]) {
+    const io: Io = {
+      ...stub({}).io,
+      run: async () => ({ exitCode: 1, output }),
+    };
+    assert.equal(await lint(["/m/main.tf"], io, settings), undefined);
+  }
+});
 await check("ansible by entry-point name and by content", async () => {
   const { io, ran } = stub({}, { "x/deploy.yml": "- hosts: all\n" });
   await lint(["x/site.yaml", "x/deploy.yml", "x/other.yml"], io, settings);
@@ -197,29 +165,20 @@ await check("CLAUDE_LINT_DISABLE keys, comma or space, and all", async () => {
     ran.map((argv) => argv[0]),
     ["oxlint"],
   );
-  assert.equal(
-    await lint(["a.py"], io, { ...settings, disable: "all" }),
-    undefined,
-  );
+  assert.equal(await lint(["a.py"], io, { ...settings, disable: "all" }), undefined);
 });
-await check(
-  "a missing linter skips its file; output joins every run",
-  async () => {
-    const io: Io = {
-      ...stub({}).io,
-      run: async (argv) =>
-        argv[0] === "ruff"
-          ? undefined
-          : { exitCode: argv[0] === "oxlint" ? 0 : 1, output: `${argv[0]}\n` },
-    };
-    assert.equal(await lint(["a.py"], io, settings), undefined);
-    assert.equal(await lint(["b.ts"], io, settings), undefined);
-    assert.equal(
-      await lint(["b.ts", "c.sh"], io, settings),
-      "oxlint\nshellcheck\n",
-    );
-  },
-);
+await check("a missing linter skips its file; output joins every run", async () => {
+  const io: Io = {
+    ...stub({}).io,
+    run: async (argv) =>
+      argv[0] === "ruff"
+        ? undefined
+        : { exitCode: argv[0] === "oxlint" ? 0 : 1, output: `${argv[0]}\n` },
+  };
+  assert.equal(await lint(["a.py"], io, settings), undefined);
+  assert.equal(await lint(["b.ts"], io, settings), undefined);
+  assert.equal(await lint(["b.ts", "c.sh"], io, settings), "oxlint\nshellcheck\n");
+});
 
 await check("AGENT_HOOKS_DISABLE that names the hook: no targets", async () =>
   assert.deepEqual(
@@ -248,32 +207,22 @@ for (const [config, want] of [
         return { exitCode: 0, output: config };
       },
     };
-    assert.deepEqual(
-      await targets({ filePath: "/x/a.py", cwd: "/x" }, io, settings),
-      want,
-    );
+    assert.deepEqual(await targets({ filePath: "/x/a.py", cwd: "/x" }, io, settings), want);
     assert.deepEqual(ran[0]?.slice(0, 4), ["git", "-C", "/x", "config"]);
   });
 
 // --- command.ts, with the real shellcheck ---
 
 const tmp = fs.mkdtempSync(path.join(os.homedir(), ".lint-hook-check-"));
-const bad = (file: string) =>
-  fs.writeFileSync(file, "#!/usr/bin/env bash\nx=$1\necho $unquoted\n");
-const clean = (file: string) =>
-  fs.writeFileSync(file, "#!/usr/bin/env bash\necho hello\n");
+const bad = (file: string) => fs.writeFileSync(file, "#!/usr/bin/env bash\nx=$1\necho $unquoted\n");
+const clean = (file: string) => fs.writeFileSync(file, "#!/usr/bin/env bash\necho hello\n");
 const command = (toolInput: object, env: Record<string, string> = {}) =>
   spawnSync(process.execPath, [path.join(hook, "command.ts")], {
     input: JSON.stringify({ cwd: tmp, tool_input: toolInput }),
     encoding: "utf8",
     env: { ...process.env, CLAUDE_LINT_DISABLE: "", ...env },
   });
-const expect = (
-  what: string,
-  ran: ReturnType<typeof command>,
-  status: number,
-  holds = "",
-) =>
+const expect = (what: string, ran: ReturnType<typeof command>, status: number, holds = "") =>
   check(what, () => {
     assert.equal(ran.status, status, ran.stderr);
     if (holds) assert.ok(ran.stderr.includes(holds), ran.stderr);
@@ -291,11 +240,7 @@ else {
     2,
     "SC2154",
   );
-  await expect(
-    "edit: passes a clean file",
-    command({ file_path: `${tmp}/clean.sh` }),
-    0,
-  );
+  await expect("edit: passes a clean file", command({ file_path: `${tmp}/clean.sh` }), 0);
   await expect(
     "CLAUDE_LINT_DISABLE=all turns the hook off",
     command({ file_path: `${tmp}/bad.sh` }, { CLAUDE_LINT_DISABLE: "all" }),
@@ -319,17 +264,13 @@ else {
 
 // --- command.ts, with the real tflint ---
 
-if (spawnSync("tflint", ["--version"]).status !== 0)
-  console.log("SKIP tflint cases: no tflint");
+if (spawnSync("tflint", ["--version"]).status !== 0) console.log("SKIP tflint cases: no tflint");
 else {
   // A module config with the bundled ruleset only, so the case needs no
   // plugin.
   const module = `${tmp}/tf`;
   fs.mkdirSync(module);
-  fs.writeFileSync(
-    `${module}/.tflint.hcl`,
-    'plugin "terraform" {\n  enabled = true\n}\n',
-  );
+  fs.writeFileSync(`${module}/.tflint.hcl`, 'plugin "terraform" {\n  enabled = true\n}\n');
   fs.writeFileSync(
     `${module}/main.tf`,
     'terraform {\n  required_version = ">= 1.0"\n}\n\nvariable "unused" {\n  type = string\n}\n',
@@ -383,10 +324,9 @@ ompExtension({
   on: (_name: string, handler: Handler) => (ompHandler = handler),
 } as never);
 const omp = (toolName: string, input: object, details?: object) =>
-  ompHandler?.(
-    { toolName, input, details, content: [] },
-    { cwd: tmp },
-  ) as Promise<{ isError?: boolean; content: { text: string }[] } | undefined>;
+  ompHandler?.({ toolName, input, details, content: [] }, { cwd: tmp }) as Promise<
+    { isError?: boolean; content: { text: string }[] } | undefined
+  >;
 const applied = (applied: boolean) => ({
   xdev: {
     tool: "resolve",
@@ -403,38 +343,28 @@ await check("omp.ts: lints each file of a multi-file edit", async () => {
   assert.match(result?.content[0]?.text ?? "", /SC2154/);
 });
 await check("omp.ts: leaves the one file of an edit to pi.ts", async () =>
-  assert.equal(
-    await omp("edit", { path: "adapter.sh", paths: ["adapter.sh"] }),
-    undefined,
-  ),
+  assert.equal(await omp("edit", { path: "adapter.sh", paths: ["adapter.sh"] }), undefined),
 );
 await check("omp.ts: lints the files of an applied ast_edit", async () => {
   const result = await omp("write", { path: "xd://resolve" }, applied(true));
   assert.match(result?.content[0]?.text ?? "", /SC2154/);
-  assert.equal(
-    await omp("write", { path: "xd://resolve" }, applied(false)),
-    undefined,
-  );
+  assert.equal(await omp("write", { path: "xd://resolve" }, applied(false)), undefined);
 });
 await check("omp.ts: lints the files that eval code names", async () => {
   const code = "open('adapter.sh', 'w').write(text)";
   const result = await omp("eval", { language: "py", code });
   assert.match(result?.content[0]?.text ?? "", /SC2154/);
 });
-await check(
-  "omp.ts: leaves the calls of pi.ts and other tools alone",
-  async () => {
-    assert.equal(await omp("write", { path: "adapter.sh" }), undefined);
-    assert.equal(await omp("bash", { command: "cat adapter.sh" }), undefined);
-    assert.equal(await omp("read", { path: "adapter.sh" }), undefined);
-  },
-);
+await check("omp.ts: leaves the calls of pi.ts and other tools alone", async () => {
+  assert.equal(await omp("write", { path: "adapter.sh" }), undefined);
+  assert.equal(await omp("bash", { command: "cat adapter.sh" }), undefined);
+  assert.equal(await omp("read", { path: "adapter.sh" }), undefined);
+});
 
 type Hook = (...args: unknown[]) => Promise<unknown>;
 let modHook: Hook | undefined;
 register(
-  ((_event: string, _matcher: unknown, hook: Hook) =>
-    (modHook = hook)) as never,
+  ((_event: string, _matcher: unknown, hook: Hook) => (modHook = hook)) as never,
   {} as never,
 );
 const stub$ = {
@@ -476,28 +406,14 @@ await check("register.ts: adds the lint output as context", async () => {
   assert.equal(result.text, "written");
   assert.match(result.context[0] ?? "", /Lint errors[\s\S]*SC2154/);
 });
-await check(
-  "register.ts: passes a clean result and a deny through",
-  async () => {
-    assert.equal(
-      await modHook?.(
-        stub$,
-        { tool: "Write", file_path: `${tmp}/clean.sh` },
-        async () => ran,
-      ),
-      ran,
-    );
-    const denied = { deny: "no" };
-    assert.equal(
-      await modHook?.(
-        stub$,
-        { tool: "Bash", command: "x" },
-        async () => denied,
-      ),
-      denied,
-    );
-  },
-);
+await check("register.ts: passes a clean result and a deny through", async () => {
+  assert.equal(
+    await modHook?.(stub$, { tool: "Write", file_path: `${tmp}/clean.sh` }, async () => ran),
+    ran,
+  );
+  const denied = { deny: "no" };
+  assert.equal(await modHook?.(stub$, { tool: "Bash", command: "x" }, async () => denied), denied);
+});
 
 fs.rmSync(tmp, { recursive: true });
 if (failures) {

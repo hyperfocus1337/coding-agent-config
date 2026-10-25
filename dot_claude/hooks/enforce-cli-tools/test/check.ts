@@ -10,13 +10,7 @@ import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import {
-  allowList,
-  parseRules,
-  stripQuotedHeredocs,
-  suggest,
-  violation,
-} from "../core.ts";
+import { allowList, parseRules, stripQuotedHeredocs, suggest, violation } from "../core.ts";
 import { register } from "../hooks/register.ts";
 import extension from "../pi.ts";
 
@@ -35,9 +29,7 @@ async function check(what: string, run: () => void | Promise<void>) {
 }
 
 const blocks = (line: string) =>
-  check(`blocks ${JSON.stringify(line)}`, () =>
-    assert.ok(violation(line, rules, none)),
-  );
+  check(`blocks ${JSON.stringify(line)}`, () => assert.ok(violation(line, rules, none)));
 const allows = (line: string) =>
   check(`allows ${JSON.stringify(line)}`, () =>
     assert.equal(violation(line, rules, none), undefined),
@@ -107,10 +99,10 @@ await check("maps npm to pnpm", () =>
   }),
 );
 await check("maps npx to pnpm dlx", () =>
-  assert.deepEqual(
-    violation("npx create-vite app", parseRules("npx\tpnpm dlx\n"), none),
-    { tool: "npx", replacement: "pnpm dlx" },
-  ),
+  assert.deepEqual(violation("npx create-vite app", parseRules("npx\tpnpm dlx\n"), none), {
+    tool: "npx",
+    replacement: "pnpm dlx",
+  }),
 );
 
 // An allowlisted tool allows again; only the named tool is exempt.

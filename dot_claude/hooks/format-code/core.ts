@@ -13,9 +13,7 @@
 
 export interface Io {
   /** The kind of a path and its mtime; undefined if missing. */
-  stat(
-    path: string,
-  ): Promise<{ kind: "file" | "dir" | "other"; mtimeMs: number } | undefined>;
+  stat(path: string): Promise<{ kind: "file" | "dir" | "other"; mtimeMs: number } | undefined>;
   /** The exit code and stdout; undefined when the program cannot start. */
   run(
     argv: string[],
@@ -102,8 +100,7 @@ const NAMED = /[^\s:;|&"'`()<>=]+\.(?:tfvars|tf|bash|sh|pyi|py)\b/g;
 
 const plain = (path: string) => path.replace(/^\/private/, "");
 const parent = (path: string) => path.slice(0, path.lastIndexOf("/")) || "/";
-const formatterOf = (file: string) =>
-  FORMATTERS.find(({ files }) => files.test(file));
+const formatterOf = (file: string) => FORMATTERS.find(({ files }) => files.test(file));
 
 /**
  * A file under /tmp, /var/tmp, or TMPDIR is a scratch file, not project
@@ -136,11 +133,7 @@ async function repoOff(dir: string, key: string, io: Io): Promise<boolean> {
  * shortcut: a command that writes early and then runs for minutes falls
  * outside the window. The upgrade is a start time stamped before the call.
  */
-async function targets(
-  call: Call,
-  io: Io,
-  settings: Settings,
-): Promise<string[]> {
+async function targets(call: Call, io: Io, settings: Settings): Promise<string[]> {
   const given = call.filePaths ?? (call.filePath ? [call.filePath] : undefined);
   const paths =
     given ??
@@ -159,14 +152,9 @@ async function targets(
     const formatter = formatterOf(file);
     if (!formatter || throwaway(file, settings)) continue;
     const stat = await io.stat(file);
-    if (
-      stat?.kind !== "file" ||
-      (!given && Date.now() - stat.mtimeMs > 120_000)
-    )
-      continue;
+    if (stat?.kind !== "file" || (!given && Date.now() - stat.mtimeMs > 120_000)) continue;
     const dir = parent(file);
-    if ((await off(dir, "enabled")) || (await off(dir, formatter.key)))
-      continue;
+    if ((await off(dir, "enabled")) || (await off(dir, formatter.key))) continue;
     kept.push(file);
   }
   return kept;
@@ -177,13 +165,8 @@ async function targets(
  * when the call committed a file that a formatter then changed, else
  * undefined. README "Write and commit in one command".
  */
-export async function format(
-  call: Call,
-  io: Io,
-  settings: Settings,
-): Promise<string | undefined> {
-  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("format-code"))
-    return undefined;
+export async function format(call: Call, io: Io, settings: Settings): Promise<string | undefined> {
+  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("format-code")) return undefined;
   // A command that commits: the hint then checks the last commit.
   const commits = !call.filePath && COMMIT.test(call.command ?? "");
   const dirty: string[] = [];
@@ -202,17 +185,7 @@ export async function format(
     // Only a file that the last commit holds needs an amend. diff-tree --root
     // also answers for the first commit of a repository.
     const held = await io.run(
-      [
-        "git",
-        "diff-tree",
-        "--no-commit-id",
-        "--name-only",
-        "-r",
-        "--root",
-        "HEAD",
-        "--",
-        file,
-      ],
+      ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", "HEAD", "--", file],
       { cwd: dir },
     );
     if (!held?.stdout.trim()) continue;

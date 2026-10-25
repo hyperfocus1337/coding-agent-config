@@ -48,9 +48,7 @@ const GUARDS = new Map([
 ]);
 
 /** Runs git in the session folder: the exit code and stdout, or undefined. */
-export type Git = (
-  args: string[],
-) => Promise<{ exitCode: number; stdout: string } | undefined>;
+export type Git = (args: string[]) => Promise<{ exitCode: number; stdout: string } | undefined>;
 
 /**
  * Where git config sets a key: the repository, or a file outside it, such as
@@ -101,22 +99,10 @@ export async function readConfig(git: Git, only?: "--global"): Promise<Config> {
   // read all files, which follows each include.
   const level = only ? [only, "--includes"] : [];
   const [here, ...values] = await Promise.all([
-    only
-      ? undefined
-      : git([
-          "config",
-          "--local",
-          "--name-only",
-          "--get-regexp",
-          "^agent-hook\\.",
-        ]),
-    ...NAMES.map((name) =>
-      git(["config", ...level, "--type=bool", "--get", key(name)]),
-    ),
+    only ? undefined : git(["config", "--local", "--name-only", "--get-regexp", "^agent-hook\\."]),
+    ...NAMES.map((name) => git(["config", ...level, "--type=bool", "--get", key(name)])),
   ]);
-  const local = new Set(
-    here?.exitCode === 0 ? here.stdout.split("\n").filter(Boolean) : [],
-  );
+  const local = new Set(here?.exitCode === 0 ? here.stdout.split("\n").filter(Boolean) : []);
   const config: Config = new Map();
   NAMES.forEach((name, i) => {
     const value = values[i]?.stdout.trim();
@@ -133,8 +119,7 @@ export async function readConfig(git: Git, only?: "--global"): Promise<Config> {
 function unknown(name: string, known: string[]): string | undefined {
   const guard = GUARDS.get(name);
   if (guard) return `${name} is a guard and has no toggle. ${guard}`;
-  if (!known.includes(name))
-    return `${name} is not a hook. The hooks: ${known.join(", ")}, all.`;
+  if (!known.includes(name)) return `${name} is not a hook. The hooks: ${known.join(", ")}, all.`;
 }
 
 /** The state of each name, with the scope that moves it off its default. */
@@ -191,9 +176,7 @@ export function toggle(
   if (wrong) return same(wrong);
   const scope = moved(name, config);
   if (scope)
-    return same(
-      `${name} is off ${where(scope)}. Use /toggle-hook ${flag(scope)} ${name}.`,
-    );
+    return same(`${name} is off ${where(scope)}. Use /toggle-hook ${flag(scope)} ${name}.`);
   return off.includes(name)
     ? {
         value: value(off.filter((hook) => hook !== name)),
@@ -255,10 +238,7 @@ export function toggleConfig(
  * ~/.gitconfig does not exist, and chezmoi manages that file. Git reads
  * ~/.gitconfig after it, so a value there wins.
  */
-export function globalFile(env: {
-  GIT_CONFIG_GLOBAL?: string;
-  HOME?: string;
-}): string | undefined {
+export function globalFile(env: { GIT_CONFIG_GLOBAL?: string; HOME?: string }): string | undefined {
   return env.GIT_CONFIG_GLOBAL || (env.HOME && `${env.HOME}/.gitconfig`);
 }
 
@@ -284,8 +264,7 @@ export async function command(
   if (!name) return { ...toggle(current, "", before), config: before };
   const basis = scope === "global" ? await readConfig(git, "--global") : before;
   const { writes, text } = toggleConfig(current, name, basis, scope);
-  const level =
-    scope === "repo" ? ["--local"] : global ? ["--file", global] : ["--global"];
+  const level = scope === "repo" ? ["--local"] : global ? ["--file", global] : ["--global"];
   for (const { name, on } of writes) {
     // A name back on loses its key, so that the git config stays clean.
     const argv = on ? ["--unset", key(name)] : [key(name), "false"];
@@ -302,15 +281,11 @@ export async function command(
   // A key in a file outside the repository, such as ~/.config/git/config,
   // can still keep a name from the state it should have. A value written in
   // the scope wins over it.
-  const missed = (config: Config) =>
-    writes.filter(({ name, on }) => gitOn(name, config) !== on);
+  const missed = (config: Config) => writes.filter(({ name, on }) => gitOn(name, config) !== on);
   let after = await readConfig(git);
-  const outside = missed(after).filter(
-    ({ name }) => after.get(name)?.scope === "global",
-  );
+  const outside = missed(after).filter(({ name }) => after.get(name)?.scope === "global");
   if (outside.length) {
-    for (const { name, on } of outside)
-      await git(["config", ...level, key(name), String(on)]);
+    for (const { name, on } of outside) await git(["config", ...level, key(name), String(on)]);
     after = await readConfig(git);
   }
   // A global write cannot win over the repository.
@@ -325,10 +300,7 @@ export async function command(
 }
 
 /** The status line text while a hook is off. */
-export function status(
-  value: string | undefined,
-  config: Config = new Map(),
-): string | undefined {
+export function status(value: string | undefined, config: Config = new Map()): string | undefined {
   const session = names(value);
   const off = NAMES.flatMap((name) => {
     const scope = moved(name, config);

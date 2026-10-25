@@ -29,17 +29,12 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import type {
-  ExtensionAPI,
-  ExtensionCommandContext,
-} from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 
 import type { AutocompleteProvider } from "@earendil-works/pi-tui";
 
 /** Complete slash names at a whitespace boundary without replacing nearby text. */
-export function withInlineCommands(
-  provider: AutocompleteProvider,
-): AutocompleteProvider {
+export function withInlineCommands(provider: AutocompleteProvider): AutocompleteProvider {
   const slashPrefix = (lines: string[], line: number, col: number) =>
     /(?:^|\s)(\/[^\s/]*)$/.exec((lines[line] ?? "").slice(0, col))?.[1];
   return {
@@ -47,34 +42,20 @@ export function withInlineCommands(
     async getSuggestions(lines, line, col, options) {
       const prefix = slashPrefix(lines, line, col);
       if (prefix) {
-        const suggestions = await provider.getSuggestions(
-          [prefix],
-          0,
-          prefix.length,
-          { ...options, force: false },
-        );
+        const suggestions = await provider.getSuggestions([prefix], 0, prefix.length, {
+          ...options,
+          force: false,
+        });
         if (suggestions || !options.force) return suggestions;
       }
       return provider.getSuggestions(lines, line, col, options);
     },
     applyCompletion(lines, line, col, item, prefix) {
-      if (
-        prefix === slashPrefix(lines, line, col) &&
-        !item.value.includes("/")
-      ) {
-        const result = provider.applyCompletion(
-          [prefix],
-          0,
-          prefix.length,
-          item,
-          prefix,
-        );
+      if (prefix === slashPrefix(lines, line, col) && !item.value.includes("/")) {
+        const result = provider.applyCompletion([prefix], 0, prefix.length, item, prefix);
         const start = col - prefix.length;
         const updated = [...lines];
-        updated[line] =
-          lines[line].slice(0, start) +
-          result.lines[0] +
-          lines[line].slice(col);
+        updated[line] = lines[line].slice(0, start) + result.lines[0] + lines[line].slice(col);
         return {
           lines: updated,
           cursorLine: line,
@@ -100,19 +81,11 @@ export function inlineCommandEditor(
       const before = this.getText();
       super.handleInput(data);
       const { line, col } = this.getCursor();
-      const prefix = /(?:^|\s)(\/[^\s/]*)$/.exec(
-        this.getLines()[line].slice(0, col),
-      );
-      if (
-        this.getText() !== before &&
-        prefix &&
-        !this.isShowingAutocomplete()
-      ) {
+      const prefix = /(?:^|\s)(\/[^\s/]*)$/.exec(this.getLines()[line].slice(0, col));
+      if (this.getText() !== before && prefix && !this.isShowingAutocomplete()) {
         // shortcut: pi 1.1 has no public completion request API. Use its existing
         // non-Tab request until pi exposes one; Tab auto-applies a single match.
-        (
-          this as unknown as { tryTriggerAutocomplete(): void }
-        ).tryTriggerAutocomplete();
+        (this as unknown as { tryTriggerAutocomplete(): void }).tryTriggerAutocomplete();
       }
     }
   };
@@ -219,9 +192,7 @@ export function commandName(relativePath: string, declared?: string): string {
  * no frontmatter is listed as "Refactor Clean".
  */
 function firstLine(body: string): string | undefined {
-  const line = body
-    .split("\n")
-    .find((candidate) => candidate.trim().length > 0);
+  const line = body.split("\n").find((candidate) => candidate.trim().length > 0);
   return line?.replace(/^#+\s*/, "").trim() || undefined;
 }
 
@@ -270,11 +241,7 @@ export function discover(root: string): CommandFile[] {
 function splitArgs(args: string): string[] {
   const parts: string[] = [];
   const pattern = /"([^"]*)"|'([^']*)'|(\S+)/g;
-  for (
-    let match = pattern.exec(args);
-    match !== null;
-    match = pattern.exec(args)
-  ) {
+  for (let match = pattern.exec(args); match !== null; match = pattern.exec(args)) {
     parts.push(match[1] ?? match[2] ?? match[3]);
   }
   return parts;
@@ -291,8 +258,7 @@ function escapeForRegExp(text: string): string {
  * `(?!)` never matches, standing in when a file declares no names.
  */
 function argPattern(names: string[]): RegExp {
-  const declared =
-    names.length > 0 ? names.map(escapeForRegExp).join("|") : "(?!)";
+  const declared = names.length > 0 ? names.map(escapeForRegExp).join("|") : "(?!)";
   return new RegExp(
     String.raw`\\{2}(?=\$)` +
       String.raw`|\\\$(?=\d|ARGUMENTS\b|(?:${declared})\b)` +
@@ -379,9 +345,7 @@ function fencedRanges(text: string): Array<[number, number]> {
   return ranges;
 }
 
-type Exec = (
-  script: string,
-) => Promise<{ stdout: string; stderr: string; code: number }>;
+type Exec = (script: string) => Promise<{ stdout: string; stderr: string; code: number }>;
 
 /**
  * Run every `` !`cmd` `` span and replace it with the output. `!` counts only at the
@@ -396,11 +360,7 @@ export async function expandSpans(text: string, exec: Exec): Promise<string> {
   const pattern = /(^|\s)!`([^`]+)`/g;
   let result = "";
   let cursor = 0;
-  for (
-    let match = pattern.exec(text);
-    match !== null;
-    match = pattern.exec(text)
-  ) {
+  for (let match = pattern.exec(text); match !== null; match = pattern.exec(text)) {
     const index = match.index;
     if (fenced.some(([start, end]) => index >= start && index < end)) {
       continue;
@@ -408,31 +368,20 @@ export async function expandSpans(text: string, exec: Exec): Promise<string> {
     const [span, lead, script] = match;
     const run = await exec(script);
     if (run.code !== 0) {
-      throw new Error(
-        `\`${script}\` exited ${run.code}: ${(run.stderr || run.stdout).trim()}`,
-      );
+      throw new Error(`\`${script}\` exited ${run.code}: ${(run.stderr || run.stdout).trim()}`);
     }
-    result +=
-      text.slice(cursor, index) + lead + (run.stdout + run.stderr).trimEnd();
+    result += text.slice(cursor, index) + lead + (run.stdout + run.stderr).trimEnd();
     cursor = index + span.length;
   }
   return result + text.slice(cursor);
 }
 
 /** A command file as the text that goes to the model. */
-export async function expand(
-  filePath: string,
-  args: string,
-  exec: Exec,
-): Promise<string> {
-  const { body, argumentNames: names } = parseFile(
-    fs.readFileSync(filePath, "utf-8"),
-  );
+export async function expand(filePath: string, args: string, exec: Exec): Promise<string> {
+  const { body, argumentNames: names } = parseFile(fs.readFileSync(filePath, "utf-8"));
   const { text, consumed } = substituteArgs(body, args, names);
   const expanded = await expandSpans(text, exec);
-  return args.trim() && !consumed
-    ? `${expanded}\n\nARGUMENTS: ${args.trim()}`
-    : expanded;
+  return args.trim() && !consumed ? `${expanded}\n\nARGUMENTS: ${args.trim()}` : expanded;
 }
 
 /**
@@ -444,10 +393,7 @@ export async function expand(
 export function describe(
   command: Pick<CommandFile, "description" | "argumentHint">,
 ): string | undefined {
-  return (
-    [command.argumentHint, command.description].filter(Boolean).join(" — ") ||
-    undefined
-  );
+  return [command.argumentHint, command.description].filter(Boolean).join(" — ") || undefined;
 }
 
 export default async function claudeCommandsExtension(pi: ExtensionAPI) {
@@ -473,8 +419,7 @@ export default async function claudeCommandsExtension(pi: ExtensionAPI) {
     const { CustomEditor } = await import("@earendil-works/pi-coding-agent");
     const InlineCommandEditor = inlineCommandEditor(CustomEditor);
     ctx.ui.setEditorComponent(
-      (tui, theme, keybindings) =>
-        new InlineCommandEditor(tui, theme, keybindings),
+      (tui, theme, keybindings) => new InlineCommandEditor(tui, theme, keybindings),
     );
   });
   register(path.join(os.homedir(), ".claude", "commands"));

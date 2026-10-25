@@ -52,9 +52,7 @@ const dirname = (path: string) => path.slice(0, path.lastIndexOf("/")) || "/";
  */
 function throwaway(file: string, tmpdir: string | undefined): boolean {
   const plain = (path: string) => path.replace(/^\/private/, "");
-  return ["/tmp/", "/var/tmp/", tmpdir].some(
-    (dir) => dir && plain(file).startsWith(plain(dir)),
-  );
+  return ["/tmp/", "/var/tmp/", tmpdir].some((dir) => dir && plain(file).startsWith(plain(dir)));
 }
 
 /**
@@ -62,25 +60,18 @@ function throwaway(file: string, tmpdir: string | undefined): boolean {
  * base to compare to: outside git, an untracked file, or a first commit. Then
  * every line is new. docs/implementation.md "Only the changed paragraphs".
  */
-async function changedLines(
-  file: string,
-  io: Io,
-): Promise<Set<number> | undefined> {
+async function changedLines(file: string, io: Io): Promise<Set<number> | undefined> {
   const dir = dirname(file);
   const git = (...args: string[]) => io.run(["git", ...args], dir);
-  if ((await git("ls-files", "--error-unmatch", "--", file))?.exitCode !== 0)
-    return undefined;
+  if ((await git("ls-files", "--error-unmatch", "--", file))?.exitCode !== 0) return undefined;
   // Before the first commit there is no HEAD, and the diff fails.
   const diff = await git("diff", "-U0", "HEAD", "--", file);
   if (diff?.exitCode !== 0) return undefined;
   const lines = new Set<number>();
   // A hunk header is @@ -a,b +start,count @@. A count of 0 is a deletion
   // after line start, and that line still marks its paragraph as changed.
-  for (const [, start, count = "1"] of diff.stdout.matchAll(
-    /^@@ \S+ \+(\d+)(?:,(\d+))?/gm,
-  )) {
-    for (let i = 0; i < Math.max(Number(count), 1); i++)
-      lines.add(Number(start) + i);
+  for (const [, start, count = "1"] of diff.stdout.matchAll(/^@@ \S+ \+(\d+)(?:,(\d+))?/gm)) {
+    for (let i = 0; i < Math.max(Number(count), 1); i++) lines.add(Number(start) + i);
   }
   return lines;
 }
@@ -118,12 +109,7 @@ export async function check(
     names(settings.disable).some((name) => name === "all" || name === "prose")
   )
     return {};
-  if (
-    !file ||
-    !PROSE.test(file) ||
-    throwaway(file, settings.tmpdir) ||
-    !(await io.isFile(file))
-  )
+  if (!file || !PROSE.test(file) || throwaway(file, settings.tmpdir) || !(await io.isFile(file)))
     return {};
   const dir = dirname(file);
   if (await repoOff(dir, io)) return {};
@@ -180,11 +166,7 @@ export async function check(
     const [line = "", , rule = ""] = alert
       .slice(alert.startsWith(prefix) ? prefix.length : 0)
       .split(":");
-    const key = JSON.stringify([
-      file,
-      rule,
-      paragraph(lines, Number(line)).join("\n"),
-    ]);
+    const key = JSON.stringify([file, rule, paragraph(lines, Number(line)).join("\n")]);
     if (seen.has(key)) repeats.push(alert);
     else {
       report.push(alert);
@@ -195,8 +177,7 @@ export async function check(
   // shortcut: read and write back, because the mod's $.fs has no append. Two
   // calls at once in one session can drop a key, and that alert blocks once
   // more. The upgrade is an append in Io.
-  if (record && added.length)
-    await io.write(record, `${before}${added.join("\n")}\n`);
+  if (record && added.length) await io.write(record, `${before}${added.join("\n")}\n`);
   if (report.length) return { block: `${report.join("\n")}\n` };
   if (repeats.length)
     return {

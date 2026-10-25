@@ -20,10 +20,7 @@ export default function (pi: ExtensionAPI) {
     if (event.toolName === "bash" && typeof command === "string")
       return formatCalls([{ command, cwd }], event.content);
     if (["write", "edit"].includes(event.toolName) && typeof path === "string")
-      return formatCalls(
-        [{ filePath: absolute(path, cwd), cwd }],
-        event.content,
-      );
+      return formatCalls([{ filePath: absolute(path, cwd), cwd }], event.content);
   });
 }
 
@@ -48,10 +45,7 @@ export async function formatCalls(
     }
     if (!hints.length) return;
     return {
-      content: [
-        ...content,
-        ...hints.map((text) => ({ type: "text" as const, text })),
-      ],
+      content: [...content, ...hints.map((text) => ({ type: "text" as const, text }))],
     };
   } catch {
     // Never blocks: a broken format run must not change the result.

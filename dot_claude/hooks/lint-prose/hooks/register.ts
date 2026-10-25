@@ -26,19 +26,13 @@ export const register: Register = (on) => {
       // Rejects when the program is not installed, or timed out.
       run: (argv, cwd) => $.process.run(argv, { cwd }).catch(() => undefined),
     };
-    const { block, notice } = await check(
-      e.file_path,
-      await $.session.id(),
-      io,
-      {
-        disable: await $.env.get("CLAUDE_LINT_DISABLE"),
-        tmpdir: await $.env.get("TMPDIR"),
-        valeDir:
-          (await $.env.get("LINT_PROSE_VALE_DIR")) ||
-          `${await $.env.get("HOME")}/.config/vale`,
-        hooksOff: await $.env.get("AGENT_HOOKS_DISABLE"),
-      },
-    );
+    const { block, notice } = await check(e.file_path, await $.session.id(), io, {
+      disable: await $.env.get("CLAUDE_LINT_DISABLE"),
+      tmpdir: await $.env.get("TMPDIR"),
+      valeDir:
+        (await $.env.get("LINT_PROSE_VALE_DIR")) || `${await $.env.get("HOME")}/.config/vale`,
+      hooksOff: await $.env.get("AGENT_HOOKS_DISABLE"),
+    });
     if (notice) await $.ui.notify(notice).catch(() => undefined);
     if (!block) return ran;
     return {

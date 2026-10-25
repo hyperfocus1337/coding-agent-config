@@ -65,12 +65,7 @@ const edit = (file: string, extra: object = {}) => ({
   tool_input: { file_path: file },
   ...extra,
 });
-async function expect(
-  what: string,
-  ran: ReturnType<typeof run>,
-  status: number,
-  holds = "",
-) {
+async function expect(what: string, ran: ReturnType<typeof run>, status: number, holds = "") {
   await check(what, () => {
     assert.equal(ran.status, status, ran.out);
     assert.ok(ran.out.includes(holds), `output does not hold '${holds}'`);
@@ -121,15 +116,10 @@ for (const [config, programs] of [
   });
 
 // --- Markdown ---
-const longMd = write(
-  `${tmp}/long.md`,
-  `# Title\n\n${long}\n\nOne. Two. Three. Four. Five.\n`,
-);
+const longMd = write(`${tmp}/long.md`, `# Title\n\n${long}\n\nOne. Two. Three. Four. Five.\n`);
 let ran = run(edit(longMd));
 await expect("Write blocks a paragraph over 5 sentences", ran, 2, "long.md:3:");
-await check("5 sentences are allowed", () =>
-  assert.ok(!ran.out.includes("long.md:5:")),
-);
+await check("5 sentences are allowed", () => assert.ok(!ran.out.includes("long.md:5:")));
 
 ran = run(edit(write(`${tmp}/item.md`, `- ${long}\n- Short item.\n`)));
 await expect("a list item over 5 sentences is blocked", ran, 2, "item.md:1:");
@@ -142,11 +132,7 @@ ran = run(
     ),
   ),
 );
-await expect(
-  "invalid frontmatter, code, and abbreviations are not counted",
-  ran,
-  0,
-);
+await expect("invalid frontmatter, code, and abbreviations are not counted", ran, 0);
 
 // --- Org ---
 ran = run(
@@ -206,39 +192,19 @@ const git = (...args: string[]) =>
   });
 git("init", "-q");
 // An old long paragraph over two lines, then a short one.
-const old = write(
-  `${repo}/old.md`,
-  `${long}\nStill the old paragraph.\n\nShort.\n`,
-);
+const old = write(`${repo}/old.md`, `${long}\nStill the old paragraph.\n\nShort.\n`);
 git("add", "old.md");
 ran = run(edit(old));
-await expect(
-  "before the first commit a file is checked whole",
-  ran,
-  2,
-  "old.md:1:",
-);
+await expect("before the first commit a file is checked whole", ran, 2, "old.md:1:");
 git("commit", "-q", "-m", "old");
 
 write(old, `${long}\nStill the old paragraph.\n\nShort, and changed.\n`);
 ran = run(edit(old));
-await expect(
-  "an old long paragraph that did not change is not reported",
-  ran,
-  0,
-);
+await expect("an old long paragraph that did not change is not reported", ran, 0);
 
-write(
-  old,
-  `${long}\nThe old paragraph, changed on its second line.\n\nShort.\n`,
-);
+write(old, `${long}\nThe old paragraph, changed on its second line.\n\nShort.\n`);
 ran = run(edit(old));
-await expect(
-  "a change on a later line of a long paragraph reports it",
-  ran,
-  2,
-  "old.md:1:",
-);
+await expect("a change on a later line of a long paragraph reports it", ran, 2, "old.md:1:");
 
 git("checkout", "-q", "--", "old.md");
 const five = write(`${repo}/five.md`, "One. Two. Three. Four. Five.\n");
@@ -254,12 +220,7 @@ ran = run(
     },
   }),
 );
-await expect(
-  "an Edit that adds a 6th sentence to a paragraph is blocked",
-  ran,
-  2,
-  "five.md:1:",
-);
+await expect("an Edit that adds a 6th sentence to a paragraph is blocked", ran, 2, "five.md:1:");
 
 ran = run(edit(write(`${repo}/new.md`, `${long}\n`)));
 await expect("an untracked file is checked whole", ran, 2, "new.md:1:");
@@ -267,12 +228,7 @@ await expect("an untracked file is checked whole", ran, 2, "new.md:1:");
 // A deletion marks the line before it, so a paragraph that lost a line counts.
 write(old, `${long}\n\nShort.\n`);
 ran = run(edit(old));
-await expect(
-  "a deleted line marks its paragraph as changed",
-  ran,
-  2,
-  "old.md:1:",
-);
+await expect("a deleted line marks its paragraph as changed", ran, 2, "old.md:1:");
 git("checkout", "-q", "--", "old.md");
 
 // --- Once per session ---
@@ -281,28 +237,12 @@ git("checkout", "-q", "--", "old.md");
 const state = `${tmp}/state`;
 fs.mkdirSync(state);
 const repeat = `${tmp}/repeat.md`;
-const session = (id: string) =>
-  run(edit(repeat, { session_id: id }), { TMPDIR: state });
+const session = (id: string) => run(edit(repeat, { session_id: id }), { TMPDIR: state });
 write(repeat, `${long}\n`);
-await expect(
-  "a session blocks on an alert the first time",
-  session("a"),
-  2,
-  "repeat.md:1:",
-);
-await expect(
-  "a repeat goes to the user, not blocked",
-  session("a"),
-  1,
-  "blocked on before",
-);
+await expect("a session blocks on an alert the first time", session("a"), 2, "repeat.md:1:");
+await expect("a repeat goes to the user, not blocked", session("a"), 1, "blocked on before");
 write(repeat, `\n${long}\n`);
-await expect(
-  "a paragraph that only moved is still a repeat",
-  session("a"),
-  1,
-  "repeat.md:2:",
-);
+await expect("a paragraph that only moved is still a repeat", session("a"), 1, "repeat.md:2:");
 write(repeat, `\n${long} Seven.\n`);
 await expect(
   "a changed paragraph that is still too long blocks again",
@@ -310,12 +250,7 @@ await expect(
   2,
   "repeat.md:2:",
 );
-await expect(
-  "another session blocks on the same alert",
-  session("b"),
-  2,
-  "repeat.md:2:",
-);
+await expect("another session blocks on the same alert", session("b"), 2, "repeat.md:2:");
 await expect(
   "a session id with other characters keeps no record",
   run(edit(repeat, { session_id: "../x" }), { TMPDIR: state }),
@@ -323,19 +258,13 @@ await expect(
   "repeat.md:2:",
 );
 await check("the record is in $TMPDIR, one file for each session", () =>
-  assert.deepEqual(fs.readdirSync(state).sort(), [
-    "lint-prose-a",
-    "lint-prose-b",
-  ]),
+  assert.deepEqual(fs.readdirSync(state).sort(), ["lint-prose-a", "lint-prose-b"]),
 );
 
 // --- A Vale failure does not block ---
 // A copy of the Vale config with a rule Vale cannot load.
 fs.cpSync(valeDir, `${tmp}/broken`, { recursive: true });
-write(
-  `${tmp}/broken/styles/Writing/ParagraphLength.yml`,
-  "extends: nonsense\n",
-);
+write(`${tmp}/broken/styles/Writing/ParagraphLength.yml`, "extends: nonsense\n");
 await expect(
   "a broken rule is reported to the user, not blocked",
   run(edit(longMd), { LINT_PROSE_VALE_DIR: `${tmp}/broken` }),
@@ -380,11 +309,7 @@ await expect(
 const throwaway = write("/tmp/lint-prose-test-throwaway.md", `${long}\n`);
 await expect("a throwaway file under /tmp is skipped", run(edit(throwaway)), 0);
 fs.rmSync(throwaway);
-await expect(
-  "a file that does not exist is skipped",
-  run(edit(`${tmp}/gone.md`)),
-  0,
-);
+await expect("a file that does not exist is skipped", run(edit(`${tmp}/gone.md`)), 0);
 
 // --- pi.ts and hooks/register.ts, with stubs over the real files ---
 
@@ -420,24 +345,18 @@ await check("pi.ts: appends the alerts and marks an error", async () => {
   const result = await piCall("write", { path: "adapter.md" });
   assert.equal(result?.isError, true);
   assert.equal(result?.content[0]?.text, "written");
-  assert.match(
-    result?.content[1]?.text ?? "",
-    /adapter\.md:1:.*ParagraphLength/,
-  );
+  assert.match(result?.content[1]?.text ?? "", /adapter\.md:1:.*ParagraphLength/);
 });
 await check("pi.ts: a repeat goes to a notification", async () => {
   assert.equal(await piCall("edit", { path: adapter }), undefined);
   assert.match(notices[0] ?? "", /blocked on before/);
 });
-await check(
-  "pi.ts: leaves a clean file, a failed call, and other tools alone",
-  async () => {
-    assert.equal(await piCall("write", { path: clean }), undefined);
-    write(`${tmp}/failed.md`, `${long}\n`);
-    assert.equal(await piCall("edit", { path: "failed.md" }, true), undefined);
-    assert.equal(await piCall("read", { path: "failed.md" }), undefined);
-  },
-);
+await check("pi.ts: leaves a clean file, a failed call, and other tools alone", async () => {
+  assert.equal(await piCall("write", { path: clean }), undefined);
+  write(`${tmp}/failed.md`, `${long}\n`);
+  assert.equal(await piCall("edit", { path: "failed.md" }, true), undefined);
+  assert.equal(await piCall("read", { path: "failed.md" }), undefined);
+});
 
 const ompCall = caller(ompExtension);
 await check("omp.ts: lints each file of a multi-file edit", async () => {
@@ -446,27 +365,17 @@ await check("omp.ts: lints each file of a multi-file edit", async () => {
   assert.equal(result?.isError, true);
   assert.match(result?.content[1]?.text ?? "", /omp\.md:1:.*ParagraphLength/);
 });
-await check(
-  "omp.ts: leaves the one file of an edit to pi.ts, and a failed call",
-  async () => {
-    write(`${tmp}/omp-one.md`, `${long}\n`);
-    assert.equal(
-      await ompCall("edit", { path: "omp-one.md", paths: ["omp-one.md"] }),
-      undefined,
-    );
-    assert.equal(
-      await ompCall("edit", { paths: ["omp-one.md", "clean.md"] }, true),
-      undefined,
-    );
-    assert.equal(await ompCall("write", { path: "omp-one.md" }), undefined);
-  },
-);
+await check("omp.ts: leaves the one file of an edit to pi.ts, and a failed call", async () => {
+  write(`${tmp}/omp-one.md`, `${long}\n`);
+  assert.equal(await ompCall("edit", { path: "omp-one.md", paths: ["omp-one.md"] }), undefined);
+  assert.equal(await ompCall("edit", { paths: ["omp-one.md", "clean.md"] }, true), undefined);
+  assert.equal(await ompCall("write", { path: "omp-one.md" }), undefined);
+});
 
 type Hook = (...args: unknown[]) => Promise<unknown>;
 let modHook: Hook | undefined;
 register(
-  ((_event: string, _matcher: unknown, hook: Hook) =>
-    (modHook = hook)) as never,
+  ((_event: string, _matcher: unknown, hook: Hook) => (modHook = hook)) as never,
   {} as never,
 );
 const toasts: string[] = [];
@@ -503,33 +412,26 @@ const stub$ = {
 };
 const result = { result: "ok", text: "written" };
 const modCall = (file: string, next: unknown = result) =>
-  modHook?.(
-    stub$,
-    { tool: "Write", file_path: file },
-    async () => next,
-  ) as Promise<{ text: string; context?: string[] }>;
+  modHook?.(stub$, { tool: "Write", file_path: file }, async () => next) as Promise<{
+    text: string;
+    context?: string[];
+  }>;
 await check("register.ts: adds the alerts as context", async () => {
   const done = await modCall(adapter);
   assert.equal(done.text, "written");
-  assert.match(
-    done.context?.[0] ?? "",
-    /^Prose lint errors[\s\S]*adapter\.md:1:/,
-  );
+  assert.match(done.context?.[0] ?? "", /^Prose lint errors[\s\S]*adapter\.md:1:/);
 });
 await check("register.ts: a repeat goes to a notification", async () => {
   assert.equal(await modCall(adapter), result);
   assert.match(toasts[0] ?? "", /blocked on before/);
 });
-await check(
-  "register.ts: passes a clean result, a deny, and an error through",
-  async () => {
-    assert.equal(await modCall(clean), result);
-    const denied = { deny: "no" };
-    assert.equal(await modCall(`${tmp}/failed.md`, denied), denied);
-    const failed = { isError: true, text: "no match" };
-    assert.equal(await modCall(`${tmp}/failed.md`, failed), failed);
-  },
-);
+await check("register.ts: passes a clean result, a deny, and an error through", async () => {
+  assert.equal(await modCall(clean), result);
+  const denied = { deny: "no" };
+  assert.equal(await modCall(`${tmp}/failed.md`, denied), denied);
+  const failed = { isError: true, text: "no match" };
+  assert.equal(await modCall(`${tmp}/failed.md`, failed), failed);
+});
 
 fs.rmSync(tmp, { recursive: true });
 if (failures) {

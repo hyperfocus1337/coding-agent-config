@@ -74,17 +74,14 @@ export function nodeIo(): Io {
         child.stdout.on("data", (chunk: string) => {
           // After one dropped chunk, drop the rest too: the output stays a
           // prefix, with no gap in it.
-          if (!truncated && stdout.length + chunk.length <= MAX_OUTPUT)
-            stdout += chunk;
+          if (!truncated && stdout.length + chunk.length <= MAX_OUTPUT) stdout += chunk;
           else truncated = true;
         });
         // A child that exits before it reads its input closes the pipe.
         child.stdin.on("error", () => undefined);
         child.stdin.end(options.stdin ?? "");
         child.on("error", () => resolve(undefined));
-        child.on("close", (code) =>
-          resolve({ exitCode: code ?? 1, stdout, truncated }),
-        );
+        child.on("close", (code) => resolve({ exitCode: code ?? 1, stdout, truncated }));
       }),
   };
 }

@@ -65,10 +65,7 @@ function shellOptions(): BashToolOptions {
   let settings: { shellPath?: string; shellCommandPrefix?: string } = {};
   try {
     settings = JSON.parse(
-      fs.readFileSync(
-        path.join(os.homedir(), ".pi", "agent", "settings.json"),
-        "utf-8",
-      ),
+      fs.readFileSync(path.join(os.homedir(), ".pi", "agent", "settings.json"), "utf-8"),
     );
   } catch {
     // No file, or not JSON: pi falls back to the same defaults the built-in has.
@@ -88,8 +85,7 @@ export default function compactBash(pi: ExtensionAPI): void {
 
   const byCwd = new Map<string, ToolDefinition<any, any, any>>();
   const definitionFor = (cwd: string): ToolDefinition<any, any, any> => {
-    const definition =
-      byCwd.get(cwd) ?? createBashToolDefinition(cwd, shellOptions());
+    const definition = byCwd.get(cwd) ?? createBashToolDefinition(cwd, shellOptions());
     byCwd.set(cwd, definition);
     return definition;
   };

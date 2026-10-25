@@ -43,8 +43,7 @@ export interface Call {
 }
 
 /** A path a Bash command names, by the extensions this hook lints. */
-const NAMED =
-  /[^\s:;|&"'`()<>=]+\.(?:py|jsx?|tsx?|mjs|cjs|mts|cts|sh|bash|ya?ml|tf)\b/g;
+const NAMED = /[^\s:;|&"'`()<>=]+\.(?:py|jsx?|tsx?|mjs|cjs|mts|cts|sh|bash|ya?ml|tf)\b/g;
 
 /**
  * Whether the git config of the repository that holds `dir` sets
@@ -54,15 +53,7 @@ const NAMED =
  */
 async function repoOff(dir: string, io: Io): Promise<boolean> {
   const key = "agent-hook.lint-code.enabled";
-  const ran = await io.run([
-    "git",
-    "-C",
-    dir,
-    "config",
-    "--type=bool",
-    "--get",
-    key,
-  ]);
+  const ran = await io.run(["git", "-C", dir, "config", "--type=bool", "--get", key]);
   return ran?.output.trim() === "false";
 }
 
@@ -81,8 +72,7 @@ export async function targets(
   settings: Settings,
   now = Date.now(),
 ): Promise<string[]> {
-  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("lint-code"))
-    return [];
+  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("lint-code")) return [];
   const named = call.filePath
     ? [call.filePath]
     : [...(call.command ?? "").matchAll(NAMED)].map(([path]) => path);
@@ -97,8 +87,7 @@ export async function targets(
     const plain = file.replace(/^\/private/, "");
     if (/^\/(var\/)?tmp\//.test(plain) || plain.startsWith(tmpdir)) continue;
     const stat = await io.stat(file);
-    if (!stat?.isFile || (!call.filePath && now - stat.mtimeMs > 120_000))
-      continue;
+    if (!stat?.isFile || (!call.filePath && now - stat.mtimeMs > 120_000)) continue;
     const dir = file.slice(0, file.lastIndexOf("/")) || "/";
     if (!asked.has(dir)) asked.set(dir, repoOff(dir, io));
     if (!(await asked.get(dir))) kept.add(file);
@@ -112,13 +101,9 @@ export async function targets(
  */
 async function isAnsible(file: string, io: Io): Promise<boolean> {
   return (
-    /\/(roles|tasks|handlers|playbooks|group_vars|host_vars|molecule)\//.test(
-      file,
-    ) ||
+    /\/(roles|tasks|handlers|playbooks|group_vars|host_vars|molecule)\//.test(file) ||
     /(^|\/)(site|playbook|main|requirements)\.ya?ml$/.test(file) ||
-    /^\s*(- )?(hosts|tasks|roles|ansible\.builtin\.):/m.test(
-      await io.read(file).catch(() => ""),
-    )
+    /^\s*(- )?(hosts|tasks|roles|ansible\.builtin\.):/m.test(await io.read(file).catch(() => ""))
   );
 }
 
@@ -136,9 +121,7 @@ async function linter(
   const config = settings.configDir;
   switch (file.split(".").pop()) {
     case "py":
-      return disabled("py")
-        ? undefined
-        : { argv: ["ruff", "check", "--quiet", file] };
+      return disabled("py") ? undefined : { argv: ["ruff", "check", "--quiet", file] };
     case "js":
     case "jsx":
     case "ts":
@@ -147,14 +130,10 @@ async function linter(
     case "cjs":
     case "mts":
     case "cts":
-      return disabled("js")
-        ? undefined
-        : { argv: ["oxlint", "--deny-warnings", file] };
+      return disabled("js") ? undefined : { argv: ["oxlint", "--deny-warnings", file] };
     case "sh":
     case "bash":
-      return disabled("sh")
-        ? undefined
-        : { argv: ["shellcheck", "-S", "warning", file] };
+      return disabled("sh") ? undefined : { argv: ["shellcheck", "-S", "warning", file] };
     case "yml":
     case "yaml":
       if (disabled("yaml")) return undefined;
@@ -171,9 +150,7 @@ async function linter(
       // the module wins over the bundled config.
       const slash = file.lastIndexOf("/");
       const dir = file.slice(0, slash) || "/";
-      const own =
-        (await io.stat(`${dir}/.tflint.hcl`)) ??
-        (await io.stat(`${dir}/.tflint.json`));
+      const own = (await io.stat(`${dir}/.tflint.hcl`)) ?? (await io.stat(`${dir}/.tflint.json`));
       return {
         argv: [
           "tflint",

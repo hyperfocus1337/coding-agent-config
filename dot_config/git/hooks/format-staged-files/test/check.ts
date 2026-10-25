@@ -34,10 +34,7 @@ const home = `${tmp}/home`;
 for (const [link, target] of [
   [".config/git/hooks/format-staged-files", here],
   [".claude/hooks/format-oxfmt", `${repo}/dot_claude/hooks/format-oxfmt`],
-  [
-    ".claude/hooks/format-org-tables",
-    `${repo}/dot_claude/hooks/format-org-tables`,
-  ],
+  [".claude/hooks/format-org-tables", `${repo}/dot_claude/hooks/format-org-tables`],
   [".claude/hooks/format-code", `${repo}/dot_claude/hooks/format-code`],
 ]) {
   fs.mkdirSync(path.dirname(`${home}/${link}`), { recursive: true });
@@ -48,13 +45,7 @@ for (const [link, target] of [
 const hook = (name: string) => {
   const command = spawnSync(
     "git",
-    [
-      "config",
-      "--file",
-      `${repo}/dot_config/git/config`,
-      "--get",
-      `hook.${name}.command`,
-    ],
+    ["config", "--file", `${repo}/dot_config/git/config`, "--get", `hook.${name}.command`],
     { encoding: "utf8" },
   ).stdout.trim();
   assert.ok(command, `no ${name} command in dot_config/git/config`);
@@ -63,12 +54,7 @@ const hook = (name: string) => {
 
 // No agent variable from the session that runs this check.
 const base: Record<string, string | undefined> = { ...process.env };
-for (const name of [
-  "CLAUDECODE",
-  "PI_CODING_AGENT",
-  "OMPCODE",
-  "CODEX_THREAD_ID",
-])
+for (const name of ["CLAUDECODE", "PI_CODING_AGENT", "OMPCODE", "CODEX_THREAD_ID"])
   delete base[name];
 Object.assign(base, {
   HOME: home,
@@ -101,10 +87,7 @@ for (const program of ["git", "oxfmt"])
   }
 const work = `${tmp}/work`;
 fs.mkdirSync(work);
-const git = (
-  args: string[],
-  agent: Record<string, string> = { CLAUDECODE: "1" },
-) => {
+const git = (args: string[], agent: Record<string, string> = { CLAUDECODE: "1" }) => {
   const ran = spawnSync("git", args, {
     cwd: work,
     encoding: "utf8",
@@ -115,8 +98,7 @@ const git = (
 };
 const committed = (file: string) => git(["show", `HEAD:${file}`]).stdout;
 const dirty = () => git(["status", "--porcelain"]).stdout;
-const write = (file: string, text: string) =>
-  fs.writeFileSync(`${work}/${file}`, text);
+const write = (file: string, text: string) => fs.writeFileSync(`${work}/${file}`, text);
 
 git(["init", "-q"]);
 git(["commit", "-q", "--allow-empty", "-m", "init"]);
@@ -129,36 +111,24 @@ check("a staged new file is committed formatted", () =>
   assert.equal(committed("new.md"), "- one\n"),
 );
 check("a restage is reported on stderr", () =>
-  assert.equal(
-    ran.stderr,
-    "format-staged-files: reformatted and restaged new.md\n",
-  ),
+  assert.equal(ran.stderr, "format-staged-files: reformatted and restaged new.md\n"),
 );
 check("the tree is clean after the commit", () => assert.equal(dirty(), ""));
 
 // Write and commit in one call, the case the PostToolUse formatters miss.
 write("new.md", "*   two\n");
 git(["commit", "-q", "-a", "-m", "commit -a"]);
-check("commit -a formats the tracked file", () =>
-  assert.equal(committed("new.md"), "- two\n"),
-);
+check("commit -a formats the tracked file", () => assert.equal(committed("new.md"), "- two\n"));
 check("the tree is clean after commit -a", () => assert.equal(dirty(), ""));
 
 // `git commit <path>` commits a temporary index. The post-commit run puts the
 // committed version in the real index too, so the file is not left as MM.
 write("new.md", "*   path\n");
 git(["commit", "-q", "-m", "path", "new.md"]);
-check("commit <path> formats the file", () =>
-  assert.equal(committed("new.md"), "- path\n"),
-);
-check("the tree and the index are clean after commit <path>", () =>
-  assert.equal(dirty(), ""),
-);
+check("commit <path> formats the file", () => assert.equal(committed("new.md"), "- path\n"));
+check("the tree and the index are clean after commit <path>", () => assert.equal(dirty(), ""));
 check("the post-commit run removes its record", () =>
-  assert.ok(
-    !fs.existsSync(`${work}/.git/format-staged-files`),
-    "record file left",
-  ),
+  assert.ok(!fs.existsSync(`${work}/.git/format-staged-files`), "record file left"),
 );
 
 // All staged files go to one formatter run, and each restage is reported. A
@@ -179,9 +149,7 @@ check("each restaged file is reported", () =>
       "format-staged-files: reformatted and restaged b.md\n",
   ),
 );
-check("a glob name does not stage other files", () =>
-  assert.equal(dirty(), "?? c.md\n"),
-);
+check("a glob name does not stage other files", () => assert.equal(dirty(), "?? c.md\n"));
 fs.rmSync(`${work}/c.md`);
 
 // /toggle-hook turns off the agent hooks only, not this commit-time format.
@@ -212,10 +180,7 @@ check("a partly staged file is committed as staged", () =>
   assert.equal(committed("new.md"), "*   three\n"),
 );
 check("the unstaged change stays in the tree", () =>
-  assert.equal(
-    fs.readFileSync(`${work}/new.md`, "utf8"),
-    "*   three\n*   unstaged\n",
-  ),
+  assert.equal(fs.readFileSync(`${work}/new.md`, "utf8"), "*   three\n*   unstaged\n"),
 );
 git(["checkout", "-q", "--", "new.md"]);
 
@@ -223,9 +188,7 @@ git(["checkout", "-q", "--", "new.md"]);
 write("a.toml", "a  =  1\n");
 git(["add", "a.toml"]);
 git(["commit", "-q", "-m", "toml"]);
-check("a .toml file is committed formatted", () =>
-  assert.equal(committed("a.toml"), "a = 1\n"),
-);
+check("a .toml file is committed formatted", () => assert.equal(committed("a.toml"), "a = 1\n"));
 
 if (spawnSync("emacs", ["--version"], { env: base }).error)
   console.log("SKIP no emacs on PATH: Org case");
@@ -274,9 +237,7 @@ for (const [name, value] of [
 ] as const) {
   write("new.md", `*   ${name}\n`);
   git(["commit", "-q", "-a", "-m", name], { [name]: value });
-  check(`${name} turns the hook on`, () =>
-    assert.equal(committed("new.md"), `- ${name}\n`),
-  );
+  check(`${name} turns the hook on`, () => assert.equal(committed("new.md"), `- ${name}\n`));
 }
 write("new.md", "*   four\n");
 git(["commit", "-q", "-a", "-m", "no agent"], {});

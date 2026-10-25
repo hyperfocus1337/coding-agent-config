@@ -30,33 +30,21 @@ interface EditFile {
  * The files of an omp edit result. A multi-file edit lists them in
  * `perFileResults`. A move logs the old path as D and the new path as A.
  */
-export function editFiles(
-  details: unknown,
-  input: Record<string, unknown>,
-  cwd: string,
-): Change[] {
+export function editFiles(details: unknown, input: Record<string, unknown>, cwd: string): Change[] {
   const result = (details ?? {}) as EditFile & { perFileResults?: EditFile[] };
   const files = result.perFileResults ?? [result];
   const changes: Change[] = [];
   for (const file of files) {
-    const named =
-      file.path ?? (typeof input.path === "string" ? input.path : undefined);
+    const named = file.path ?? (typeof input.path === "string" ? input.path : undefined);
     if (!named) continue;
-    const status =
-      file.op === "delete"
-        ? "D"
-        : file.op === "create" || file.move
-          ? "A"
-          : "M";
+    const status = file.op === "delete" ? "D" : file.op === "create" || file.move ? "A" : "M";
     if (file.move && file.sourcePath)
       changes.push({ status: "D", path: toolPath(file.sourcePath, cwd) });
     changes.push({
       status,
       path: toolPath(named, cwd),
       line:
-        status === "D"
-          ? undefined
-          : (file.firstChangedLine ?? (status === "A" ? 1 : undefined)),
+        status === "D" ? undefined : (file.firstChangedLine ?? (status === "A" ? 1 : undefined)),
     });
   }
   return changes;

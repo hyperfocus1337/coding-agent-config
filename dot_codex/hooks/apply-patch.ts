@@ -25,13 +25,10 @@ const payload = JSON.parse(readFileSync(0, "utf8")) as {
   tool_input?: { command?: unknown };
 };
 const cwd = payload.cwd || process.cwd();
-const patch =
-  typeof payload.tool_input?.command === "string"
-    ? payload.tool_input.command
-    : "";
+const patch = typeof payload.tool_input?.command === "string" ? payload.tool_input.command : "";
 const paths = new Set(
-  [...patch.matchAll(/^\*\*\* (?:Add File|Update File|Move to): (.+)$/gm)].map(
-    ([, path]) => (isAbsolute(path!) ? path! : join(cwd, path!)),
+  [...patch.matchAll(/^\*\*\* (?:Add File|Update File|Move to): (.+)$/gm)].map(([, path]) =>
+    isAbsolute(path!) ? path! : join(cwd, path!),
   ),
 );
 

@@ -14,9 +14,7 @@ export default function cmuxState(pi: ExtensionAPI) {
       renameSync(`${file}.tmp`, file);
     } catch (error) {
       if (!warned) {
-        console.warn(
-          `[cmux-state] Cannot publish lifecycle state: ${String(error)}`,
-        );
+        console.warn(`[cmux-state] Cannot publish lifecycle state: ${String(error)}`);
         warned = true;
       }
     }

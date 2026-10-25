@@ -36,10 +36,9 @@ const modIo = ($: EngineInterface): Io => ({
     ),
   write: (path, text) => $.fs.write(path, text),
   append: async (path, text) => {
-    await $.process.run(
-      ["sh", "-c", 'mkdir -p "$(dirname "$1")" && cat >>"$1"', "sh", path],
-      { stdin: text },
-    );
+    await $.process.run(["sh", "-c", 'mkdir -p "$(dirname "$1")" && cat >>"$1"', "sh", path], {
+      stdin: text,
+    });
   },
   exists: (path) => $.fs.exists(path).catch(() => false),
   mtime: (path) =>
@@ -91,51 +90,45 @@ export const register: Register = (on) => {
     return started;
   });
 
-  on(
-    "tool.call",
-    { tool: ["Bash", "Write", "Edit", "NotebookEdit"] },
-    async ($, e, next) => {
-      const io = modIo($);
-      const begin = async () => {
-        const home = await $.env.get("HOME");
-        if (!home) return undefined;
-        const where = { home, agent: "claude", session: await $.session.id() };
-        return { where, cwd: await $.session.cwd(), start: new Date() };
-      };
-      const call = await begin().catch(() => undefined);
-      if (!call) return next(e);
+  on("tool.call", { tool: ["Bash", "Write", "Edit", "NotebookEdit"] }, async ($, e, next) => {
+    const io = modIo($);
+    const begin = async () => {
+      const home = await $.env.get("HOME");
+      if (!home) return undefined;
+      const where = { home, agent: "claude", session: await $.session.id() };
+      return { where, cwd: await $.session.cwd(), start: new Date() };
+    };
+    const call = await begin().catch(() => undefined);
+    if (!call) return next(e);
 
-      if (e.tool === "Bash") {
-        const pending = await beginCall(io, call.where, call.cwd).catch(
-          () => undefined,
-        );
-        let ran;
-        try {
-          ran = await next(e);
-        } finally {
-          // A denied call did not run, and a throw leaves nothing to compare.
-          if (ran === undefined || ran.deny !== undefined)
-            await dropCall(io, pending).catch(() => undefined);
-        }
-        if (ran.deny === undefined)
-          await endCall(io, call.where, pending, "Bash").catch(() => undefined);
-        return ran;
+    if (e.tool === "Bash") {
+      const pending = await beginCall(io, call.where, call.cwd).catch(() => undefined);
+      let ran;
+      try {
+        ran = await next(e);
+      } finally {
+        // A denied call did not run, and a throw leaves nothing to compare.
+        if (ran === undefined || ran.deny !== undefined)
+          await dropCall(io, pending).catch(() => undefined);
       }
-
-      const ran = await next(e);
-      if (ran.deny !== undefined || ran.isError) return ran;
-      const file = e.tool === "NotebookEdit" ? e.notebook_path : e.file_path;
-      await recordTool(
-        io,
-        call.where,
-        e.tool,
-        file,
-        ran.result as ToolResult,
-        call.cwd,
-        call.start,
-        new Date(),
-      ).catch(() => undefined);
+      if (ran.deny === undefined)
+        await endCall(io, call.where, pending, "Bash").catch(() => undefined);
       return ran;
-    },
-  );
+    }
+
+    const ran = await next(e);
+    if (ran.deny !== undefined || ran.isError) return ran;
+    const file = e.tool === "NotebookEdit" ? e.notebook_path : e.file_path;
+    await recordTool(
+      io,
+      call.where,
+      e.tool,
+      file,
+      ran.result as ToolResult,
+      call.cwd,
+      call.start,
+      new Date(),
+    ).catch(() => undefined);
+    return ran;
+  });
 };

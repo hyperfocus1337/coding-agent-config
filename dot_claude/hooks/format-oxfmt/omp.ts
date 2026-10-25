@@ -19,10 +19,7 @@ import { absolute, formatCalls } from "./pi.ts";
 
 export default function (omp: ExtensionAPI) {
   omp.on("tool_result", (event, ctx) =>
-    formatCalls(
-      ompCalls(event.toolName, event.input, event.details, ctx.cwd),
-      event.content,
-    ),
+    formatCalls(ompCalls(event.toolName, event.input, event.details, ctx.cwd), event.content),
   );
 }
 
@@ -39,9 +36,7 @@ interface Resolve {
 }
 
 const strings = (value: unknown) =>
-  Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string")
-    : [];
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 
 /** The calls of an omp tool result that ./pi.ts does not format. */
 function ompCalls(
@@ -51,8 +46,7 @@ function ompCalls(
   cwd: string,
 ): Call[] {
   const file = (path: string): Call => ({ filePath: absolute(path, cwd), cwd });
-  if (tool === "eval")
-    return typeof input.code === "string" ? [{ command: input.code, cwd }] : [];
+  if (tool === "eval") return typeof input.code === "string" ? [{ command: input.code, cwd }] : [];
   if (tool === "edit")
     return strings(input.paths)
       .filter((path) => path !== input.path)

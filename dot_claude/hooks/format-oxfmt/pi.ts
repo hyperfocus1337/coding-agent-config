@@ -18,8 +18,7 @@ export default function (pi: ExtensionAPI) {
   pi.on("tool_result", (event, ctx) => {
     if (!["write", "edit", "bash"].includes(event.toolName)) return;
     const { input } = event;
-    const command =
-      typeof input.command === "string" ? input.command : undefined;
+    const command = typeof input.command === "string" ? input.command : undefined;
     const calls: Call[] =
       event.toolName === "bash"
         ? [{ command, cwd: ctx.cwd }]
@@ -50,10 +49,7 @@ export async function formatCalls(
     }
     if (!hints.length) return;
     return {
-      content: [
-        ...content,
-        ...hints.map((text) => ({ type: "text" as const, text })),
-      ],
+      content: [...content, ...hints.map((text) => ({ type: "text" as const, text }))],
     };
   } catch {
     // Never blocks: a broken format run must not change the result.
