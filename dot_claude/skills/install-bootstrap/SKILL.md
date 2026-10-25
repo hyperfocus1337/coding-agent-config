@@ -50,28 +50,48 @@ A cloud session sees only what the repository commits. The hook must be committe
 
 Check `jq` is on `PATH`.
 
+Check for dcg with `command -v dcg || ls ~/.local/bin/dcg`. The hook runs the binary by its full path, so it can be installed and not on `PATH`. The result decides who runs the merge in step 2.
+
 ### 1. Locate the target repository
 
 Default to the current working directory. Confirm it is a git repository with `git -C <target> rev-parse --git-dir`. A directory that is not a repository cannot deliver the hook to a cloud session, so stop and say so.
 
 ### 2. Merge the settings
 
-Run this once for each file of the profile, in the order of [Profiles](#profiles). `<src>` is `~/.claude/skills/install-bootstrap/assets/settings.json` or `~/.claude/settings-minimal.json`:
+#### The command
+
+Replace `<target>` with the absolute path of the repository. Replace `<srcs>` with the files of the profile, in the order of [Profiles](#profiles): `~/.claude/skills/install-bootstrap/assets/settings.json`, then `~/.claude/settings-minimal.json` for `minimal`.
 
 ```bash
-cd <target>
-mkdir -p .claude
-[ -f .claude/settings.json ] || echo '{}' > .claude/settings.json
-jq --slurpfile m <src> -f ~/.claude/skills/install-bootstrap/scripts/merge.jq \
-  .claude/settings.json > .claude/settings.json.tmp \
-  && mv .claude/settings.json.tmp .claude/settings.json
+( cd <target> && mkdir -p .claude && { [ -f .claude/settings.json ] || echo '{}' > .claude/settings.json; } && for src in <srcs>; do jq --slurpfile m "$src" -f ~/.claude/skills/install-bootstrap/scripts/merge.jq .claude/settings.json > .claude/settings.json.tmp && mv .claude/settings.json.tmp .claude/settings.json || { rm -f .claude/settings.json.tmp; echo "merge failed: $src" >&2; break; }; done )
 ```
+
+The command is one line, so the user can paste it in the prompt. The subshell keeps the `cd` out of the session.
+
+#### Who runs it
+
+| Step 0 found dcg | Who runs the command                                  |
+| :--------------- | :---------------------------------------------------- |
+| No               | You, with the Bash tool                               |
+| Yes              | The user, as described in [With dcg](#with-dcg) below |
+
+If dcg blocks your command when step 0 did not find it, continue as in [With dcg](#with-dcg).
+
+#### With dcg
+
+The dcg rule `careful_company_running_windows.guardrails:agent-hook-config-tamper` blocks each agent command that writes under `.claude/`. It also blocks the `dcg allow` commands for an agent. Do not run the command, do not write the file with the Edit or Write tool, and do not try to go around the rule.
+
+Give the user the command with a `!` prefix to type in the Claude Code prompt. The `!` prefix runs it as the user's command, so dcg does not check it, and its output comes back to you. In Codex, pi, or omp, the user runs it without `!` in a second terminal in the same environment. Wait for the user to run it, then read `.claude/settings.json` with the Read tool.
+
+#### What the merge does
 
 [`scripts/merge.jq`](scripts/merge.jq) keeps every key of the existing file. It merges objects key by key and appends only the array items that the repository does not have yet. A repository that an earlier run bootstrapped already has the same hook object, so it does not get a second hook, and a re-run adds only what changed in the source files. For any other value, such as `attribution.commit` or a `disable*` key, the source wins. The filter drops `$schema`, `$comment`, and each `disable*` key set to `false`, because `false` is the same as not set.
 
-Never overwrite `.claude/settings.json`. The `&&` chain protects it: if `jq` fails, the existing file stays unchanged. The cause is a missing `<src>` or a `settings.json` that is not valid JSON. On failure, delete `.claude/settings.json.tmp`, stop, and report the error. For invalid JSON, tell the user to fix their `settings.json`.
-
 The skill reads the copies that chezmoi applied, not the source tree. A source edit reaches the target after `just chezmoi`.
+
+#### On failure
+
+Never overwrite `.claude/settings.json`. The `&&` chain protects it: if `jq` fails, the existing file stays unchanged, the loop deletes `.claude/settings.json.tmp`, and it stops before the next source. The cause is a missing source file or a `settings.json` that is not valid JSON. When the output shows `merge failed`, stop and report the `jq` error and which sources were merged before it. For invalid JSON, tell the user to fix their `settings.json`.
 
 ### 3. Ask to commit
 
