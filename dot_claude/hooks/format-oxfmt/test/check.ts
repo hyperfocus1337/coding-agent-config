@@ -59,7 +59,7 @@ Object.assign(process.env, {
   GIT_CONFIG_GLOBAL: `${tmp}/gitconfig`,
   GIT_CONFIG_NOSYSTEM: "1",
   GIT_CONFIG_COUNT: "1",
-  GIT_CONFIG_KEY_0: "hook.claude-format-staged.enabled",
+  GIT_CONFIG_KEY_0: "hook.format-staged-files.enabled",
   GIT_CONFIG_VALUE_0: "false",
   GIT_AUTHOR_NAME: "test",
   GIT_AUTHOR_EMAIL: "test@example.com",

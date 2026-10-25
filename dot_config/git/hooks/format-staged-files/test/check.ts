@@ -84,14 +84,14 @@ Object.assign(base, {
   GIT_COMMITTER_NAME: "test",
   GIT_COMMITTER_EMAIL: "test@example.com",
   GIT_CONFIG_COUNT: "4",
-  GIT_CONFIG_KEY_0: "hook.claude-format-staged.event",
+  GIT_CONFIG_KEY_0: "hook.format-staged-files.event",
   GIT_CONFIG_VALUE_0: "pre-commit",
-  GIT_CONFIG_KEY_1: "hook.claude-format-staged.command",
-  GIT_CONFIG_VALUE_1: hook("claude-format-staged"),
-  GIT_CONFIG_KEY_2: "hook.claude-format-staged-post.event",
+  GIT_CONFIG_KEY_1: "hook.format-staged-files.command",
+  GIT_CONFIG_VALUE_1: hook("format-staged-files"),
+  GIT_CONFIG_KEY_2: "hook.format-staged-files-post.event",
   GIT_CONFIG_VALUE_2: "post-commit",
-  GIT_CONFIG_KEY_3: "hook.claude-format-staged-post.command",
-  GIT_CONFIG_VALUE_3: hook("claude-format-staged-post"),
+  GIT_CONFIG_KEY_3: "hook.format-staged-files-post.command",
+  GIT_CONFIG_VALUE_3: hook("format-staged-files-post"),
 });
 // A mise shim reads the config under the real HOME, and under the fixture HOME
 // it fails on the trust check before it falls back to the next program on

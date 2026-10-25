@@ -195,7 +195,7 @@ When the hook works, you see only the formatted files. A missing Prettier, a par
 | `git config agent-hook.format-oxfmt.enabled true`     | Gives the files of this hook to `format-oxfmt`, in one repository or globally.                                                                               |
 | `.prettierrc`                                         | Prettier finds it in the folder tree of the file, so the style of the project overrides the defaults of Prettier.                                            |
 | `.prettierignore`                                     | Prettier skips the files that it lists.                                                                                                                      |
-| `git config hook.claude-format-staged.enabled false`  | Turns off `format-staged-files` in one repository. That hook ignores `AGENT_HOOKS_DISABLE`.                                                                  |
+| `git config hook.format-staged-files.enabled false`   | Turns off `format-staged-files` in one repository. That hook ignores `AGENT_HOOKS_DISABLE`.                                                                  |
 
 A `proseWrap` in a project `.prettierrc` does not change `--prose-wrap preserve`, because a command-line option overrides the config file.
 

@@ -50,7 +50,7 @@ Each hook has one TypeScript core with an adapter for each agent: a Claude Code 
 
 ```sh
 export GIT_CONFIG_COUNT=1
-export GIT_CONFIG_KEY_0=hook.claude-format-staged.enabled GIT_CONFIG_VALUE_0=false
+export GIT_CONFIG_KEY_0=hook.format-staged-files.enabled GIT_CONFIG_VALUE_0=false
 ```
 
 A fixture under `/tmp` or `$TMPDIR` does not need them, because the formatters skip those directories.

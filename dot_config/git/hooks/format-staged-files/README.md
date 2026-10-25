@@ -37,10 +37,10 @@ The hook runs no linters. [Design notes](#design-notes) gives the reason.
 [`dot_config/git/config`](../../config) sets two hooks in `~/.config/git/config`, the global config file that git reads with no include:
 
 ```ini
-[hook "claude-format-staged"]
+[hook "format-staged-files"]
 	event = pre-commit
 	command = "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.config/git/hooks/format-staged-files/main.ts\" || true"
-[hook "claude-format-staged-post"]
+[hook "format-staged-files-post"]
 	event = post-commit
 	command = "[ -f \"$(git rev-parse --git-path format-staged-files)\" ] || exit 0; command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.config/git/hooks/format-staged-files/main.ts\" post-commit || true"
 ```
@@ -81,7 +81,7 @@ You see the same line in the Bash output of the transcript. A commit that you ma
 - **One repository:** run this command in the repository to turn the hook off there. The `post-commit` hook then finds no record file and does not start `node`.
 
   ```sh
-  git config hook.claude-format-staged.enabled false
+  git config hook.format-staged-files.enabled false
   ```
 
 - **One commit:** use `git commit --no-verify`.

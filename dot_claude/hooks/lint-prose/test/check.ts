@@ -200,7 +200,7 @@ const git = (...args: string[]) =>
       // Turn off the format-staged-files pre-commit hook from
       // ~/.config/git/config, so each commit holds the fixture text.
       GIT_CONFIG_COUNT: "1",
-      GIT_CONFIG_KEY_0: "hook.claude-format-staged.enabled",
+      GIT_CONFIG_KEY_0: "hook.format-staged-files.enabled",
       GIT_CONFIG_VALUE_0: "false",
     },
   });

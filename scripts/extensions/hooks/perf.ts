@@ -364,7 +364,7 @@ function git(cwd: string, ...args: string[]) {
       "-c",
       "core.hooksPath=/dev/null",
       "-c",
-      "hook.claude-format-staged.enabled=false",
+      "hook.format-staged-files.enabled=false",
       ...args,
     ],
     { cwd, stdio: "ignore" },
