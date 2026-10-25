@@ -56,6 +56,14 @@ Check for dcg with `command -v dcg || ls ~/.local/bin/dcg`. The hook runs the bi
 
 Default to the current working directory. Confirm it is a git repository with `git -C <target> rev-parse --git-dir`. A directory that is not a repository cannot deliver the hook to a cloud session, so stop and say so.
 
+Read the git identity that applies in the target, for the report in step 4:
+
+```bash
+git -C <target> config user.name; git -C <target> config user.email
+```
+
+Use `-C <target>`, not `--global`, so an `includeIf` identity for that directory resolves. Do not write the identity into the repository: `env` in `.claude/settings.json` applies to every teammate and to local sessions too. If a value is empty, skip the **Identity** item in step 4 and say which value is missing.
+
 ### 2. Merge the settings
 
 #### The command
@@ -115,6 +123,17 @@ There is no verify step. `bootstrap.sh` exits immediately unless `CLAUDE_CODE_RE
 - **Teammates**: everyone who opens the repository with Claude Code gets the hidden attribution, and with `minimal` also the denies and the turned-off features.
 - **Removal**: a later run never removes a key. A tool removed from `settings-minimal.json` stays denied until the user deletes it from the repository's `settings.json`.
 - **Secrets**: the APM MCP servers that interpolate `${TESSL_TOKEN}` and `${CONTEXT7_API_KEY}` register regardless, but only work if those variables are set in the platform's environment settings before the session starts. An unset variable does not fail the install.
+- **Identity**: a cloud session does not get the local git identity. Give the user these lines, with the values from step 1, to paste into the platform's environment settings:
+
+  ```text
+  GIT_AUTHOR_NAME=<name>
+  GIT_AUTHOR_EMAIL=<email>
+  GIT_COMMITTER_NAME=<name>
+  GIT_COMMITTER_EMAIL=<email>
+  ```
+
+  Git reads these variables before any config file, so they also override an identity that the cloud image sets. The settings apply per environment, not per repository, so a second identity needs a second environment.
+
 - **Skipped**: the bootstrap installs no Claude plugins from the marketplace and no playwright browser binaries, to keep the session start under 5 minutes.
 - **Full parity**: a session that needs the skipped parts runs `~/coding-agent-config/scripts/extensions/install.sh` once after it starts.
 

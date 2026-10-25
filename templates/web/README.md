@@ -81,6 +81,19 @@ The bootstrap registers the user-scoped MCP servers from [`apm.yml`](apm.yml). T
 
 To also add project-scoped MCP servers, install them per-project with the `install-mcp` skill (catalog in [`docs/scope/mcp-servers.md`](../../docs/scope/mcp-servers.md)) and set the referenced env vars in the cloud environment settings. Enabling MCP per platform is covered in [`docs/mcp/enabling/web.md`](../../docs/mcp/enabling/web.md).
 
+## Git identity
+
+A cloud session does not get your local git identity. Set these variables in the platform's environment settings, with the values from `git config user.name` and `git config user.email` in the repository:
+
+```text
+GIT_AUTHOR_NAME=<name>
+GIT_AUTHOR_EMAIL=<email>
+GIT_COMMITTER_NAME=<name>
+GIT_COMMITTER_EMAIL=<email>
+```
+
+Git reads these variables before any config file, so they also override an identity that the cloud image sets. Do not put them in the repository's `.claude/settings.json`: its `env` applies to every teammate and to local sessions too. The environment settings apply per environment, not per repository, so a second identity needs a second environment. The `install-bootstrap` skill prints these lines with your values.
+
 ## Lessons learned
 
 The prerequisite steps look unusual because a cloud session is not a normal shell. Four things bit us, and the fixes are why the script reads the way it does.
