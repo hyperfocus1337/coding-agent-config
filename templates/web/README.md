@@ -16,6 +16,8 @@ Do not move or rename `bootstrap.sh`. Its path is part of the hook URL in every 
 
 Ask Claude to "bootstrap this repo for the web", or invoke the `install-agent-resources` skill. That routes to the `install-bootstrap` skill, which is also invocable by exact name. It writes the `SessionStart` hook into the target repo's `.claude/settings.json`, merging into any existing config rather than overwriting it, and stops if the hook is already there. The skill holds the hook block, so this folder ships no copyable settings file.
 
+The skill asks for a settings profile. `minimal`, the default, also merges the deny list and the `disable*` keys of [`settings-minimal.json`](../../dot_claude/settings-minimal.json) into the same file, which locally the `claude` shell function adds with `--settings`. A cloud session has no such function, and the bootstrap hook cannot add the keys itself: Claude Code builds the permission rules before `SessionStart` runs. The keys apply to everyone who opens the repo with Claude Code. `full` writes the hook only.
+
 Commit the change. The next cloud session that opens the repo runs the hook automatically.
 
 That is all the target repo needs. The global hooks, plugins, and agent instructions come from `~/.claude`, which the bootstrap lays down with chezmoi. The target repo does not carry a copy of the bootstrap script, so there is nothing to keep in sync.
