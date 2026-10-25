@@ -41,6 +41,10 @@ README.md
 .pi/agent/test/**
 PLAN.md
 
+# Claude Code writes these beside each mod it loads. check.sh reads the types.
+.claude/hooks/*/tsconfig.json
+.claude/hooks/*/.claude-plugin/types
+
 # Cloud sessions (templates/web/bootstrap.sh) run without the statusline.
 {{ if eq (env `CLAUDE_CODE_REMOTE`) `true` }}
 .config/ccstatusline

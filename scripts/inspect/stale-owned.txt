@@ -10,3 +10,6 @@
 # The pi extension that `cmux hooks pi install` writes.
 .pi/agent/extensions/cmux-session.ts
 .pi/agent/extensions/.cmux-session.lock
+
+# The system skills that Codex installs.
+.codex/skills/.system
