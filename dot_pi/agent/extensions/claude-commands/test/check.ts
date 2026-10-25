@@ -336,7 +336,9 @@ await check(
 // ── Display and delivery against the installed pi-tui ──────────────────────────
 
 if (process.env.PI_PACKAGE) {
-  const require = createRequire(path.join(process.env.PI_PACKAGE, "package.json"));
+  const require = createRequire(
+    path.join(process.env.PI_PACKAGE, "package.json"),
+  );
   const tuiPath = require.resolve("@earendil-works/pi-tui");
   const hooks = registerHooks({
     resolve(specifier, context, nextResolve) {
@@ -349,63 +351,119 @@ if (process.env.PI_PACKAGE) {
   const previous = process.env.PI_EXPAND_SLASH_COMMANDS;
   try {
     const { CombinedAutocompleteProvider, Editor } = await import(tuiPath);
-    const provider = withInlineCommands(new CombinedAutocompleteProvider([
-      { name: "git:commit:single", description: "Commit" },
-    ], root));
+    const provider = withInlineCommands(
+      new CombinedAutocompleteProvider(
+        [{ name: "git:commit:single", description: "Commit" }],
+        root,
+      ),
+    );
     const options = { signal: new AbortController().signal };
-    await check("slash completion preserves text on the first and later lines", async () => {
-      for (const [lines, line, col] of [
-        [["/git"], 0, 4],
-        [["Please /git after"], 0, 11],
-        [["First line", "/git after"], 1, 4],
-        [["First line", "  then /git after"], 1, 11],
-      ]) {
-        const suggestions = await provider.getSuggestions(lines, line, col, options);
-        assert.equal(suggestions.prefix, "/git");
-        assert.equal(suggestions.items[0].value, "git:commit:single");
-        const result = provider.applyCompletion(lines, line, col, suggestions.items[0], suggestions.prefix);
-        assert.equal(result.lines[line], lines[line].slice(0, col - 4) + "/git:commit:single " + lines[line].slice(col));
-        assert.equal(result.cursorCol, col - 4 + "/git:commit:single ".length);
-        if (line) assert.equal(result.lines[0], lines[0]);
-      }
-    });
-    await check("typing slash triggers the editor provider after text and newlines", async () => {
-      const InlineEditor = inlineCommandEditor(Editor);
-      const editor = new InlineEditor({ requestRender() {} }, {
-        borderColor: (text) => text,
-        selectList: { selectedPrefix: (text) => text, selectedText: (text) => text,
-          description: (text) => text, scrollInfo: (text) => text, noMatch: (text) => text },
-      });
-      let calls = 0;
-      editor.setAutocompleteProvider({ ...provider, async getSuggestions(...args) {
-        calls++;
-        return provider.getSuggestions(...args);
-      } });
-      for (const text of ["Please ", "First line\n"]) {
-        editor.setText(text);
-        const before = calls;
-        editor.handleInput("/");
-        await new Promise((resolve) => setTimeout(resolve, 150));
-        assert.ok(calls > before, `no completion request after ${JSON.stringify(text)}`);
-        editor.handleInput("g");
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        assert.ok(editor.isShowingAutocomplete());
-        editor.handleInput("\t");
-        assert.equal(editor.getText(), text + "/git:commit:single ");
-        editor.handleInput("\x1b");
-      }
-    });
+    await check(
+      "slash completion preserves text on the first and later lines",
+      async () => {
+        for (const [lines, line, col] of [
+          [["/git"], 0, 4],
+          [["Please /git after"], 0, 11],
+          [["First line", "/git after"], 1, 4],
+          [["First line", "  then /git after"], 1, 11],
+        ]) {
+          const suggestions = await provider.getSuggestions(
+            lines,
+            line,
+            col,
+            options,
+          );
+          assert.equal(suggestions.prefix, "/git");
+          assert.equal(suggestions.items[0].value, "git:commit:single");
+          const result = provider.applyCompletion(
+            lines,
+            line,
+            col,
+            suggestions.items[0],
+            suggestions.prefix,
+          );
+          assert.equal(
+            result.lines[line],
+            lines[line].slice(0, col - 4) +
+              "/git:commit:single " +
+              lines[line].slice(col),
+          );
+          assert.equal(
+            result.cursorCol,
+            col - 4 + "/git:commit:single ".length,
+          );
+          if (line) assert.equal(result.lines[0], lines[0]);
+        }
+      },
+    );
+    await check(
+      "typing slash triggers the editor provider after text and newlines",
+      async () => {
+        const InlineEditor = inlineCommandEditor(Editor);
+        const editor = new InlineEditor(
+          { requestRender() {} },
+          {
+            borderColor: (text) => text,
+            selectList: {
+              selectedPrefix: (text) => text,
+              selectedText: (text) => text,
+              description: (text) => text,
+              scrollInfo: (text) => text,
+              noMatch: (text) => text,
+            },
+          },
+        );
+        let calls = 0;
+        editor.setAutocompleteProvider({
+          ...provider,
+          async getSuggestions(...args) {
+            calls++;
+            return provider.getSuggestions(...args);
+          },
+        });
+        for (const text of ["Please ", "First line\n"]) {
+          editor.setText(text);
+          const before = calls;
+          editor.handleInput("/");
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          assert.ok(
+            calls > before,
+            `no completion request after ${JSON.stringify(text)}`,
+          );
+          editor.handleInput("g");
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          assert.ok(editor.isShowingAutocomplete());
+          editor.handleInput("\t");
+          assert.equal(editor.getText(), text + "/git:commit:single ");
+          editor.handleInput("\x1b");
+        }
+      },
+    );
     await check("file and argument completion delegate unchanged", async () => {
       const calls = [];
       const fallback = {
         triggerCharacters: ["@", "#"],
-        async getSuggestions(...args) { calls.push(args); return null; },
-        applyCompletion(...args) { calls.push(args); return "unchanged"; },
-        shouldTriggerFileCompletion() { return true; },
+        async getSuggestions(...args) {
+          calls.push(args);
+          return null;
+        },
+        applyCompletion(...args) {
+          calls.push(args);
+          return "unchanged";
+        },
+        shouldTriggerFileCompletion() {
+          return true;
+        },
       };
       const wrapped = withInlineCommands(fallback);
       assert.deepEqual(wrapped.triggerCharacters, ["@", "#"]);
-      for (const text of ["https://git", "word/git", "See /tmp/file", "@file", "/git argument"]) {
+      for (const text of [
+        "https://git",
+        "word/git",
+        "See /tmp/file",
+        "@file",
+        "/git argument",
+      ]) {
         const lines = [text];
         await wrapped.getSuggestions(lines, 0, text.length, options);
         assert.equal(calls.at(-1)[0], lines);
@@ -413,7 +471,16 @@ if (process.env.PI_PACKAGE) {
       const lines = ["See /tmp"];
       await wrapped.getSuggestions(lines, 0, 8, { ...options, force: true });
       assert.equal(calls.at(-1)[0], lines);
-      assert.equal(wrapped.applyCompletion(lines, 0, 8, { value: "/tmp/file", label: "file" }, "/tmp"), "unchanged");
+      assert.equal(
+        wrapped.applyCompletion(
+          lines,
+          0,
+          8,
+          { value: "/tmp/file", label: "file" },
+          "/tmp",
+        ),
+        "unchanged",
+      );
       assert.equal(wrapped.shouldTriggerFileCompletion(lines, 0, 8), true);
     });
     const commands = new Map();
@@ -429,108 +496,239 @@ if (process.env.PI_PACKAGE) {
         assert.equal(type, "claude-command");
         renderer = render;
       },
-      on(name, handler) { handlers.set(name, handler); },
-      registerCommand(name, command) { commands.set(name, command); },
-      exec: async () => ({ stdout: "context", stderr: "", code: failExec ? 1 : 0 }),
-      sendMessage(message, options) { messages.push({ message, options }); },
+      on(name, handler) {
+        handlers.set(name, handler);
+      },
+      registerCommand(name, command) {
+        commands.set(name, command);
+      },
+      exec: async () => ({
+        stdout: "context",
+        stderr: "",
+        code: failExec ? 1 : 0,
+      }),
+      sendMessage(message, options) {
+        messages.push({ message, options });
+      },
     });
-    const ctx = { cwd: root, ui: { notify: (...args) => notifications.push(args) } };
+    const ctx = {
+      cwd: root,
+      ui: { notify: (...args) => notifications.push(args) },
+    };
     const command = found[0];
     const expected = await expand(command.filePath, "42", fakeExec("context"));
 
-    await check("project commands, rules and skills load from the session cwd", async () => {
-      const project = fs.mkdtempSync(path.join(os.tmpdir(), "pi-claude-project-"));
-      const previousArgv = [...process.argv];
-      try {
-        const local = path.join(project, ".claude");
-        for (const kind of ["commands", "rules", "skills"]) fs.mkdirSync(path.join(local, kind), { recursive: true });
-        fs.writeFileSync(path.join(local, "commands", "override.md"), `---\nname: ${command.name}\n---\nProject command $ARGUMENTS`);
-        fs.writeFileSync(path.join(local, "rules", "code.md"), "Project instructions");
-        fs.writeFileSync(path.join(local, "rules", "scoped.md"), "---\npaths: src/**\n---\nProject scoped instructions");
-        process.argv.push("--approve");
-        const localCtx = { ...ctx, cwd: project, mode: "print", sessionManager: { getBranch: () => [] } };
-        const ruleHandlers = new Map();
-        const projectHandlers = new Map();
-        const skillHandlers = new Map();
-        claudeProject({ events, on(name, handler) { projectHandlers.set(name, handler); } });
-        claudeSkills({ events, on(name, handler) { skillHandlers.set(name, handler); } });
-        claudeRules({ events, on(name, handler) { ruleHandlers.set(name, handler); }, sendMessage(message) { messages.push({ message }); } });
-        await projectHandlers.get("session_start")({}, localCtx);
-        await handlers.get("session_start")({}, localCtx);
-        await commands.get(command.name).handler("42", localCtx);
-        assert.equal(messages.at(-1).message.content, "Project command 42");
-        assert.equal(handlers.has("resources_discover"), false);
-        assert.deepEqual(await skillHandlers.get("resources_discover")({}, localCtx), { skillPaths: [path.join(local, "skills")] });
-        await ruleHandlers.get("session_start")({}, localCtx);
-        const promptEvent = { systemPromptOptions: { contextFiles: [] } };
-        assert.equal(ruleHandlers.get("before_agent_start")(promptEvent), undefined);
-        const files = promptEvent.systemPromptOptions.contextFiles;
-        assert.ok(files.some((file) => file.path.startsWith(path.join(os.homedir(), ".claude", "rules"))));
-        assert.ok(files.some((file) => file.path === path.join(local, "rules", "code.md") && file.content === "Project instructions"));
-        assert.ok(!files.some((file) => file.content.includes("Project scoped instructions")));
-        const result = { toolName: "read", input: { path: "src/file.ts" }, isError: false };
-        const count = messages.length;
-        ruleHandlers.get("tool_result")(result, localCtx);
-        assert.equal(messages.length, count + 1);
-        const scoped = messages.at(-1).message;
-        assert.equal(scoped.details.name, path.join(local, "rules", "scoped.md"));
-        ruleHandlers.get("tool_result")(result, localCtx);
-        assert.equal(messages.length, count + 1);
-        await ruleHandlers.get("session_start")({}, { ...localCtx, sessionManager: { getBranch: () => [{ type: "custom_message", ...scoped }] } });
-        ruleHandlers.get("tool_result")(result, localCtx);
-        assert.equal(messages.length, count + 1);
-        const denied = path.join(project, "denied");
-        fs.mkdirSync(path.join(denied, ".claude", "rules"), { recursive: true });
-        fs.writeFileSync(path.join(denied, ".claude", "rules", "local.md"), "Do not load");
-        process.argv = [...previousArgv, "--no-approve"];
-        const deniedCtx = { ...localCtx, cwd: denied };
-        await projectHandlers.get("session_start")({}, deniedCtx);
-        await handlers.get("session_start")({}, deniedCtx);
-        assert.equal(await skillHandlers.get("resources_discover")({}, deniedCtx), undefined);
-        await ruleHandlers.get("session_start")({}, deniedCtx);
-        const deniedEvent = { systemPromptOptions: { contextFiles: [] } };
-        ruleHandlers.get("before_agent_start")(deniedEvent);
-        assert.ok(!deniedEvent.systemPromptOptions.contextFiles.some((file) => file.content.includes("Do not load")));
-      } finally {
-        process.argv = previousArgv;
-        fs.rmSync(project, { recursive: true, force: true });
-        // Restore the global command used by the delivery checks below.
-        await claudeCommandsExtension({
-          events,
-          registerMessageRenderer() {}, on() {},
-          registerCommand(name, command) { commands.set(name, command); },
-          exec: async () => ({ stdout: "context", stderr: "", code: failExec ? 1 : 0 }),
-          sendMessage(message, options) { messages.push({ message, options }); },
-        });
-      }
-    });
+    await check(
+      "project commands, rules and skills load from the session cwd",
+      async () => {
+        const project = fs.mkdtempSync(
+          path.join(os.tmpdir(), "pi-claude-project-"),
+        );
+        const previousArgv = [...process.argv];
+        try {
+          const local = path.join(project, ".claude");
+          for (const kind of ["commands", "rules", "skills"])
+            fs.mkdirSync(path.join(local, kind), { recursive: true });
+          fs.writeFileSync(
+            path.join(local, "commands", "override.md"),
+            `---\nname: ${command.name}\n---\nProject command $ARGUMENTS`,
+          );
+          fs.writeFileSync(
+            path.join(local, "rules", "code.md"),
+            "Project instructions",
+          );
+          fs.writeFileSync(
+            path.join(local, "rules", "scoped.md"),
+            "---\npaths: src/**\n---\nProject scoped instructions",
+          );
+          process.argv.push("--approve");
+          const localCtx = {
+            ...ctx,
+            cwd: project,
+            mode: "print",
+            sessionManager: { getBranch: () => [] },
+          };
+          const ruleHandlers = new Map();
+          const projectHandlers = new Map();
+          const skillHandlers = new Map();
+          claudeProject({
+            events,
+            on(name, handler) {
+              projectHandlers.set(name, handler);
+            },
+          });
+          claudeSkills({
+            events,
+            on(name, handler) {
+              skillHandlers.set(name, handler);
+            },
+          });
+          claudeRules({
+            events,
+            on(name, handler) {
+              ruleHandlers.set(name, handler);
+            },
+            sendMessage(message) {
+              messages.push({ message });
+            },
+          });
+          await projectHandlers.get("session_start")({}, localCtx);
+          await handlers.get("session_start")({}, localCtx);
+          await commands.get(command.name).handler("42", localCtx);
+          assert.equal(messages.at(-1).message.content, "Project command 42");
+          assert.equal(handlers.has("resources_discover"), false);
+          assert.deepEqual(
+            await skillHandlers.get("resources_discover")({}, localCtx),
+            { skillPaths: [path.join(local, "skills")] },
+          );
+          await ruleHandlers.get("session_start")({}, localCtx);
+          const promptEvent = { systemPromptOptions: { contextFiles: [] } };
+          assert.equal(
+            ruleHandlers.get("before_agent_start")(promptEvent),
+            undefined,
+          );
+          const files = promptEvent.systemPromptOptions.contextFiles;
+          assert.ok(
+            files.some((file) =>
+              file.path.startsWith(path.join(os.homedir(), ".claude", "rules")),
+            ),
+          );
+          assert.ok(
+            files.some(
+              (file) =>
+                file.path === path.join(local, "rules", "code.md") &&
+                file.content === "Project instructions",
+            ),
+          );
+          assert.ok(
+            !files.some((file) =>
+              file.content.includes("Project scoped instructions"),
+            ),
+          );
+          const result = {
+            toolName: "read",
+            input: { path: "src/file.ts" },
+            isError: false,
+          };
+          const count = messages.length;
+          ruleHandlers.get("tool_result")(result, localCtx);
+          assert.equal(messages.length, count + 1);
+          const scoped = messages.at(-1).message;
+          assert.equal(
+            scoped.details.name,
+            path.join(local, "rules", "scoped.md"),
+          );
+          ruleHandlers.get("tool_result")(result, localCtx);
+          assert.equal(messages.length, count + 1);
+          await ruleHandlers.get("session_start")(
+            {},
+            {
+              ...localCtx,
+              sessionManager: {
+                getBranch: () => [{ type: "custom_message", ...scoped }],
+              },
+            },
+          );
+          ruleHandlers.get("tool_result")(result, localCtx);
+          assert.equal(messages.length, count + 1);
+          const denied = path.join(project, "denied");
+          fs.mkdirSync(path.join(denied, ".claude", "rules"), {
+            recursive: true,
+          });
+          fs.writeFileSync(
+            path.join(denied, ".claude", "rules", "local.md"),
+            "Do not load",
+          );
+          process.argv = [...previousArgv, "--no-approve"];
+          const deniedCtx = { ...localCtx, cwd: denied };
+          await projectHandlers.get("session_start")({}, deniedCtx);
+          await handlers.get("session_start")({}, deniedCtx);
+          assert.equal(
+            await skillHandlers.get("resources_discover")({}, deniedCtx),
+            undefined,
+          );
+          await ruleHandlers.get("session_start")({}, deniedCtx);
+          const deniedEvent = { systemPromptOptions: { contextFiles: [] } };
+          ruleHandlers.get("before_agent_start")(deniedEvent);
+          assert.ok(
+            !deniedEvent.systemPromptOptions.contextFiles.some((file) =>
+              file.content.includes("Do not load"),
+            ),
+          );
+        } finally {
+          process.argv = previousArgv;
+          fs.rmSync(project, { recursive: true, force: true });
+          // Restore the global command used by the delivery checks below.
+          await claudeCommandsExtension({
+            events,
+            registerMessageRenderer() {},
+            on() {},
+            registerCommand(name, command) {
+              commands.set(name, command);
+            },
+            exec: async () => ({
+              stdout: "context",
+              stderr: "",
+              code: failExec ? 1 : 0,
+            }),
+            sendMessage(message, options) {
+              messages.push({ message, options });
+            },
+          });
+        }
+      },
+    );
 
-    await check("display modes send identical expanded user-role context", async () => {
-      for (const value of [undefined, "0", "1", "true"]) {
-        if (value === undefined) delete process.env.PI_EXPAND_SLASH_COMMANDS;
-        else process.env.PI_EXPAND_SLASH_COMMANDS = value;
-        await commands.get(command.name).handler("42", ctx);
-        const { message, options } = messages.at(-1);
-        assert.equal(message.content, expected);
-        assert.equal(message.details.invocation, `/${command.name} 42`);
-        assert.equal(message.display, true);
-        assert.deepEqual(options, { triggerTurn: true });
-        const component = renderer(message, { expanded: false, outputPad: 1 }, {
-          fg: (_color, text) => text,
-        });
-        if (value === "1") assert.equal(component, undefined);
-        else assert.equal(component.render(80).join("\n").trim(), `/${command.name} 42`);
-        assert.equal(renderer(message, { expanded: true, outputPad: 1 }, {}), undefined);
-      }
-    });
+    await check(
+      "display modes send identical expanded user-role context",
+      async () => {
+        for (const value of [undefined, "0", "1", "true"]) {
+          if (value === undefined) delete process.env.PI_EXPAND_SLASH_COMMANDS;
+          else process.env.PI_EXPAND_SLASH_COMMANDS = value;
+          await commands.get(command.name).handler("42", ctx);
+          const { message, options } = messages.at(-1);
+          assert.equal(message.content, expected);
+          assert.equal(message.details.invocation, `/${command.name} 42`);
+          assert.equal(message.display, true);
+          assert.deepEqual(options, { triggerTurn: true });
+          const component = renderer(
+            message,
+            { expanded: false, outputPad: 1 },
+            {
+              fg: (_color, text) => text,
+            },
+          );
+          if (value === "1") assert.equal(component, undefined);
+          else
+            assert.equal(
+              component.render(80).join("\n").trim(),
+              `/${command.name} 42`,
+            );
+          assert.equal(
+            renderer(message, { expanded: true, outputPad: 1 }, {}),
+            undefined,
+          );
+        }
+      },
+    );
 
-    await check("an invocation without arguments has no trailing space", async () => {
-      await commands.get(command.name).handler("", ctx);
-      assert.equal(messages.at(-1).message.details.invocation, `/${command.name}`);
-    });
+    await check(
+      "an invocation without arguments has no trailing space",
+      async () => {
+        await commands.get(command.name).handler("", ctx);
+        assert.equal(
+          messages.at(-1).message.details.invocation,
+          `/${command.name}`,
+        );
+      },
+    );
 
     await check("failed dynamic context sends no message", async () => {
-      const dynamic = found.find((file) => /(^|\s)!`/.test(parseFile(fs.readFileSync(file.filePath, "utf-8")).body));
+      const dynamic = found.find((file) =>
+        /(^|\s)!`/.test(
+          parseFile(fs.readFileSync(file.filePath, "utf-8")).body,
+        ),
+      );
       assert.ok(dynamic, "no installed command uses dynamic context");
       const count = messages.length;
       failExec = true;

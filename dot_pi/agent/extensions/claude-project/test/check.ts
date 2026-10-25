@@ -19,8 +19,14 @@ try {
   const handlers = new Map();
   const announcements = [];
   claudeProject({
-    on(name, handler) { handlers.set(name, handler); },
-    events: { emit(name, root) { announcements.push({ name, root }); } },
+    on(name, handler) {
+      handlers.set(name, handler);
+    },
+    events: {
+      emit(name, root) {
+        announcements.push({ name, root });
+      },
+    },
   });
   assert.deepEqual([...handlers.keys()], ["session_start"]);
   process.argv = [...argv, "--approve"];
@@ -28,7 +34,10 @@ try {
   assert.deepEqual(announcements, [{ name: "claude-project", root }]);
   process.argv = [...argv, "--no-approve"];
   await handlers.get("session_start")({}, { cwd });
-  assert.deepEqual(announcements.at(-1), { name: "claude-project", root: undefined });
+  assert.deepEqual(announcements.at(-1), {
+    name: "claude-project",
+    root: undefined,
+  });
   assert.equal(announcements.length, 2);
   console.log("PASS: project discovery and approval coordination");
 } finally {

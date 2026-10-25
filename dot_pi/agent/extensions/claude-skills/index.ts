@@ -10,6 +10,7 @@ export default function claudeSkills(pi: ExtensionAPI): void {
   });
   pi.on("resources_discover", () =>
     local && fs.existsSync(path.join(local, "skills"))
-      ? { skillPaths: [path.join(local, "skills")] } : undefined,
+      ? { skillPaths: [path.join(local, "skills")] }
+      : undefined,
   );
 }

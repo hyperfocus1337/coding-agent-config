@@ -84,12 +84,8 @@
   "minimalistMode": false,
   "powerline": {
     "enabled": true,
-    "separators": [
-      ""
-    ],
-    "separatorInvertBackground": [
-      false
-    ],
+    "separators": [""],
+    "separatorInvertBackground": [false],
     "startCaps": [],
     "endCaps": [],
     "theme": "minimal",

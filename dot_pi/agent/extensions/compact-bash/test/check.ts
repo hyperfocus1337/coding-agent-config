@@ -87,8 +87,14 @@ check("a result with no text keeps the built-in output", () => {
 
 // ── The off switch ────────────────────────────────────────────────────────────
 
-const source = fs.readFileSync(new URL("../index.ts", import.meta.url), "utf-8");
-const readme = fs.readFileSync(new URL("../README.md", import.meta.url), "utf-8");
+const source = fs.readFileSync(
+  new URL("../index.ts", import.meta.url),
+  "utf-8",
+);
+const readme = fs.readFileSync(
+  new URL("../README.md", import.meta.url),
+  "utf-8",
+);
 
 check("the off switch is the value the README documents", () => {
   assert.match(source, /process\.env\.PI_COMPACT_BASH === "0"/);

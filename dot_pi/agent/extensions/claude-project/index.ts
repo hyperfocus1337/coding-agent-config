@@ -1,7 +1,10 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
 
 /** Claude resource locations for this session, not for the agent settings directory. */
 export function projectRoot(cwd: string): string | undefined {
@@ -9,11 +12,15 @@ export function projectRoot(cwd: string): string | undefined {
   if (root === path.join(os.homedir(), ".claude")) return undefined;
   return ["commands", "rules", "skills"].some((kind) =>
     fs.existsSync(path.join(root, kind)),
-  ) ? root : undefined;
+  )
+    ? root
+    : undefined;
 }
 
 /** Require approval before local instructions or shell-capable commands load. */
-export async function approvedProjectRoot(ctx: ExtensionContext): Promise<string | undefined> {
+export async function approvedProjectRoot(
+  ctx: ExtensionContext,
+): Promise<string | undefined> {
   const root = projectRoot(ctx.cwd);
   if (!root) return undefined;
   const argv = process.argv.slice(2);
@@ -24,7 +31,10 @@ export async function approvedProjectRoot(ctx: ExtensionContext): Promise<string
   const agentDir = getAgentDir();
   const saved = new ProjectTrustStore(agentDir).get(ctx.cwd);
   if (saved !== null) return saved ? root : undefined;
-  const fallback = SettingsManager.create(ctx.cwd, agentDir).getDefaultProjectTrust();
+  const fallback = SettingsManager.create(
+    ctx.cwd,
+    agentDir,
+  ).getDefaultProjectTrust();
   if (fallback !== "ask") return fallback === "always" ? root : undefined;
   if (ctx.mode !== "tui") return undefined;
   const trusted = await ctx.ui.confirm(

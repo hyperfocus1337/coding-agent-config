@@ -106,8 +106,11 @@ export function matches(rule: Rule, relativePath: string): boolean {
 }
 
 /** Structured instruction-file records for unscoped rules only. */
-export function instructionFiles(rules: Rule[]): Array<{ path: string; content: string }> {
-  return rules.filter((rule) => rule.paths.length === 0)
+export function instructionFiles(
+  rules: Rule[],
+): Array<{ path: string; content: string }> {
+  return rules
+    .filter((rule) => rule.paths.length === 0)
     .map((rule) => ({ path: rule.filePath, content: rule.body }));
 }
 
@@ -121,9 +124,14 @@ export default function claudeRules(pi: ExtensionAPI): void {
     const rules = discover(path.join(os.homedir(), ".claude", "rules"));
     const root = local ? path.join(local, "rules") : undefined;
     const projectRules = root
-      ? discover(root).map((rule) => ({ ...rule, source: path.join(root, rule.name) }))
+      ? discover(root).map((rule) => ({
+          ...rule,
+          source: path.join(root, rule.name),
+        }))
       : [];
-    scoped = [...rules, ...projectRules].filter((rule) => rule.paths.length > 0);
+    scoped = [...rules, ...projectRules].filter(
+      (rule) => rule.paths.length > 0,
+    );
     files = instructionFiles([...rules, ...projectRules]);
   }
   // The project coordinator announces approval on the shared event bus.

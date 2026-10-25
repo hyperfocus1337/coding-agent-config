@@ -14,7 +14,9 @@ export default function cmuxState(pi: ExtensionAPI) {
       renameSync(`${file}.tmp`, file);
     } catch (error) {
       if (!warned) {
-        console.warn(`[cmux-state] Cannot publish lifecycle state: ${String(error)}`);
+        console.warn(
+          `[cmux-state] Cannot publish lifecycle state: ${String(error)}`,
+        );
         warned = true;
       }
     }
@@ -22,6 +24,8 @@ export default function cmuxState(pi: ExtensionAPI) {
   pi.on("session_start", () => publish("idle"));
   pi.on("agent_start", () => publish("running"));
   // agent_end is not final: retries and queued work can still follow it.
-  pi.on("agent_settled", (_event, ctx) => { if (ctx.isIdle()) publish("idle"); });
+  pi.on("agent_settled", (_event, ctx) => {
+    if (ctx.isIdle()) publish("idle");
+  });
   pi.on("session_shutdown", () => publish("closed"));
 }
