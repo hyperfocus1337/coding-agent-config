@@ -1,11 +1,11 @@
 # toggle-hook
 
-Adds the `/toggle-hook` command, which turns an advisory hook off or on. Without a flag, the change lasts until you quit the agent. With `--repo`, the change goes in the git config of the session repository and lasts across sessions. Use it when a formatter fights the style of a repo, or when a linter reports on a file that you do not own, and you do not want to restart the agent.
+Adds the `/toggle-hook` command, which turns an advisory hook off or on. Without a flag, the change lasts until you quit the agent. With `--repo`, the change goes in the git config of the session repository, and with `--global` in your global git config. Both last across sessions. Use it when a formatter fights the style of a repo, or when a linter reports on a file that you do not own, and you do not want to restart the agent.
 
 | Agent       | Adapter                                                                                                                                                | Loaded by                                                                                          |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
 | Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `$.command.register` and a `command.run` hook                                                         | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
-| pi and omp  | [`pi.ts`](pi.ts): `registerCommand`, with completion of `--repo` and the hook names                                                                    | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
+| pi and omp  | [`pi.ts`](pi.ts): `registerCommand`, with completion of `--repo`, `--global`, and the hook names                                                       | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
 | Codex       | None. Codex has no extension commands, so set the variable at launch, `AGENT_HOOKS_DISABLE=lint-prose codex`, or run `git config` in your own terminal | Not applicable                                                                                     |
 
 ## What it checks
@@ -14,24 +14,29 @@ The hook checks nothing. It runs when you type `/toggle-hook`, and the argument 
 
 | Argument                          | Result                                                                                       |
 | --------------------------------- | -------------------------------------------------------------------------------------------- |
-| None, or `--repo` alone           | Lists the state of each hook and formatter, and the scope that turns it off                  |
+| None, or a flag alone             | Lists the state of each hook and formatter, and the scope that moves it off its default      |
 | A hook name                       | Flips that hook until you quit, and prints its new state                                     |
-| `all`                             | Turns all 7 hooks off until you quit, or turns all of them on again when one or more are off |
+| `all`                             | Turns all 8 hooks off until you quit, or turns all of them on again when one or more are off |
 | `--repo` and a hook name          | Flips that hook in the session repository                                                    |
 | `--repo` and `<hook>.<formatter>` | Flips one formatter in the session repository, for example `--repo format-code.shfmt`        |
-| `--repo all`                      | Turns all 7 hooks off in the session repository, or on again when one or more are off        |
+| `--repo all`                      | Turns all 8 hooks off in the session repository, or on again when one or more are off        |
+| `--global` and a name, or `all`   | As `--repo`, in the global git config                                                        |
 | A guard name                      | Changes nothing, and names the escape hatch of that guard                                    |
 | Any other text                    | Changes nothing, and lists the hook names                                                    |
 
-A hook that the repository turns off stays off when you flip it without `--repo`. The command then changes nothing and tells you to use `--repo`. A formatter name, such as `format-code.shfmt`, works only with `--repo`.
+The session can only turn a hook off. A hook that git config turns off stays off when you flip it with no flag: the command then changes nothing and names the flag to use. A formatter name, such as `format-code.shfmt`, works only with `--repo` or `--global`.
+
+`all` with a flag turns `format-oxfmt` off too. Back on, it removes the `false` of `format-oxfmt` in that scope, so `format-oxfmt` returns to the state of the scope outside, or to off. `all` never turns `format-oxfmt` on where it was not on before.
 
 ### Which hooks have a toggle
 
-Only the advisory hooks have a toggle. An advisory hook formats, lints, or type-checks, and does not exist to stop the model. The 7 advisory hooks are in `HOOKS` in [`core.ts`](core.ts):
+Only the advisory hooks have a toggle. An advisory hook formats, lints, or type-checks, and does not exist to stop the model. The 8 advisory hooks are in `HOOKS` in [`core.ts`](core.ts):
 
-- `format-prettier`, `format-org-tables`, and `format-code`
+- `format-prettier`, `format-oxfmt`, `format-org-tables`, and `format-code`
 - `lint-code` and `lint-prose`
 - `type-check-tsc` and `type-check-pyrefly`
+
+`format-oxfmt` is the one hook in `OPT_IN`: it is off until git config sets `agent-hook.format-oxfmt.enabled` to `true`, and then `format-prettier` leaves the same files alone. See [The switch](../format-oxfmt/README.md#the-switch).
 
 `PARTS` in [`core.ts`](core.ts) lists the formatters that have their own key: `terraform`, `shfmt`, and `ruff` of `format-code`.
 
@@ -43,22 +48,25 @@ The guards (`enforce-cli-tools`, `block-commit-attribution`, `block-secret-commi
 
 - **Claude Code:** the mod needs Claude Code 2.1.296 or later, the oldest version tested.
 - **pi and omp:** `pi.ts` runs in the runtime of the agent and needs no `node` on `PATH`.
-- **git**, for `--repo` and for the repository state in the list and the status line.
+- **git**, for `--repo`, `--global`, and the git config state in the list and the status line.
 
 ## How it works
 
 The command has two scopes:
 
-| Scope      | State                                                                                                                    | Lasts                      |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------- |
-| Session    | `AGENT_HOOKS_DISABLE`, a list of hook names, separated by spaces or commas, in the process of the agent                  | Until you quit the agent   |
-| Repository | `agent-hook.<hook>.enabled false`, and `agent-hook.<hook>.<formatter> false`, in `.git/config` of the session repository | Until you turn it on again |
+| Scope      | State                                                                                                        | Lasts                     |
+| ---------- | ------------------------------------------------------------------------------------------------------------ | ------------------------- |
+| Session    | `AGENT_HOOKS_DISABLE`, a list of hook names, separated by spaces or commas, in the process of the agent      | Until you quit the agent  |
+| Repository | `agent-hook.<hook>.enabled`, and `agent-hook.<hook>.<formatter>`, in `.git/config` of the session repository | Until you change it again |
+| Global     | The same keys in `~/.gitconfig`, or in the file that `GIT_CONFIG_GLOBAL` names                               | Until you change it again |
 
-A hook does nothing when either scope turns it off. Each of the 7 hooks reads the variable and the git config on each run. It reads the git config in the repository of each file, with `git config --type=bool --get`, so a session can edit files in more than one repository. A value that is not a boolean, such as `banana`, keeps the hook on.
+A repository key wins over a global key. A hook does nothing when a scope turns it off, and `format-oxfmt` does nothing until a scope turns it on. Each of the 8 hooks reads the variable and the git config on each run. It reads the git config in the repository of each file, with `git config --type=bool --get`, so a session can edit files in more than one repository. A value that is not a boolean, such as `banana`, keeps the hook on.
 
 The session scope changes the variable in the process of the agent itself. Nothing goes to disk, so the change does not reach another session, and chezmoi sees no drift. In Claude Code, `type-check-tsc` and `type-check-pyrefly` are command hooks, which Claude Code starts as a new process: each one gets the variable as Claude Code has it when Claude Code starts the hook.
 
-The repository scope runs `git config --local` in the session folder. To turn a key off, it writes `false`. To turn a key on, it removes the key from the repository. When a config outside the repository, such as `~/.config/git/config`, still sets `false`, the command writes `true` in the repository, which wins. A key in `~/.config/git/config` turns the hook off in all repositories, but chezmoi manages that file, so the command never writes there.
+The repository scope runs `git config --local` in the session folder. To move a key off its default, it writes the value. To move a key back to its default, it removes the key. When a file outside the repository, such as `~/.config/git/config`, still decides, the command writes the value in the repository, which wins.
+
+The global scope reads all global files, and writes `~/.gitconfig`, or the file that `GIT_CONFIG_GLOBAL` names. It never writes `~/.config/git/config`, because chezmoi manages that file. Plain `git config --global` writes there when `~/.gitconfig` does not exist. Git reads `~/.gitconfig` after `~/.config/git/config`, so a value in `~/.gitconfig` wins. A global write cannot win over a repository key: the command then tells you to use `--repo`.
 
 `/clear` in Claude Code and `/new` in pi keep the process, so they also keep the session toggle. Quit the agent to turn all session toggles on again.
 
@@ -81,6 +89,7 @@ The command prints the state of the hooks, or the new state of one hook:
 ```
 > /toggle-hook
 on            format-prettier
+off           format-oxfmt
 on            format-org-tables
 on            format-code
   on            terraform
@@ -96,9 +105,12 @@ format-prettier is off until you quit the agent.
 
 > /toggle-hook --repo format-code.shfmt
 format-code.shfmt is on for this repository.
+
+> /toggle-hook --global format-oxfmt
+format-oxfmt is on in the global git config.
 ```
 
-While a hook is off, the status line shows `hooks off: <names>`. A name that the repository turns off has `(repo)` after it, for example `hooks off: format-code.shfmt (repo), lint-prose`. The status line reads the repository state when the session starts and after each command, not when the session folder changes.
+While a hook is off, the status line shows `hooks off: <names>`. A name that git config turns off has `(repo)` or `(global)` after it, for example `hooks off: format-code.shfmt (repo), lint-prose`. While `format-oxfmt` is on, the status line also shows `hooks on: format-oxfmt (global)`. The status line reads the git config when the session starts and after each command, not when the session folder changes.
 
 ## Settings
 
@@ -108,12 +120,13 @@ You can set `AGENT_HOOKS_DISABLE` before you start an agent. This command starts
 AGENT_HOOKS_DISABLE=lint-prose claude
 ```
 
-You can also write the repository keys yourself, in your own terminal:
+You can also write the keys yourself, in your own terminal:
 
 ```sh
 git config agent-hook.lint-prose.enabled false
 git config agent-hook.format-code.shfmt false
 git config --unset agent-hook.lint-prose.enabled
+git config --file ~/.gitconfig agent-hook.format-oxfmt.enabled true
 ```
 
 In Codex, these are the only ways to turn a hook off.

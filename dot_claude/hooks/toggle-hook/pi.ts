@@ -1,7 +1,6 @@
 /**
  * pi and omp extension: adds `/toggle-hook`, which sets AGENT_HOOKS_DISABLE
- * in the agent process, or with `--repo` writes git config in the session
- * repository. The extensions of the other hooks read both on their next
+ * in the agent process, or with `--repo` or `--global` writes git config. The extensions of the other hooks read both on their next
  * run. The status line names the hooks that are off. Loaded through the
  * `extensions` setting of each agent.
  *
@@ -12,7 +11,15 @@
 
 import { spawnSync } from "node:child_process";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { command, HOOKS, NAMES, repoOff, status, type Git } from "./core.ts";
+import {
+  command,
+  globalFile,
+  HOOKS,
+  NAMES,
+  readConfig,
+  status,
+  type Git,
+} from "./core.ts";
 
 /** git in `cwd`; undefined when git cannot start. */
 const gitIn =
@@ -25,36 +32,37 @@ const gitIn =
   };
 
 export default function (pi: ExtensionAPI) {
-  // A value set at launch and the repository state show from the start.
+  // A value set at launch and the git config state show from the start.
   pi.on("session_start", async (_event, ctx) => {
     ctx.ui.setStatus(
       "toggle-hook",
-      status(process.env.AGENT_HOOKS_DISABLE, await repoOff(gitIn(ctx.cwd))),
+      status(process.env.AGENT_HOOKS_DISABLE, await readConfig(gitIn(ctx.cwd))),
     );
   });
   pi.registerCommand("toggle-hook", {
     description:
-      "Turn an advisory hook off or on, until you quit or with --repo in this repository",
+      "Turn an advisory hook off or on, until you quit, or with --repo or --global in git config",
     // pi puts the value in place of the whole argument text.
     getArgumentCompletions: (prefix) => {
       const text = prefix.trim();
-      const repo = text.startsWith("--repo");
-      const choices = repo
-        ? [...NAMES, "all"].map((name) => `--repo ${name}`)
-        : ["--repo", ...HOOKS, "all"];
+      const flag = ["--repo", "--global"].find((flag) => text.startsWith(flag));
+      const choices = flag
+        ? [...NAMES, "all"].map((name) => `${flag} ${name}`)
+        : ["--repo", "--global", ...HOOKS, "all"];
       return choices
         .filter((choice) => choice.startsWith(text))
         .map((choice) => ({ value: choice, label: choice }));
     },
     handler: async (args, ctx) => {
-      const { value, text, repo } = await command(
+      const { value, text, config } = await command(
         process.env.AGENT_HOOKS_DISABLE,
         args,
         gitIn(ctx.cwd),
+        globalFile(process.env),
       );
       if (value === undefined) delete process.env.AGENT_HOOKS_DISABLE;
       else process.env.AGENT_HOOKS_DISABLE = value;
-      ctx.ui.setStatus("toggle-hook", status(value, repo));
+      ctx.ui.setStatus("toggle-hook", status(value, config));
       ctx.ui.notify(text, "info");
     },
   });

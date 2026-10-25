@@ -1,7 +1,8 @@
 /**
  * Self-check for ../core.ts and its two adapters: the mod with a stub `on`
- * and `$`, and the pi extension with a stub pi. The `--repo` cases run the
- * real git in a temporary repository, with a temporary global config.
+ * and `$`, and the pi extension with a stub pi. The `--repo` and `--global`
+ * cases run the real git in a temporary repository, with a temporary global
+ * config.
  *
  * Run: node test/check.ts, from the hook directory.
  */
@@ -13,13 +14,16 @@ import * as os from "node:os";
 import * as path from "node:path";
 import {
   command,
+  globalFile,
   HOOKS,
   NAMES,
   PARTS,
   status,
   toggle,
-  toggleRepo,
+  toggleConfig,
+  type Config,
   type Git,
+  type Scope,
 } from "../core.ts";
 import { register } from "../hooks/register.ts";
 import extension from "../pi.ts";
@@ -33,6 +37,13 @@ function check(what: string, run: () => void | Promise<void>) {
       console.error(`FAIL ${what}\n  ${(error as Error).message}`);
     });
 }
+
+/** A git config state: [name, on, scope] for each name that it sets. */
+const cfg = (...entries: [string, boolean, Scope][]): Config =>
+  new Map(entries.map(([name, on, scope]) => [name, { on, scope }]));
+/** The names that a git config state sets to false. */
+const offIn = (config: Config) =>
+  [...config].filter(([, set]) => !set.on).map(([name]) => name);
 
 // --- core.ts ---
 
@@ -56,16 +67,30 @@ await check("a launch value with commas and other names", () =>
 await check(
   "no argument lists each hook, its formatters, and the scope",
   () => {
-    const { value, text } = toggle("lint-code", "", [
-      "lint-prose",
-      "format-code.shfmt",
-    ]);
+    const { value, text } = toggle(
+      "lint-code",
+      "",
+      cfg(
+        ["lint-prose", false, "repo"],
+        ["format-code.shfmt", false, "repo"],
+        ["type-check-tsc", false, "global"],
+      ),
+    );
     assert.equal(value, "lint-code");
     assert.equal(text.split("\n").length, NAMES.length);
     assert.ok(text.includes("\noff  session  lint-code\n"));
     assert.ok(text.includes("\noff  repo     lint-prose\n"));
     assert.ok(text.includes("\n  off  repo     shfmt\n"));
-    assert.ok(text.includes("\non            type-check-tsc\n"));
+    assert.ok(text.includes("\noff  global   type-check-tsc\n"));
+    assert.ok(text.includes("\non            type-check-pyrefly"));
+    assert.ok(text.includes("\noff           format-oxfmt\n"));
+    assert.ok(
+      toggle(
+        undefined,
+        "",
+        cfg(["format-oxfmt", true, "global"]),
+      ).text.includes("\non   global   format-oxfmt\n"),
+    );
   },
 );
 await check("all turns every hook off, then on, and keeps other names", () => {
@@ -77,20 +102,40 @@ await check("all turns every hook off, then on, and keeps other names", () => {
   });
   assert.equal(toggle("lint-code", "all").value, undefined);
   assert.match(
-    toggle("lint-code", "all", ["lint-prose"]).text,
-    /^All hooks are on, but this repository turns off lint-prose\./,
+    toggle("lint-code", "all", cfg(["lint-prose", false, "repo"])).text,
+    /^All hooks are on, but git config turns off lint-prose\./,
   );
 });
-await check("a hook that the repository turns off stays off", () =>
-  assert.deepEqual(toggle("lint-code", "lint-prose", ["lint-prose"]), {
-    value: "lint-code",
-    text: "lint-prose is off for this repository. Use /toggle-hook --repo lint-prose.",
-  }),
-);
-await check("a formatter name needs --repo", () =>
+await check("a hook that git config turns off stays off", () => {
+  assert.deepEqual(
+    toggle("lint-code", "lint-prose", cfg(["lint-prose", false, "repo"])),
+    {
+      value: "lint-code",
+      text: "lint-prose is off for this repository. Use /toggle-hook --repo lint-prose.",
+    },
+  );
+  assert.equal(
+    toggle(undefined, "lint-prose", cfg(["lint-prose", false, "global"])).text,
+    "lint-prose is off in the global git config. Use /toggle-hook --global lint-prose.",
+  );
+});
+await check("format-oxfmt is off until git config turns it on", () => {
+  assert.deepEqual(toggle(undefined, "format-oxfmt"), {
+    value: undefined,
+    text: "format-oxfmt is off until git config turns it on. Use /toggle-hook --repo format-oxfmt or --global format-oxfmt.",
+  });
+  assert.deepEqual(
+    toggle(undefined, "format-oxfmt", cfg(["format-oxfmt", true, "global"])),
+    {
+      value: "format-oxfmt",
+      text: "format-oxfmt is off until you quit the agent.",
+    },
+  );
+});
+await check("a formatter name needs --repo or --global", () =>
   assert.deepEqual(toggle(undefined, "format-code.shfmt"), {
     value: undefined,
-    text: "format-code.shfmt has a toggle for the repository only. Use /toggle-hook --repo format-code.shfmt.",
+    text: "format-code.shfmt has a toggle in git config only. Use /toggle-hook --repo format-code.shfmt or --global format-code.shfmt.",
   }),
 );
 await check("a guard has no toggle", () => {
@@ -109,26 +154,71 @@ await check("an unknown name changes nothing", () => {
   );
 });
 await check("--repo: a name flips its key, all flips the hooks", () => {
-  assert.deepEqual(toggleRepo(undefined, "format-code.shfmt", []), {
-    off: ["format-code.shfmt"],
-    on: [],
+  const none: Config = new Map();
+  assert.deepEqual(toggleConfig(undefined, "format-code.shfmt", none, "repo"), {
+    writes: [{ name: "format-code.shfmt", on: false }],
     text: "format-code.shfmt is off for this repository.",
   });
-  assert.deepEqual(toggleRepo(undefined, "lint-prose", ["lint-prose"]).on, [
-    "lint-prose",
-  ]);
-  assert.deepEqual(toggleRepo(undefined, "all", []).off, HOOKS);
   assert.deepEqual(
-    toggleRepo(undefined, "all", ["lint-code", "format-code.shfmt"]).on,
-    ["lint-code"],
+    toggleConfig(
+      undefined,
+      "lint-prose",
+      cfg(["lint-prose", false, "repo"]),
+      "repo",
+    ).writes,
+    [{ name: "lint-prose", on: true }],
+  );
+  assert.deepEqual(
+    toggleConfig(undefined, "all", none, "repo").writes,
+    HOOKS.map((name) => ({ name, on: false })),
+  );
+  assert.deepEqual(
+    toggleConfig(
+      undefined,
+      "all",
+      cfg(["lint-code", false, "repo"], ["format-code.shfmt", false, "repo"]),
+      "repo",
+    ).writes,
+    [{ name: "lint-code", on: true }],
   );
   assert.ok(
-    toggleRepo(undefined, "block-secret-commits", []).text.includes(
+    toggleConfig(undefined, "block-secret-commits", none, "repo").text.includes(
       "is a guard",
     ),
   );
   assert.ok(
-    toggleRepo(undefined, "shfmt", []).text.startsWith("shfmt is not a hook."),
+    toggleConfig(undefined, "shfmt", none, "repo").text.startsWith(
+      "shfmt is not a hook.",
+    ),
+  );
+});
+await check("--global and format-oxfmt: the flip and all", () => {
+  const none: Config = new Map();
+  assert.deepEqual(toggleConfig(undefined, "format-oxfmt", none, "global"), {
+    writes: [{ name: "format-oxfmt", on: true }],
+    text: "format-oxfmt is on in the global git config.",
+  });
+  // all back on removes the false of format-oxfmt in this scope only.
+  assert.deepEqual(
+    toggleConfig(
+      undefined,
+      "all",
+      cfg(["lint-code", false, "repo"], ["format-oxfmt", false, "repo"]),
+      "repo",
+    ).writes,
+    [
+      { name: "lint-code", on: true },
+      { name: "format-oxfmt", on: undefined },
+    ],
+  );
+  assert.deepEqual(
+    toggleConfig(
+      undefined,
+      "all",
+      cfg(["lint-code", false, "global"], ["format-oxfmt", false, "global"]),
+      "repo",
+    ).writes,
+    [{ name: "lint-code", on: true }],
   );
 });
 await check("PARTS holds the keys of FORMATTERS in format-code", () => {
@@ -149,8 +239,22 @@ await check("status names only the hooks that are off", () => {
     "hooks off: format-prettier, lint-prose",
   );
   assert.equal(
-    status("lint-prose lint-code", ["lint-code", "format-code.shfmt"]),
-    "hooks off: format-code.shfmt (repo), lint-code (repo), lint-prose",
+    status(
+      "lint-prose lint-code",
+      cfg(["lint-code", false, "repo"], ["format-code.shfmt", false, "global"]),
+    ),
+    "hooks off: format-code.shfmt (global), lint-code (repo), lint-prose",
+  );
+  const oxfmt = cfg(["format-oxfmt", true, "global"]);
+  assert.equal(status(undefined, oxfmt), "hooks on: format-oxfmt (global)");
+  assert.equal(status("format-oxfmt", oxfmt), "hooks off: format-oxfmt");
+  assert.equal(
+    status("lint-code", oxfmt),
+    "hooks off: lint-code; hooks on: format-oxfmt (global)",
+  );
+  assert.equal(
+    status(undefined, cfg(["format-oxfmt", false, "repo"])),
+    undefined,
   );
 });
 
@@ -178,6 +282,8 @@ const gitIn =
 const inRepo = gitIn(repo);
 const local = async (key: string) =>
   (await inRepo(["config", "--local", "--get", key]))?.stdout.trim();
+const globalValue = async (key: string) =>
+  (await inRepo(["config", "--global", "--get", key]))?.stdout.trim();
 await inRepo(["init", "-q"]);
 
 await check("command: --repo writes false, then removes the key", async () => {
@@ -186,37 +292,42 @@ await check("command: --repo writes false, then removes the key", async () => {
     {
       value: "lint-code",
       text: "format-code.shfmt is off for this repository.",
-      repo: ["format-code.shfmt"],
+      config: cfg(["format-code.shfmt", false, "repo"]),
     },
   );
   assert.equal(await local("agent-hook.format-code.shfmt"), "false");
   const on = await command("lint-code", "--repo format-code.shfmt", inRepo);
-  assert.deepEqual(on.repo, []);
+  assert.equal(on.config.size, 0);
   assert.equal(await local("agent-hook.format-code.shfmt"), "");
 });
 await check(
   "command: --repo all, and a session toggle of a repo hook",
   async () => {
+    // format-oxfmt is off by default, so all removes its key: none is set.
     assert.deepEqual(
-      (await command(undefined, "--repo all", inRepo)).repo,
-      HOOKS,
+      offIn((await command(undefined, "--repo all", inRepo)).config),
+      HOOKS.filter((hook) => hook !== "format-oxfmt"),
     );
     const session = await command(undefined, "lint-prose", inRepo);
     assert.equal(session.value, undefined);
     assert.match(session.text, /off for this repository/);
-    assert.deepEqual((await command(undefined, "--repo all", inRepo)).repo, []);
+    assert.equal(
+      (await command(undefined, "--repo all", inRepo)).config.size,
+      0,
+    );
   },
 );
 await check(
   "command: a global false gets a true in the repository",
   async () => {
     fs.writeFileSync(global, '[agent-hook "lint-code"]\n\tenabled = false\n');
-    assert.deepEqual((await command(undefined, "", inRepo)).repo, [
-      "lint-code",
-    ]);
+    assert.deepEqual(
+      (await command(undefined, "", inRepo)).config,
+      cfg(["lint-code", false, "global"]),
+    );
     const on = await command(undefined, "--repo lint-code", inRepo);
     assert.equal(on.text, "lint-code is on for this repository.");
-    assert.deepEqual(on.repo, []);
+    assert.deepEqual(offIn(on.config), []);
     assert.equal(await local("agent-hook.lint-code.enabled"), "true");
     fs.writeFileSync(global, "");
     await inRepo(["config", "--unset", "agent-hook.lint-code.enabled"]);
@@ -237,8 +348,79 @@ await check(
   "command: a value that is not a boolean keeps the name on",
   async () => {
     await inRepo(["config", "agent-hook.lint-prose.enabled", "banana"]);
-    assert.deepEqual((await command(undefined, "", inRepo)).repo, []);
+    assert.equal((await command(undefined, "", inRepo)).config.size, 0);
     await inRepo(["config", "--unset", "agent-hook.lint-prose.enabled"]);
+  },
+);
+await check(
+  "command: --global turns format-oxfmt on, --repo off here",
+  async () => {
+    const key = "agent-hook.format-oxfmt.enabled";
+    const on = await command(undefined, "--global format-oxfmt", inRepo);
+    assert.equal(on.text, "format-oxfmt is on in the global git config.");
+    assert.equal(await globalValue(key), "true");
+    assert.equal(
+      status(undefined, on.config),
+      "hooks on: format-oxfmt (global)",
+    );
+    // Off is the default, but the global true still applies, so the
+    // repository gets a false.
+    const off = await command(undefined, "--repo format-oxfmt", inRepo);
+    assert.equal(off.text, "format-oxfmt is off for this repository.");
+    assert.equal(await local(key), "false");
+    assert.deepEqual(off.config, cfg(["format-oxfmt", false, "repo"]));
+    // all off and back on gives the global true back.
+    await command(undefined, "--repo all", inRepo);
+    await command(undefined, "--repo all", inRepo);
+    assert.equal(await local(key), "");
+    assert.deepEqual(
+      (await command(undefined, "", inRepo)).config,
+      cfg(["format-oxfmt", true, "global"]),
+    );
+    const back = await command(undefined, "--global format-oxfmt", inRepo);
+    assert.equal(back.text, "format-oxfmt is off in the global git config.");
+    assert.equal(await globalValue(key), "");
+  },
+);
+await check("globalFile: GIT_CONFIG_GLOBAL, else ~/.gitconfig", () => {
+  assert.equal(globalFile({ GIT_CONFIG_GLOBAL: "/g", HOME: "/h" }), "/g");
+  assert.equal(globalFile({ HOME: "/h" }), "/h/.gitconfig");
+  assert.equal(globalFile({}), undefined);
+});
+await check(
+  "command: --global wins over a key in an included file",
+  async () => {
+    // The include stands in for ~/.config/git/config, which git reads
+    // before ~/.gitconfig.
+    const xdg = `${tmp}/xdg-config`;
+    fs.writeFileSync(xdg, '[agent-hook "format-oxfmt"]\n\tenabled = true\n');
+    fs.writeFileSync(global, `[include]\n\tpath = ${xdg}\n`);
+    const off = await command(
+      undefined,
+      "--global format-oxfmt",
+      inRepo,
+      global,
+    );
+    assert.equal(off.text, "format-oxfmt is off in the global git config.");
+    assert.deepEqual(off.config, cfg(["format-oxfmt", false, "global"]));
+    assert.match(fs.readFileSync(global, "utf8"), /enabled = false/);
+    assert.match(fs.readFileSync(xdg, "utf8"), /enabled = true/);
+    fs.writeFileSync(global, "");
+  },
+);
+await check(
+  "command: --global names a repository key that overrides it",
+  async () => {
+    await inRepo(["config", "--local", "agent-hook.lint-code.enabled", "true"]);
+    const off = await command(undefined, "--global lint-code", inRepo);
+    assert.equal(
+      off.text,
+      "lint-code is off in the global git config. This repository overrides lint-code: use /toggle-hook --repo.",
+    );
+    assert.equal(await globalValue("agent-hook.lint-code.enabled"), "false");
+    await command(undefined, "--global lint-code", inRepo);
+    assert.equal(await globalValue("agent-hook.lint-code.enabled"), "");
+    await inRepo(["config", "--unset", "agent-hook.lint-code.enabled"]);
   },
 );
 
@@ -361,7 +543,8 @@ await check("pi.ts: completes --repo, the hook names, and all", () => {
     command_?.getArgumentCompletions(prefix).map((item) => item.value);
   assert.deepEqual(complete("type"), ["type-check-tsc", "type-check-pyrefly"]);
   assert.deepEqual(complete(" a"), ["all"]);
-  assert.deepEqual(complete(""), ["--repo", ...HOOKS, "all"]);
+  assert.deepEqual(complete(""), ["--repo", "--global", ...HOOKS, "all"]);
+  assert.deepEqual(complete("--global format-ox"), ["--global format-oxfmt"]);
   assert.deepEqual(complete("--repo format-code."), [
     "--repo format-code.terraform",
     "--repo format-code.shfmt",
