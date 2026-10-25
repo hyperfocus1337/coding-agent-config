@@ -6,8 +6,7 @@
  * own environment. The git config state is agent-hook.<hook>.enabled, and
  * agent-hook.<hook>.<formatter> for one formatter of a hook, in the
  * repository or in the global config. Each hook in HOOKS reads both on each
- * run. A hook in OPT_IN is off until git config sets its key to true. The
- * adapters read and write the variable, and pass in a git function.
+ * run. The adapters read and write the variable, and pass in a git function.
  *
  * Adapters: hooks/register.ts (Claude Code), pi.ts (pi and omp). Codex has no
  * extension commands, so set the variable when you start it, or run git
@@ -16,7 +15,6 @@
 
 /** The hooks that read AGENT_HOOKS_DISABLE, in the order the list shows. */
 export const HOOKS = [
-  "format-prettier",
   "format-oxfmt",
   "format-org-tables",
   "format-code",
@@ -25,12 +23,6 @@ export const HOOKS = [
   "type-check-tsc",
   "type-check-pyrefly",
 ];
-
-/**
- * The hooks that are off until git config sets agent-hook.<hook>.enabled to
- * true. format-oxfmt then formats the files of format-prettier.
- */
-export const OPT_IN = ["format-oxfmt"];
 
 /**
  * The formatters of a hook that have their own git config key, so that
@@ -77,17 +69,13 @@ export type Config = Map<string, { on: boolean; scope: Scope }>;
 const key = (name: string) =>
   name.includes(".") ? `agent-hook.${name}` : `agent-hook.${name}.enabled`;
 
-/** Whether a name is on when git config does not set it. */
-const byDefault = (name: string) => !OPT_IN.includes(name);
+/** Whether git config leaves a name on: its value, else on. */
+const gitOn = (name: string, config: Config) => config.get(name)?.on ?? true;
 
-/** Whether git config leaves a name on: its value, else its default. */
-const gitOn = (name: string, config: Config) =>
-  config.get(name)?.on ?? byDefault(name);
-
-/** The scope where git config moves a name off its default, else undefined. */
+/** The scope where git config turns a name off, else undefined. */
 function moved(name: string, config: Config): Scope | undefined {
   const set = config.get(name);
-  return set && set.on !== byDefault(name) ? set.scope : undefined;
+  return set && !set.on ? set.scope : undefined;
 }
 
 /** The text for a scope: "for this repository", "in the global git config". */
@@ -182,9 +170,7 @@ export function toggle(
   if (!name) return same(list(off, config));
   if (name === "all") {
     const others = off.filter((hook) => !HOOKS.includes(hook));
-    const still = HOOKS.filter(
-      (hook) => moved(hook, config) && byDefault(hook),
-    );
+    const still = HOOKS.filter((hook) => moved(hook, config));
     return HOOKS.some((hook) => off.includes(hook))
       ? {
           value: value(others),
@@ -203,14 +189,11 @@ export function toggle(
     );
   const wrong = unknown(name, HOOKS);
   if (wrong) return same(wrong);
-  if (!gitOn(name, config)) {
-    const set = config.get(name);
+  const scope = moved(name, config);
+  if (scope)
     return same(
-      set
-        ? `${name} is off ${where(set.scope)}. Use /toggle-hook ${flag(set.scope)} ${name}.`
-        : `${name} is off until git config turns it on. Use /toggle-hook --repo ${name} or --global ${name}.`,
+      `${name} is off ${where(scope)}. Use /toggle-hook ${flag(scope)} ${name}.`,
     );
-  }
   return off.includes(name)
     ? {
         value: value(off.filter((hook) => hook !== name)),
@@ -222,14 +205,10 @@ export function toggle(
       };
 }
 
-/**
- * One change to git config: the name, and whether to turn it on or off.
- * `on: undefined` removes the key, so that the name follows the scope
- * outside, or its default.
- */
+/** One change to git config: the name, and whether to turn it on or off. */
 export interface Write {
   name: string;
-  on: boolean | undefined;
+  on: boolean;
 }
 
 /**
@@ -238,9 +217,7 @@ export interface Write {
  * is the state that the flip starts from: for `--global`, the global config
  * only, so that a repository key does not decide the global flip. Returns
  * the writes and the text for the user. No name lists the state, as with no
- * flag. `all` turns every hook off, and an OPT_IN hook too. Back on, it
- * removes the false of an OPT_IN hook in this scope: `all` never turns
- * format-oxfmt on where it was not on before.
+ * flag.
  */
 export function toggleConfig(
   current: string | undefined,
@@ -252,23 +229,16 @@ export function toggleConfig(
   const same = (text: string) => ({ writes: [], text });
   if (!name) return same(list(names(current), config));
   if (name === "all") {
-    const off = HOOKS.filter((hook) => byDefault(hook) && !gitOn(hook, config));
-    if (!off.length)
-      return {
-        writes: HOOKS.map((name) => ({ name, on: false })),
-        text: `All hooks are off ${where(scope)}.`,
-      };
-    const reset = OPT_IN.filter((hook) => {
-      const set = config.get(hook);
-      return set?.scope === scope && !set.on;
-    });
-    return {
-      writes: [
-        ...off.map((name) => ({ name, on: true })),
-        ...reset.map((name) => ({ name, on: undefined })),
-      ],
-      text: `All hooks are on ${where(scope)}.`,
-    };
+    const off = HOOKS.filter((hook) => !gitOn(hook, config));
+    return off.length
+      ? {
+          writes: off.map((name) => ({ name, on: true })),
+          text: `All hooks are on ${where(scope)}.`,
+        }
+      : {
+          writes: HOOKS.map((name) => ({ name, on: false })),
+          text: `All hooks are off ${where(scope)}.`,
+        };
   }
   const wrong = unknown(name, NAMES);
   if (wrong) return same(wrong);
@@ -317,12 +287,8 @@ export async function command(
   const level =
     scope === "repo" ? ["--local"] : global ? ["--file", global] : ["--global"];
   for (const { name, on } of writes) {
-    // A name back at its default loses its key, so that the git config stays
-    // clean.
-    const argv =
-      on === undefined || on === byDefault(name)
-        ? ["--unset", key(name)]
-        : [key(name), String(on)];
+    // A name back on loses its key, so that the git config stays clean.
+    const argv = on ? ["--unset", key(name)] : [key(name), "false"];
     const ran = await git(["config", ...level, ...argv]);
     // --local fails outside a git repository. --unset exits 5 when the scope
     // does not set the key.
@@ -337,9 +303,7 @@ export async function command(
   // can still keep a name from the state it should have. A value written in
   // the scope wins over it.
   const missed = (config: Config) =>
-    writes.filter(
-      ({ name, on }) => on !== undefined && gitOn(name, config) !== on,
-    );
+    writes.filter(({ name, on }) => gitOn(name, config) !== on);
   let after = await readConfig(git);
   const outside = missed(after).filter(
     ({ name }) => after.get(name)?.scope === "global",
@@ -360,26 +324,16 @@ export async function command(
   };
 }
 
-/** The status line text while a hook is off, or an OPT_IN hook on. */
+/** The status line text while a hook is off. */
 export function status(
   value: string | undefined,
   config: Config = new Map(),
 ): string | undefined {
   const session = names(value);
   const off = NAMES.flatMap((name) => {
-    if (!gitOn(name, config))
-      return byDefault(name) ? [`${name} (${config.get(name)!.scope})`] : [];
+    const scope = moved(name, config);
+    if (scope) return [`${name} (${scope})`];
     return HOOKS.includes(name) && session.includes(name) ? [name] : [];
   });
-  const on = OPT_IN.filter(
-    (name) => gitOn(name, config) && !session.includes(name),
-  ).map((name) => `${name} (${config.get(name)!.scope})`);
-  return (
-    [
-      off.length ? `hooks off: ${off.join(", ")}` : "",
-      on.length ? `hooks on: ${on.join(", ")}` : "",
-    ]
-      .filter(Boolean)
-      .join("; ") || undefined
-  );
+  return off.length ? `hooks off: ${off.join(", ")}` : undefined;
 }

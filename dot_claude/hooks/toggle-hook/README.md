@@ -16,27 +16,23 @@ The hook checks nothing. It runs when you type `/toggle-hook`, and the argument 
 | --------------------------------- | -------------------------------------------------------------------------------------------- |
 | None, or a flag alone             | Lists the state of each hook and formatter, and the scope that moves it off its default      |
 | A hook name                       | Flips that hook until you quit, and prints its new state                                     |
-| `all`                             | Turns all 8 hooks off until you quit, or turns all of them on again when one or more are off |
+| `all`                             | Turns all 7 hooks off until you quit, or turns all of them on again when one or more are off |
 | `--repo` and a hook name          | Flips that hook in the session repository                                                    |
 | `--repo` and `<hook>.<formatter>` | Flips one formatter in the session repository, for example `--repo format-code.shfmt`        |
-| `--repo all`                      | Turns all 8 hooks off in the session repository, or on again when one or more are off        |
+| `--repo all`                      | Turns all 7 hooks off in the session repository, or on again when one or more are off        |
 | `--global` and a name, or `all`   | As `--repo`, in the global git config                                                        |
 | A guard name                      | Changes nothing, and names the escape hatch of that guard                                    |
 | Any other text                    | Changes nothing, and lists the hook names                                                    |
 
 The session can only turn a hook off. A hook that git config turns off stays off when you flip it with no flag: the command then changes nothing and names the flag to use. A formatter name, such as `format-code.shfmt`, works only with `--repo` or `--global`.
 
-`all` with a flag turns `format-oxfmt` off too. Back on, it removes the `false` of `format-oxfmt` in that scope, so `format-oxfmt` returns to the state of the scope outside, or to off. `all` never turns `format-oxfmt` on where it was not on before.
-
 ### Which hooks have a toggle
 
-Only the advisory hooks have a toggle. An advisory hook formats, lints, or type-checks, and does not exist to stop the model. The 8 advisory hooks are in `HOOKS` in [`core.ts`](core.ts):
+Only the advisory hooks have a toggle. An advisory hook formats, lints, or type-checks, and does not exist to stop the model. The 7 advisory hooks are in `HOOKS` in [`core.ts`](core.ts):
 
-- `format-prettier`, `format-oxfmt`, `format-org-tables`, and `format-code`
+- `format-oxfmt`, `format-org-tables`, and `format-code`
 - `lint-code` and `lint-prose`
 - `type-check-tsc` and `type-check-pyrefly`
-
-`format-oxfmt` is the one hook in `OPT_IN`: it is off until git config sets `agent-hook.format-oxfmt.enabled` to `true`, and then `format-prettier` leaves the same files alone. See [The switch](../format-oxfmt/README.md#the-switch).
 
 `PARTS` in [`core.ts`](core.ts) lists the formatters that have their own key: `terraform`, `shfmt`, and `ruff` of `format-code`.
 
@@ -60,7 +56,7 @@ The command has two scopes:
 | Repository | `agent-hook.<hook>.enabled`, and `agent-hook.<hook>.<formatter>`, in `.git/config` of the session repository | Until you change it again |
 | Global     | The same keys in `~/.gitconfig`, or in the file that `GIT_CONFIG_GLOBAL` names                               | Until you change it again |
 
-A repository key wins over a global key. A hook does nothing when a scope turns it off, and `format-oxfmt` does nothing until a scope turns it on. Each of the 8 hooks reads the variable and the git config on each run. It reads the git config in the repository of each file, with `git config --type=bool --get`, so a session can edit files in more than one repository. A value that is not a boolean, such as `banana`, keeps the hook on.
+A repository key wins over a global key. A hook does nothing when a scope turns it off. Each of the 7 hooks reads the variable and the git config on each run. It reads the git config in the repository of each file, with `git config --type=bool --get`, so a session can edit files in more than one repository. A value that is not a boolean, such as `banana`, keeps the hook on.
 
 The session scope changes the variable in the process of the agent itself. Nothing goes to disk, so the change does not reach another session, and chezmoi sees no drift. In Claude Code, `type-check-tsc` and `type-check-pyrefly` are command hooks, which Claude Code starts as a new process: each one gets the variable as Claude Code has it when Claude Code starts the hook.
 
@@ -88,8 +84,7 @@ The command prints the state of the hooks, or the new state of one hook:
 
 ```
 > /toggle-hook
-on            format-prettier
-off           format-oxfmt
+on            format-oxfmt
 on            format-org-tables
 on            format-code
   on            terraform
@@ -100,17 +95,17 @@ off  session  lint-prose
 on            type-check-tsc
 on            type-check-pyrefly
 
-> /toggle-hook format-prettier
-format-prettier is off until you quit the agent.
+> /toggle-hook format-oxfmt
+format-oxfmt is off until you quit the agent.
 
 > /toggle-hook --repo format-code.shfmt
 format-code.shfmt is on for this repository.
 
-> /toggle-hook --global format-oxfmt
-format-oxfmt is on in the global git config.
+> /toggle-hook --global lint-prose
+lint-prose is off in the global git config.
 ```
 
-While a hook is off, the status line shows `hooks off: <names>`. A name that git config turns off has `(repo)` or `(global)` after it, for example `hooks off: format-code.shfmt (repo), lint-prose`. While `format-oxfmt` is on, the status line also shows `hooks on: format-oxfmt (global)`. The status line reads the git config when the session starts and after each command, not when the session folder changes.
+While a hook is off, the status line shows `hooks off: <names>`. A name that git config turns off has `(repo)` or `(global)` after it, for example `hooks off: format-code.shfmt (repo), lint-prose`. The status line reads the git config when the session starts and after each command, not when the session folder changes.
 
 ## Settings
 
@@ -126,7 +121,7 @@ You can also write the keys yourself, in your own terminal:
 git config agent-hook.lint-prose.enabled false
 git config agent-hook.format-code.shfmt false
 git config --unset agent-hook.lint-prose.enabled
-git config --file ~/.gitconfig agent-hook.format-oxfmt.enabled true
+git config --file ~/.gitconfig agent-hook.format-oxfmt.enabled false
 ```
 
 In Codex, these are the only ways to turn a hook off.
