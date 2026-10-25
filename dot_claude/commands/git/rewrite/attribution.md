@@ -58,10 +58,10 @@ This rewrites history and changes every affected commit hash. Before running:
 
 ### 2. Create a backup
 
-The timestamp keeps the name unique, so an earlier backup cannot block it:
+The timestamp keeps the name unique, so an earlier backup cannot block it. The name has no `/`, because git cannot create `backup/<name>` when a branch named `backup` exists:
 
 ```bash
-git branch "backup/$(git branch --show-current)-$(date +%Y%m%d%H%M%S)" HEAD
+git branch "backup-$(git branch --show-current | tr / -)-$(date +%Y%m%d%H%M%S)" HEAD
 ```
 
 Note the backup name for the verify step. To recover, run `git reset --hard <backup>`.
