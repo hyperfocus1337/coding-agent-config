@@ -27,7 +27,7 @@ The four channel skills carry `disable-model-invocation: true`. Start from `inst
 | [`organize`](organize/)                     | Reorganizes a config or code file into labeled, comment-delimited sections, prompting for a header style first. |
 | [`explain-diff`](explain-diff/)             | Builds a self-contained HTML explainer of a code change: background, intuition, diagrams, and a quiz.           |
 | [`context-payload`](context-payload/)       | Captures the first API request of a new session, and ranks what it costs.                                       |
-| [`prose-cleanup`](prose-cleanup/)           | Scans prose with the `lint-prose` Vale rules, asks which files to fix, and fixes the old alerts.                |
+| [`prose-cleanup`](prose-cleanup/)           | Scans prose with the `lint-prose` Vale rules or another Vale config, asks which files to fix, and fixes them.   |
 
 `markitdown` backs the rule in `rules/tools.md` that a binary document is converted before it is read. Both `markitdown` and `unlimited-ocr` set `disable-model-invocation`, so the agent asks the user to run `/markitdown` or `/unlimited-ocr`. `organize` declares the skill name `organize-with-comments` and pairs with the `/organize:*` commands, which pick a header style without the prompt.
 
