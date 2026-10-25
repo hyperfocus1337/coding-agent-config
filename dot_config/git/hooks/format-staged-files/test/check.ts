@@ -40,6 +40,7 @@ const home = `${tmp}/home`;
 for (const [link, target] of [
   [".config/git/hooks/format-staged-files", here],
   [".claude/hooks/format-prettier", `${repo}/dot_claude/hooks/format-prettier`],
+  [".claude/hooks/format-oxfmt", `${repo}/dot_claude/hooks/format-oxfmt`],
   [
     ".claude/hooks/format-org-tables",
     `${repo}/dot_claude/hooks/format-org-tables`,
@@ -218,6 +219,28 @@ check("the unstaged change stays in the tree", () =>
   ),
 );
 git(["checkout", "-q", "--", "new.md"]);
+
+// format-oxfmt formats in place of format-prettier when git config turns it
+// on. Prettier has no TOML parser, so a formatted .toml shows that oxfmt ran.
+if (spawnSync("oxfmt", ["--version"], { env: base }).error)
+  console.log("SKIP no oxfmt on PATH: format-oxfmt case");
+else {
+  write("a.toml", "a  =  1\n");
+  git(["add", "a.toml"]);
+  git(["commit", "-q", "-m", "toml off"]);
+  check("with format-oxfmt off, a .toml file is committed as staged", () =>
+    assert.equal(committed("a.toml"), "a  =  1\n"),
+  );
+  git(["config", "agent-hook.format-oxfmt.enabled", "true"]);
+  write("a.toml", "b  =  2\n");
+  write("new.md", "*   oxfmt\n");
+  git(["commit", "-q", "-a", "-m", "toml on"]);
+  check("with format-oxfmt on, oxfmt formats the commit", () => {
+    assert.equal(committed("a.toml"), "b = 2\n");
+    assert.equal(committed("new.md"), "- oxfmt\n");
+  });
+  git(["config", "--unset", "agent-hook.format-oxfmt.enabled"]);
+}
 
 if (spawnSync("emacs", ["--version"], { env: base }).error)
   console.log("SKIP no emacs on PATH: Org case");

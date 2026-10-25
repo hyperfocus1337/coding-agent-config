@@ -18,7 +18,7 @@ The output is a plain file, not a link, so a rule edit reaches Codex only on the
 
 ### The problem
 
-The file hooks `format-prettier`, `format-org-tables`, `format-code`, `lint-code`, and `lint-prose` must know which file changed. Claude Code tells them. Codex does not.
+The file hooks `format-prettier`, `format-oxfmt`, `format-org-tables`, `format-code`, `lint-code`, and `lint-prose` must know which file changed. Claude Code tells them. Codex does not.
 
 When Claude Code edits a file, it uses the Write or Edit tool. The hook gets the file path:
 

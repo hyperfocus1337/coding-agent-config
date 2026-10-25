@@ -27,6 +27,7 @@ node test/check.ts
 - **Agent detection:** each agent variable turns the hook on, and a commit outside an agent is not formatted.
 - **`AGENT_HOOKS_DISABLE`:** a commit is still formatted when the variable names `format-prettier`.
 - **Repository key:** a commit is not formatted when `agent-hook.format-prettier.enabled` is `false` in the repository.
+- **`format-oxfmt`:** with no key, a staged `.toml` file is committed as staged. With `agent-hook.format-oxfmt.enabled` set to `true`, oxfmt formats the `.toml` file and the Markdown file of the commit. Prettier has no TOML parser, so the `.toml` file shows that oxfmt ran. Without oxfmt on `PATH`, the check skips this case.
 - **No `node`:** a commit with no `node` on `PATH` continues, with no output.
 
 ## Requirements

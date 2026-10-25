@@ -76,12 +76,13 @@ macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/.
 
 ## Files
 
-| File                                                                | Role                                                                      |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [`core.ts`](../core.ts)                                             | Finds the files and runs Prettier. No Node imports.                       |
-| [`io.ts`](../io.ts)                                                 | The file and process functions of the core under Node                     |
-| [`command.ts`](../command.ts)                                       | The command hook for Codex and `format-staged-files`                      |
-| [`pi.ts`](../pi.ts)                                                 | The pi extension, which omp also loads                                    |
-| [`omp.ts`](../omp.ts)                                               | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see |
-| [`hooks/register.ts`](../hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                                       |
-| [`dot_claude-plugin/plugin.json`](../dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json`             |
+| File                                                                | Role                                                                                                              |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| [`core.ts`](../core.ts)                                             | The extensions and the Prettier command line. No Node imports.                                                    |
+| [`shared.ts`](../shared.ts)                                         | Finds the files, holds the switch to `format-oxfmt`, and runs the formatter. A copy of the file in `format-oxfmt` |
+| [`io.ts`](../io.ts)                                                 | The file and process functions of the core under Node                                                             |
+| [`command.ts`](../command.ts)                                       | The command hook for Codex and `format-staged-files`                                                              |
+| [`pi.ts`](../pi.ts)                                                 | The pi extension, which omp also loads                                                                            |
+| [`omp.ts`](../omp.ts)                                               | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see                                         |
+| [`hooks/register.ts`](../hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                                                                               |
+| [`dot_claude-plugin/plugin.json`](../dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json`                                                     |

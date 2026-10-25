@@ -1,9 +1,10 @@
 /**
  * Git pre-commit hook, not an agent hook: formats the staged files through
- * the command.ts of format-prettier, format-org-tables, and format-code,
- * then stages the result, so the commit holds the formatted text. A Bash
- * command that writes a file and commits it in one call gets past the
- * PostToolUse formatters, which run after the commit. ~/.config/git/config
+ * the command.ts of format-prettier, format-oxfmt, format-org-tables, and
+ * format-code, then stages the result, so the commit holds the formatted
+ * text. A Bash command that writes a file and commits it in one call gets
+ * past the PostToolUse formatters, which run after the commit. Only one of
+ * format-prettier and format-oxfmt formats a commit. ~/.config/git/config
  * sets this hook for every commit, and the gate below limits it to agent
  * sessions. Never stops a commit: always exits 0. Design notes: README.md.
  *
@@ -115,7 +116,12 @@ const payload = JSON.stringify({
   tool_input: { file_paths: files.map((rel) => `${root}/${rel}`) },
 });
 const hooks = `${homedir()}/.claude/hooks`;
-for (const formatter of ["format-prettier", "format-org-tables", "format-code"])
+for (const formatter of [
+  "format-prettier",
+  "format-oxfmt",
+  "format-org-tables",
+  "format-code",
+])
   spawnSync(process.execPath, [`${hooks}/${formatter}/command.ts`], {
     cwd: root,
     // The session toggle of /toggle-hook turns off the agent hooks only, not

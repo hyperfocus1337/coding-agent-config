@@ -28,6 +28,7 @@ The fixtures are in a temporary folder under `$HOME`, because the hook skips `/t
 - **A Write or Edit:** the hook formats `.ts`, `.mts`, and `.cts`. It does not format `.org`, `.py`, or a temp file, and a file that does not exist gives no output.
 - **`AGENT_HOOKS_DISABLE`:** a value that names the hook stops the core before its first file or process call.
 - **`agent-hook.format-prettier.enabled`:** with stub I/O, a `git config` that prints `false` stops the hook before Prettier, and a `git config` that prints nothing lets Prettier run.
+- **The switch to `format-oxfmt`:** with stub I/O, `agent-hook.format-oxfmt.enabled true` stops the hook before Prettier. When `AGENT_HOOKS_DISABLE` also names `format-oxfmt`, Prettier runs.
 - **The adapters:** `pi.ts`, `omp.ts`, and `hooks/register.ts` with stubs over the real files.
 
 ## Settings that the check changes

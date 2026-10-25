@@ -341,27 +341,42 @@ await check("AGENT_HOOKS_DISABLE that names the hook: nothing runs", async () =>
   ),
 );
 
-// --- git config agent-hook.format-prettier.enabled, with stub I/O ---
+// --- git config agent-hook.<hook>.enabled, with stub I/O ---
 
-/** I/O over one Markdown file. `git config` prints `config`. */
-const configIo = (config: string, ran: string[][]) => ({
+/** I/O over one Markdown file. `git config --get <key>` prints `config[key]`. */
+const configIo = (config: Record<string, string>, ran: string[][]) => ({
   stat: async () => ({ kind: "file" }),
   read: async () => "# a\n",
   run: async (argv: string[]) => {
     ran.push(argv);
-    return { exitCode: 0, stdout: argv[1] === "config" ? config : "" };
+    const value = argv[1] === "config" ? config[argv.at(-1)!] : undefined;
+    return { exitCode: 0, stdout: value ? `${value}\n` : "" };
   },
 });
-for (const [config, programs] of [
-  ["false\n", ["git"]],
-  ["", ["git", "prettier"]],
+const PRETTIER_KEY = "agent-hook.format-prettier.enabled";
+const OXFMT_KEY = "agent-hook.format-oxfmt.enabled";
+for (const [what, config, hooksOff, programs] of [
+  [
+    "the repository turns it off",
+    { [PRETTIER_KEY]: "false" },
+    "",
+    ["git", "git"],
+  ],
+  ["no key", {}, "", ["git", "git", "prettier"]],
+  ["format-oxfmt is on: it yields", { [OXFMT_KEY]: "true" }, "", ["git"]],
+  [
+    "format-oxfmt is on, but off for the session",
+    { [OXFMT_KEY]: "true" },
+    "format-oxfmt",
+    ["git", "prettier"],
+  ],
 ] as const)
-  await check(`git config prints ${JSON.stringify(config)}`, async () => {
+  await check(`git config: ${what}`, async () => {
     const ran: string[][] = [];
     await format(
       { filePath: "/x/a.md", cwd: "/x" },
       configIo(config, ran) as never,
-      {},
+      { hooksOff },
     );
     assert.deepEqual(
       ran.map(([program]) => program),

@@ -12,7 +12,7 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 ## No shared library between hooks
 
-**Decision:** each hook folder imports nothing outside it. There is no shared `lib/` folder. **Why:** you can deploy, load, test, or turn off one hook alone. **Cost:** some small I/O functions exist in more than one `io.ts`.
+**Decision:** each hook folder imports nothing outside it. There is no shared `lib/` folder. **Why:** you can deploy, load, test, or turn off one hook alone. **Cost:** some small I/O functions exist in more than one `io.ts`. One exception: `format-prettier` and `format-oxfmt` each hold a copy of `shared.ts` and `omp.ts`, see [format-oxfmt is a second hook](#format-oxfmt-is-a-second-hook-with-one-switch).
 
 ## Adapters read the environment, cores get values
 
@@ -97,6 +97,21 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 **Cost:** each hook starts one git process for each folder of the files it keeps, about 1 ms, and only after its cheap checks. A model can still change `.git/config` with a tool that is not Bash.
 
 **Rejected:** a session toggle that turns on a hook that the repository turns off. It would need a second variable. The command tells you to use `--repo` instead.
+
+## format-oxfmt is a second hook, with one switch
+
+**Decision:** on 2026-10-23, [`format-oxfmt`](../../dot_claude/hooks/format-oxfmt/README.md) formats the files of `format-prettier` with oxfmt, as a second hook:
+
+- It is off until `agent-hook.format-oxfmt.enabled` is `true`, in the repository or globally. Then `format-prettier` formats nothing for the same call.
+- Both hooks read the key once for each call, in the session folder.
+- `/toggle-hook --global` writes the key to `~/.gitconfig`.
+- The two hooks share the sweep, the switch, and the amend hint in `shared.ts`, as a copy in each folder. The `format-oxfmt` check fails when the copies differ.
+
+**Why:** oxfmt is faster and formats more file types, but it does not read `.prettierrc`, its Markdown formatter is new, and it releases each week. A separate hook lets you try it and switch back with one key, and `format-prettier` stays as it is until oxfmt replaces it. One key for both hooks means that two formatters never format one file. A Claude Code mod imports only files inside its own plugin, so a shared file outside the folders does not load. See [`oxfmt-and-prettier-alternatives.md`](../research/formatting/oxfmt-and-prettier-alternatives.md).
+
+**Cost:** `format-prettier` starts one more `git config` for each call. A file in a second repository follows the switch of the session folder. A file with no oxfmt config gets the bundled config, not the `.prettierrc` of its project. A fix to `shared.ts` goes in both copies.
+
+**Rejected:** oxfmt in `format-prettier`, as in the migration plan of the research: you cannot switch back with no code change. A switch for each file: both hooks would then sweep each Bash call. A choice by the presence of `.oxfmtrc.json`: you cannot try oxfmt in a repository without a new file in it.
 
 ## Behavior that the move dropped
 

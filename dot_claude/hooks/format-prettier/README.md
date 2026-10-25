@@ -13,6 +13,8 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters. An ad
 
 The git pre-commit hook [`format-staged-files`](../../../dot_config/git/hooks/format-staged-files/README.md) also runs `command.ts`, once for each commit. It names all staged files in `tool_input.file_paths`, a field that no agent payload has.
 
+[`format-oxfmt`](../format-oxfmt/README.md) can take over from this hook. When git config sets `agent-hook.format-oxfmt.enabled` to `true` in the session folder, and the session does not turn `format-oxfmt` off, this hook formats nothing and oxfmt formats the files. See [The switch](../format-oxfmt/README.md#the-switch). The two hooks share [`shared.ts`](shared.ts): the sweep, the switch, and the amend hint. A Claude Code mod imports only files inside its own plugin, so each hook folder holds a copy, and the `format-oxfmt` check fails when the copies differ.
+
 ## What it checks
 
 The hook runs after each Write, Edit, and Bash call, also after a call that failed. It tells the calls apart by the file path: a Write or an Edit names one file in `file_path`, and a Bash call names none.
@@ -190,6 +192,7 @@ When the hook works, you see only the formatted files. A missing Prettier, a par
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `AGENT_HOOKS_DISABLE`                                 | A value that names `format-prettier`, separated by spaces or commas, turns the hook off. The hook reads it on each run.                                      |
 | `git config agent-hook.format-prettier.enabled false` | Turns the hook off in one repository, across sessions, also in `format-staged-files`. Outside git, or with a value that is not a boolean, the hook stays on. |
+| `git config agent-hook.format-oxfmt.enabled true`     | Gives the files of this hook to `format-oxfmt`, in one repository or globally.                                                                               |
 | `.prettierrc`                                         | Prettier finds it in the folder tree of the file, so the style of the project overrides the defaults of Prettier.                                            |
 | `.prettierignore`                                     | Prettier skips the files that it lists.                                                                                                                      |
 | `git config hook.claude-format-staged.enabled false`  | Turns off `format-staged-files` in one repository. That hook ignores `AGENT_HOOKS_DISABLE`.                                                                  |
