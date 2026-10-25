@@ -65,11 +65,9 @@ jq '.hooks.SessionStart += [{"matcher":"startup","hooks":[{"type":"command","com
   && mv .claude/settings.json.tmp .claude/settings.json
 ```
 
-`+=` needs no guard for a missing key. In jq, `null + [x]` is `[x]`, so the one expression creates `.hooks` and `.hooks.SessionStart` when either is absent, and appends when the repository already declares other `SessionStart` hooks. Never overwrite `.claude/settings.json`.
+`+=` creates `.hooks.SessionStart` when it is absent and appends when the repository already has other `SessionStart` hooks. Never overwrite `.claude/settings.json`.
 
-The other three lines cannot go. `jq` does not create the directory, refuses a file that does not exist, and has no in-place flag.
-
-Write through the temporary file, never back into the same file. A hand-edited `settings.json` that is not valid JSON makes `jq` write nothing, and both `> settings.json` and `| sponge settings.json` then truncate the file to zero bytes and still report success. The `&&` stops before `mv`, so the original survives. On failure, delete the leftover `.claude/settings.json.tmp` and tell the user their `settings.json` is not valid JSON.
+If `jq` fails, the existing `settings.json` is not valid JSON and stays unchanged. Delete `.claude/settings.json.tmp` and tell the user to fix their `settings.json`.
 
 Show the user the resulting file.
 
