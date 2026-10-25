@@ -16,8 +16,8 @@
     "hash": "96234ef13c877c9fb2b22fd472068f7f64f23e7109547f10f24e877b56334e06"
   },
   "install-bootstrap": {
-    "version": "0.1.0",
-    "hash": "4288cf1dcaeb44daaa02af5b691988a5a9347cbe9ee37943a909128ee944e05e"
+    "version": "0.1.1",
+    "hash": "5a412598fecad8381ea90ce41a8612c1386b6d26ec7409439288e4867a02e3c7"
   },
   "install-plugins": {
     "version": "0.1.5",
