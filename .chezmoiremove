@@ -21,3 +21,4 @@
 .claude/hooks/format-prettier
 .claude/hooks/format-oxfmt/shared.ts
 .claude/hooks/format-oxfmt/config
+.claude/skills/install-bootstrap/scripts/merge-minimal.jq

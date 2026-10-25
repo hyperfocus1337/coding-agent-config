@@ -1,8 +1,8 @@
 #!/bin/bash
 #
 # Lite bootstrap for Claude Code cloud sessions (claude.ai/code web, Android, CI).
-# The SessionStart hook in this folder's settings.json fetches this file raw over
-# https and pipes it to bash, so it must be self-contained.
+# The SessionStart hook that the install-bootstrap skill merges into a repo fetches
+# this file raw over https and pipes it to bash, so it must be self-contained.
 #
 # It installs the portable config: the whole ~/.claude (skills, commands, rules,
 # hooks, CLAUDE.md) plus the cloud APM manifest in this folder (MCP servers

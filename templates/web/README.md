@@ -14,9 +14,11 @@ Do not move or rename `bootstrap.sh`. Its path is part of the hook URL in every 
 
 ## Install into a fresh repo
 
-Ask Claude to "bootstrap this repo for the web", or invoke the `install-agent-resources` skill. That routes to the `install-bootstrap` skill, which is also invocable by exact name. It writes the `SessionStart` hook into the target repo's `.claude/settings.json`, merging into any existing config rather than overwriting it, and stops if the hook is already there. The skill holds the hook block, so this folder ships no copyable settings file.
+Ask Claude to "bootstrap this repo for the web", or invoke the `install-agent-resources` skill. That routes to the `install-bootstrap` skill, which is also invocable by exact name.
 
-The skill asks for a settings profile. `minimal`, the default, also merges the deny list and the `disable*` keys of [`settings-minimal.json`](../../dot_claude/settings-minimal.json) into the same file, which locally the `claude` shell function adds with `--settings`. A cloud session has no such function, and the bootstrap hook cannot add the keys itself: Claude Code builds the permission rules before `SessionStart` runs. The keys apply to everyone who opens the repo with Claude Code. `full` writes the hook only.
+The skill merges its [`assets/settings.json`](../../dot_claude/skills/install-bootstrap/assets/settings.json) into the target repo's `.claude/settings.json` and keeps every existing key. The file holds the `SessionStart` hook and the `attribution` settings, which hide the Claude Code attribution in commits and pull requests. A re-run does not add a second hook. Do not change the hook object: the merge matches it by value.
+
+The skill asks for a settings profile. `minimal`, the default, also merges the deny list and the `disable*` keys of [`settings-minimal.json`](../../dot_claude/settings-minimal.json) into the same file, which locally the `claude` shell function adds with `--settings`. A cloud session has no such function, and the bootstrap hook cannot add the keys itself: Claude Code builds the permission rules before `SessionStart` runs. The keys apply to everyone who opens the repo with Claude Code. `full` merges `assets/settings.json` only.
 
 Commit the change. The next cloud session that opens the repo runs the hook automatically.
 
@@ -24,7 +26,7 @@ That is all the target repo needs. The global hooks, plugins, and agent instruct
 
 ## How it works
 
-The hook command is:
+The hook in [`assets/settings.json`](../../dot_claude/skills/install-bootstrap/assets/settings.json) is:
 
 ```json
 {
