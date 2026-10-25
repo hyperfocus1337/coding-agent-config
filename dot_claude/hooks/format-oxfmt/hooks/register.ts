@@ -1,9 +1,9 @@
 /**
  * Claude Code mod: after a Write, Edit, or Bash call, formats the files it
- * changed with oxfmt, where git config turns the hook on. A failed Bash call
- * is formatted too: it may still have written files. Adds the amend hint as
- * context when the call committed a file that oxfmt then changed. Fails
- * open: a hook that throws is skipped and the result stands.
+ * changed with oxfmt. A failed Bash call is formatted too: it may still have
+ * written files. Adds the amend hint as context when the call committed a
+ * file that oxfmt then changed. Fails open: a hook that throws is skipped and
+ * the result stands.
  */
 
 import type { Register } from "claude-code";

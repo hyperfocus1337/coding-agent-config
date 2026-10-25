@@ -22,8 +22,6 @@ extensions:
   - ~/.claude/hooks/lint-code/omp.ts
   - ~/.claude/hooks/block-commit-attribution/pi.ts
   - ~/.claude/hooks/block-secret-commits/pi.ts
-  - ~/.claude/hooks/format-prettier/pi.ts
-  - ~/.claude/hooks/format-prettier/omp.ts
   - ~/.claude/hooks/format-oxfmt/pi.ts
   - ~/.claude/hooks/format-oxfmt/omp.ts
   - ~/.claude/hooks/format-org-tables/pi.ts

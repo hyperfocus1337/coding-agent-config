@@ -1,5 +1,5 @@
 {
   "name": "format-oxfmt",
   "version": "0.1.0",
-  "description": "Formats the files a Write, Edit, or Bash call changed with oxfmt, where git config turns it on in place of format-prettier."
+  "description": "Formats the files a Write, Edit, or Bash call changed with oxfmt."
 }

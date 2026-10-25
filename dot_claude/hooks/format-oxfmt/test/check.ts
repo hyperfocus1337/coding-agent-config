@@ -1,9 +1,7 @@
 /**
- * Self-check for ../core.ts and its adapters: the switch and the config
- * lookup through command.ts with the real git and oxfmt, then the pi and mod
- * adapters with stubs over the real files. The sweep and the amend hint are
- * in ./shared.ts, which format-prettier/test/check.ts covers in full, so this
- * check also keeps the two copies of the shared files the same.
+ * Self-check for ../core.ts and its adapters: the sweep, the amend hint, and
+ * the config lookup through command.ts with the real git and oxfmt, then the
+ * pi, omp, and mod adapters with stubs over the real files.
  *
  * Run: node test/check.ts, from the hook directory. Fixtures live under $HOME,
  * because the hook skips /tmp and $TMPDIR. Without git or oxfmt the hook
@@ -15,10 +13,13 @@ import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { format } from "../core.ts";
 import { register } from "../hooks/register.ts";
+import ompExtension from "../omp.ts";
 import extension from "../pi.ts";
 
 const hook = path.dirname(import.meta.dirname);
+const configDir = `${hook}/config`;
 // A hook that /toggle-hook turned off in the agent that runs this check
 // still runs here.
 delete process.env.AGENT_HOOKS_DISABLE;
@@ -33,21 +34,10 @@ async function check(what: string, run: () => void | Promise<void>) {
   }
 }
 
-// A Claude Code mod imports only files inside its own plugin, so each hook
-// folder holds a copy. This check runs in the source tree only.
-for (const file of ["shared.ts", "omp.ts"])
-  await check(`${file} is the same in format-prettier`, () =>
-    assert.equal(
-      fs.readFileSync(path.join(hook, file), "utf8"),
-      fs.readFileSync(path.join(hook, "../format-prettier", file), "utf8"),
-      `copy format-oxfmt/${file} and format-prettier/${file} into each other`,
-    ),
-  );
-
 for (const program of ["git", "oxfmt"])
   if (spawnSync(program, ["--version"]).error) {
     console.log(`SKIP no ${program} on PATH`);
-    process.exit(failures ? 1 : 0);
+    process.exit(0);
   }
 
 const tmp = fs.mkdtempSync(path.join(os.homedir(), ".format-oxfmt-test."));
@@ -78,118 +68,420 @@ const hookRun = (payload: object) =>
     encoding: "utf8",
     timeout: 30_000,
   });
-const bash = (cwd: string, command: string) =>
-  hookRun({ cwd, tool_input: { command } });
-const edit = (cwd: string, file: string) =>
-  hookRun({ cwd, tool_input: { file_path: file } });
+const bash = (cwd: string, command: string, extra: object = {}) =>
+  hookRun({ cwd, tool_input: { command }, ...extra });
+const edit = (file: string) =>
+  hookRun({ cwd: path.dirname(file), tool_input: { file_path: file } });
 
 /** A table oxfmt realigns: cells of unequal width, no padding yet. */
 const RAW = "| a | bbbbbbbbbbbb |\n| --- | --- |\n| ccccccccccccccc | d |\n";
 /** 93 characters: longer than 80, the width of the bundled config. */
 const LONG =
   "const x = { alpha: 1, beta: 2, gamma: 3, delta: 4, epsilon: 5, zeta: 6, eta: 7, theta: 8 };\n";
+const unaligned = (file: string) => fs.writeFileSync(file, RAW);
 const read = (file: string) => fs.readFileSync(file, "utf8");
 const aligned = (file: string) => assert.match(read(file), /^\| a {2}/);
+const wrapped = (file: string) => assert.match(read(file), /^ {2}alpha: 1,$/m);
+const formatted = (what: string, file: string) =>
+  check(`format ${what}`, () => aligned(file));
 const unchanged = (what: string, file: string, text: string) =>
-  check(what, () => assert.equal(read(file), text));
+  check(`skip ${what}`, () => assert.equal(read(file), text));
 const quiet = (what: string, ran: ReturnType<typeof hookRun>) =>
   check(what, () => {
     assert.equal(ran.status, 0, ran.stderr);
     assert.equal(ran.stdout + ran.stderr, "");
   });
+const hint = (
+  ran: ReturnType<typeof hookRun>,
+): { hookEventName: string; additionalContext: string } | undefined =>
+  ran.stdout ? JSON.parse(ran.stdout).hookSpecificOutput : undefined;
 
-const repo = `${tmp}/repo`;
-fs.mkdirSync(`${repo}/own`, { recursive: true });
-git(repo, "init", "-q");
-git(repo, "commit", "-q", "--allow-empty", "-m", "seed");
+// --- The Bash sweep ---
 
-// --- Off by default ---
+// Fixture: outer repo, a plain subdir, an embedded repo, an embedded repo
+// inside that one, a worktree, and a submodule made dirty by an extra row.
+const sub = `${tmp}/sub`;
+fs.mkdirSync(sub);
+git(sub, "init", "-q");
+unaligned(`${sub}/SUB.md`);
+git(sub, "add", "-A");
+git(sub, "commit", "-qm", "seed");
 
-fs.writeFileSync(`${repo}/off.md`, RAW);
-await quiet("no key: prints nothing", edit(repo, `${repo}/off.md`));
-await unchanged("no key: the hook is off", `${repo}/off.md`, RAW);
-
-// --- On through git config ---
-
-git(repo, "config", "agent-hook.format-oxfmt.enabled", "true");
-fs.writeFileSync(`${repo}/on.md`, RAW);
-await quiet("on: an edit prints nothing", edit(repo, `${repo}/on.md`));
-await check("on: formats an edited Markdown file", () =>
-  aligned(`${repo}/on.md`),
+const outer = `${tmp}/outer`;
+fs.mkdirSync(`${outer}/plain`, { recursive: true });
+fs.mkdirSync(`${outer}/nested/deeper`, { recursive: true });
+git(outer, "init", "-q");
+git(outer, "commit", "-q", "--allow-empty", "-m", "seed");
+git(
+  outer,
+  "-c",
+  "protocol.file.allow=always",
+  "submodule",
+  "add",
+  "-q",
+  sub,
+  "submod",
+);
+git(outer, "commit", "-qm", "submod");
+git(`${outer}/nested`, "init", "-q");
+git(`${outer}/nested/deeper`, "init", "-q");
+git(outer, "worktree", "add", "-q", `${outer}/.worktrees/feat`, "-b", "feat");
+for (const file of [
+  "OUTER.md",
+  "plain/P.md",
+  "nested/NESTED.md",
+  "nested/deeper/DEEP.md",
+  ".worktrees/feat/WT.md",
+])
+  unaligned(`${outer}/${file}`);
+fs.writeFileSync(`${outer}/submod/SUB.md`, `${RAW}| e | f |\n`);
+// Non-Markdown the sweep must leave alone, ignored Markdown it must not see,
+// and a symlink back to a root, which the queue must not follow forever.
+fs.writeFileSync(`${outer}/code.ts`, "const a  =  1\n");
+fs.writeFileSync(`${outer}/data.json`, '{"a":1,   "b":2}\n');
+fs.mkdirSync(`${outer}/vendor`);
+fs.writeFileSync(`${outer}/.gitignore`, "vendor/\n");
+unaligned(`${outer}/vendor/V.md`);
+fs.symlinkSync(".", `${outer}/self`);
+// A table whose padded width passes 80 columns, and one sentence per line:
+// under proseWrap never, the sentences join.
+fs.writeFileSync(
+  `${outer}/WIDE.md`,
+  "| first-column-heading-here | second-column-heading-x | third-column-heading-yz |\n| --- | --- | --- |\n| first-column-cell-value | second-column-cell-value | third-column-cell-value |\n\nThe first sentence stays on its own line.\nThe second sentence also stays on its own line.\n",
 );
 
-fs.writeFileSync(`${repo}/wide.ts`, LONG);
-edit(repo, `${repo}/wide.ts`);
-await check("config: a file with no oxfmt config gets width 80", () =>
-  assert.match(read(`${repo}/wide.ts`), /^ {2}alpha: 1,$/m),
-);
-fs.writeFileSync(`${repo}/own/.oxfmtrc.json`, '{ "printWidth": 120 }\n');
-fs.writeFileSync(`${repo}/own/wide.ts`, LONG);
-edit(repo, `${repo}/own/wide.ts`);
+// The command names no path, so only the queue finds the roots.
+await quiet("sweep: ends with a symlink back to a root", bash(outer, "echo x"));
+await formatted("root", `${outer}/OUTER.md`);
+await formatted("plain subdir", `${outer}/plain/P.md`);
+await formatted("embedded repo", `${outer}/nested/NESTED.md`);
+await formatted("embedded repo at depth 2", `${outer}/nested/deeper/DEEP.md`);
+await formatted("dirty submodule", `${outer}/submod/SUB.md`);
+await formatted("worktree in the repo", `${outer}/.worktrees/feat/WT.md`);
+await unchanged("sweep leaves .ts", `${outer}/code.ts`, "const a  =  1\n");
 await unchanged(
-  "config: the nearest oxfmt config wins",
-  `${repo}/own/wide.ts`,
-  LONG,
+  "sweep leaves .json",
+  `${outer}/data.json`,
+  '{"a":1,   "b":2}\n',
+);
+await unchanged("ignored Markdown", `${outer}/vendor/V.md`, RAW);
+await check("prose wrap: a wide table stays padded", () =>
+  assert.match(read(`${outer}/WIDE.md`), /^\| -{8}/m),
+);
+await check("prose wrap: sentence lines are kept", () =>
+  assert.match(
+    read(`${outer}/WIDE.md`),
+    /^The second sentence also stays on its own line\.$/m,
+  ),
 );
 
+// A repo with no commits has no HEAD, so `git diff HEAD` fails. Untracked
+// Markdown must still be swept, with no git error on the output.
+const fresh = `${tmp}/fresh`;
+fs.mkdirSync(fresh);
+git(fresh, "init", "-q");
+unaligned(`${fresh}/NEW.md`);
+await quiet("no-HEAD repo: prints nothing", bash(fresh, "echo x"));
+await formatted("repo with no HEAD", `${fresh}/NEW.md`);
+
+// A cwd outside any repo exits clean, and a file the command names still
+// formats.
+fs.mkdirSync(`${tmp}/norepo`);
+unaligned(`${tmp}/norepo/N.md`);
+await quiet("non-repo cwd", bash(`${tmp}/norepo`, "cat > N.md <<EOF\nx\nEOF"));
+await formatted("named file outside any repo", `${tmp}/norepo/N.md`);
+
+// A Markdown file in a second repo, reached only by an absolute path.
+const other = `${tmp}/other`;
+fs.mkdirSync(other);
+git(other, "init", "-q");
+git(other, "commit", "-q", "--allow-empty", "-m", "seed");
+unaligned(`${other}/OTHER.md`);
+await quiet(
+  "cross-repo sweep",
+  bash(outer, `cat > ${other}/OTHER.md <<EOF\nx\nEOF`),
+);
+await formatted("cross-repo absolute path", `${other}/OTHER.md`);
+
+// Only an absolute path is a root: the end of a relative path is not.
+await check("sweep: no git start for a relative path", async () => {
+  const dirs: string[] = [];
+  await format(
+    { command: "cat docs/a.md /abs/b.md > out/c.md", cwd: "/repo" },
+    {
+      stat: async (path) => (path === "/repo" ? { kind: "dir" } : undefined),
+      read: async () => undefined,
+      run: async (argv, { cwd }) => {
+        if (argv[1] === "rev-parse") dirs.push(cwd);
+        return { exitCode: 1, stdout: "" };
+      },
+    },
+    { configDir },
+  );
+  assert.deepEqual(dirs, ["/repo", "/abs"]);
+});
+
+// A named file is formatted even when git cannot see it: a file written and
+// ignored in the same call is already ignored when the hook runs.
+unaligned(`${outer}/vendor/NAMED.md`);
+bash(outer, "cat > vendor/NAMED.md <<EOF\nx\nEOF");
+await formatted(
+  "ignored file named in the command",
+  `${outer}/vendor/NAMED.md`,
+);
+
+// .prettierignore still wins: that one is a formatting decision.
+fs.writeFileSync(`${outer}/.prettierignore`, "PIGNORED.md\n");
+unaligned(`${outer}/PIGNORED.md`);
+bash(outer, "cat > PIGNORED.md <<EOF\nx\nEOF");
+await unchanged("file in .prettierignore", `${outer}/PIGNORED.md`, RAW);
+
+unaligned(`${outer}/vendor/REL.md`);
+bash(outer, "sed -i s/a/b/ vendor/REL.md");
+await formatted("relative path named in the command", `${outer}/vendor/REL.md`);
+
+await quiet("a named path that does not exist", bash(outer, "rm gone.md"));
+
+// Write and commit in one call leaves a clean tree. With `git commit` in the
+// command, the sweep also covers the last commit and gives the amend hint.
+const committed = `${tmp}/committed`;
+fs.mkdirSync(committed);
+git(committed, "init", "-q");
+git(committed, "commit", "-q", "--allow-empty", "-m", "seed");
+unaligned(`${committed}/C.md`);
+git(committed, "add", "-A");
+git(committed, "commit", "-qm", "docs");
+let ran = bash(committed, "git add -A && git commit -m docs && git push");
+await formatted("file committed in the same command", `${committed}/C.md`);
+await check("hint: amend hint after a commit sweep", () => {
+  assert.match(hint(ran)?.additionalContext ?? "", /^oxfmt reformatted/);
+  assert.match(hint(ran)?.additionalContext ?? "", /amend/);
+  assert.match(hint(ran)?.additionalContext ?? "", /C\.md/);
+});
+
+// `git -C <dir> commit` also commits, so the sweep covers the last commit.
+unaligned(`${committed}/G.md`);
+git(committed, "add", "-A");
+git(committed, "commit", "-qm", "dash-c");
+ran = bash(committed, `git -C ${committed} commit -m dash-c`);
+await check("hint: also after git -C <dir> commit", () =>
+  assert.match(hint(ran)?.additionalContext ?? "", /G\.md/),
+);
+
+// The failure event: the hint names the event that fired.
+unaligned(`${committed}/F.md`);
+git(committed, "add", "-A");
+git(committed, "commit", "-qm", "more");
+ran = bash(committed, "git add -A && git commit -m more && just fmt-check", {
+  hook_event_name: "PostToolUseFailure",
+  error: "exit 1",
+});
+await formatted(
+  "file committed by a command that then failed",
+  `${committed}/F.md`,
+);
+await check("hint: names the event that fired", () =>
+  assert.equal(hint(ran)?.hookEventName, "PostToolUseFailure"),
+);
+
+unaligned(`${committed}/D.md`);
+await quiet("hint: none without a commit", bash(committed, "echo x"));
+
+// An uncommitted file the sweep formats is not named: an amend would not fix it.
+git(committed, "commit", "-q", "--allow-empty", "-m", "other");
+unaligned(`${committed}/E.md`);
+ran = bash(committed, "git commit -m other");
+await formatted("uncommitted file in a commit sweep", `${committed}/E.md`);
+await quiet("hint: none for a file the commit does not hold", ran);
+
+// A commit whose Markdown oxfmt leaves as it is needs no amend.
+git(committed, "add", "-A");
+git(committed, "commit", "-qm", "formatted");
+await quiet(
+  "hint: none when oxfmt changed nothing",
+  bash(committed, "git commit -m formatted"),
+);
+
+// A repo with one commit has no HEAD~1, and the hint still comes.
+const first = `${tmp}/first`;
+fs.mkdirSync(first);
+git(first, "init", "-q");
+unaligned(`${first}/R.md`);
+git(first, "add", "-A");
+git(first, "commit", "-qm", "root");
+ran = bash(first, "git add -A && git commit -m root");
+await check("hint: also for the first commit of a repo", () =>
+  assert.match(hint(ran)?.additionalContext ?? "", /R\.md/),
+);
+
+// --- A Write or Edit: one named file, by extension ---
+
+for (const name of ["edited.ts", "edited.mts", "edited.cts"]) {
+  fs.writeFileSync(`${outer}/${name}`, "const a  =  1\n");
+  await quiet(`edit ${name}: prints nothing`, edit(`${outer}/${name}`));
+  await unchanged(`edit formats ${name}`, `${outer}/${name}`, "const a = 1;\n");
+}
+// oxfmt formats these, Prettier did not.
 for (const [name, raw, done] of [
   ["a.toml", "a  =  1\n", "a = 1\n"],
   ["a.jsonc", '{"a":1,   "b":2}\n', '{ "a": 1, "b": 2 }\n'],
 ] as const) {
-  fs.writeFileSync(`${repo}/${name}`, raw);
-  edit(repo, `${repo}/${name}`);
-  await unchanged(`on: formats ${name}`, `${repo}/${name}`, done);
+  fs.writeFileSync(`${outer}/${name}`, raw);
+  edit(`${outer}/${name}`);
+  await unchanged(`edit formats ${name}`, `${outer}/${name}`, done);
 }
-fs.writeFileSync(`${repo}/script.py`, "x  =  1\n");
-edit(repo, `${repo}/script.py`);
-await unchanged("on: leaves .py", `${repo}/script.py`, "x  =  1\n");
+for (const [name, text] of [
+  ["notes.org", "| a | bbbb |\n"],
+  ["script.py", "x  =  1\n"],
+] as const) {
+  fs.writeFileSync(`${outer}/${name}`, text);
+  edit(`${outer}/${name}`);
+  await unchanged(`edit leaves ${name}`, `${outer}/${name}`, text);
+}
+// A file in a temp folder is a scratch file, not project code.
+const scratch = `${process.env.TMPDIR || "/tmp"}/format-hook-scratch.md`;
+unaligned(scratch);
+edit(scratch);
+await unchanged("edit leaves a temp file", scratch, RAW);
+fs.rmSync(scratch);
+await quiet("edit: a file that does not exist", edit(`${outer}/gone.md`));
 
-fs.writeFileSync(`${repo}/SWEPT.md`, RAW);
-await quiet("on: the Bash sweep prints nothing", bash(repo, "echo x"));
-await check("on: the Bash sweep formats Markdown", () =>
-  aligned(`${repo}/SWEPT.md`),
+// --- Config ---
+
+fs.mkdirSync(`${outer}/own`);
+fs.writeFileSync(`${outer}/wide.ts`, LONG);
+edit(`${outer}/wide.ts`);
+await check("config: a file with no oxfmt config gets width 80", () =>
+  wrapped(`${outer}/wide.ts`),
+);
+fs.writeFileSync(`${outer}/own/.oxfmtrc.json`, '{ "printWidth": 120 }\n');
+fs.writeFileSync(`${outer}/own/wide.ts`, LONG);
+edit(`${outer}/own/wide.ts`);
+await unchanged(
+  "config: the nearest oxfmt config wins",
+  `${outer}/own/wide.ts`,
+  LONG,
 );
 
-fs.writeFileSync(`${repo}/C.md`, RAW);
-git(repo, "add", "-A");
-git(repo, "commit", "-qm", "docs");
-const ran = bash(repo, "git add -A && git commit -m docs");
-await check("on: the amend hint names oxfmt and the file", () =>
-  assert.match(
-    JSON.parse(ran.stdout).hookSpecificOutput.additionalContext,
-    /^oxfmt reformatted markdown[\s\S]*C\.md/,
+// --- AGENT_HOOKS_DISABLE ---
+
+await check("AGENT_HOOKS_DISABLE that names the hook: nothing runs", async () =>
+  assert.equal(
+    await format(
+      { filePath: "/x/a.md", cwd: "/x" },
+      new Proxy({}, { get: () => () => assert.fail("the hook ran") }) as never,
+      { configDir, hooksOff: "lint-code format-oxfmt" },
+    ),
+    undefined,
   ),
 );
 
-// --- Off again ---
+// --- git config agent-hook.format-oxfmt.enabled, with stub I/O ---
 
-fs.writeFileSync(`${repo}/session.md`, RAW);
-const off = spawnSync(process.execPath, [path.join(hook, "command.ts")], {
-  input: JSON.stringify({
-    cwd: repo,
-    tool_input: { file_path: `${repo}/session.md` },
-  }),
-  env: { ...process.env, AGENT_HOOKS_DISABLE: "lint-code,format-oxfmt" },
+/** I/O over one Markdown file. `git config --get <key>` prints `config[key]`. */
+const configIo = (config: Record<string, string>, ran: string[][]) => ({
+  stat: async () => ({ kind: "file" }),
+  read: async () => "# a\n",
+  run: async (argv: string[]) => {
+    ran.push(argv);
+    const value = argv[1] === "config" ? config[argv.at(-1)!] : undefined;
+    return { exitCode: 0, stdout: value ? `${value}\n` : "" };
+  },
 });
-await check("AGENT_HOOKS_DISABLE that names the hook: nothing runs", () => {
-  assert.equal(off.status, 0);
-  assert.equal(read(`${repo}/session.md`), RAW);
-});
+const KEY = "agent-hook.format-oxfmt.enabled";
+for (const [what, config, programs] of [
+  ["the repository turns it off", { [KEY]: "false" }, ["git"]],
+  ["no key", {}, ["git", "oxfmt"]],
+  ["a value that is not false", { [KEY]: "true" }, ["git", "oxfmt"]],
+] as const)
+  await check(`git config: ${what}`, async () => {
+    const ran: string[][] = [];
+    await format(
+      { filePath: "/x/a.md", cwd: "/x" },
+      configIo(config, ran) as never,
+      { configDir },
+    );
+    assert.deepEqual(
+      ran.map(([program]) => program),
+      programs,
+    );
+  });
 
-// --- pi.ts and hooks/register.ts, with stubs over the real files ---
+// --- pi.ts, omp.ts, and hooks/register.ts, with stubs over the real files ---
 
 type Handler = (event: unknown, ctx: unknown) => Promise<unknown>;
 let piHandler: Handler | undefined;
 extension({
   on: (_name: string, handler: Handler) => (piHandler = handler),
 } as never);
-fs.writeFileSync(`${repo}/pi.md`, RAW);
+unaligned(`${outer}/pi.md`);
 await check("pi.ts: formats the file of an edit", async () => {
-  await piHandler?.(
+  const result = await piHandler?.(
     { toolName: "edit", input: { path: "pi.md" }, content: [] },
-    { cwd: repo },
+    { cwd: outer },
   );
-  aligned(`${repo}/pi.md`);
+  assert.equal(result, undefined);
+  aligned(`${outer}/pi.md`);
+});
+unaligned(`${committed}/PI.md`);
+git(committed, "add", "-A");
+git(committed, "commit", "-qm", "pi");
+await check("pi.ts: appends the amend hint to the result", async () => {
+  const content = [{ type: "text", text: "committed" }];
+  const result = (await piHandler?.(
+    { toolName: "bash", input: { command: "git commit -am pi" }, content },
+    { cwd: committed },
+  )) as { content: { text: string }[] };
+  assert.equal(result.content[0]?.text, "committed");
+  assert.match(
+    result.content[1]?.text ?? "",
+    /amend[\s\S]*PI\.md|PI\.md[\s\S]*amend/,
+  );
+});
+await check("pi.ts: leaves other tools alone", async () => {
+  unaligned(`${outer}/read.md`);
+  await piHandler?.(
+    { toolName: "read", input: { path: "read.md" }, content: [] },
+    { cwd: outer },
+  );
+  assert.equal(read(`${outer}/read.md`), RAW);
+});
+
+let ompHandler: Handler | undefined;
+ompExtension({
+  on: (_name: string, handler: Handler) => (ompHandler = handler),
+} as never);
+const omp = (toolName: string, input: object, details?: object) =>
+  ompHandler?.({ toolName, input, details, content: [] }, { cwd: outer });
+await check("omp.ts: formats each file of a multi-file edit", async () => {
+  unaligned(`${outer}/omp-a.md`);
+  unaligned(`${outer}/omp-b.md`);
+  await omp("edit", { paths: ["omp-a.md", "omp-b.md"] });
+  aligned(`${outer}/omp-a.md`);
+  aligned(`${outer}/omp-b.md`);
+});
+await check("omp.ts: formats the files of an applied ast_edit", async () => {
+  unaligned(`${outer}/omp-ast.md`);
+  await omp(
+    "write",
+    { path: "xd://resolve" },
+    {
+      xdev: {
+        tool: "resolve",
+        inner: {
+          action: "apply",
+          sourceToolName: "ast_edit",
+          sourceResultDetails: { applied: true, files: ["omp-ast.md"] },
+        },
+      },
+    },
+  );
+  aligned(`${outer}/omp-ast.md`);
+});
+await check("omp.ts: leaves the calls of pi.ts alone", async () => {
+  unaligned(`${outer}/omp-pi.md`);
+  await omp("write", { path: "omp-pi.md" });
+  assert.equal(read(`${outer}/omp-pi.md`), RAW);
 });
 
 type Hook = (...args: unknown[]) => Promise<unknown>;
@@ -199,9 +491,9 @@ register(
     (modHook = hook)) as never,
   {} as never,
 );
-const stub$ = {
+const stub$ = (cwd: string) => ({
   plugin: { root: hook },
-  session: { cwd: async () => repo },
+  session: { cwd: async () => cwd },
   env: { get: async () => undefined },
   fs: {
     stat: async (file: string) => {
@@ -222,19 +514,42 @@ const stub$ = {
       return { exitCode: done.status ?? 1, stdout: done.stdout };
     },
   },
-};
-fs.writeFileSync(`${repo}/mod.ts`, LONG);
+});
+const result = { result: "ok", text: "written" };
+fs.writeFileSync(`${outer}/mod.ts`, LONG);
 await check("register.ts: formats with the bundled config", async () => {
-  const result = { result: "ok", text: "written" };
   assert.equal(
     await modHook?.(
-      stub$,
-      { tool: "Write", file_path: `${repo}/mod.ts` },
+      stub$(outer),
+      { tool: "Write", file_path: `${outer}/mod.ts` },
       async () => result,
     ),
     result,
   );
-  assert.match(read(`${repo}/mod.ts`), /^ {2}alpha: 1,$/m);
+  wrapped(`${outer}/mod.ts`);
+});
+unaligned(`${committed}/MOD.md`);
+git(committed, "add", "-A");
+git(committed, "commit", "-qm", "mod");
+await check("register.ts: adds the amend hint as context", async () => {
+  const done = (await modHook?.(
+    stub$(committed),
+    { tool: "Bash", command: "git commit -am mod" },
+    async () => result,
+  )) as { text: string; context: string[] };
+  assert.equal(done.text, "written");
+  assert.match(done.context[0] ?? "", /MOD\.md/);
+});
+await check("register.ts: passes a deny through", async () => {
+  const denied = { deny: "no" };
+  assert.equal(
+    await modHook?.(
+      stub$(outer),
+      { tool: "Bash", command: "x" },
+      async () => denied,
+    ),
+    denied,
+  );
 });
 
 fs.rmSync(tmp, { recursive: true, force: true });

@@ -4,7 +4,7 @@
  * HOME is a temporary folder that links to the hook folders of this repo, so
  * the check runs this source and not the deployed copy.
  *
- * Run: node test/check.ts, from the hook folder. Needs git and Prettier; the
+ * Run: node test/check.ts, from the hook folder. Needs git and oxfmt; the
  * Org case also needs Emacs, and the Terraform case terraform. Each skips
  * alone without its program.
  */
@@ -28,18 +28,11 @@ function check(what: string, run: () => void) {
   }
 }
 
-for (const program of ["git", "prettier"])
-  if (spawnSync(program, ["--version"]).error) {
-    console.log(`SKIP no ${program} on PATH`);
-    process.exit(0);
-  }
-
 // The fixture lives under $HOME, because the formatters skip /tmp and $TMPDIR.
 const tmp = fs.mkdtempSync(path.join(os.homedir(), ".format-staged-test."));
 const home = `${tmp}/home`;
 for (const [link, target] of [
   [".config/git/hooks/format-staged-files", here],
-  [".claude/hooks/format-prettier", `${repo}/dot_claude/hooks/format-prettier`],
   [".claude/hooks/format-oxfmt", `${repo}/dot_claude/hooks/format-oxfmt`],
   [
     ".claude/hooks/format-org-tables",
@@ -100,6 +93,12 @@ base.PATH = base
   .PATH!.split(":")
   .filter((dir) => !dir.endsWith("/mise/shims"))
   .join(":");
+for (const program of ["git", "oxfmt"])
+  if (spawnSync(program, ["--version"], { env: base }).error) {
+    console.log(`SKIP no ${program} on PATH outside the mise shims`);
+    fs.rmSync(tmp, { recursive: true, force: true });
+    process.exit(0);
+  }
 const work = `${tmp}/work`;
 fs.mkdirSync(work);
 const git = (
@@ -122,7 +121,7 @@ const write = (file: string, text: string) =>
 git(["init", "-q"]);
 git(["commit", "-q", "--allow-empty", "-m", "init"]);
 
-// Prettier rewrites a `*` bullet to `-`.
+// oxfmt rewrites a `*` bullet to `-`.
 write("new.md", "*   one\n");
 git(["add", "new.md"]);
 let ran = git(["commit", "-q", "-m", "new"]);
@@ -189,20 +188,20 @@ fs.rmSync(`${work}/c.md`);
 write("new.md", "*   toggled\n");
 git(["commit", "-q", "-a", "-m", "toggled"], {
   CLAUDECODE: "1",
-  AGENT_HOOKS_DISABLE: "format-prettier",
+  AGENT_HOOKS_DISABLE: "format-oxfmt",
 });
 check("AGENT_HOOKS_DISABLE does not turn off the commit-time format", () =>
   assert.equal(committed("new.md"), "- toggled\n"),
 );
 
 // /toggle-hook --repo turns off the commit-time format too.
-git(["config", "agent-hook.format-prettier.enabled", "false"]);
+git(["config", "agent-hook.format-oxfmt.enabled", "false"]);
 write("new.md", "*   repo off\n");
 git(["commit", "-q", "-a", "-m", "repo off"], { CLAUDECODE: "1" });
-check("agent-hook.format-prettier.enabled false keeps the file as staged", () =>
+check("agent-hook.format-oxfmt.enabled false keeps the file as staged", () =>
   assert.equal(committed("new.md"), "*   repo off\n"),
 );
-git(["config", "--unset", "agent-hook.format-prettier.enabled"]);
+git(["config", "--unset", "agent-hook.format-oxfmt.enabled"]);
 
 // A file with unstaged changes stays as staged, and the unstaged part stays out.
 write("new.md", "*   three\n");
@@ -220,27 +219,13 @@ check("the unstaged change stays in the tree", () =>
 );
 git(["checkout", "-q", "--", "new.md"]);
 
-// format-oxfmt formats in place of format-prettier when git config turns it
-// on. Prettier has no TOML parser, so a formatted .toml shows that oxfmt ran.
-if (spawnSync("oxfmt", ["--version"], { env: base }).error)
-  console.log("SKIP no oxfmt on PATH: format-oxfmt case");
-else {
-  write("a.toml", "a  =  1\n");
-  git(["add", "a.toml"]);
-  git(["commit", "-q", "-m", "toml off"]);
-  check("with format-oxfmt off, a .toml file is committed as staged", () =>
-    assert.equal(committed("a.toml"), "a  =  1\n"),
-  );
-  git(["config", "agent-hook.format-oxfmt.enabled", "true"]);
-  write("a.toml", "b  =  2\n");
-  write("new.md", "*   oxfmt\n");
-  git(["commit", "-q", "-a", "-m", "toml on"]);
-  check("with format-oxfmt on, oxfmt formats the commit", () => {
-    assert.equal(committed("a.toml"), "b = 2\n");
-    assert.equal(committed("new.md"), "- oxfmt\n");
-  });
-  git(["config", "--unset", "agent-hook.format-oxfmt.enabled"]);
-}
+// oxfmt formats more types than the Markdown of the cases above.
+write("a.toml", "a  =  1\n");
+git(["add", "a.toml"]);
+git(["commit", "-q", "-m", "toml"]);
+check("a .toml file is committed formatted", () =>
+  assert.equal(committed("a.toml"), "a = 1\n"),
+);
 
 if (spawnSync("emacs", ["--version"], { env: base }).error)
   console.log("SKIP no emacs on PATH: Org case");

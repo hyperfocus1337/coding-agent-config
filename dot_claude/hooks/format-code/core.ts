@@ -1,8 +1,8 @@
 /**
  * The format-code logic: finds the files a tool call changed and formats
  * each one with the formatter for its extension, from FORMATTERS: terraform
- * fmt, shfmt, and ruff format. Prettier has no parser for these languages, so
- * format-prettier skips them. Never blocks: a missing formatter or a file
+ * fmt, shfmt, and ruff format. oxfmt has no parser for these languages, so
+ * format-oxfmt skips them. Never blocks: a missing formatter or a file
  * that does not parse stays as it is. The adapters pass in the file and
  * process functions, because a mod reaches them only through `$`.
  *

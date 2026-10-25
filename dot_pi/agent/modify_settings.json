@@ -35,7 +35,6 @@ ours=$(
     "~/.claude/hooks/lint-code/pi.ts",
     "~/.claude/hooks/block-commit-attribution/pi.ts",
     "~/.claude/hooks/block-secret-commits/pi.ts",
-    "~/.claude/hooks/format-prettier/pi.ts",
     "~/.claude/hooks/format-oxfmt/pi.ts",
     "~/.claude/hooks/format-org-tables/pi.ts",
     "~/.claude/hooks/format-code/pi.ts",

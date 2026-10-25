@@ -525,7 +525,7 @@ interface Trace {
 }
 
 /** The programs that write the files they name. ruff only as `ruff format`. */
-const WRITERS = new Set(["prettier", "oxfmt", "emacs", "terraform", "shfmt"]);
+const WRITERS = new Set(["oxfmt", "emacs", "terraform", "shfmt"]);
 /** The Io functions that change the disk. */
 const MUTATORS = new Set([
   "write",
@@ -551,7 +551,8 @@ function watch<T extends object>(io: T, trace: Trace): T {
         if (name === "run") {
           const argv = args[0] as string[];
           const options = args[1] as
-            { env?: Record<string, string> } | undefined;
+            | { env?: Record<string, string> }
+            | undefined;
           const program = argv[0] ?? "";
           // The value of `oxfmt -c` is the bundled config, which oxfmt reads.
           const files = [
@@ -651,7 +652,7 @@ const formatter = (name: string, fn: string, tools: string[]): Hook => ({
   on: { Write: ["post"], Edit: ["post"], Bash: ["post"] },
   tools,
   state: true,
-  mtime: !tools.some((tool) => tool === "prettier" || tool === "oxfmt"),
+  mtime: !tools.includes("oxfmt"),
   probe: "files",
   args: [],
   work: `${tools.join(" or ")} changed a file`,
@@ -679,7 +680,6 @@ const typeCheck = (name: string, tool: string): Hook => ({
 });
 
 const HOOK_LIST: Hook[] = [
-  formatter("format-prettier", "format", ["prettier"]),
   formatter("format-oxfmt", "format", ["oxfmt"]),
   formatter("format-org-tables", "align", ["emacs"]),
   formatter("format-code", "format", ["terraform", "shfmt", "ruff"]),
@@ -1136,7 +1136,8 @@ async function replay(
           else {
             const c = ctx(call, call.tool as Event, cwd);
             const file = (call.input.file_path ?? call.input.notebook_path) as
-              string | undefined;
+              | string
+              | undefined;
             c.filePath = file === undefined ? undefined : world.map(file);
             if (call.result)
               c.result = {

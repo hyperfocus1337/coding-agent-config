@@ -14,11 +14,11 @@ The hook moved from `hook.sh` to TypeScript on 2026-10-19. The measurements belo
 
 [`type-check-all-languages`](../../type-check-tsc/README.md) (now `type-check-tsc` and `type-check-pyrefly`) moved from `PostToolUse` to `Stop` because it is loud and project-wide: it reran the whole project after every edit and reprinted the same unrelated errors each time. That argument does not carry over to this hook, for two reasons.
 
-**It costs almost no context.** The hook writes nothing for the model, except the amend hint. That hint comes only when one Bash call both writes and commits a Markdown file. 40 calls in one turn cost 40 Prettier runs and close to zero context.
+**It costs almost no context.** The hook writes nothing for the model, except the amend hint. That hint comes only when one Bash call both writes and commits a Markdown file. 40 calls in one turn cost 40 oxfmt runs and close to zero context.
 
 **It has to run per edit, not per turn.** The model reads a file back after it writes it. If formatting waits until the turn ends, the model works all turn against content that does not match what lands on disk, and the table alignment it wants while editing a table never happens while it is editing the table.
 
-One argument does favour deferring: formatting a file directly after a Write makes the model's cached view of that file stale, which produces a "changed on disk" notice and can make a following `Edit` miss on `old_string`. Under `--prose-wrap preserve` the rewrites are small, so a miss needs the model to target the exact line Prettier touched. Seeing formatted content while working is worth more than avoiding that.
+One argument does favour deferring: formatting a file directly after a Write makes the model's cached view of that file stale, which produces a "changed on disk" notice and can make a following `Edit` miss on `old_string`. Under `proseWrap` `preserve` the rewrites are small, so a miss needs the model to target the exact line oxfmt touched. Seeing formatted content while working is worth more than avoiding that.
 
 A turn end has no tool call, so `format` would get neither a file path nor a command. A `Stop` wiring needs new code, not only a new entry.
 
@@ -42,7 +42,7 @@ The gap covers the write-then-verify shape, which is most of what a shell comman
 
 The old command hook ran in Claude Code only on `PostToolUse`, so it then got a second entry on `PostToolUseFailure`. The mod on `tool.call` gets the result of each call after `next`, a failed one too, so Claude Code needs no second entry. pi sends `tool_result` for each result, and Codex runs `PostToolUse` also after a Bash command that exits with a code other than 0.
 
-The sweep also runs after you interrupt a shell command. That is wanted: a half-written file from an interrupted command is still a file worth formatting, and a Prettier failure on one is ignored.
+The sweep also runs after you interrupt a shell command. That is wanted: a half-written file from an interrupted command is still a file worth formatting, and an oxfmt failure on one is ignored.
 
 `command.ts` still echoes `hook_event_name` back as `hookEventName`, because `hookSpecificOutput` must name the event that fired, or the output is invalid.
 
@@ -66,9 +66,9 @@ A file that the command names and git ignores is the same failure as [Write and 
 
 [`format-org-tables`](../../format-org-tables/README.md) reads the command text in the same way, for `.org` paths, and stops there: it has no git sweep. A command that writes an Org file names that file, so a sweep gives that hook nothing more than the name.
 
-## Why not `--prose-wrap never`
+## Why not `proseWrap` never
 
-`--prose-wrap never` joins the lines of each paragraph into one line. It also stops Prettier from padding a table that is wider than `printWidth` (default `80`): the table collapses to the compact `| --- |` form. `--prose-wrap preserve` pads each table, see [Prose wrapping](../README.md#prose-wrapping).
+`proseWrap` `never` joins the lines of each paragraph into one line. It also stops oxfmt from padding a table that is wider than `printWidth` (`80` in the bundled config): the table stays in the compact `| --- |` form. Prettier did the same. The default `preserve` pads each table, see [Config](../README.md#config).
 
 ## The `/private` prefix on macOS
 
@@ -76,13 +76,13 @@ macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/.
 
 ## Files
 
-| File                                                                | Role                                                                                                              |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| [`core.ts`](../core.ts)                                             | The extensions and the Prettier command line. No Node imports.                                                    |
-| [`shared.ts`](../shared.ts)                                         | Finds the files, holds the switch to `format-oxfmt`, and runs the formatter. A copy of the file in `format-oxfmt` |
-| [`io.ts`](../io.ts)                                                 | The file and process functions of the core under Node                                                             |
-| [`command.ts`](../command.ts)                                       | The command hook for Codex and `format-staged-files`                                                              |
-| [`pi.ts`](../pi.ts)                                                 | The pi extension, which omp also loads                                                                            |
-| [`omp.ts`](../omp.ts)                                               | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see                                         |
-| [`hooks/register.ts`](../hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                                                                               |
-| [`dot_claude-plugin/plugin.json`](../dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json`                                                     |
+| File                                                                | Role                                                                                                        |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| [`core.ts`](../core.ts)                                             | The extensions, the sweep, the config lookup, the oxfmt command lines, and the amend hint. No Node imports. |
+| [`io.ts`](../io.ts)                                                 | The file and process functions of the core under Node, and the folder of the bundled config                 |
+| [`config/oxfmtrc.json`](../config/oxfmtrc.json)                     | The config for a file with no oxfmt config                                                                  |
+| [`command.ts`](../command.ts)                                       | The command hook for Codex and `format-staged-files`                                                        |
+| [`pi.ts`](../pi.ts)                                                 | The pi extension, which omp also loads                                                                      |
+| [`omp.ts`](../omp.ts)                                               | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see                                   |
+| [`hooks/register.ts`](../hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                                                                         |
+| [`dot_claude-plugin/plugin.json`](../dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json`                                               |

@@ -18,7 +18,7 @@ The output is a plain file, not a link, so a rule edit reaches Codex only on the
 
 ### The problem
 
-The file hooks `format-prettier`, `format-oxfmt`, `format-org-tables`, `format-code`, `lint-code`, and `lint-prose` must know which file changed. Claude Code tells them. Codex does not.
+The file hooks `format-oxfmt`, `format-org-tables`, `format-code`, `lint-code`, and `lint-prose` must know which file changed. Claude Code tells them. Codex does not.
 
 When Claude Code edits a file, it uses the Write or Edit tool. The hook gets the file path:
 
@@ -39,7 +39,7 @@ Codex has no Write or Edit tool. It edits every file through one tool, `apply_pa
 
 With no `file_path`, each hook takes its Bash branch, which guesses the files from a shell command:
 
-- `format-prettier` formats only the markdown files that git shows as changed. It skips `src/app.py`.
+- `format-oxfmt` formats only the markdown files that git shows as changed. It skips `src/app.py`.
 - `lint-code`, `format-org-tables`, and `format-code` search the text for strings that look like file names. A patch is not a shell command, so they miss files or pick wrong ones.
 - `lint-prose` has no Bash branch, so it checks nothing.
 

@@ -1,7 +1,7 @@
 /**
  * The format-org-tables logic: finds the Org files a tool call changed and
- * aligns their tables with one batch Emacs run. Prettier has no Org parser,
- * so format-prettier skips .org. Never blocks: a missing Emacs or a
+ * aligns their tables with one batch Emacs run. oxfmt has no Org parser, so
+ * format-oxfmt skips .org. Never blocks: a missing Emacs or a
  * failed run leaves the files as they are. The adapters pass in the file and
  * process functions, because a mod reaches them only through `$`.
  *

@@ -25,13 +25,13 @@ node test/check.ts
 - **Output:** one stderr line for each file that the hook staged again, and no line for an unchanged file.
 - **Skipped files:** a partly staged file is committed as staged, and its unstaged change stays in the tree. A symlink stays a symlink.
 - **Agent detection:** each agent variable turns the hook on, and a commit outside an agent is not formatted.
-- **`AGENT_HOOKS_DISABLE`:** a commit is still formatted when the variable names `format-prettier`.
-- **Repository key:** a commit is not formatted when `agent-hook.format-prettier.enabled` is `false` in the repository.
-- **`format-oxfmt`:** with no key, a staged `.toml` file is committed as staged. With `agent-hook.format-oxfmt.enabled` set to `true`, oxfmt formats the `.toml` file and the Markdown file of the commit. Prettier has no TOML parser, so the `.toml` file shows that oxfmt ran. Without oxfmt on `PATH`, the check skips this case.
+- **`AGENT_HOOKS_DISABLE`:** a commit is still formatted when the variable names `format-oxfmt`.
+- **Repository key:** a commit is not formatted when `agent-hook.format-oxfmt.enabled` is `false` in the repository.
+- **Other types:** oxfmt formats a staged `.toml` file.
 - **No `node`:** a commit with no `node` on `PATH` continues, with no output.
 
 ## Requirements
 
-The check needs git and Prettier on `PATH`. Without one of them, it prints `SKIP` and exits 0. The Org case also needs Emacs, and the Terraform case needs terraform. The check skips each of these cases when its program is not installed.
+The check needs git and oxfmt on `PATH`. It removes the mise shims from `PATH`, because a shim fails under the fixture `HOME`, so oxfmt must also be on `PATH` outside the shims. Without one of them, the check prints `SKIP` and exits 0. The Org case also needs Emacs, and the Terraform case needs terraform. The check skips each of these cases when its program is not installed.
 
 On a git without config-based hooks, the hook does not run, so the first case fails.

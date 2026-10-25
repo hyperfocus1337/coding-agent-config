@@ -1,5 +1,0 @@
-{
-  "name": "format-prettier",
-  "version": "0.1.0",
-  "description": "Formats the files a Write, Edit, or Bash call changed with Prettier."
-}

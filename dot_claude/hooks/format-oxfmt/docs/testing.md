@@ -1,6 +1,6 @@
 # Testing
 
-[`test/check.ts`](../test/check.ts) runs `command.ts` against a real git repository and the real oxfmt. Then it runs the pi and mod adapters with stubs over the real files. The sweep and the amend hint are in `shared.ts`, which [`format-prettier/test/check.ts`](../../format-prettier/test/check.ts) covers in full, so this check covers what is different for oxfmt.
+[`test/check.ts`](../test/check.ts) runs `command.ts` against real git repositories and the real oxfmt. Then it runs the pi, omp, and mod adapters with stubs over the real files.
 
 ## Run the check
 
@@ -14,24 +14,27 @@ The check prints `all pass`, or one `FAIL` line for each failed case and exits 1
 
 ## What the check needs
 
-- **git** and **oxfmt** on `PATH`. If one is missing, the check prints `SKIP no <program> on PATH` after the copy check and exits 0.
+- **git** and **oxfmt** on `PATH`. If one is missing, the hook does nothing, so the check prints `SKIP no <program> on PATH` and exits 0 instead of a false pass.
 - **Node 23.6 or later**, which runs a `.ts` file directly.
 
 The fixtures are in a temporary folder under `$HOME`, because the hook skips `/tmp` and `$TMPDIR`. The check deletes the folder at the end.
 
 ## Cases
 
-- **The copies:** `shared.ts` and `omp.ts` are the same as in `format-prettier`.
-- **Off by default:** with no key, an edit leaves the file as it is.
-- **On:** with `agent-hook.format-oxfmt.enabled true` in the repository, the hook formats an edited Markdown, `.toml`, and `.jsonc` file, leaves a `.py` file, sweeps Markdown after a Bash call, and gives an amend hint that names oxfmt.
+- **The sweep:** the roots that it reaches (a plain subfolder, an embedded repository at depth 1 and 2, a dirty submodule, a worktree, a repository with no `HEAD`, a second repository by absolute path) and what it does not change (`.ts` and `.json` on Bash, ignored Markdown, a symlink back to a root).
+- **Named paths:** a named file outside any repository, an ignored file, a relative path, a path that does not exist, and a file in `.prettierignore`.
+- **Prose wrap:** a wide table stays padded, and sentence lines stay separate.
+- **The amend hint:** after a commit, with a text that names oxfmt, after `git -C <dir> commit`, on `PostToolUseFailure` with that event name, and on the first commit of a repository. No hint without a commit, for an uncommitted file, or when oxfmt changed nothing.
+- **A Write or Edit:** the hook formats `.ts`, `.mts`, `.cts`, `.toml`, and `.jsonc`. It does not format `.org`, `.py`, or a temp file, and a file that does not exist gives no output.
 - **Config:** a file with no oxfmt config gets a width of 80 from the bundled config. A file below an `.oxfmtrc.json` gets that config.
-- **`AGENT_HOOKS_DISABLE`:** a value that names the hook leaves the file as it is.
-- **The adapters:** `pi.ts` and `hooks/register.ts` with stubs over the real files. The mod gets the bundled config from `$.plugin.root`.
+- **`AGENT_HOOKS_DISABLE`:** a value that names the hook stops the core before its first file or process call.
+- **`agent-hook.format-oxfmt.enabled`:** with stub I/O, a `git config` that prints `false` stops the hook before oxfmt, and a `git config` that prints nothing or `true` lets oxfmt run.
+- **The adapters:** `pi.ts`, `omp.ts`, and `hooks/register.ts` with stubs over the real files. The mod gets the bundled config from `$.plugin.root`.
 
-The switch from the side of Prettier is in the `format-prettier` check: with the key set, Prettier does not start. The commit-time format is in the [`format-staged-files`](../../../../dot_config/git/hooks/format-staged-files/docs/testing.md) check: with the key set, oxfmt formats a staged `.toml` file.
+The commit-time format is in the [`format-staged-files`](../../../../dot_config/git/hooks/format-staged-files/docs/testing.md) check.
 
 ## Settings that the check changes
 
 - **Global git config:** the check sets `GIT_CONFIG_GLOBAL` to an empty file and `GIT_CONFIG_NOSYSTEM`, so a key in your own git config does not change a case.
-- **`format-staged-files`:** the check turns this pre-commit hook off with `GIT_CONFIG_*` variables, so the amend hint case has something to amend.
+- **`format-staged-files`:** the check turns this pre-commit hook off with `GIT_CONFIG_*` variables. In an agent session it formats the file before the commit, so the amend hint never comes and the hint cases fail.
 - **`AGENT_HOOKS_DISABLE`:** the check removes this variable, so it also runs when `/toggle-hook` turned the hook off in the agent that starts the check.

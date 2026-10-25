@@ -17,9 +17,9 @@ This is valid Org, but it is hard to read as plain text. Emacs aligns the table 
 
 ## Why this is a separate hook
 
-[`format-prettier`](../../format-prettier/README.md) formats the Prettier languages in its extension list. Prettier has no Org parser, so `.org` is not in that list. Org table alignment is `org-table-align`, an Emacs function, so the tool, the command, and the failure modes are different from the Prettier hook.
+[`format-oxfmt`](../../format-oxfmt/README.md) formats the oxfmt languages in its extension list. oxfmt has no Org parser, so `.org` is not in that list. Org table alignment is `org-table-align`, an Emacs function, so the tool, the command, and the failure modes are different from the oxfmt hook.
 
-As a separate hook, it needs none of the parts of `format-prettier`: no git sweep, no split between Markdown and code, and no `--print-width` logic. You can also turn it off alone.
+As a separate hook, it needs none of the parts of `format-oxfmt`: no git sweep, no split between Markdown and code, and no config lookup. You can also turn it off alone.
 
 ## Bash calls
 
@@ -27,7 +27,7 @@ As a separate hook, it needs none of the parts of `format-prettier`: no git swee
 
 A Bash call carries no `file_path`. An earlier version of the hook skipped all Bash calls. A literate Emacs config that the model wrote through heredocs then kept two tables without alignment, until someone found them by hand.
 
-The hook asks git nothing, unlike the Markdown sweep in [`format-prettier`](../../format-prettier/README.md). A command that writes an Org file usually names the file, so the name is sufficient.
+The hook asks git nothing, unlike the Markdown sweep in [`format-oxfmt`](../../format-oxfmt/README.md). A command that writes an Org file usually names the file, so the name is sufficient.
 
 ### The `cd` folders
 

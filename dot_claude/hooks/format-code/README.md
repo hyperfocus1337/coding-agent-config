@@ -1,6 +1,6 @@
 # format-code
 
-Formats the files that a Write, an Edit, or a Bash call changed, with the formatter for the extension of each file. It covers the languages that Prettier has no parser for, so [`format-prettier`](../format-prettier/README.md) cannot format them:
+Formats the files that a Write, an Edit, or a Bash call changed, with the formatter for the extension of each file. It covers the languages that oxfmt has no parser for, so [`format-oxfmt`](../format-oxfmt/README.md) cannot format them:
 
 | Extensions      | Formatter                                                                   | Command                              | Key         |
 | --------------- | --------------------------------------------------------------------------- | ------------------------------------ | ----------- |

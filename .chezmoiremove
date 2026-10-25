@@ -18,3 +18,5 @@
 .claude/commands/restate/full.md
 .claude/commands/restate/goal-gaps-assumptions.md
 .claude/hooks/format-terraform
+.claude/hooks/format-prettier
+.claude/hooks/format-oxfmt/shared.ts
