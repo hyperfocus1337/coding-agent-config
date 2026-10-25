@@ -130,6 +130,14 @@ Replaced on 2026-10-25 by [format-oxfmt replaces format-prettier](#format-oxfmt-
 
 **Rejected:** the switch the other way, with `format-prettier` as the fallback that a key turns on: it keeps 2 copies of `shared.ts` and a switch for a formatter that nobody runs.
 
+## format-oxfmt uses the oxfmt defaults
+
+**Decision:** on 2026-10-25, the bundled `config/oxfmtrc.json` (`printWidth` 80, `sortPackageJson` false) is removed. A file with no oxfmt config gets the oxfmt defaults. This replaces the first sentence of the cost above.
+
+**Why:** you accept 100 columns everywhere. The hook no longer looks for a config above each file, and each call starts one oxfmt run, not two.
+
+**Cost:** in a project that Prettier formats with no oxfmt config, a file that the hook formats can reflow to 100 columns, and an edit to `package.json` sorts its keys.
+
 ## Behavior that the move dropped
 
 | Change                                                                                     | Reason                                                                             |
