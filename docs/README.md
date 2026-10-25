@@ -76,7 +76,7 @@ The `hooks/` folder gives the design of the hooks in [`dot_claude/hooks/`](../do
 
 ## Research
 
-The `research/` folder holds investigations into the agent environment and session. These record what was true when measured and can go stale. One subfolder per subject: `hooks/` for the scoping of the hooks and their alternatives, `commands/` for the git methods behind the slash commands, `context/` for what a session loads and what that costs, `interface/` for the prompt and the terminal around it, and `install/` for how a tool reaches the agent.
+The `research/` folder holds investigations into the agent environment and session. These record what was true when measured and can go stale. One subfolder per subject: `hooks/` for the scoping of the hooks and their alternatives, `formatting/` for the formatters that the format hooks run, `commands/` for the git methods behind the slash commands, `context/` for what a session loads and what that costs, `interface/` for the prompt and the terminal around it, and `install/` for how a tool reaches the agent.
 
 ### Hooks
 
@@ -89,6 +89,14 @@ The `research/hooks/` folder holds the source reading, tests, and transcript cou
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | [`hook-scoping.md`](research/hooks/hook-scoping.md)   | The event, matcher, and tool names of each hook in each agent, with a verdict and a fix |
 | [`event-scoping.md`](research/hooks/event-scoping.md) | After each tool call or at the stop: the event for each per-file and whole-project hook |
+
+### Formatting
+
+The `research/formatting/` folder compares the formatters that [`format-prettier`](../dot_claude/hooks/format-prettier/README.md) and the `format-staged-files` pre-commit hook can run. [`oxfmt-and-prettier-alternatives.md`](research/formatting/oxfmt-and-prettier-alternatives.md) tests oxfmt 0.74.0 and 11 other formatters on copies of this repository. oxfmt formats all file types of the hook, also Markdown, and gives the same output as Prettier on 349 of 365 files, at 65 ms for each run instead of 146 ms. Prettier stays for now, because oxfmt does not read `.prettierrc` and changes the front matter of 15 command files.
+
+| File                                                                                           | Description                                                              |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [`oxfmt-and-prettier-alternatives.md`](research/formatting/oxfmt-and-prettier-alternatives.md) | oxfmt instead of Prettier, and a formatter for each file type (measured) |
 
 ### Commands
 
