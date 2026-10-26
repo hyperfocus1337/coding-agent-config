@@ -26,6 +26,8 @@ The hook lints these files, by extension:
 
 YAML goes to one of two linters, see [YAML routing](#yaml-routing). Terraform goes to tflint in the folder of the file, see [Terraform](#terraform). The hook does not lint `.tfvars` files. [`format-code`](../format-code/README.md) formats `.tf` and `.tfvars` files, because `terraform fmt` is a formatter, not a linter.
 
+Do not add an extension that [`lint-prose`](../lint-prose/README.md) checks (`.md`, `.org`, `.html`, `.txt`) without a change to `lint-prose`. In pi and omp, this hook runs first and sets `isError` on a result with lint errors, and [`lint-prose/pi.ts`](../lint-prose/pi.ts) skips every result with `isError`, so it would not check that file.
+
 The hook runs after each of these calls, also after a call that failed, because a failed Bash call can still have written a file:
 
 - **Write and Edit:** the file that the call names.
