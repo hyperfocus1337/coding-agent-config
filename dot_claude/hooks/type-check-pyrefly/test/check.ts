@@ -39,12 +39,17 @@ const write = (file: string, text: string) => {
   fs.writeFileSync(file, text);
 };
 const bin = `${tmp}/bin`;
+const missingImports =
+  "ERROR app/main.py:1:8: Could not find import of `app.settings` [missing-import]\n" +
+  "ERROR app/main.py:2:8: Could not find import of `fastapi` [missing-import]\n";
+write(`${tmp}/missing-imports.txt`, missingImports);
 write(
   `${bin}/pyrefly`,
   `#!/bin/sh
 echo pyrefly >>"$FAKE_LOG"
 case "\${FAKE_PYREFLY:-pass}" in
 fail) echo "pyrefly error in $PWD"; exit 1 ;;
+missing) cat "$FAKE_MISSING_IMPORTS" >&2; exit 1 ;;
 nomatch) echo " WARN No Python files matched pattern(s)" >&2; exit 1 ;;
 esac
 `,
@@ -57,6 +62,7 @@ const env = {
   ...process.env,
   PATH: `${bin}:${process.env.PATH}`,
   FAKE_LOG: log,
+  FAKE_MISSING_IMPORTS: `${tmp}/missing-imports.txt`,
   FAKE_PYREFLY: "fail",
 };
 
@@ -105,7 +111,8 @@ function fresh(files: Record<string, string> = {}) {
   git(repo, "clean", "-qfdx");
   for (const [name, text] of Object.entries(files)) write(`${repo}/${name}`, text);
 }
-const failed = "Type check failed. Fix the errors above, then stop.";
+const failed =
+  "Type check failed. For missing imports, first verify the project configuration, import roots, and Python environment used by Pyrefly before changing imports. Use the project's existing dependency and environment setup. Do not suppress diagnostics or weaken checking to obtain a pass. Fix the cause, rerun the check, then stop.";
 
 // --- Checks ---
 fresh();
@@ -117,6 +124,11 @@ await expect(
   2,
   `pyrefly error in ${repo}\n${failed}\n`,
 );
+await check("missing imports preserve diagnostics and give setup guidance", () => {
+  const ran = run(repo, {}, { FAKE_PYREFLY: "missing" });
+  assert.equal(ran.status, 2);
+  assert.equal(ran.out, `${missingImports}${failed}\n`);
+});
 fresh({ "new.py": "y = 1\n" });
 await expect("an untracked .py file starts pyrefly", run(repo), 2, failed);
 fresh({ "src/é.py": "y = 1\n" });

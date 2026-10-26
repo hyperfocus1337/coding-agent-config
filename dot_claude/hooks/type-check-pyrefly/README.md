@@ -34,6 +34,10 @@ Install pyrefly:
 uv tool install pyrefly
 ```
 
+`uv tool install pyrefly` installs the checker, not the application's dependencies into the Python interpreter that Pyrefly queries. Use the project's existing dependency setup to install its declared dependencies in that environment. Prefer the project-local environment when the repository defines one, rather than a shared interpreter.
+
+The hook runs from the repository root. Verify that the project configuration defines the correct import roots, including any nested application directory, and that Pyrefly uses the intended Python interpreter. The hook does not infer import roots from changed files, install dependencies, or create `pyrefly.toml`. Missing-import diagnostics still block the stop.
+
 The hook also needs `git` on `PATH`. In Claude Code and Codex, `command.ts` needs Node 23.6 or later, which runs `.ts` files without a flag. pi and omp load `pi.ts` and `omp.ts` in their own runtime, so they need no `node` on `PATH`.
 
 Codex runs a hook only after you trust its entry. After a hook entry changes, trust the hooks again in the Codex TUI, on the host and in the devcontainer. See [`docs/agents/codex.md`](../../../docs/agents/codex.md#trust).
@@ -55,7 +59,7 @@ The hook stops each program (`git` or pyrefly) after 60 s and counts it as missi
 The model gets the stdout and stderr of pyrefly, and then this line:
 
 ```text
-Type check failed. Fix the errors above, then stop.
+Type check failed. For missing imports, first verify the project configuration, import roots, and Python environment used by Pyrefly before changing imports. Use the project's existing dependency and environment setup. Do not suppress diagnostics or weaken checking to obtain a pass. Fix the cause, rerun the check, then stop.
 ```
 
 ### Each agent

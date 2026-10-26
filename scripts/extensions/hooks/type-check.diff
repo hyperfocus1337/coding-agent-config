@@ -31,7 +31,9 @@
 +  // A missing pyrefly is a skip. pyrefly exits 1 when its config matches no
 +  // files, which is nothing to check, not a type error.
 +  const ran = await io.run(["pyrefly", "check"], root);
+-  return `${output}\nType check failed. Fix the errors above, then stop.\n`;
 +  if (output.includes("No Python files matched")) return undefined;
++  return `${output}\nType check failed. For missing imports, first verify the project configuration, import roots, and Python environment used by Pyrefly before changing imports. Use the project's existing dependency and environment setup. Do not suppress diagnostics or weaken checking to obtain a pass. Fix the cause, rerun the check, then stop.\n`;
 === io.ts
 - * The file and process functions of ./core.ts under Node, for command.ts,
 - * pi.ts, and omp.ts.
