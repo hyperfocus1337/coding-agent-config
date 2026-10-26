@@ -34,6 +34,7 @@ A snapshot difference is the set of files that differ between the work tree afte
 
 - **Bash:** a failed call logs its changes, because a command that fails can still write files.
 - **Edit, Write, NotebookEdit, pi `edit`, and pi `write`:** a failed call logs nothing.
+- **pi and omp `isError`:** another extension can set `isError` on an `edit` or `write` that succeeded, as `lint-code` does when a linter fails. Such a result logs the files that differ from their text at the call.
 - **Denied calls:** in Claude Code, a call that another hook denies logs nothing.
 - **Unchanged files:** a pi `write` that leaves the file as it was logs nothing.
 

@@ -989,6 +989,27 @@ await check(
   },
 );
 
+await check("pi: an isError result that changed the file still logs", async () => {
+  // lint-code sets isError on an edit or write that succeeded.
+  const call = load("pi", "p6");
+  const linted = { isError: true, details: { firstChangedLine: 1 } };
+  await call(
+    "edit",
+    { path: "f.txt" },
+    () => fs.writeFileSync(path.join(pr, "f.txt"), "L\n"),
+    linted,
+  );
+  await call("write", { path: "l.txt" }, () => fs.writeFileSync(path.join(pr, "l.txt"), "l\n"), {
+    isError: true,
+  });
+  await call("edit", { path: "f.txt" }, undefined, { isError: true });
+  await call("write", { path: "l.txt" }, undefined, { isError: true });
+  assert.deepEqual(logged("p6", "pi"), [
+    `edit\tM\t${pr}\t${pr}/f.txt\t1`,
+    `write\tA\t${pr}\t${pr}/l.txt\t1`,
+  ]);
+});
+
 await check("omp: its own log, and a failed edit logs nothing", async () => {
   const call = load("omp", "p3");
   await call("edit", { path: "f.txt" }, undefined, { isError: true });

@@ -7,6 +7,8 @@
  * edit: the input path and the `firstChangedLine` of the tool details, and
  * the file, read at the call, as the before blob.
  * write: the old file, read at the call, against the file after the result.
+ * A result with isError logs only the files that differ from their text at
+ * the call: lint-code sets isError on an edit or write that succeeded.
  * Other tools that write files are not recorded. Advisory: a failure is
  * dropped and never reaches the tool call.
  */
@@ -116,20 +118,20 @@ export function track(pi: ExtensionAPI, tools: Tools) {
       const call = started.get(event.toolCallId);
       started.delete(event.toolCallId);
       if (call?.pending) return endCall(io, session, call.pending, event.toolName);
-      if (!call || event.isError) return;
+      if (!call) return;
       const end = new Date();
-      if (event.toolName === "edit")
-        return recordFiles(
-          io,
-          session,
-          "edit",
-          call.start,
-          end,
-          tools.edited(event.details, event.input, ctx.cwd).map((change) => ({
-            ...change,
-            old: call.before.get(change.path),
-          })),
-        );
+      if (event.toolName === "edit") {
+        const changes = tools.edited(event.details, event.input, ctx.cwd).map((change) => ({
+          ...change,
+          old: call.before.get(change.path),
+        }));
+        // isError also marks a result that another extension flagged after
+        // the change, such as lint-code with lint errors. The disk decides.
+        const kept: Change[] = [];
+        for (const change of changes)
+          if (!event.isError || (await io.read(change.path)) !== change.old) kept.push(change);
+        return recordFiles(io, session, "edit", call.start, end, kept);
+      }
       const [file, before] = [...call.before][0] ?? [];
       if (event.toolName === "write" && file) {
         const after = await io.read(file);
