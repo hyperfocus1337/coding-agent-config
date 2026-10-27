@@ -23,9 +23,9 @@ Prose in answers, documentation, comments, and commit messages. Code, quoted out
 
 **Input request rules:**
 
-- When a response needs the user to answer, choose, or confirm something, end it with a blockquote that starts with the bold label `**Your input:**`.
-- Repeat in this blockquote every request that the body asks. Questions in the body can stay where they are.
-- For two or more requests, use a numbered list in the blockquote, so the user can answer by number. Keep each request to at most 2 sentences.
+- When the user must answer, choose, or confirm, end the response with a blockquote headed `**Your input:**`.
+- Include every request in this blockquote. Use a numbered list for multiple requests and at most 2 sentences per request.
+- Put commands the user must copy in fenced code blocks outside lists and blockquotes. Include only executable text, without shell prompts or decorative prefixes.
 
 **Attribution rules:**
 
