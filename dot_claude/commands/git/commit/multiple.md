@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git add:*), Bash(git restore --staged:*), Bash(git apply:*), Bash(git show:*), Bash(git hash-object:*), Bash(git update-index:*), Bash(git ls-files:*), Bash(git status:*), Bash(git commit:*), Bash(git diff:*), Bash(git log:*)
+allowed-tools: Bash(git add:*), Bash(git restore --staged:*), Bash(git apply:*), Bash(git show:*), Bash(git hash-object:*), Bash(git update-index:*), Bash(git ls-files:*), Bash(git status:*), Bash(git commit:*), Bash(git diff:*), Bash(git log:*), Bash(git -C * rev-parse *), Bash(git -C * add *), Bash(git -C * restore --staged *), Bash(git -C * apply *), Bash(git -C * show *), Bash(git -C * hash-object *), Bash(git -C * update-index *), Bash(git -C * ls-files *), Bash(git -C * status *), Bash(git -C * commit *), Bash(git -C * diff *), Bash(git -C * log *)
 description: Split changes into several commits
 ---
 
@@ -12,6 +12,10 @@ description: Split changes into several commits
 ## Your task
 
 Split the changes into one commit per logical unit.
+
+This conversation can also edit files in other git repositories. Run `git -C <dir> rev-parse --show-toplevel` for `.` and for the nearest existing directory of each file you edited. Each top level other than the one for `.` is an external repository. Skip a file that is in no repository.
+
+Run the steps below in this repository first, then in each external repository, with `-C <repo>` after `git` in every git command. In an external repository, commit every change in its working directory, not only the edits of this conversation.
 
 If `/git:commit:plan` made a plan for this command in this conversation, use its units and order, with every change the user asked for since. Still run each step below to check it.
 
@@ -28,4 +32,4 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
 
 If a git command fails, stop and report the error. Do not run the next step.
 
-Print one line per commit as inline code: `<short sha> <subject>`. No other text.
+Print one line per commit as inline code: `<short sha> <subject>`. Before the lines of an external repository, print its top level on its own line. No other text.

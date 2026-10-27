@@ -18,6 +18,8 @@ Change all four together.
 
 `plan` holds no copy of these steps: it reads the target command file at run time. `conversation`, `multiple`, `task`, and `any` hold the same sentence that makes them follow a plan from `plan`.
 
+`conversation`, `multiple`, and `task` hold the same paragraph that finds external repositories. Change all three together.
+
 ## Staging part of a file
 
 When one file holds changes of two units, each commit must stage only its own part, and the obvious methods fail without a terminal or place hunks in the wrong spot, so `conversation`, `multiple`, `split`, and `task` name the methods to avoid and the methods to use.
@@ -48,6 +50,18 @@ Write every patch and file version outside the repository.
 `only` stages no file content. It runs `git commit --only -- <paths>`, which commits the working tree version of the paths and keeps other staged changes staged.
 Before that, it runs `git add -N -- <paths>` once: without an index entry, `git commit` rejects a new file with `pathspec '<path>' did not match any file(s) known to git`.
 `--only` takes whole files, so `only` does not split a file across commits. The hunk methods above write the index, and that would change the other staged changes.
+
+## External repositories
+
+A session can edit files in other git repositories, for example a sibling checkout. The Context block of each command runs in the working directory only, so without help the model does not see those changes and leaves them uncommitted.
+
+`conversation`, `multiple`, `task`, and `plan` find the other repositories from the files the session edited: `git -C <dir> rev-parse --show-toplevel` on the nearest existing directory of each file. A top level other than the one for `.` is an external repository. The commands run the same steps there, with `-C <repo>` after `git`, so the same staging methods and checks apply. `plan` prints one section per repository and numbers the commits across the sections, so "merge 1 and 2" still names commits without ambiguity.
+
+The method has these limits:
+
+- A repository where the session ran commands but edited no file stays out.
+- In an external repository, `multiple` takes every change, also changes that were there before the session.
+- `parallel` and `audit` work in the working directory only.
 
 ## Parallel sessions
 
