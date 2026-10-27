@@ -14,6 +14,8 @@ description: Fold changes into one or more existing commits
 
 Fold the changes above into existing commits. A target can be any earlier commit on the branch, not only `HEAD` or the commits listed above. Different files can go to different commits.
 
+If `/git:commit:plan` made a plan for this command in this conversation, use its targets, with every change the user asked for since. Still run each step below to check it.
+
 1. Find the target of each changed file:
    - If `$ARGUMENTS` names a commit, all changes go to that commit.
    - Otherwise, run `git log --oneline -- <file>` and pick the commit that the change completes or corrects, usually the most recent one that touched the file.

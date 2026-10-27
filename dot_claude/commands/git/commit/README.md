@@ -12,12 +12,12 @@ After `## Context` and `## Your task`, a command puts the constraints that hold 
 
 Some text appears in more than one command. When you change it in one command, change it in each command of its row.
 
-| Text                                  | Commands                                    | Note                                                                                                     |
-| ------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| **Commit** step                       | `conversation`, `multiple`, `split`, `task` | `task` holds the same methods in its **Stage** and **Verify** steps.                                     |
-| **Lists** and **Group** steps         | `conversation`, `parallel`                  | The **Commit** step of `parallel` uses the same three methods, but against a private index and `<base>`. |
-| **Repositories** step                 | `conversation`, `multiple`, `task`          | The last bullet differs per command: what to commit in an external repository. `conversation` has none.  |
-| Sentence that follows a `plan` result | `conversation`, `multiple`, `task`, `any`   |                                                                                                          |
+| Text                                  | Commands                                            | Note                                                                                                     |
+| ------------------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Commit** step                       | `conversation`, `multiple`, `split`, `task`         | `task` holds the same methods in its **Stage** and **Verify** steps.                                     |
+| **Lists** and **Group** steps         | `conversation`, `parallel`                          | The **Commit** step of `parallel` uses the same three methods, but against a private index and `<base>`. |
+| **Repositories** step                 | `conversation`, `multiple`, `task`                  | The last bullet differs per command: what to commit in an external repository. `conversation` has none.  |
+| Sentence that follows a `plan` result | `conversation`, `multiple`, `task`, `extend`, `any` |                                                                                                          |
 
 `plan` holds no copy of these steps: it reads the target command file at run time.
 

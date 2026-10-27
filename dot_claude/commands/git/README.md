@@ -67,11 +67,12 @@ Routing works because every command in the table above stays model-invocable. Ad
 ### Planning commits
 
 Run `commit:plan` to see the commits before they exist.
-Its argument names the target: `conversation`, `multiple`, or `task` with an optional scope.
-Without a valid target, it lists the three targets and stops.
+Its argument names the target: `conversation`, `multiple`, `task` with an optional scope, or `extend` with an optional commit.
+Without a valid target, it lists the four targets and stops.
 It reads the target command file and applies its rules up to the first staging step, so the plan uses the same boundary and grouping as the target.
 
 It prints each commit as a subject with its paths, and lists every path it leaves out with a reason.
+For `extend`, it prints each existing commit that a change folds into, with amend or fixup, and marks a pushed commit `(pushed)`, because the rebase rewrites it.
 When the conversation edited files in other git repositories, it gives each repository its own section, marked `(external)`, and the target command commits there too.
 Ask for changes to the plan, for example "merge 1 and 2", then run the target command or `commit:any`: both follow the plan with your changes.
 
