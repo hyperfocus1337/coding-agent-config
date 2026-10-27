@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 Why the commit commands stage, check, and load context the way they do. For which command to pick, see [`../README.md`](../README.md).
 
+After `## Context` and `## Your task`, a command puts the constraints that hold for every step under `## Rules`, and the print format under `## Output`. `plan` and `audit` have no `## Output`, because their output format is a step.
+
 ## Shared text
 
 Some text appears in more than one command. When you change it in one command, change it in each command of its row.

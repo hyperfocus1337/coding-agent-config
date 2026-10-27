@@ -19,7 +19,7 @@ The conversation is the boundary: every task the user asked for, fixes you made 
 
 If `/git:commit:plan` made a plan for this command or for `conversation` in this conversation, use its units and order, with every change the user asked for since. Still run each step below to check it.
 
-1. **Lists.** Build the include list: every path you changed in this conversation, each tied to the action that changed it. Exclude every path that was already changed when the conversation started, or that you cannot tie to anything you did. A file can appear in both lists at hunk level. Keep the lists in your reasoning, do not print them.
+1. **Lists.** Build the include list: every path you changed in this conversation, each tied to the action that changed it. Exclude every path that was already changed when the conversation started, or that you cannot tie to anything you did. A file can appear in both lists at hunk level. If you cannot decide whether a hunk is yours, leave it out. Keep the lists in your reasoning, do not print them.
 2. **Group.** Group the include list into units by concern, not by file: one task vs. another, feature vs. fix vs. refactor vs. docs vs. test vs. chore. A fix you made on your own initiative is its own unit unless it only exists to make a requested change work. Hook reformatting belongs to the unit that changed the file. Order foundational changes first.
 3. **Commit.** Run `mktemp -d` once and write every patch, file version, and the private index in that directory. Then per unit, with `<base>` and every SHA as the literal value that git printed:
    1. Base. Run `git rev-parse HEAD`. The output is `<base>`.
@@ -33,8 +33,12 @@ If `/git:commit:plan` made a plan for this command or for `conversation` in this
    6. Refresh the shared index. Run `git reset -q -- <unit paths>`, without `GIT_INDEX_FILE`. This sets only these paths to the new `HEAD`. If you skip it, a later commit from the shared index reverts this commit. If it fails with `index.lock`, another session writes the shared index: run it again. After 3 failures, stop and report the unit paths.
 4. **Verify.** Run `git status`. Every include path must be committed, every uncommitted path must be an exclude path or a change of another session. Return to step 3 for anything missed.
 
-If you cannot decide whether a hunk is yours, leave it out. If a git command fails, stop and report the error. Do not run the next step. The only exceptions are steps 3.5 and 3.6.
+## Rules
+
+If a git command fails, stop and report the error. Do not run the next step. The only exceptions are steps 3.5 and 3.6.
 
 Never run `git commit`, `git stash`, `git checkout`, or `git restore`, and never write the working tree. They change the shared index or the files of other sessions.
+
+## Output
 
 Print one line per commit as inline code: `<short sha> <subject>`, plus `left: <count> paths` when anything stayed uncommitted. No other text.

@@ -30,4 +30,6 @@ Pick the commit command that fits the changes above and invoke it. Commit nothin
 
 5. **Run it.** Invoke the pick as a slash command so it runs its own context blocks and its own process. Do not copy its steps here. Pass `$ARGUMENTS` to `/git:commit:task` and `/git:commit:only`; the others take no argument.
 
+## Output
+
 Print one line: the command you picked and the signal that picked it. Nothing else.

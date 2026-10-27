@@ -27,4 +27,6 @@ Fold the changes above into existing commits. A target can be any earlier commit
 - If one file holds changes for different commits, ask the user before you stage it.
 - If a change belongs to no existing commit, say so and make a normal commit for it instead.
 
+## Output
+
 Print one line per target as inline code: `<short sha> <subject>` and how you folded it (amend or fixup). No other text.

@@ -13,4 +13,6 @@ description: Commit and push
 
 Commit all changes above as one commit, then push the branch to origin. Use Conventional Commits with a concise subject.
 
+## Output
+
 Print one line as inline code: `<short sha> <subject> -> <remote branch>`. No other text.

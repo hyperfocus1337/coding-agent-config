@@ -32,8 +32,12 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
    3. In a new Bash call, after you read the check, commit with Conventional Commits.
 5. **Repeat.** Continue until `git --no-optional-locks status` is clean.
 
+## Rules
+
 Run git commands one at a time, each in its own Bash call or chained with `&&`, so that a failure stops the commands after it. If a git command fails, stop and report the error. Do not run the next step.
 
 The one exception is a staging command that fails with `Unable to create '<lock>': File exists`: another process holds the index lock. Run `sleep 10 && git diff --cached --name-only`. If the stage holds only your changes, run the failed command once more. Never touch the lock file, and never run `git commit` twice.
+
+## Output
 
 Print one line per commit as inline code: `<short sha> <subject>`. Before the lines of an external repository, print its top level on its own line. No other text.

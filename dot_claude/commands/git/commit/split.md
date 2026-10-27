@@ -27,6 +27,10 @@ Split `HEAD` into one commit per logical unit. The reason for the split: $ARGUME
    3. In a new Bash call, after you read the check, commit with Conventional Commits. Reuse the original subject for the unit it describes.
 5. **Repeat.** Continue until `git status` is clean and `git diff <original sha>` is empty.
 
+## Rules
+
 If a git command fails, stop and report the error. Do not run the next step.
+
+## Output
 
 Print one line per commit as inline code: `<short sha> <subject>`. No other text.
