@@ -15,6 +15,12 @@ Which tool to use for search, code edits, documentation, and package work.
 - Before you rename a symbol or change a signature, run `findReferences` and fix every call site.
 - After you write or edit code, check LSP diagnostics. Fix type errors and missing imports before you move on.
 
+**Blocked commands:**
+
+- On a dcg block, show the command, available reason and rule ID, and the actual `dcg allow-once <code>` command. Use `!` in Claude Code and pi; otherwise direct the user to a terminal in the same environment. If no code is provided, diagnose instead of inventing one.
+- Never approve your own exception or bypass a block. Retry the unchanged command in its original directory only after the user's approval command succeeds, not after a conversational confirmation.
+- Prefer one-run approval over permanent exceptions or disabling packs. See `~/.claude/hooks/block-destructive-commands/README.md` for details.
+
 **Documentation rules:**
 
 - Before you generate code, configuration, or setup steps, resolve the library id with Context7 and fetch the documentation. Do not wait to be asked. "Use c7" means the Context7 MCP server.
