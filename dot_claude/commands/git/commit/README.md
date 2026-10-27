@@ -8,17 +8,16 @@ Why the commit commands stage, check, and load context the way they do. For whic
 
 ## Shared text
 
-`conversation`, `multiple`, and `split` hold the same **Commit** step.
+Some text appears in more than one command. When you change it in one command, change it in each command of its row.
 
-`task` holds the same methods in its **Stage** and **Verify** steps.
+| Text                                  | Commands                                    | Note                                                                                                     |
+| ------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Commit** step                       | `conversation`, `multiple`, `split`, `task` | `task` holds the same methods in its **Stage** and **Verify** steps.                                     |
+| **Lists** and **Group** steps         | `conversation`, `parallel`                  | The **Commit** step of `parallel` uses the same three methods, but against a private index and `<base>`. |
+| **Repositories** step                 | `conversation`, `multiple`, `task`          | The last sentence differs per command: what to commit in an external repository.                         |
+| Sentence that follows a `plan` result | `conversation`, `multiple`, `task`, `any`   |                                                                                                          |
 
-Change all four together.
-
-`parallel` holds the same **Lists** and **Group** steps as `conversation`. Its **Commit** step uses the same three methods, but against a private index and `<base>` instead of the shared index. Change it when you change those steps or methods.
-
-`plan` holds no copy of these steps: it reads the target command file at run time. `conversation`, `multiple`, `task`, and `any` hold the same sentence that makes them follow a plan from `plan`.
-
-`conversation`, `multiple`, and `task` hold the same paragraph that finds external repositories. Change all three together.
+`plan` holds no copy of these steps: it reads the target command file at run time.
 
 ## Staging part of a file
 
@@ -55,7 +54,7 @@ Before that, it runs `git add -N -- <paths>` once: without an index entry, `git 
 
 A session can edit files in other git repositories, for example a sibling checkout. The Context block of each command runs in the working directory only, so without help the model does not see those changes and leaves them uncommitted.
 
-`conversation`, `multiple`, `task`, and `plan` find the other repositories from the files the session edited: `git -C <dir> rev-parse --show-toplevel` on the nearest existing directory of each file. A top level other than the one for `.` is an external repository. The commands run the same steps there, with `-C <repo>` after `git`, so the same staging methods and checks apply. `plan` prints one section per repository and numbers the commits across the sections, so "merge 1 and 2" still names commits without ambiguity.
+In their **Repositories** step, `conversation`, `multiple`, and `task` find the other repositories from the files the session edited, and `plan` applies that step: `git -C <dir> rev-parse --show-toplevel` on the nearest existing directory of each file. A top level other than the one for `.` is an external repository. The commands run the same steps there, with `-C <repo>` after `git`, so the same staging methods and checks apply. `plan` prints one section per repository and numbers the commits across the sections, so "merge 1 and 2" still names commits without ambiguity.
 
 The method has these limits:
 

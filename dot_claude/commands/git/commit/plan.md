@@ -23,7 +23,7 @@ Plan the commits that a commit command would make. Commit nothing, stage nothing
    - /git:commit:plan task [scope]: one task's changes, as one commit
    ```
 
-2. **Rules.** Read `~/.claude/commands/git/commit/<target>.md`. Apply its steps that decide what to commit and how to group it. Stop before its first staging step. Apply them also to each external repository that the file names, with `git -C <repo> status -sb` and `git -C <repo> diff HEAD --stat` as its context.
+2. **Rules.** Read `~/.claude/commands/git/commit/<target>.md`. Apply its steps that decide what to commit and how to group it, starting with its **Repositories** step. Stop before its first staging step. For an external repository, use `git -C <repo> status -sb` and `git -C <repo> diff HEAD --stat` as its context.
 
 3. **Print.** Use this format, with no other text:
 
@@ -45,6 +45,9 @@ Plan the commits that a commit command would make. Commit nothing, stage nothing
       - <path>
    ```
 
-   Give one section per repository, this repository first, and number the commits across all sections. Write `~` for the home directory in a top level, and paths relative to the top level. Mark a path `(partial)` when only some of its hunks are in the commit. Leave out a "Left out" list when nothing is left out, and a section when it has no commits and nothing left out.
+   - Give one section per repository, this repository first. Number the commits across all sections.
+   - Write `~` for the home directory in a top level, and paths relative to the top level.
+   - Mark a path `(partial)` when only some of its hunks are in the commit.
+   - Leave out an empty "Left out" list, and a section with no commits and nothing left out.
 
 The user can change the plan in the next messages. The target command follows the plan with those changes.

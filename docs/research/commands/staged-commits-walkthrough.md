@@ -28,7 +28,7 @@ In the state tables, `base` is the content in `77020db`. `fix`, `feat`, and `you
 
 ## Steps of `/git:commit:conversation`
 
-### 1. Context
+### 1. Context and repositories (step 1)
 
 The command loads `git status -sb`, `git diff HEAD --stat`, and `git log --oneline -5`:
 
@@ -52,7 +52,9 @@ $ git diff HEAD --stat
 | Index        | base        | base         | you         |
 | `HEAD`       | base        | base         | base        |
 
-### 2. Lists (step 1)
+Step 1, **Repositories**, runs `git -C <dir> rev-parse --show-toplevel` for `.` and for the directory of each edited file. All edited files are in the scratch repository, so the run has no external repository and runs the next steps once. The step did not exist on 2026-10-02, but it does not change the output of this scenario.
+
+### 2. Lists (step 2)
 
 The model builds two lists in its reasoning and prints nothing. It ties each path to the action in the conversation that changed it:
 
@@ -61,14 +63,14 @@ The model builds two lists in its reasoning and prints nothing. It ties each pat
 
 `lib.sh` is on both lists, at hunk level.
 
-### 3. Group (step 2)
+### 3. Group (step 3)
 
 The include list holds two concerns, so the model makes two units, the fix first:
 
 1. `fix(lib): quote the greet argument`: one line in `lib.sh`.
 2. `feat(lib): add wave`: the `wave` function in `lib.sh`, and `README.md`.
 
-### 4. Unit 1: stage one part of a mixed hunk (step 3.1)
+### 4. Unit 1: stage one part of a mixed hunk (step 4.1)
 
 The model reads the diff of `lib.sh`:
 
@@ -123,7 +125,7 @@ The working tree does not change. The mode `100755` comes from `git ls-files -s`
 | Index        | base        | fix          | you         |
 | `HEAD`       | base        | base         | base        |
 
-### 5. Unit 1: check the stage (step 3.2)
+### 5. Unit 1: check the stage (step 4.2)
 
 ```console
 $ git diff --cached --name-only
@@ -154,9 +156,9 @@ $ git diff --cached -- lib.sh
 
 The staged diff holds only the fix, in the right place. `git restore --staged` keeps the change to `notes.txt` in the working tree, but you lose the information that you staged it.
 
-### 6. Unit 1: commit (step 3.3)
+### 6. Unit 1: commit (step 4.3)
 
-The commit runs in a new Bash call, after the model reads the check output of step 5:
+The commit runs in a new Bash call, after the model reads the check output of section 5:
 
 ```console
 $ git commit -q -m "fix(lib): quote the greet argument"
@@ -174,7 +176,7 @@ $ git status -s
 | Index              | base        | fix          | base        |
 | `HEAD` (`7c89602`) | base        | fix          | base        |
 
-### 7. Unit 2: stage whole hunks and a whole file (step 3.1)
+### 7. Unit 2: stage whole hunks and a whole file (step 4.1)
 
 `git diff` without a commit compares the working tree to the index. The index now holds the fix, so the diff of `lib.sh` shows only the two changes that are left:
 
@@ -216,7 +218,7 @@ $ git add README.md
 
 `git apply` finds the hunk by its 3 context lines, so the skipped hunk does not move it.
 
-### 8. Unit 2: check and commit (steps 3.2 and 3.3)
+### 8. Unit 2: check and commit (steps 4.2 and 4.3)
 
 ```console
 $ git diff --cached --name-only
@@ -251,7 +253,7 @@ $ git commit -q -m "feat(lib): add wave"
 | Index              | feat        | fix+feat     | base        |
 | `HEAD` (`12cb4e2`) | feat        | fix+feat     | base        |
 
-### 9. Verify (step 4)
+### 9. Verify (step 5)
 
 ```console
 $ git status -s
@@ -285,25 +287,26 @@ b32cc9f docs(notes): add tests to the todo list
 $ git status -s
 ```
 
-The first two units are the same as in steps 4 to 8. The check of unit 1 also unstages `notes.txt`, because the file is not part of that unit. After unit 2, the remaining files each hold one unit, so `git add lib.sh` and `git add notes.txt` stage them whole.
+The first two units are the same as in sections 4 to 8. The check of unit 1 also unstages `notes.txt`, because the file is not part of that unit. After unit 2, the remaining files each hold one unit, so `git add lib.sh` and `git add notes.txt` stage them whole.
 
-| Step   | `conversation`                                                                                               | `multiple`                                                                              |
-| ------ | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
-| Lists  | Builds an include list and an exclude list from the conversation.                                            | No lists. Every change is in scope.                                                     |
-| Group  | Groups the include list by concern, foundational changes first. A fix on its own initiative is its own unit. | Groups all changes by concern, foundational changes first.                              |
-| Stage  | Same three methods.                                                                                          | Same three methods.                                                                     |
-| Check  | Reads `git diff --cached` for every staged file. Every hunk must be in the unit.                             | Reads `git diff --cached` only for partly staged files. Every hunk must be in the unit. |
-| Commit | Conventional Commits. A body that needs "also" means the unit must split.                                    | Conventional Commits.                                                                   |
-| End    | `git status` shows only exclude paths.                                                                       | `git status` is clean.                                                                  |
-| Output | One line per commit, plus `left: <count> paths`.                                                             | One line per commit.                                                                    |
+| Step         | `conversation`                                                                                                   | `multiple`                                                                                         |
+| ------------ | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Repositories | Runs the next steps in each repository where the conversation edited a file.                                     | Same, but takes every change in an external repository, also changes from before the conversation. |
+| Lists        | Builds an include list and an exclude list from the conversation.                                                | No lists. Every change is in scope.                                                                |
+| Group        | Groups the include list by concern, foundational changes first. A fix on its own initiative is its own unit.     | Groups all changes by concern, foundational changes first.                                         |
+| Stage        | Same three methods.                                                                                              | Same three methods.                                                                                |
+| Check        | Reads `git diff --cached` for every staged file. Every hunk must be in the unit.                                 | Reads `git diff --cached` only for partly staged files. Every hunk must be in the unit.            |
+| Commit       | Conventional Commits. A body that needs "also" means the unit must split.                                        | Conventional Commits.                                                                              |
+| End          | `git status` shows only exclude paths.                                                                           | `git status` is clean.                                                                             |
+| Output       | One line per commit, plus `left: <count> paths`. The top level of an external repository comes before its lines. | One line per commit. The top level of an external repository comes before its lines.               |
 
 ## Problems the run shows
 
 ### Neighboring changes merge into one hunk
 
-`git diff -U3` merges two changes into one hunk when 6 or fewer unchanged lines separate them. In a first version of this scenario, 6 lines separated the `wave` function from the `shout` change. The diff in step 7 then had one hunk that held both, and a patch that kept the `wave` hunk also committed your `shout` change. The setup above has 7 lines between the two changes, so they stay separate.
+`git diff -U3` merges two changes into one hunk when 6 or fewer unchanged lines separate them. In a first version of this scenario, 6 lines separated the `wave` function from the `shout` change. The diff in section 7 then had one hunk that held both, and a patch that kept the `wave` hunk also committed your `shout` change. The setup above has 7 lines between the two changes, so they stay separate.
 
-When the hunk you need also holds a change of another unit, use the file version method from step 4, not the patch method. The check in step 3.2 catches a wrong patch: it reads every staged hunk before the commit.
+When the hunk you need also holds a change of another unit, use the file version method from section 4, not the patch method. The check in step 4.2 catches a wrong patch: it reads every staged hunk before the commit.
 
 ### The check runs too late in one Bash call
 
@@ -313,11 +316,11 @@ The commands now put each commit in a new Bash call, after the check, and pick h
 
 ### The check unstages what you staged
 
-`git commit` takes the whole index. Step 3.2 is the only protection against a commit that takes changes the unit does not own, such as `notes.txt` in step 5. It unstages them with `git restore --staged`. The change stays in the working tree, but your stage is gone after the run.
+`git commit` takes the whole index. Step 4.2 is the only protection against a commit that takes changes the unit does not own, such as `notes.txt` in section 5. It unstages them with `git restore --staged`. The change stays in the working tree, but your stage is gone after the run.
 
 ### One index for all sessions
 
 The whole method depends on one index that only this session writes between `git add` and `git commit`. Two cases break that:
 
-- Another session stages in the same checkout. Its hunks are in the index when this session commits. Step 3.2 can catch a staged path that does not belong to the unit, but not a hunk that another session stages after the check. For that case, use [`/git:commit:parallel`](../../../dot_claude/commands/git/commit/parallel.md).
+- Another session stages in the same checkout. Its hunks are in the index when this session commits. Step 4.2 can catch a staged path that does not belong to the unit, but not a hunk that another session stages after the check. For that case, use [`/git:commit:parallel`](../../../dot_claude/commands/git/commit/parallel.md).
 - An editor that refreshes git status holds `.git/index.lock` for a moment. A git command then fails, and the command stops instead of staging on a wrong state. See [checks](../../../dot_claude/commands/git/commit/README.md#checks).

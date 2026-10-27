@@ -23,19 +23,16 @@ A conversation is not a scope. Out of scope by default:
 
 "I touched this file" is not a reason to commit it. If you cannot tie a path to the scope, leave it out.
 
-This conversation can also edit files in other git repositories. Run `git -C <dir> rev-parse --show-toplevel` for `.` and for the nearest existing directory of each file you edited. Each top level other than the one for `.` is an external repository. Skip a file that is in no repository.
-
-Run the steps below in this repository first, then in each external repository, with `-C <repo>` after `git` in every git command. Make one commit in each repository that holds paths in scope.
-
 If `/git:commit:plan` made a plan for this command in this conversation, use its include list and subject, with every change the user asked for since. Still run each step below to check it.
 
-1. **List.** Build the include list: the paths you changed for this scope, each tied to the request that caused it. Keep the list in your reasoning, do not print it.
-2. **Stage.** Stage only those paths, naming each one. Never `git add -A`, `git add .`, `git add -u`, `git commit -a`, or `git apply --unidiff-zero`.
+1. **Repositories.** Run `git -C <dir> rev-parse --show-toplevel` for `.` and for the nearest existing directory of each file you edited. Each top level other than the one for `.` is an external repository, and a file in no repository stays out. Run the next steps in this repository first, then in each external repository, with `-C <repo>` after `git` in every git command. Make one commit in each repository that holds paths in scope.
+2. **List.** Build the include list: the paths you changed for this scope, each tied to the request that caused it. Keep the list in your reasoning, do not print it.
+3. **Stage.** Stage only those paths, naming each one. Never `git add -A`, `git add .`, `git add -u`, `git commit -a`, or `git apply --unidiff-zero`.
    - A whole file: `git add <path>`.
    - Part of a file: write `git diff -U3 -- <path>` to a patch outside the repository, copy the in-scope hunks, picked by their text, to a new, unused patch file, and run `git apply --cached <new patch>`.
    - One hunk that mixes in-scope and out-of-scope changes: write the in-scope version of the file to a file outside the repository, starting from `git show :<path>`. Then run `git hash-object -w <file>` and `git update-index --cacheinfo <mode>,<sha>,<path>`, with `<mode>` from `git ls-files -s <path>`.
-3. **Verify.** Compare `git diff --cached --name-only` against the include list. Unstage anything extra with `git restore --staged <path>` and repeat until they match. Read `git diff --cached -- <path>` for each partly staged file to confirm every hunk is in scope and sits where it belongs.
-4. **Commit.** In a new Bash call, after you read the output of step 3, use Conventional Commits with a concise subject, body only when the subject does not carry the reason. Describe the scope and nothing else. If the body needs "also", unstage the extra change and return to step 2.
+4. **Verify.** Compare `git diff --cached --name-only` against the include list. Unstage anything extra with `git restore --staged <path>` and repeat until they match. Read `git diff --cached -- <path>` for each partly staged file to confirm every hunk is in scope and sits where it belongs.
+5. **Commit.** In a new Bash call, after you read the output of step 4, use Conventional Commits with a concise subject, body only when the subject does not carry the reason. Describe the scope and nothing else. If the body needs "also", unstage the extra change and return to step 3.
 
 If a git command fails, stop and report the error. Do not run the next step.
 
