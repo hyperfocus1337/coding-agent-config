@@ -23,7 +23,12 @@ Plan the commits that a commit command would make. Commit nothing, stage nothing
    - /git:commit:plan task [scope]: one task's changes, as one commit
    ```
 
-2. **Rules.** Read `~/.claude/commands/git/commit/<target>.md`. Apply its steps that decide what to commit and how to group it, starting with its **Repositories** step. Stop before its first staging step. For an external repository, use `git -C <repo> status -sb` and `git -C <repo> diff HEAD --stat` as its context.
+2. **Rules.** Read `~/.claude/commands/git/commit/<target>.md`. Apply its steps that decide what to commit and how to group it, starting with its **Repositories** step. Stop before its first staging step. For an external repository, get its context in separate Bash calls:
+   - `git -C <repo> status -sb --untracked-files=all`. It lists each untracked file with `??`. An untracked file has no diff stat, so take it from this list.
+   - `git -C <repo> rev-parse --verify --quiet HEAD`. When it prints nothing, the repository has no commits: this result is expected, not a failure.
+   - `git -C <repo> diff HEAD --stat` when the previous command printed a hash, otherwise `git -C <repo> diff --cached --stat`.
+
+   If a git command fails with a result that this step and the **Repositories** step do not expect, print only `Plan failed: <command>` and the error output, and stop. Do not print a plan, and do not put the failure in "Left out".
 
 3. **Print.** Use this format, with no other text:
 
@@ -48,6 +53,7 @@ Plan the commits that a commit command would make. Commit nothing, stage nothing
    - Give one section per repository, this repository first. Number the commits across all sections.
    - Write `~` for the home directory in a top level, and paths relative to the top level.
    - Mark a path `(partial)` when only some of its hunks are in the commit.
+   - Name each candidate repository that the **Repositories** step left out in the "Left out" list of this repository, with its top level and reason.
    - Leave out an empty "Left out" list, and a section with no commits and nothing left out.
 
 The user can change the plan in the next messages. The target command follows the plan with those changes.

@@ -17,7 +17,11 @@ The conversation is the boundary: every task the user asked for, fixes you made 
 
 If `/git:commit:plan` made a plan for this command in this conversation, use its units and order, with every change the user asked for since. Still run each step below to check it.
 
-1. **Repositories.** Run `git -C <dir> rev-parse --show-toplevel` for `.` and for the nearest existing directory of each file you edited. Each top level other than the one for `.` is an external repository, and a file in no repository stays out. Run the next steps in this repository first, then in each external repository, with `-C <repo>` after `git` in every git command.
+1. **Repositories.** Run `git -C <dir> rev-parse --show-toplevel` for `.` and for the nearest existing directory of each file you edited.
+   - Each top level other than the one for `.` is a candidate.
+   - `not a git repository` is an expected result, not a failure: the file is in no repository and stays out.
+   - A candidate is an external repository unless it is a disposable fixture, such as a test or pilot repository made to try something, or holds only generated output. Commit in such a repository only when the user asks for it.
+   - Run the next steps in this repository first, then in each external repository, with `-C <repo>` after `git` in every git command.
 2. **Lists.** Build the include list: every path you changed in this conversation, each tied to the action that changed it. Exclude every path that was already changed when the conversation started, or that you cannot tie to anything you did. A file can appear in both lists at hunk level. Keep the lists in your reasoning, do not print them.
 3. **Group.** Group the include list into units by concern, not by file: one task vs. another, feature vs. fix vs. refactor vs. docs vs. test vs. chore. A fix you made on your own initiative is its own unit unless it only exists to make a requested change work. Hook reformatting belongs to the unit that changed the file. Order foundational changes first.
 4. **Commit.** Per unit:
@@ -29,6 +33,6 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
    3. In a new Bash call, after you read the check, commit with Conventional Commits. If the body needs "also", split the unit.
 5. **Verify.** Run `git status`. Every include path must be committed, every uncommitted path must be an exclude path. Return to step 4 for anything missed.
 
-If you cannot decide whether a hunk is yours, leave it out. If a git command fails, stop and report the error. Do not run the next step.
+If you cannot decide whether a hunk is yours, leave it out. If a git command fails, stop and report the error. Do not run the next step. Run each git command in its own Bash call, or chain commands with `&&`, so that a failure stops the commands after it.
 
 Do not edit files. Print one line per commit as inline code: `<short sha> <subject>`, plus `left: <count> paths` when anything stayed uncommitted. Before the lines of an external repository, print its top level on its own line. No other text.

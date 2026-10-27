@@ -14,7 +14,7 @@ Some text appears in more than one command. When you change it in one command, c
 | ------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | **Commit** step                       | `conversation`, `multiple`, `split`, `task` | `task` holds the same methods in its **Stage** and **Verify** steps.                                     |
 | **Lists** and **Group** steps         | `conversation`, `parallel`                  | The **Commit** step of `parallel` uses the same three methods, but against a private index and `<base>`. |
-| **Repositories** step                 | `conversation`, `multiple`, `task`          | The last sentence differs per command: what to commit in an external repository.                         |
+| **Repositories** step                 | `conversation`, `multiple`, `task`          | The last bullet differs per command: what to commit in an external repository. `conversation` has none.  |
 | Sentence that follows a `plan` result | `conversation`, `multiple`, `task`, `any`   |                                                                                                          |
 
 `plan` holds no copy of these steps: it reads the target command file at run time.
@@ -54,13 +54,15 @@ Before that, it runs `git add -N -- <paths>` once: without an index entry, `git 
 
 A session can edit files in other git repositories, for example a sibling checkout. The Context block of each command runs in the working directory only, so without help the model does not see those changes and leaves them uncommitted.
 
-In their **Repositories** step, `conversation`, `multiple`, and `task` find the other repositories from the files the session edited, and `plan` applies that step: `git -C <dir> rev-parse --show-toplevel` on the nearest existing directory of each file. A top level other than the one for `.` is an external repository. The commands run the same steps there, with `-C <repo>` after `git`, so the same staging methods and checks apply. `plan` prints one section per repository and numbers the commits across the sections, so "merge 1 and 2" still names commits without ambiguity.
+In their **Repositories** step, `conversation`, `multiple`, and `task` find the other repositories from the files the session edited, and `plan` applies that step: `git -C <dir> rev-parse --show-toplevel` on the nearest existing directory of each file. A top level other than the one for `.` is a candidate. A candidate that is a disposable fixture, such as a pilot repository made for a test, or that holds only generated output, stays out unless the user asks for it: discovery finds repositories, it does not make them commit targets. The commands run the same steps there, with `-C <repo>` after `git`, so the same staging methods and checks apply. `plan` prints one section per repository and numbers the commits across the sections, so "merge 1 and 2" still names commits without ambiguity.
 
 The method has these limits:
 
 - A repository where the session ran commands but edited no file stays out.
 - In an external repository, `multiple` takes every change, also changes that were there before the session.
 - `parallel` and `audit` work in the working directory only.
+
+An external repository can have no commits, and then `git diff HEAD` fails. `plan` checks `HEAD` with `git rev-parse --verify --quiet HEAD` first and falls back to `git diff --cached --stat`. Neither diff shows untracked files, so `plan` takes them from `git status --untracked-files=all`. A probe result that the step expects, such as `not a git repository` or an empty `rev-parse --verify`, is not a failure. Any other failure stops `plan` with an error report instead of a plan: a failure listed under "Left out" looks like a complete plan.
 
 ## Parallel sessions
 
