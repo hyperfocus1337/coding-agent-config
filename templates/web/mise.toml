@@ -5,3 +5,4 @@
 # GitHub proxy refuses the release lookups.
 [tools]
 chezmoi = "2.73.3"
+"github:Dicklesworthstone/destructive_command_guard" = "0.15.3"

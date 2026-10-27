@@ -2,7 +2,7 @@
 
 [`config.toml`](config.toml) sets the rule packs that [dcg](https://github.com/Dicklesworthstone/destructive_command_guard) uses to block a shell command. chezmoi installs it at `~/.config/dcg/config.toml` on the host and in the devcontainer. The hook that runs dcg is in [`dot_claude/hooks/block-destructive-commands`](../../dot_claude/hooks/block-destructive-commands/README.md).
 
-The pack links go to the upstream documentation at tag `v0.15.3`, the version that `.chezmoiexternal.toml` pins. When you upgrade dcg, change the tag in the links.
+The pack links go to the upstream documentation at tag `v0.15.3`, the version of the mise pins that the [`block-destructive-commands` README](../../dot_claude/hooks/block-destructive-commands/README.md#install) lists. When you upgrade dcg, change the tag in the links.
 
 ## Default packs
 

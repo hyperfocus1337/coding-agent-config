@@ -10,9 +10,19 @@ Blocks a shell command that [dcg](https://github.com/Dicklesworthstone/destructi
 
 ## Install
 
-chezmoi installs the binary at `~/.local/bin/dcg` from [`.chezmoiexternal.toml`](../../../.chezmoiexternal.toml). It downloads the release tarball for the machine (macOS or Linux, arm64 or amd64) and refuses it when the SHA256 is not the pinned value. The upstream `install.sh` is not used, because it edits each agent's config file in `$HOME`, and the next `just chezmoi` overwrites those edits.
+This repository does not install dcg. mise installs it from the `github:Dicklesworthstone/destructive_command_guard` pin in three places, and each one links the binary to `~/.local/bin/dcg`, the path that every hook runs:
 
-To upgrade, set `$dcgVersion` in `.chezmoiexternal.toml`, copy the four checksums from the `SHA256SUMS` asset of the release, and run `just chezmoi-all`.
+| Environment  | Pin                                                                                   | Link made by                                          |
+| ------------ | ------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Host         | `dot_config/mise/config.toml` in the chezmoi dotfiles repository                      | `postinstall` of the pin                              |
+| Devcontainer | `mise.toml` in the coding-agent-sandbox repository, installed by `Dockerfile.tooling` | `postinstall` of the pin                              |
+| Cloud        | [`templates/web/mise.toml`](../../../templates/web/mise.toml)                         | [`bootstrap.sh`](../../../templates/web/bootstrap.sh) |
+
+The hooks run the link by its full path, not through `PATH`, so the guard also runs when the agent starts without `~/.local/bin` on `PATH`. They do not run the mise shim: in a project with an untrusted mise config, the shim exits 1 before dcg starts. `postinstall` runs only when mise installs dcg. When the link is missing, run `mise install -f github:Dicklesworthstone/destructive_command_guard`. The upstream `install.sh` is not used, because it edits each agent's config file in `$HOME`, and the next `just chezmoi` overwrites those edits.
+
+Each hook sets `DCG_NO_SELF_HEAL=1`. dcg resolves the link to the versioned install path. Without the variable, it can rewrite its Claude Code hook to that path, which the next upgrade breaks.
+
+To upgrade, change the version in the three pins. For the cloud pin, also follow the steps in [`templates/web/README.md`](../../../templates/web/README.md). Then change the tag in the links of [`dot_config/dcg/README.md`](../../../dot_config/dcg/README.md).
 
 Codex runs a new hook only after you trust it: open `/hooks` in Codex once after the first apply.
 
@@ -48,9 +58,9 @@ from this folder, or `just hooks-check`. The check tests `core.ts` with stub dcg
 
 ## Files
 
-| File                             | Role                                                                |
-| -------------------------------- | ------------------------------------------------------------------- |
-| [`core.ts`](core.ts)             | Turns the dcg exit code and JSON into a block reason.               |
-| [`io.ts`](io.ts)                 | Sends a Bash hook payload to the dcg mise shim, with a 5 s timeout. |
-| [`pi.ts`](pi.ts)                 | The pi and omp extension.                                           |
-| [`test/check.ts`](test/check.ts) | The self-check.                                                     |
+| File                             | Role                                                                 |
+| -------------------------------- | -------------------------------------------------------------------- |
+| [`core.ts`](core.ts)             | Turns the dcg exit code and JSON into a block reason.                |
+| [`io.ts`](io.ts)                 | Sends a Bash hook payload to `~/.local/bin/dcg`, with a 5 s timeout. |
+| [`pi.ts`](pi.ts)                 | The pi and omp extension.                                            |
+| [`test/check.ts`](test/check.ts) | The self-check.                                                      |

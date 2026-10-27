@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "{{ .chezmoi.homeDir }}/.local/bin/dcg",
+            "command": "DCG_NO_SELF_HEAL=1 {{ .chezmoi.homeDir }}/.local/bin/dcg",
             "timeout": 5
           }
         ]

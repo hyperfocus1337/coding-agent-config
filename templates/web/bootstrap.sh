@@ -76,9 +76,12 @@ mise -C "$REPO_DIR/templates/web" install
 # session's Bash calls below. A mise shim would not work there: the session's repo
 # has no mise config that selects these tools.
 ln -sf "$(mise -C "$REPO_DIR/templates/web" which chezmoi)" "$LOCAL_BIN/chezmoi"
+# Every agent hook runs dcg from this path, see
+# dot_claude/hooks/block-destructive-commands/README.md.
+ln -sf "$(mise -C "$REPO_DIR/templates/web" which dcg)" "$LOCAL_BIN/dcg"
 
 # Claude Code runs CLAUDE_ENV_FILE before each Bash command, so the binaries in
-# ~/.local/bin (mise, apm, chezmoi) resolve after this hook exits too.
+# ~/.local/bin (mise, apm, chezmoi, dcg) resolve after this hook exits too.
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   echo "export PATH=\"$LOCAL_BIN:\$PATH\"" >>"$CLAUDE_ENV_FILE"
 fi

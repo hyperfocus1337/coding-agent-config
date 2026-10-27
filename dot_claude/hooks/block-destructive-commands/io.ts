@@ -7,8 +7,8 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Io } from "./core.ts";
 
-// chezmoi installs dcg here from .chezmoiexternal.toml. A fixed path, not PATH,
-// so the guard also runs when the PATH of the agent does not have ~/.local/bin.
+// mise links dcg here, see README.md#install. A fixed path, not PATH, so the guard
+// also runs when the PATH of the agent does not have ~/.local/bin.
 export const DCG = join(homedir(), ".local", "bin", "dcg");
 
 export function nodeIo(cwd: string, bin = DCG): Io {

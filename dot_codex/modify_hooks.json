@@ -86,7 +86,7 @@ ours=$(cat <<'EOF'
       {
         "hooks": [
           {
-            "command": "\"$HOME/.local/bin/dcg\"",
+            "command": "DCG_NO_SELF_HEAL=1 \"$HOME/.local/bin/dcg\"",
             "timeout": 5,
             "type": "command"
           },
