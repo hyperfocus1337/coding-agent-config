@@ -119,3 +119,5 @@ The method has these limits:
 ## Permissions
 
 `allowed-tools` lists every git subcommand a method needs: `apply`, `show`, `hash-object`, `update-index`, `ls-files`. A missing entry causes a permission prompt on each call, or the model falls back to `git add` on the whole file. It also lists every command of the Context block: outside bypass and auto mode, a context command that no rule allows stops the invocation with `Shell command permission check failed`.
+
+For external repositories, `allowed-tools` holds one `Bash(git -C * <subcommand> *)` rule per subcommand that the command uses without `-C`. One `Bash(git -C:*)` rule would be shorter, but it also allows `git -C <repo> push` and `git -C <repo> reset --hard`.
