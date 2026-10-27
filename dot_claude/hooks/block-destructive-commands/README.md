@@ -21,11 +21,13 @@ Codex runs a new hook only after you trust it: open `/hooks` in Codex once after
 The hook fails open. When dcg is missing, exits with an error (exit 3 or more), or runs longer than 5 s, the command runs:
 
 - **Claude Code and Codex** treat a command hook that cannot start or that times out as a non-blocking error.
-- **pi and omp:** [`core.ts`](core.ts) blocks only on exit 1. Any other result allows the call.
+- **pi and omp:** [`core.ts`](core.ts) blocks on a hook JSON `permissionDecision: "deny"`, including the normal exit 0 response. Exit 1 also blocks. Other exit codes or an invalid exit 0 response allow the call.
 
 ## pi and omp
 
-`pi.ts` follows the pi recipe in the dcg repository, [`docs/pi-integration.md`](https://github.com/Dicklesworthstone/destructive_command_guard/blob/main/docs/pi-integration.md). It runs `dcg --robot test --dialect posix <command>` in the session directory. `--dialect posix` is the dialect of the Claude Code Bash hook. Without it, dcg also reads the command as zsh and can deny commands that Bash allows.
+`pi.ts` runs `dcg hook` in the session directory and sends a `Bash` tool payload through stdin. This selects the POSIX dialect, uses the live hook approval flow, and returns the denial reason, rule ID, and a real `dcg allow-once <code>` command. `dcg test` is a diagnostic interface: its denial output does not provide an approval code. The adapter preserves the hook's permission reason and adds structured rule and approval details if they are missing from that reason.
+
+In pi, enter `!dcg allow-once <actual-code>` in the conversation to approve one run, then let the agent retry the unchanged command in the original directory. The `!` command is a user shell action, not an agent tool call. A conversational approval or a confirmation dialog alone does not register a dcg exception. No extra terminal or custom approval UI is needed.
 
 omp loads the same `pi.ts`, not the extension that `dcg install --omp` writes. That generated file holds the absolute path of the binary, which is different on the host and in the devcontainer, and it changes with each dcg release. Two consequences:
 
@@ -46,9 +48,9 @@ from this folder, or `just hooks-check`. The check tests `core.ts` with stub dcg
 
 ## Files
 
-| File                             | Role                                                       |
-| -------------------------------- | ---------------------------------------------------------- |
-| [`core.ts`](core.ts)             | Turns the dcg exit code and JSON into a block reason.      |
-| [`io.ts`](io.ts)                 | Runs `~/.local/bin/dcg` in robot mode, with a 5 s timeout. |
-| [`pi.ts`](pi.ts)                 | The pi and omp extension.                                  |
-| [`test/check.ts`](test/check.ts) | The self-check.                                            |
+| File                             | Role                                                                |
+| -------------------------------- | ------------------------------------------------------------------- |
+| [`core.ts`](core.ts)             | Turns the dcg exit code and JSON into a block reason.               |
+| [`io.ts`](io.ts)                 | Sends a Bash hook payload to the dcg mise shim, with a 5 s timeout. |
+| [`pi.ts`](pi.ts)                 | The pi and omp extension.                                           |
+| [`test/check.ts`](test/check.ts) | The self-check.                                                     |

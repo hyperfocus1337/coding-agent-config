@@ -1,7 +1,7 @@
 /**
- * The verdict of dcg (destructive_command_guard) on one shell command. In
- * robot mode the exit code carries the decision: 0 allows, 1 denies with a JSON
- * reason on stdout, and 3 or more is a dcg error.
+ * The verdict of dcg (destructive_command_guard) on one shell command.
+ * Hook mode returns its permission decision and approval details as JSON on
+ * stdout with exit 0. Exit 1 is also treated as a denial.
  */
 
 export interface Io {
@@ -16,15 +16,24 @@ export async function check(command: string, io: Io): Promise<string | undefined
   if (!command.trim()) return undefined;
   const run = await io.dcg(command);
   // Fail open: a missing dcg, a dcg error, or a timeout lets the call run.
-  if (run?.exitCode !== 1) return undefined;
+  if (!run || (run.exitCode !== 0 && run.exitCode !== 1)) return undefined;
+  const fallback = run.exitCode === 1 ? FALLBACK : undefined;
   try {
-    const { reason, rule_id } = JSON.parse(run.stdout) as {
-      reason?: unknown;
-      rule_id?: unknown;
-    };
-    if (typeof reason !== "string" || !reason) return FALLBACK;
-    return typeof rule_id === "string" ? `${reason} [${rule_id}]` : reason;
+    const output = JSON.parse(run.stdout)?.hookSpecificOutput;
+    if (output?.permissionDecision !== "deny") return fallback;
+    let reason =
+      typeof output.permissionDecisionReason === "string" && output.permissionDecisionReason
+        ? output.permissionDecisionReason
+        : FALLBACK;
+    if (typeof output.ruleId === "string" && !reason.includes(output.ruleId)) {
+      reason += `\nRule: ${output.ruleId}`;
+    }
+    if (typeof output.allowOnceCode === "string" && /^\d{6}$/.test(output.allowOnceCode)) {
+      const approval = `dcg allow-once ${output.allowOnceCode}`;
+      if (!reason.includes(approval)) reason += `\nUser approval: ${approval}`;
+    }
+    return reason;
   } catch {
-    return FALLBACK;
+    return fallback;
   }
 }

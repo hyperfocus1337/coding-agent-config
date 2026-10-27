@@ -58,7 +58,9 @@ The pack does not catch a write that does not name the key: an edit of `.git/con
 
 ## Exceptions
 
-When dcg blocks a command that you want to run, you make the exception. The agent cannot: the `guardrails` pack blocks the commands below when an agent runs them. In Claude Code, type `!` and then the command in the prompt. The `!` prefix runs the command in the session shell as your command, not as a tool call of the agent. In Codex, pi, or omp, run the command in a second terminal in the same environment as the agent, the host or the devcontainer.
+When dcg blocks a command that you want to run, you make the exception. The agent cannot: the `guardrails` pack blocks the commands below when an agent runs them.
+
+In Claude Code and pi, type `!` and then the command in the prompt. The `!` prefix runs the command in the session shell as your command, not as a tool call of the agent, so you do not need a second terminal. In Codex or omp, use a supported user-shell action, or run the command in a terminal in the same environment as the agent, the host or the devcontainer. A conversational confirmation does not create a dcg exception.
 
 | Scope                        | Command                                                                    | Effect                                                                                                                 |
 | ---------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -69,7 +71,7 @@ When dcg blocks a command that you want to run, you make the exception. The agen
 | One rule, for a limited time | `dcg allowlist add <rule-id> -r "<reason>" --expires 2026-11-01T00:00:00Z` | Allows the rule until that time. You can combine `--expires` with `--path`.                                            |
 | One command, no checks       | `DCG_BYPASS=1 <command>`                                                   | Turns off all packs for that command. Use it only in your own terminal. In an agent command, it has no effect.         |
 
-The code is in the last line of the block message, for example `dcg allow-once 059674`. The rule ID is in the `Rule:` line, for example `kubernetes.helm:rollback`.
+The approval command is in the block message, for example `dcg allow-once 059674`. The rule ID is in the `Rule:` line, for example `kubernetes.helm:rollback`. The pi and omp adapter uses dcg hook mode to obtain these details; `dcg test` does not return an approval code. The agent must show the actual code from the block, never invent one. If the block contains no code, obtain diagnostic output before choosing an exception.
 
 dcg writes `allow-once` codes to `~/.config/dcg/pending_exceptions.jsonl` and allowlist entries to `~/.config/dcg/allowlist.toml`. chezmoi does not manage these files, so `just chezmoi` keeps them. The host and the devcontainer each have their own files, so an exception on one does not apply on the other.
 

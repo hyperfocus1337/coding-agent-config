@@ -19,14 +19,19 @@ export function nodeIo(cwd: string, bin = DCG): Io {
         // Bun, which runs pi and omp, throws a failed spawn here instead of
         // emitting an error event, and can give a child with no stdout.
         try {
-          child = spawn(bin, ["--robot", "test", "--dialect", "posix", command], {
+          child = spawn(bin, ["hook"], {
             cwd,
-            stdio: ["ignore", "pipe", "ignore"],
+            env: { ...process.env, DCG_NO_SELF_HEAL: "1" },
+            stdio: ["pipe", "pipe", "ignore"],
             timeout: 5000,
           });
         } catch {
           return done(undefined);
         }
+        child.stdin?.on("error", () => done(undefined));
+        child.stdin?.end(
+          JSON.stringify({ tool_name: "Bash", tool_input: { command }, cwd }) + "\n",
+        );
         let stdout = "";
         child.stdout?.on("data", (chunk) => (stdout += chunk));
         // A dcg that is not installed, or a cwd that does not exist.
