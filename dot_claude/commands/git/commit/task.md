@@ -1,12 +1,12 @@
 ---
-allowed-tools: Bash(git add:*), Bash(git restore --staged:*), Bash(git apply:*), Bash(git show:*), Bash(git hash-object:*), Bash(git update-index:*), Bash(git ls-files:*), Bash(git status:*), Bash(git commit:*), Bash(git diff:*), Bash(git log:*), Bash(git -C * rev-parse *), Bash(git -C * add *), Bash(git -C * restore --staged *), Bash(git -C * apply *), Bash(git -C * show *), Bash(git -C * hash-object *), Bash(git -C * update-index *), Bash(git -C * ls-files *), Bash(git -C * status *), Bash(git -C * commit *), Bash(git -C * diff *), Bash(git -C * log *)
+allowed-tools: Bash(git add:*), Bash(git restore --staged:*), Bash(git apply:*), Bash(git show:*), Bash(git hash-object:*), Bash(git update-index:*), Bash(git ls-files:*), Bash(git status:*), Bash(git --no-optional-locks status:*), Bash(sleep 10), Bash(git commit:*), Bash(git diff:*), Bash(git log:*), Bash(git -C * rev-parse *), Bash(git -C * add *), Bash(git -C * restore --staged *), Bash(git -C * apply *), Bash(git -C * show *), Bash(git -C * hash-object *), Bash(git -C * update-index *), Bash(git -C * ls-files *), Bash(git -C * status *), Bash(git -C * commit *), Bash(git -C * diff *), Bash(git -C * log *)
 argument-hint: [scope]
 description: Commit one task's changes
 ---
 
 ## Context
 
-- Status: !`git status -sb`
+- Status: !`git --no-optional-locks status -sb`
 - Change size per file: !`git diff HEAD --stat 2>/dev/null || git diff --cached --stat`
 - Recent commits: !`git log --oneline -5 2>/dev/null || echo "no commits yet"`
 
@@ -39,6 +39,8 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
 4. **Verify.** Compare `git diff --cached --name-only` against the include list. Unstage anything extra with `git restore --staged <path>` and repeat until they match. Read `git diff --cached -- <path>` for each partly staged file to confirm every hunk is in scope and sits where it belongs.
 5. **Commit.** In a new Bash call, after you read the output of step 4, use Conventional Commits with a concise subject, body only when the subject does not carry the reason. Describe the scope and nothing else. If the body needs "also", unstage the extra change and return to step 3.
 
-If a git command fails, stop and report the error. Do not run the next step. Run each git command in its own Bash call, or chain commands with `&&`, so that a failure stops the commands after it.
+Run git commands one at a time, each in its own Bash call or chained with `&&`, so that a failure stops the commands after it. If a git command fails, stop and report the error. Do not run the next step.
+
+The one exception is a staging command that fails with `Unable to create '<lock>': File exists`: another process holds the index lock. Run `sleep 10 && git diff --cached --name-only`. If the stage holds only your changes, run the failed command once more. Never touch the lock file, and never run `git commit` twice.
 
 Do not edit files. Print one line per commit as inline code: `<short sha> <subject>`, plus `left: <count> paths` when anything stayed uncommitted. Before the lines of an external repository, print its top level on its own line. No other text.

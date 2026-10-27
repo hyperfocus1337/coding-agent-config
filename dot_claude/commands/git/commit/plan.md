@@ -1,12 +1,12 @@
 ---
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Read(~/.claude/commands/git/commit/**), Bash(git -C * rev-parse *), Bash(git -C * status *), Bash(git -C * diff *), Bash(git -C * log *)
+allowed-tools: Bash(git status:*), Bash(git --no-optional-locks status:*), Bash(git diff:*), Bash(git log:*), Read(~/.claude/commands/git/commit/**), Bash(git -C * rev-parse *), Bash(git -C * status *), Bash(git -C * diff *), Bash(git -C * log *)
 argument-hint: <conversation|multiple|task [scope]>
 description: Plan the commits a commit command would make, without committing
 ---
 
 ## Context
 
-- Status: !`git status -sb`
+- Status: !`git --no-optional-locks status -sb`
 - Change size per file: !`git diff HEAD --stat 2>/dev/null || git diff --cached --stat`
 - Recent commits: !`git log --oneline -5 2>/dev/null || echo "no commits yet"`
 
@@ -24,7 +24,7 @@ Plan the commits that a commit command would make. Commit nothing, stage nothing
    ```
 
 2. **Rules.** Read `~/.claude/commands/git/commit/<target>.md`. Apply its steps that decide what to commit and how to group it, starting with its **Repositories** step. Stop before its first staging step. For an external repository, get its context in separate Bash calls:
-   - `git -C <repo> status -sb --untracked-files=all`. It lists each untracked file with `??`. An untracked file has no diff stat, so take it from this list.
+   - `git -C <repo> --no-optional-locks status -sb --untracked-files=all`. It lists each untracked file with `??`. An untracked file has no diff stat, so take it from this list.
    - `git -C <repo> rev-parse --verify --quiet HEAD`. When it prints nothing, the repository has no commits: this result is expected, not a failure.
    - `git -C <repo> diff HEAD --stat` when the previous command printed a hash, otherwise `git -C <repo> diff --cached --stat`.
 
