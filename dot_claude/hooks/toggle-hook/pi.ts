@@ -31,7 +31,7 @@ export default function (pi: ExtensionAPI) {
   });
   pi.registerCommand("toggle-hook", {
     description:
-      "Turn an advisory hook off or on, until you quit, or with --repo or --global in git config",
+      "Turn a supported hook off or on, until you quit, or with --repo or --global in git config",
     // pi puts the value in place of the whole argument text.
     getArgumentCompletions: (prefix) => {
       const text = prefix.trim();

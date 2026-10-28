@@ -1,5 +1,5 @@
 /**
- * The toggle-hook logic: `/toggle-hook <hook>` turns an advisory hook off or
+ * The toggle-hook logic: `/toggle-hook <hook>` turns a supported hook off or
  * on until you quit the agent, and `/toggle-hook --repo <hook>` or
  * `--global <hook>` turns it off or on in git config, across sessions. The
  * session state is AGENT_HOOKS_DISABLE, a list of hook names in the agent's
@@ -22,6 +22,7 @@ export const HOOKS = [
   "lint-prose",
   "type-check-tsc",
   "type-check-pyrefly",
+  "block-destructive-commands",
 ];
 
 /**

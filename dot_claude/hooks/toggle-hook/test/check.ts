@@ -46,6 +46,20 @@ const offIn = (config: Config) => [...config].filter(([, set]) => !set.on).map((
 
 // --- core.ts ---
 
+await check("block-destructive-commands supports all toggle scopes and status", () => {
+  const name = "block-destructive-commands";
+  assert.ok(HOOKS.includes(name));
+  assert.equal(toggle(undefined, name).value, name);
+  assert.equal(toggle(name, name).value, undefined);
+  assert.equal(status(name), `hooks off: ${name}`);
+  for (const scope of ["repo", "global"] as const) {
+    assert.deepEqual(toggleConfig(undefined, name, new Map(), scope).writes, [{ name, on: false }]);
+    const off = cfg([name, false, scope]);
+    assert.deepEqual(toggleConfig(undefined, name, off, scope).writes, [{ name, on: true }]);
+    assert.equal(status(undefined, off), `hooks off: ${name} (${scope})`);
+  }
+});
+
 await check("a name flips the hook off, then on", () => {
   const off = toggle(undefined, " lint-prose ");
   assert.deepEqual(off, {

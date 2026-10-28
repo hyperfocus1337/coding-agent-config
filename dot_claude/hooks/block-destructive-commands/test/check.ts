@@ -7,7 +7,8 @@
  */
 
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { check, FALLBACK, type Io } from "../core.ts";
@@ -16,6 +17,11 @@ import extension from "../pi.ts";
 
 const tmp = mkdtempSync(join(tmpdir(), "block-destructive-commands-test-"));
 process.on("exit", () => rmSync(tmp, { recursive: true, force: true }));
+// Keep the caller's session and git toggles out of these checks.
+delete process.env.AGENT_HOOKS_DISABLE;
+process.env.GIT_CONFIG_GLOBAL = join(tmp, "gitconfig");
+process.env.GIT_CONFIG_NOSYSTEM = "1";
+process.env.GIT_CONFIG_COUNT = "0";
 
 const stub = (exitCode: number, stdout = ""): Io => ({
   dcg: async () => ({ exitCode, stdout }),
@@ -94,6 +100,70 @@ assert.deepEqual(await nodeIo(tmp, echo).dcg(command), {
 assert.equal(await nodeIo(tmp, join(tmp, "missing")).dcg("ls"), undefined);
 assert.equal(await nodeIo(join(tmp, "missing"), echo).dcg("ls"), undefined);
 
+// Toggles are read on each call, not when nodeIo is created.
+const io = nodeIo(tmp, echo);
+for (const value of ["block-destructive-commands", "lint-code,block-destructive-commands\ttypo"]) {
+  process.env.AGENT_HOOKS_DISABLE = value;
+  assert.equal(await io.dcg(command), undefined);
+}
+process.env.AGENT_HOOKS_DISABLE = "block-destructive-commands-extra";
+assert.ok(await io.dcg(command), "only the exact hook name turns it off");
+delete process.env.AGENT_HOOKS_DISABLE;
+const global = process.env.GIT_CONFIG_GLOBAL;
+writeFileSync(global, '[agent-hook "block-destructive-commands"]\n enabled = false\n');
+assert.equal(await io.dcg(command), undefined, "global toggle");
+const repo = join(tmp, "repo");
+mkdirSync(repo);
+assert.equal(spawnSync("git", ["init", repo]).status, 0);
+const localConfig = join(repo, ".git", "config");
+const config = (value: string) =>
+  writeFileSync(localConfig, `[agent-hook "block-destructive-commands"]\n enabled = ${value}\n`);
+config("true");
+assert.ok(await nodeIo(repo, echo).dcg(command), "repo true overrides global false");
+writeFileSync(global, "");
+config("false");
+assert.equal(await nodeIo(repo, echo).dcg(command), undefined, "repo toggle");
+config("banana");
+assert.ok(await nodeIo(repo, echo).dcg(command), "invalid config keeps dcg on");
+
+// Command hooks preserve stdin, dcg output, exit status, and self-heal setting.
+const home = join(tmp, "home");
+mkdirSync(join(home, ".local", "bin"), { recursive: true });
+writeFileSync(
+  join(home, ".local", "bin", "dcg"),
+  '#!/bin/sh\nprintf "%s|" "$DCG_NO_SELF_HEAL"\ncat\nexit 1\n',
+  { mode: 0o755 },
+);
+const payload = JSON.stringify({ tool_name: "PowerShell", tool_input: { command }, cwd: repo });
+const shell = (off = "") =>
+  spawnSync("sh", [new URL("../guard.sh", import.meta.url).pathname], {
+    cwd: repo,
+    env: { ...process.env, HOME: home, AGENT_HOOKS_DISABLE: off },
+    input: payload,
+    encoding: "utf8",
+  });
+let result = shell();
+assert.equal(result.status, 1);
+assert.equal(result.stdout, `1|${payload}`);
+for (const off of ["block-destructive-commands", "lint-code,block-destructive-commands\ttypo"]) {
+  result = shell(off);
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout, "");
+}
+assert.equal(shell("block-destructive-commands-extra").status, 1);
+config("false");
+assert.equal(shell().stdout, "");
+assert.equal(shell().status, 0);
+config("true");
+writeFileSync(global, '[agent-hook "block-destructive-commands"]\n enabled = false\n');
+assert.equal(shell().status, 1, "repo true overrides global false");
+config("false");
+assert.equal(shell().status, 0);
+writeFileSync(localConfig, "");
+assert.equal(shell().status, 0, "global false applies without a repo key");
+writeFileSync(global, "");
+assert.equal(shell().status, 1, "unset config keeps dcg on");
+
 // pi: only a bash call with a string command reaches dcg.
 type Handler = (event: unknown, ctx: unknown) => Promise<unknown>;
 let handler: Handler | undefined;
@@ -114,6 +184,9 @@ if (existsSync(DCG)) {
     await check("git -C /any/repository rev-parse --show-toplevel", nodeIo(tmp)),
     undefined,
   );
+  process.env.AGENT_HOOKS_DISABLE = "block-destructive-commands";
+  assert.equal(await call("bash", { command: "git reset --hard HEAD~1" }), undefined);
+  delete process.env.AGENT_HOOKS_DISABLE;
   const blocked = (await call("bash", { command: "git reset --hard HEAD~1" })) as {
     block: boolean;
     reason: string;

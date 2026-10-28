@@ -2,7 +2,7 @@
  * The process function of ./core.ts under Node, for pi.ts.
  */
 
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Io } from "./core.ts";
@@ -13,8 +13,25 @@ export const DCG = join(homedir(), ".local", "bin", "dcg");
 
 export function nodeIo(cwd: string, bin = DCG): Io {
   return {
-    dcg: (command) =>
-      new Promise((done) => {
+    dcg: (command) => {
+      if (
+        (process.env.AGENT_HOOKS_DISABLE ?? "")
+          .split(/[\s,]+/)
+          .includes("block-destructive-commands")
+      )
+        return Promise.resolve(undefined);
+      try {
+        const config = spawnSync(
+          "git",
+          ["config", "--type=bool", "--get", "agent-hook.block-destructive-commands.enabled"],
+          { cwd, encoding: "utf8", timeout: 1000 },
+        );
+        if (config.status === 0 && config.stdout.trim() === "false")
+          return Promise.resolve(undefined);
+      } catch {
+        // An unavailable git config does not turn the guard off.
+      }
+      return new Promise((done) => {
         let child;
         // Bun, which runs pi and omp, throws a failed spawn here instead of
         // emitting an error event, and can give a child with no stdout.
@@ -38,6 +55,7 @@ export function nodeIo(cwd: string, bin = DCG): Io {
         child.on("error", () => done(undefined));
         // The timeout kills dcg with a signal, so the code is null.
         child.on("close", (code) => done({ exitCode: code ?? -1, stdout }));
-      }),
+      });
+    },
   };
 }

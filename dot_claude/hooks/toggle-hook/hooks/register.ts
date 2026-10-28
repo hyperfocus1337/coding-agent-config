@@ -15,7 +15,7 @@ export const register: Register = (on) => {
     await $.command.register({
       name: "toggle-hook",
       description:
-        "Turn an advisory hook off or on, until you quit, or with --repo or --global in git config",
+        "Turn a supported hook off or on, until you quit, or with --repo or --global in git config",
       argumentHint: "[--repo|--global] [hook|all]",
     });
     // The engine only takes $ calls spelled at the call site. The process

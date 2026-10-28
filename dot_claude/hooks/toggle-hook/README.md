@@ -1,6 +1,6 @@
 # toggle-hook
 
-Adds the `/toggle-hook` command, which turns an advisory hook off or on. Without a flag, the change lasts until you quit the agent. With `--repo`, the change goes in the git config of the session repository, and with `--global` in your global git config. Both last across sessions. Use it when a formatter fights the style of a repo, or when a linter reports on a file that you do not own, and you do not want to restart the agent.
+Adds the `/toggle-hook` command, which turns a supported hook off or on. Without a flag, the change lasts until you quit the agent. With `--repo`, the change goes in the git config of the session repository, and with `--global` in your global git config. Both last across sessions. Use it when a formatter fights the style of a repo, or when a linter reports on a file that you do not own, and you do not want to restart the agent.
 
 | Agent       | Adapter                                                                                                                                                | Loaded by                                                                                          |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
@@ -16,10 +16,10 @@ The hook checks nothing. It runs when you type `/toggle-hook`, and the argument 
 | --------------------------------- | -------------------------------------------------------------------------------------------- |
 | None, or a flag alone             | Lists the state of each hook and formatter, and the scope that moves it off its default      |
 | A hook name                       | Flips that hook until you quit, and prints its new state                                     |
-| `all`                             | Turns all 7 hooks off until you quit, or turns all of them on again when one or more are off |
+| `all`                             | Turns all 8 hooks off until you quit, or turns all of them on again when one or more are off |
 | `--repo` and a hook name          | Flips that hook in the session repository                                                    |
 | `--repo` and `<hook>.<formatter>` | Flips one formatter in the session repository, for example `--repo format-code.shfmt`        |
-| `--repo all`                      | Turns all 7 hooks off in the session repository, or on again when one or more are off        |
+| `--repo all`                      | Turns all 8 hooks off in the session repository, or on again when one or more are off        |
 | `--global` and a name, or `all`   | As `--repo`, in the global git config                                                        |
 | A guard name                      | Changes nothing, and names the escape hatch of that guard                                    |
 | Any other text                    | Changes nothing, and lists the hook names                                                    |
@@ -28,15 +28,18 @@ The session can only turn a hook off. A hook that git config turns off stays off
 
 ### Which hooks have a toggle
 
-Only the advisory hooks have a toggle. An advisory hook formats, lints, or type-checks, and does not exist to stop the model. The 7 advisory hooks are in `HOOKS` in [`core.ts`](core.ts):
+The 7 advisory hooks and `block-destructive-commands` have a toggle. An advisory hook formats, lints, or type-checks. The 8 supported hooks are in `HOOKS` in [`core.ts`](core.ts):
 
 - `format-oxfmt`, `format-org-tables`, and `format-code`
 - `lint-code` and `lint-prose`
 - `type-check-tsc` and `type-check-pyrefly`
+- `block-destructive-commands`
+
+Turning off `block-destructive-commands` skips all dcg checks, including the pack that blocks agent writes to hook toggle keys. This also happens with `all`. Prefer `dcg allow-once <code>` when you only need to approve one command.
 
 `PARTS` in [`core.ts`](core.ts) lists the formatters that have their own key: `terraform`, `shfmt`, and `ruff` of `format-code`.
 
-The guards (`enforce-cli-tools`, `block-commit-attribution`, `block-secret-commits`) exist to stop the model, so they keep their own escape hatches and have no toggle. `track-session-changes` only writes a log.
+The other guards (`enforce-cli-tools`, `block-commit-attribution`, `block-secret-commits`) keep their own escape hatches and have no toggle. `track-session-changes` only writes a log.
 
 `format-staged-files`, the git `pre-commit` hook, removes the variable before it runs the formatters, so a commit is formatted also while a formatter is off for the session. The repository setting applies to that hook too: a formatter that is off for the repository does not format the commit.
 
@@ -48,7 +51,7 @@ The guards (`enforce-cli-tools`, `block-commit-attribution`, `block-secret-commi
 
 ## How it works
 
-The command has two scopes:
+The command has three scopes:
 
 | Scope      | State                                                                                                        | Lasts                     |
 | ---------- | ------------------------------------------------------------------------------------------------------------ | ------------------------- |
@@ -56,7 +59,9 @@ The command has two scopes:
 | Repository | `agent-hook.<hook>.enabled`, and `agent-hook.<hook>.<formatter>`, in `.git/config` of the session repository | Until you change it again |
 | Global     | The same keys in `~/.gitconfig`, or in the file that `GIT_CONFIG_GLOBAL` names                               | Until you change it again |
 
-A repository key wins over a global key. A hook does nothing when a scope turns it off. Each of the 7 hooks reads the variable and the git config on each run. It reads the git config in the repository of each file, with `git config --type=bool --get`, so a session can edit files in more than one repository. A value that is not a boolean, such as `banana`, keeps the hook on.
+A repository key wins over a global key. A hook does nothing when a scope turns it off. Each of the 8 hooks reads the variable and the git config on each run. File hooks read the git config in the repository of each file, with `git config --type=bool --get`, so a session can edit files in more than one repository.
+
+`block-destructive-commands` reads it in the hook process directory for Claude Code and Codex, and in the session directory for pi and omp. A value that is not a boolean, such as `banana`, keeps the hook on.
 
 The session scope changes the variable in the process of the agent itself. Nothing goes to disk, so the change does not reach another session, and chezmoi sees no drift. In Claude Code, `type-check-tsc` and `type-check-pyrefly` are command hooks, which Claude Code starts as a new process: each one gets the variable as Claude Code has it when Claude Code starts the hook.
 

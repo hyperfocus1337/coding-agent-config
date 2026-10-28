@@ -1,12 +1,12 @@
 # block-destructive-commands
 
-Blocks a shell command that [dcg](https://github.com/Dicklesworthstone/destructive_command_guard) (destructive_command_guard) denies, for example `git reset --hard`, `rm -rf` outside a temporary directory, or `DROP TABLE`. dcg is a Rust binary with its own rule packs. This folder holds only the pi and omp adapter. Claude Code and Codex run the binary directly as a command hook.
+Blocks a shell command that [dcg](https://github.com/Dicklesworthstone/destructive_command_guard) (destructive_command_guard) denies, for example `git reset --hard`, `rm -rf` outside a temporary directory, or `DROP TABLE`. dcg is a Rust binary with its own rule packs. This folder holds the pi and omp adapter and a shell wrapper for Claude Code and Codex. Each adapter checks the standard hook toggles before it runs dcg.
 
-| Agent       | Adapter                                                                          | Loaded by                                                                                          |
-| ----------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Claude Code | `~/.local/bin/dcg`, `PreToolUse` on `Bash\|PowerShell\|Monitor`, the first entry | `hooks` in `dot_claude/settings.json.tmpl`                                                         |
-| Codex       | `"$HOME/.local/bin/dcg"`, the first `PreToolUse` handler on `Bash`               | `dot_codex/modify_hooks.json`                                                                      |
-| pi and omp  | [`pi.ts`](pi.ts): `tool_call` on bash returns `{ block, reason }`                | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
+| Agent       | Adapter                                                                              | Loaded by                                                                                          |
+| ----------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Claude Code | [`guard.sh`](guard.sh), `PreToolUse` on `Bash\|PowerShell\|Monitor`, the first entry | `hooks` in `dot_claude/settings.json.tmpl`                                                         |
+| Codex       | [`guard.sh`](guard.sh), the first `PreToolUse` handler on `Bash`                     | `dot_codex/modify_hooks.json`                                                                      |
+| pi and omp  | [`pi.ts`](pi.ts): `tool_call` on bash returns `{ block, reason }`                    | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
 
 ## Install
 
@@ -44,6 +44,24 @@ omp loads the same `pi.ts`, not the extension that `dcg install --omp` writes. T
 - `dcg doctor` reports the omp extension as missing.
 - A local PTY call in omp (`pty: true`) through a cmd or PowerShell shell is checked as POSIX. The generated extension maps that shell to its own dialect.
 
+## Toggle
+
+Use the standard [`toggle-hook`](../toggle-hook/README.md) controls in Claude Code, pi, and omp:
+
+```text
+/toggle-hook block-destructive-commands
+/toggle-hook --repo block-destructive-commands
+/toggle-hook --global block-destructive-commands
+```
+
+The first command changes the session state. The flags change persistent repository or global state. Run the same command again to turn the hook back on at that scope. The hook also participates in `all`, completion, the hook list, and the disabled-hook status display.
+
+All adapters read `AGENT_HOOKS_DISABLE` as hook names separated by spaces or commas. They also read `agent-hook.block-destructive-commands.enabled` through `git config --type=bool --get`. A repository value wins over a global value. A session disable wins over both. An unset or invalid value keeps dcg on.
+
+Claude Code and Codex use the hook process directory for the git config read; pi and omp use the session directory. The check does not follow a `cd` or `git -C` inside the command. In Codex, set the variable before launch or change the git config in your own terminal, because Codex has no `/toggle-hook` command.
+
+**Warning:** Turning this hook off skips all dcg checks, including protection against agent writes to hook toggle keys. Prefer `dcg allow-once <code>` for one command. The other guard hooks stay active.
+
 ## Configuration
 
 dcg reads `~/.config/dcg/config.toml` and a `.dcg.toml` in the project. This repository tracks the first one as [`dot_config/dcg/config.toml`](../../../dot_config/dcg/config.toml). Its [README](../../../dot_config/dcg/README.md) explains each enabled pack and why some packs stay disabled. Its [Exceptions](../../../dot_config/dcg/README.md#exceptions) section tells you how to allow a blocked command. `dcg explain "<command>"` shows the rule that blocks a command.
@@ -54,13 +72,14 @@ dcg reads `~/.config/dcg/config.toml` and a `.dcg.toml` in the project. This rep
 node test/check.ts
 ```
 
-from this folder, or `just hooks-check`. The check tests `core.ts` with stub dcg results, `io.ts` with stub dcg scripts, and `pi.ts` with a stub pi. The last group runs the installed `~/.local/bin/dcg` on `git reset --hard HEAD~1` and on `ls -la`, and is skipped when the binary is missing.
+from this folder, or `just hooks-check`. The check tests `core.ts` with stub dcg results, `io.ts` with stub dcg scripts, `guard.sh` with a stub binary, and `pi.ts` with a stub pi. It checks session, repository, and global toggles, repository precedence, invalid values, and shell payload and exit-status preservation. The last group runs the installed `~/.local/bin/dcg` on `git reset --hard HEAD~1` and on `ls -la`, and is skipped when the binary is missing.
 
 ## Files
 
-| File                             | Role                                                                 |
-| -------------------------------- | -------------------------------------------------------------------- |
-| [`core.ts`](core.ts)             | Turns the dcg exit code and JSON into a block reason.                |
-| [`io.ts`](io.ts)                 | Sends a Bash hook payload to `~/.local/bin/dcg`, with a 5 s timeout. |
-| [`pi.ts`](pi.ts)                 | The pi and omp extension.                                            |
-| [`test/check.ts`](test/check.ts) | The self-check.                                                      |
+| File                             | Role                                                                             |
+| -------------------------------- | -------------------------------------------------------------------------------- |
+| [`core.ts`](core.ts)             | Turns the dcg exit code and JSON into a block reason.                            |
+| [`io.ts`](io.ts)                 | Sends a Bash hook payload to `~/.local/bin/dcg`, with a 5 s timeout.             |
+| [`guard.sh`](guard.sh)           | Checks toggles and passes the original payload to dcg for Claude Code and Codex. |
+| [`pi.ts`](pi.ts)                 | The pi and omp extension.                                                        |
+| [`test/check.ts`](test/check.ts) | The self-check.                                                                  |

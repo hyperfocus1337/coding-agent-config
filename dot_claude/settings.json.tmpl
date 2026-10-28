@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "DCG_NO_SELF_HEAL=1 {{ .chezmoi.homeDir }}/.local/bin/dcg",
+            "command": "sh \"$HOME/.claude/hooks/block-destructive-commands/guard.sh\"",
             "timeout": 5
           }
         ]

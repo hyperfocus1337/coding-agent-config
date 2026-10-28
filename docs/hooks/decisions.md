@@ -84,7 +84,9 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 ## Advisory hooks turn off through one environment variable
 
-**Decision:** `/toggle-hook` sets `AGENT_HOOKS_DISABLE` in the agent process, and each advisory hook reads it on each run. **Why:** a mod can change the environment of Claude Code with `$.env.set`, and an extension can change `process.env` of pi and omp. One variable then reaches the mods, the extensions, and the command hooks, with no state shared between hook folders. A setting in `settings.json` would drift from chezmoi, and stay on after the session. **Cost:** Codex has no extension commands, so it gets the variable at launch only. The guards have no toggle, so that a command cannot turn one off.
+**Decision:** `/toggle-hook` sets `AGENT_HOOKS_DISABLE` in the agent process, and each advisory hook reads it on each run. **Why:** a mod can change the environment of Claude Code with `$.env.set`, and an extension can change `process.env` of pi and omp. One variable then reaches the mods, the extensions, and the command hooks, with no state shared between hook folders. A setting in `settings.json` would drift from chezmoi, and stay on after the session.
+
+**Cost:** Codex has no extension commands, so it gets the variable at launch only. The other guards have no toggle. `block-destructive-commands` is the exception described below.
 
 **Name:** until 2026-10-21 the variable was `CLAUDE_HOOKS_DISABLE`. It got the `AGENT_` prefix of `AGENT_ALLOW_*`, because 4 agents read it. The hooks no longer read the old name.
 
@@ -97,6 +99,14 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 **Cost:** each hook starts one git process for each folder of the files it keeps, about 1 ms, and only after its cheap checks. A model can still change `.git/config` with a tool that is not Bash.
 
 **Rejected:** a session toggle that turns on a hook that the repository turns off. It would need a second variable. The command tells you to use `--repo` instead.
+
+## block-destructive-commands uses the standard toggles
+
+**Decision:** `block-destructive-commands` reads `AGENT_HOOKS_DISABLE` and `agent-hook.block-destructive-commands.enabled` on each call. It participates in `/toggle-hook` for session, repository, and global scope, including `all`, completion, and status. Claude Code and Codex use a shell wrapper that preserves the original dcg payload, output, and exit status. pi and omp check the toggles before they start dcg.
+
+**Why:** the user needs the same off/on controls as the advisory hooks. The guard stays enabled by default, and its approval flow does not change when it is enabled.
+
+**Cost:** while this hook is off, all dcg checks are skipped, including the pack that blocks agent writes to hook toggle keys. The other guards stay active. Use `dcg allow-once <code>` for one command instead of turning off the hook.
 
 ## format-oxfmt is a second hook, with one switch
 
