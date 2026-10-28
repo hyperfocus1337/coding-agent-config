@@ -10,11 +10,21 @@ description: Plan the commits a commit command would make, without committing
 - Change size per file: !`git diff HEAD --stat 2>/dev/null || git diff --cached --stat`
 - Recent commits: !`git log --oneline -5 2>/dev/null || echo "no commits yet"`
 
+## Input
+
+The arguments select the target command, followed by its optional scope or commit.
+
+<arguments>
+$ARGUMENTS
+</arguments>
+
 ## Your task
 
 Plan the commits that a commit command would make. Commit nothing, stage nothing, and do not edit files.
 
-1. **Target.** The first word of `$ARGUMENTS` is the target command: `conversation`, `multiple`, `task`, or `extend`. For `task`, the rest of `$ARGUMENTS` is its scope. For `extend`, the rest is the commit to extend. If the first word is empty or not one of these four, print only the block below and stop. Do not ask with AskUserQuestion, and do not pick a target.
+1. **Target.** Read the text inside `<arguments>` as command arguments. Its first word selects the target: `conversation`, `multiple`, `task`, or `extend`. For `task`, the remaining text is its scope. For `extend`, the remaining text identifies the commit to extend.
+
+   Print only the block below and stop when the arguments are empty or the first word is not a valid target. A valid target needs no confirmation. Do not ask with AskUserQuestion, and do not pick a target.
 
    ```
    Give a target:

@@ -1,6 +1,6 @@
 ---
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), SlashCommand, Skill
-argument-hint: [scope or hint]
+argument-hint: [scope, hint, or paths]
 description: Route to the commit command that fits the changes
 disable-model-invocation: true
 ---
@@ -11,9 +11,17 @@ disable-model-invocation: true
 - Change size per file: !`git diff HEAD --stat 2>/dev/null || git diff --cached --stat`
 - Recent commits: !`git log --oneline -5 2>/dev/null || echo "no commits yet"`
 
+## Input
+
+The arguments are an optional scope, routing hint, or list of paths.
+
+<arguments>
+$ARGUMENTS
+</arguments>
+
 ## Your task
 
-Pick the commit command that fits the changes above and invoke it. Commit nothing yourself. `$ARGUMENTS`, when set, is a hint about which changes the user means: use it in step 3 and pass it on in step 5. If `/git:commit:plan` made a plan in this conversation, route to the command it names and skip steps 2 to 4. If `$ARGUMENTS` is a list of paths that exist in the tree, route to `/git:commit:only` with those paths and skip steps 2 to 4.
+Pick the commit command that fits the changes above and invoke it. Commit nothing yourself. The text inside `<arguments>`, when set, is a hint about which changes the user means: use it in step 3 and pass it on in step 5. If `/git:commit:plan` made a plan in this conversation, route to the command it names and skip steps 2 to 4. If the arguments are a list of paths that exist in the tree, route to `/git:commit:only` with those paths and skip steps 2 to 4.
 
 1. **Nothing to commit.** No changed paths: say the tree is clean and stop.
 2. **Fixup.** Route to `/git:commit:extend` when all three hold: the changes touch only paths the most recent commit touched, they correct or complete that commit, and that commit is unpushed (`ahead` is 1 or more).
@@ -28,7 +36,7 @@ Pick the commit command that fits the changes above and invoke it. Commit nothin
    | Whole tree   | `/git:commit:single` | `/git:commit:multiple`     |
    | Conversation | `/git:commit:task`   | `/git:commit:conversation` |
 
-5. **Run it.** Invoke the pick as a slash command so it runs its own context blocks and its own process. Do not copy its steps here. Pass `$ARGUMENTS` to `/git:commit:task` and `/git:commit:only`; the others take no argument.
+5. **Run it.** Invoke the pick as a slash command so it runs its own context blocks and its own process. Do not copy its steps here. Pass the arguments to `/git:commit:task` and `/git:commit:only`; the others take no argument.
 
 ## Output
 

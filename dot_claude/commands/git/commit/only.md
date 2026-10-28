@@ -10,9 +10,17 @@ description: Commit only the given files and folders
 - Change size per file: !`git diff HEAD --stat 2>/dev/null || git diff --cached --stat`
 - Recent commits: !`git log --oneline -5 2>/dev/null || echo "no commits yet"`
 
+## Input
+
+The arguments name the files or folders to commit.
+
+<arguments>
+$ARGUMENTS
+</arguments>
+
 ## Your task
 
-Commit the changes under the paths in `$ARGUMENTS` and nothing else. A path is a file or a folder. If `$ARGUMENTS` is empty, ask for the paths with AskUserQuestion, with the changed top-level paths as options.
+Read the text inside `<arguments>` as paths. Commit the changes under those paths and nothing else. A path is a file or a folder. If the arguments are empty, ask for the paths with AskUserQuestion, with the changed top-level paths as options.
 
 1. **Check.** Stop if a path has no changes, and name it.
 2. **Group.** Group the changes under the paths by concern. One unit makes one commit. A file that holds two units stays whole in the first unit that needs it.

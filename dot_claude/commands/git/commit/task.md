@@ -10,9 +10,17 @@ description: Commit one task's changes
 - Change size per file: !`git diff HEAD --stat 2>/dev/null || git diff --cached --stat`
 - Recent commits: !`git log --oneline -5 2>/dev/null || echo "no commits yet"`
 
+## Input
+
+The arguments optionally define the task scope.
+
+<arguments>
+$ARGUMENTS
+</arguments>
+
 ## Your task
 
-Commit one task's changes and nothing else. The scope is $ARGUMENTS. If that is empty, the scope is the last task the user asked for in this conversation.
+Commit one task's changes and nothing else. The text inside `<arguments>` gives the scope. If the arguments are empty, the scope is the last task the user asked for in this conversation.
 
 A conversation is not a scope. Out of scope by default:
 

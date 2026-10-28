@@ -11,14 +11,22 @@ description: Check that commit commands put the right changes in each commit
 - Recent commits: !`git log --pretty=format:'%h %s' -15`
 - Unpushed: !`git rev-list --count @{upstream}..HEAD 2>/dev/null || echo "no upstream"`
 
+## Input
+
+The arguments are optional commit SHAs or a Git revision range.
+
+<arguments>
+$ARGUMENTS
+</arguments>
+
 ## Your task
 
 Check the commits that a commit command made, and report for each commit whether its changes belong to the session that made it. Commit nothing, stage nothing, and do not edit files.
 
-1. **Commits.** When `$ARGUMENTS` names SHAs or a range, audit those commits. Otherwise audit every `<short sha> <subject>` line that a `/git:commit:*` command printed in this conversation. For each commit, record the owner session and the command that made it. If no commit is found, say so and stop.
+1. **Commits.** When the text inside `<arguments>` names SHAs or a range, audit those commits. Otherwise audit every `<short sha> <subject>` line that a `/git:commit:*` command printed in this conversation. For each commit, record the owner session and the command that made it. If no commit is found, say so and stop.
    - A printed SHA that is not in `git log --pretty=format:'%h %s' -50` was rewritten by a later command, for example `extend`. Find the current commit by its subject, and the command that ran after the print. Compare `git show --stat <printed sha>` with `git show --stat <current sha>`: the same paths and line counts mean the rewrite only rebased the commit, other counts mean it folded hunks in. Audit the current commit, and record the printed SHA, the command, and the change for the History table.
 2. **Transcripts.** Run `fd -t f '${CLAUDE_SESSION_ID}.jsonl' ~/.claude/projects`. Its directory holds the transcripts of every session in this repository. Read them only with `rg` and `jq`, never whole: a transcript can be several MB. Exclude your own session with `--glob '!${CLAUDE_SESSION_ID}*'`, and search only `*.jsonl` files.
-   - For a commit from `$ARGUMENTS`, find the owner: `rg -l -F '<short sha>'` finds the transcript that printed it. The `<command-name>` before that line names the command. If no transcript printed it, the owner is unknown: report the commit as `unknown` and go to the next one.
+   - For a commit selected by the arguments, find the owner: `rg -l -F '<short sha>'` finds the transcript that printed it. The `<command-name>` before that line names the command. If no transcript printed it, the owner is unknown: report the commit as `unknown` and go to the next one.
    - An edit is a `tool_use` entry named `Edit` or `Write`, with `input.file_path`, and with `input.new_string` or `input.content`. A formatter or lint hook that changed a file the session edited counts as that session.
 3. **Ownership.** For each commit, read `git show <sha>`. Tie every hunk to an edit of the owner session, for added lines and removed lines both. A removed line that the owner did not remove means the commit reverts the work of another session.
    - For a hunk you cannot tie, search the other transcripts: `rg -l -F -- '<path>'`, then `rg -l -F -- '<line>'` with one added or removed line of the hunk that has 20 or more characters and no quote or backslash. Transcripts store text JSON-escaped, so a line with a quote or a backslash does not match.
