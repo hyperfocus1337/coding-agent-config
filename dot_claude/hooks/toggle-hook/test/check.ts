@@ -408,9 +408,19 @@ await check("pi.ts: completes --repo, the hook names, and all", () => {
   const complete = (prefix: string) =>
     command_?.getArgumentCompletions(prefix).map((item) => item.value);
   assert.deepEqual(complete("type"), ["type-check-tsc", "type-check-pyrefly"]);
-  assert.deepEqual(complete(" a"), ["all"]);
+  assert.ok(complete(" a")?.includes("all"));
   assert.deepEqual(complete(""), ["--repo", "--global", ...HOOKS, "all"]);
   assert.deepEqual(complete("--global format-ox"), ["--global format-oxfmt"]);
+  assert.deepEqual(
+    complete("--repo d"),
+    NAMES.filter((name) => name.includes("d")).map((name) => `--repo ${name}`),
+  );
+  assert.deepEqual(complete("--repo destructive"), ["--repo block-destructive-commands"]);
+  assert.deepEqual(complete("--global   DESTRUCTIVE"), ["--global block-destructive-commands"]);
+  assert.deepEqual(complete("destructive"), ["block-destructive-commands"]);
+  assert.deepEqual(complete("--repo SHFMT"), ["--repo format-code.shfmt"]);
+  assert.deepEqual(complete("--repo no-such-hook"), []);
+  assert.deepEqual(complete("--repository"), []);
   assert.deepEqual(complete("--repo format-code."), [
     "--repo format-code.terraform",
     "--repo format-code.shfmt",

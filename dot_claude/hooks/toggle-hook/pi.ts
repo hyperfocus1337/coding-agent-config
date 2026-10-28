@@ -35,13 +35,15 @@ export default function (pi: ExtensionAPI) {
     // pi puts the value in place of the whole argument text.
     getArgumentCompletions: (prefix) => {
       const text = prefix.trim();
-      const flag = ["--repo", "--global"].find((flag) => text.startsWith(flag));
-      const choices = flag
-        ? [...NAMES, "all"].map((name) => `${flag} ${name}`)
-        : ["--repo", "--global", ...HOOKS, "all"];
+      const flag = ["--repo", "--global"].find((flag) => text.split(/\s+/)[0] === flag);
+      const query = (flag ? text.slice(flag.length).trim() : text).toLowerCase();
+      const choices = flag ? [...NAMES, "all"] : ["--repo", "--global", ...HOOKS, "all"];
       return choices
-        .filter((choice) => choice.startsWith(text))
-        .map((choice) => ({ value: choice, label: choice }));
+        .filter((choice) => choice.includes(query))
+        .map((choice) => {
+          const value = flag ? `${flag} ${choice}` : choice;
+          return { value, label: value };
+        });
     },
     handler: async (args, ctx) => {
       const { value, text, config } = await command(

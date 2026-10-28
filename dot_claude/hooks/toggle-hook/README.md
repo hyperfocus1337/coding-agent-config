@@ -24,6 +24,8 @@ The hook checks nothing. It runs when you type `/toggle-hook`, and the argument 
 | A guard name                      | Changes nothing, and names the escape hatch of that guard                                    |
 | Any other text                    | Changes nothing, and lists the hook names                                                    |
 
+In pi and omp, completion matches any part of a hook name, without case sensitivity. For example, `--repo destructive` suggests `--repo block-destructive-commands`, and `--repo shfmt` suggests `--repo format-code.shfmt`. Selecting a suggestion preserves the scope flag.
+
 The session can only turn a hook off. A hook that git config turns off stays off when you flip it with no flag: the command then changes nothing and names the flag to use. A formatter name, such as `format-code.shfmt`, works only with `--repo` or `--global`.
 
 ### Which hooks have a toggle
