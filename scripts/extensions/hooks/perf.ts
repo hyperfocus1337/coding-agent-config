@@ -204,7 +204,7 @@ function patch(text: string, hunks: unknown): string {
   return lines.join("\n");
 }
 
-/** The commit test of block-secret-commits. */
+/** A `git commit`: `git` anywhere, and `commit` as a word with whitespace before it. */
 const isCommit = (command: string) =>
   command.includes("git") && /(^|\s)commit([^A-Za-z0-9_-]|$)/.test(command);
 
@@ -675,19 +675,6 @@ const HOOK_LIST: Hook[] = [
     },
   },
   {
-    name: "block-secret-commits",
-    on: { Bash: ["pre"] },
-    tools: ["betterleaks"],
-    state: true,
-    args: [],
-    work: "blocked the commit",
-    core: async (c, _phase, m) => {
-      const io = watch(m.io.nodeIo(c.cwd), c.trace);
-      const verdict = await m.core.check(c.command, io, m.io.nodeSettings(c.cwd));
-      return { acted: verdict.block !== undefined };
-    },
-  },
-  {
     name: "enforce-cli-tools",
     on: { Bash: ["pre"] },
     tools: [],
@@ -699,15 +686,6 @@ const HOOK_LIST: Hook[] = [
       if (rule) m.core.blockMessage(c.command, rule, c.cwd);
       return { acted: rule !== undefined };
     },
-  },
-  {
-    name: "block-commit-attribution",
-    on: { Bash: ["pre"] },
-    tools: [],
-    work: "blocked the commit",
-    core: async (c, _phase, m) => ({
-      acted: m.core.violation(c.command) !== undefined,
-    }),
   },
   {
     name: "track-session-changes",

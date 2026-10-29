@@ -160,7 +160,7 @@ Supports [Why not a `dir` scan](implementation.md#why-not-a-dir-scan).
 
 ## Cost
 
-Median of 9 runs on the installed hook:
+Median of 9 runs on the installed hook, when it was an agent hook on each Bash call:
 
 | Command                                       | Hook cost |
 | --------------------------------------------- | --------- |
@@ -171,12 +171,10 @@ Median of 9 runs on the installed hook:
 | `git commit`, secret binary blocked           | 139 ms    |
 | `git commit`, staged content past the 4 s cap | 4040 ms   |
 
-The non-git row is the one that matters most, because the hook is wired to every `Bash` call.
-
-The 1 ms in that row is the bash hook. The TypeScript hook costs about 25 ms on a command that is not a commit in Claude Code and Codex, which is the Node start. In pi and omp the extension is already loaded, so the cost is less than 1 ms. [`docs/hooks/performance/`](../../../../docs/hooks/performance/README.md) has the timings of all hooks on replayed tool calls.
+The non-git row mattered most, because the agent hook ran on every `Bash` call. The 1 ms in that row is the bash hook. The TypeScript agent hook cost about 25 ms on a command that is not a commit in Claude Code and Codex, which is the Node start, and less than 1 ms in pi and omp. As a git `pre-commit` hook, a command that does not commit costs nothing, and the `-am` row runs one scan, not two.
 
 A binary costs one extra `betterleaks dir` (about 34 ms), and a blocked one a second pass to name the offending file. Both are paid only when a binary is actually added.
 
-betterleaks costs about 35 ms of fixed startup plus about 0.18 ms per KB of staged diff. A 50000-line (3.5 MB) diff scans in 656 ms. The `settings.json` timeout is 10 s, which covers the worst case of two capped scans on an `-a` commit.
+betterleaks costs about 35 ms of fixed startup plus about 0.18 ms per KB of staged diff. A 50000-line (3.5 MB) diff scans in 656 ms.
 
-Supports [Trigger filter](implementation.md#trigger-filter) and [Scan cap](implementation.md#scan-cap).
+Supports [Cost](implementation.md#cost) and [Scan cap](implementation.md#scan-cap).

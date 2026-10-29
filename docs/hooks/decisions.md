@@ -30,9 +30,18 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 **Decision:** code that omp needs and pi does not goes in the `omp.ts` of the hook, which imports the shared code from `pi.ts`, by the rules in [`authoring.md`](authoring.md#omp-code). omp loads `omp.ts` after `pi.ts` when it adds to it, and in place of `pi.ts` when the `pi.ts` handler must not run in omp. **Why:** you can see and track the omp fixes apart from the pi code, with `fd omp.ts` and the git log of the `omp.ts` files, and no code exists twice in one hook. **Cost:** omp loads up to 2 files for each hook, and each `omp.ts` declares the omp-only event types it reads, because no omp types are installed. The omp call parsing of the 4 format and lint hooks exists in each of their `omp.ts` files, as [No shared library between hooks](#no-shared-library-between-hooks) allows.
 
-## block-secret-commits is a command hook in Claude Code
+## The commit guards are git hooks
 
-**Decision:** Claude Code runs `command.ts` through `guard.sh`, not a mod. **Why:** the binary scan copies each new binary file to a temporary folder, and `$.fs` has no copy, no remove, and no binary write, and refuses a file over 4 MiB. Review this when the mod API leaves early access.
+**Decision:** on 2026-10-29, `block-secret-commits` became a git `pre-commit` hook and `block-commit-attribution` a git `commit-msg` hook, in `dot_config/git/hooks/`. The secret scan runs on every commit, yours too. The attribution check runs in agent sessions only. Both fail closed when git has no `node`. The dcg pack `local.git_hooks` blocks `git commit --no-verify` and `-n` in each agent.
+
+**Why:** both guards check only what a commit writes, and git gives a hook the exact index and message. As agent hooks, they read the command text before it ran:
+
+- They missed a secret that `git add` staged in the same call, a message passed with `-F <file>`, and commits from scripts and aliases.
+- They needed 3 adapters, and Codex did not run the attribution check.
+- Claude Code and Codex started Node on each Bash call to check for a commit.
+- Claude Code ran the secret scan as a command hook and not a mod, because `$.fs` cannot copy a binary file.
+
+**Cost:** an agent can still skip the hooks in ways that the dcg pack does not catch, such as `git config hook.<name>.enabled false`. A git client without `node` on its `PATH` blocks each of your commits.
 
 ## type-check-tsc and type-check-pyrefly are command hooks in Claude Code
 
@@ -68,15 +77,15 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 ## A missing node gives one warning for each session
 
-**Decision:** each command entry starts with `command -v node >/dev/null || exit 0`, and a `SessionStart` entry in Claude Code and Codex prints a `systemMessage` when `node` cannot run a `.ts` file. **Why:** a hook that exits 0 with no `node` gives no sign, and a check for each call gives a warning for each call. `block-secret-commits` is the exception: its `guard.sh` blocks each `git commit` with no `node`.
+**Decision:** each command entry starts with `command -v node >/dev/null || exit 0`, and a `SessionStart` entry in Claude Code and Codex prints a `systemMessage` when `node` cannot run a `.ts` file. **Why:** a hook that exits 0 with no `node` gives no sign, and a check for each call gives a warning for each call. The git guards are the exception: with no `node`, their hook command blocks each commit, see [The commit guards are git hooks](#the-commit-guards-are-git-hooks).
 
 ## Codex PreToolUse hooks are on
 
-**Decision:** `dot_codex/modify_private_config.toml` removes `enabled = false` from each `pre_tool_use` entry in `hooks.state` at each apply. **Why:** `block-secret-commits` and `enforce-cli-tools` must also run in Codex. **Cost:** the repo does not write `trusted_hash`, so you trust each changed entry once in the Codex TUI.
+**Decision:** `dot_codex/modify_private_config.toml` removes `enabled = false` from each `pre_tool_use` entry in `hooks.state` at each apply. **Why:** `block-destructive-commands` and `enforce-cli-tools` must also run in Codex. **Cost:** the repo does not write `trusted_hash`, so you trust each changed entry once in the Codex TUI.
 
 ## The move added no hook to Codex
 
-**Decision:** Codex runs the hooks it ran before the move. `block-commit-attribution` did not run in Codex, so it does not run there now. **Why:** the move changed the language of each hook and kept its behavior. A new Codex hook is a separate change.
+**Decision:** Codex runs the hooks it ran before the move. `block-commit-attribution` did not run in Codex, so it does not run there now. **Why:** the move changed the language of each hook and kept its behavior. A new Codex hook is a separate change. Since 2026-10-29, `block-commit-attribution` is a git hook, so it also covers Codex commits.
 
 ## format-staged-files runs for each agent
 

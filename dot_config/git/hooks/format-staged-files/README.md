@@ -84,7 +84,7 @@ You see the same line in the Bash output of the transcript. A commit that you ma
   git config hook.format-staged-files.enabled false
   ```
 
-- **One commit:** use `git commit --no-verify`.
+- **One commit:** use `git commit --no-verify` in your own terminal. It also skips the guards `block-secret-commits` and `block-commit-attribution`, so dcg blocks this flag in an agent.
 - **A test that commits:** see [Shared conventions](../../../../dot_claude/hooks/README.md#shared-conventions).
 
 `AGENT_HOOKS_DISABLE` does not turn this hook off. The hook removes the variable before it runs the formatters, so a formatter that [`/toggle-hook`](../../../../dot_claude/hooks/toggle-hook/README.md) turned off in the agent still formats the commit.

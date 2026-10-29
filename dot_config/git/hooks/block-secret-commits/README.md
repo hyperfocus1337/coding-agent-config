@@ -1,32 +1,25 @@
 # block-secret-commits
 
-Blocks a `git commit` that would commit a secret, before the commit runs. It is a safety net for an accidental `git add .`, not a replacement for a good `.gitignore`.
+A git `pre-commit` hook that blocks a commit that would add a secret. It is a safety net for an accidental `git add .`, not a replacement for a good `.gitignore`.
 
-One scanner, [`core.ts`](core.ts), serves four agents through two adapters:
-
-| Agent              | Adapter                                                                                                               | Loaded by                                                                                          |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Claude Code, Codex | [`guard.sh`](guard.sh), a `PreToolUse` command hook on Bash, runs [`command.ts`](command.ts): exit 2 and stderr block | `settings.json.tmpl` and `dot_codex/modify_hooks.json`                                             |
-| pi and omp         | [`pi.ts`](pi.ts): `tool_call` on bash returns `{ block, reason }`                                                     | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
-
-Claude Code runs a command hook and not a mod, because the binary scan copies files, which the mod API cannot do. See [`docs/hooks/decisions.md`](../../../docs/hooks/decisions.md#block-secret-commits-is-a-command-hook-in-claude-code).
+It is a git hook, not an agent hook. It runs on every commit: yours, and the commits of Claude Code, pi, omp, and Codex. [`main.ts`](main.ts) runs the scanner in [`core.ts`](core.ts). An agent cannot skip it with `git commit --no-verify` or `-n`: the [`local.git_hooks`](../../../dcg/README.md#custom-packs) pack of dcg blocks that command.
 
 This file tells what the hook does and how to work around it. [docs/implementation.md](docs/implementation.md) gives the reason for each decision. [docs/research.md](docs/research.md) holds the measurements, and the alternatives that were tested and rejected.
 
 ## What it checks
 
-The hook runs before each shell command: `PreToolUse` on Bash in Claude Code and Codex, and `tool_call` on bash in pi and omp. It stops at once unless the command is a `git ... commit`. Then it runs two checks:
+Git starts the hook on each `git commit`, in each repository, before it writes the commit. The hook runs two checks:
 
 - **betterleaks scan:** scans the staged diff with [betterleaks](https://github.com/betterleaks/betterleaks), a secret scanner. It finds a secret value in an ordinary file, and a file whose name alone marks it as a secret.
 - **Binary scan:** scans the newly added binary files again, because the staged diff cannot show their content.
 
 ### Commit only, not `git add`
 
-Both checks read the index. The hook runs before the command that it guards, so at `git add` time the index does not yet hold the files that the command adds. The hook does not block a `git add` that stages a secret. It blocks the commit that would include it, so the secret does not reach a commit.
+The hook does not block a `git add` that stages a secret. It blocks the commit that would include it, so the secret does not reach a commit.
 
 ### Staged files only
 
-Both checks see only what the commit would add. A secret-shaped file that is untracked in the working tree does not block an unrelated commit. It blocks the commit that stages it.
+Both checks read the index that git is about to commit, so they see only what the commit would add. For `git commit -a` and `git commit <path>`, git builds a temporary index and sets `GIT_INDEX_FILE` before the hook runs, so the checks see the files that these commits take. A secret-shaped file that is untracked in the working tree does not block an unrelated commit. It blocks the commit that stages it.
 
 ### Secret values and secret file names
 
@@ -45,21 +38,14 @@ betterleaks cannot read a binary blob in git mode, so a keystore, a key bundle, 
 
 A modified tracked binary is not checked. It was checked when it was first added, and an update to a committed image is routine. As a result, the hook does not see a secret that you put into a binary that git already tracks.
 
-### `git commit -a`
-
-`-a` stages tracked changes after the hook has run, so the index that the hook reads does not hold them yet. When the command has `-a` or `--all` and the staged scan reports no finding, the hook runs a second scan over the unstaged changes to tracked files. These cases change the result:
-
-- **A flag after the message**, as in `git commit -m wip -a`, is not seen. The hook reads the command only up to `-m ` or `--message`, so the second scan does not run.
-- **A staged finding in an allowlisted file** also stops the second scan. The allowlist then removes that finding, and the commit passes without a scan of the working tree.
-- **A message glued to the flag**, as in `git commit -m"..."`, can cost one extra scan. That scan can block on a working-tree secret that the commit would not include.
-
 ### `git commit --amend`
 
 `--amend` with an empty index rewrites content that is already in `HEAD`, and a staged scan does not read that content. The first commit of that content was scanned, so the gap matters only for a commit from before this hook.
 
 ## Requirements
 
-In Claude Code and Codex, `command.ts` needs Node 23.6 or later, which runs `.ts` files without a flag. Without it, `guard.sh` blocks each `git commit`, see [Failure behavior](#failure-behavior). pi and omp load `pi.ts` in their own runtime.
+- **git** with config-based hooks: `hook.<name>.command` and `hook.<name>.event`. An older git ignores the `hook.*` entries and shows no error.
+- **Node 23.6 or later** on the `PATH` of git, which runs `.ts` files without a flag. Without it, each commit blocks, see [Failure behavior](#failure-behavior).
 
 Both checks need betterleaks on `$PATH`. Without it, the betterleaks scan does nothing and the binary scan blocks each newly added binary. Install betterleaks with one of these commands:
 
@@ -79,15 +65,22 @@ The version is in both the tag and the file name. Check the [releases page](http
 
 ## How it works
 
-1. The hook tests the command for `git` and the word `commit`. Each other command passes.
-2. It finds the repo root: `CLAUDE_PROJECT_DIR`, then the `cwd` of the payload, then its own working folder. pi and omp use the working folder of the agent.
-3. It reads the allowlist from `.agent-allow-secrets` and `AGENT_ALLOW_SECRETS`, see [Overrides](#overrides).
-4. It asks `betterleaks config path` which config betterleaks would use. It passes `conf/betterleaks.toml` only when no other config applies, see [Per-repo configs](#per-repo-configs).
-5. It runs the binary scan. When a binary blocks, the hook stops here.
-6. It runs `betterleaks git --staged`, which scans the index against `HEAD`. For `git commit -a`, it can run a second scan, see [`git commit -a`](#git-commit--a).
-7. It removes the findings in allowlisted files and blocks on each finding that is left.
+[`dot_config/git/config`](../../config) sets the hook in `~/.config/git/config`, after `format-staged-files`, so the scan reads the index after that hook restages formatted files:
 
-A command that is not a commit costs about 25 ms in Claude Code and Codex, which is the Node start, and less than 1 ms in pi and omp ([Cost](docs/research.md#cost)).
+```ini
+[hook "block-secret-commits"]
+	event = pre-commit
+	command = "command -v node >/dev/null || { echo '...' >&2; exit 1; }; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.config/git/hooks/block-secret-commits/main.ts\""
+```
+
+1. Git runs `main.ts` at the root of the worktree, which is the repo root of the hook.
+2. It reads the allowlist from `.agent-allow-secrets` and `AGENT_ALLOW_SECRETS`, see [Overrides](#overrides).
+3. It asks `betterleaks config path` which config betterleaks would use. It passes `conf/betterleaks.toml` only when no other config applies, see [Per-repo configs](#per-repo-configs).
+4. It runs the binary scan. When a binary blocks, the hook stops here.
+5. It runs `betterleaks git --staged`, which scans the index against `HEAD`.
+6. It removes the findings in allowlisted files and blocks on each finding that is left. To block, it writes the block message to stderr and exits 1, and git stops the commit.
+
+A clean commit costs one Node start and the scans, about 50 ms to 80 ms ([Cost](docs/research.md#cost)). A shell command that does not commit costs nothing.
 
 ### The binary scan
 
@@ -95,27 +88,27 @@ git selects the newly added files that it cannot show as text. These are the fil
 
 The hook copies each file to a neutral name first. The default betterleaks config exempts image, font, and office extensions from every rule, so a key in `logo.png` or a password list in `notes.xlsx` would scan clean under its own name. A file above 100 MiB keeps its own path, because the copy costs more than the gap that it closes. See [The extension allowlist](docs/implementation.md#the-extension-allowlist).
 
-## What the model sees
+## What the model and you see
 
-The hook gives the model a block message when it blocks a commit.
-
-- **Claude Code and Codex:** exit code 2 blocks the call, with the block message on stderr. Exit code 0 allows it. stdout stays empty, because Codex reports any stdout of a command hook as a failed hook.
-- **pi and omp:** `pi.ts` returns `{ block: true, reason }`, with the block message as the reason.
+When the hook blocks, the commit does not occur, and the output of `git commit` holds the block message. An agent sees it in the result of its shell call, and you see it in your terminal or git client.
 
 A content block message names the rule, the file, the line, and the fingerprint of each finding. `--redact` keeps the secret value out of the report, the hook output, and the context of the model. The message gives the command to inspect the finding and lists the fixes in this order: remove the secret or add the file to `.gitignore`, a `betterleaks:allow` comment, a `.betterleaksignore` entry, and, as the last resort, `.agent-allow-secrets`.
 
 A binary block message lists the paths of the files. It gives the command to inspect a file and lists the fixes: drop the file or add it to `.gitignore`, `.agent-allow-secrets`, or `AGENT_ALLOW_SECRETS`.
 
-## What you see
+A passing commit gives no output from this hook, with these exceptions:
 
-- **A capped scan:** when a betterleaks scan reaches its 4 s cap, the hook gives a warning with the command to run by hand. In Claude Code and Codex the warning goes to stderr with exit code 0. In pi and omp it is a notification.
-- **No usable Node:** the `SessionStart` check of Claude Code and Codex gives a warning at the start of the session, see [the hooks README](../README.md#shared-conventions).
+- **A capped scan:** when the betterleaks scan reaches its 4 s cap, the hook writes a warning with the command to run by hand, and the commit continues.
+- **No usable Node:** the `SessionStart` check of Claude Code and Codex gives a warning at the start of the session, see [the hooks README](../../../../dot_claude/hooks/README.md#shared-conventions).
 
 ## Settings
 
 ### Turn the hook off
 
-The hook does not read `AGENT_HOOKS_DISABLE`. To turn it off, remove its entry from the file that loads it, in the table at the top. To let one file through, use an [override](#overrides).
+The hook does not read `AGENT_HOOKS_DISABLE`. To let one file through, use an [override](#overrides). To turn the hook off:
+
+- **One repository:** run `git config hook.block-secret-commits.enabled false` in the repository.
+- **One commit of your own:** run `git commit --no-verify` in your own terminal. This also skips the other `pre-commit` and `commit-msg` hooks. dcg blocks this flag in an agent.
 
 ### The name rules
 
@@ -129,7 +122,7 @@ The hook passes `--config` only when `betterleaks config path` answers `default`
 
 ```toml
 [extend]
-path = "~/.claude/hooks/block-secret-commits/conf/betterleaks.toml"
+path = "~/.config/git/hooks/block-secret-commits/conf/betterleaks.toml"
 ```
 
 The shipped config sets `[extend] useDefault = true`, so the upstream rules and their allowlist still apply. For example, the AWS example key `AKIAIOSFODNN7EXAMPLE` does not block a commit.
@@ -203,19 +196,42 @@ The two checks fail in opposite directions by design. The betterleaks scan fails
 
 | Failure                                                                                         | Result                         | What you see                              |
 | ----------------------------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------- |
-| `node` missing, older than 23.6, or `command.ts` fails (Claude Code, Codex)                     | Each `git commit` blocks       | A block message that names the problem    |
+| `node` missing on the `PATH` of git                                                             | Each commit blocks             | A block message that names the problem    |
+| `node` older than 23.6, or `main.ts` fails                                                      | Each commit blocks             | The error text of `node`                  |
 | betterleaks missing                                                                             | betterleaks scan allows        | Nothing                                   |
 | betterleaks missing                                                                             | Each newly added binary blocks | A binary block message                    |
 | Scanner error, report that does not parse, or config that does not parse                        | betterleaks scan allows        | Nothing                                   |
-| Not a git repository                                                                            | Both checks allow              | Nothing                                   |
 | betterleaks scan reaches the 4 s cap                                                            | betterleaks scan allows        | A warning with the command to run by hand |
 | `betterleaks dir` fails or reaches the cap, or a staged file is unreadable or left the worktree | That binary blocks             | A binary block message                    |
 | An error in the binary scan code                                                                | The commit blocks              | `the binary scan of this commit failed`   |
 
-With no usable `node`, `guard.sh` lets each other command pass. An app that you start from the macOS Dock can get a shorter `$PATH` than your terminal, so this block can occur there first.
+The hook runs on your own commits too, so a git client without `node` on its `PATH` blocks each commit. An app that you start from the macOS Dock, such as a GUI git client or an editor, can get a shorter `$PATH` than your terminal, so this block can occur there first. Put `node` on the `PATH` of that app.
 
 The capped scan is the one fail-open path that you cannot infer from a clean run, so it gives a warning. A config error stops betterleaks, so a typo in `conf/betterleaks.toml` turns off the whole betterleaks scan with no sign. Run `node test/check.ts` after you edit that file.
 
 ## Testing
 
-`node test/check.ts` runs the hook on throwaway repos and checks both scans, `guard.sh`, and `pi.ts`. See [docs/testing.md](docs/testing.md).
+`node test/check.ts` makes real commits in throwaway repos and checks both scans and the hook command. See [docs/testing.md](docs/testing.md).
+
+## Design notes
+
+### Why a git hook
+
+Before, the hook was an agent hook that read the shell command before it ran. It had these gaps, which a `pre-commit` hook does not have:
+
+- **One call that stages and commits.** In `git add .env && git commit -m x`, the hook scanned the index before `git add` ran, so it did not see the secret.
+- **`git commit -a` and `git commit <path>`.** The hook had to parse the flags from the command and scan the working tree. It missed a flag after the message, as in `git commit -m wip -a`, and did not handle `git commit <path>`.
+- **Commits from a script, a `just` recipe, or a git alias.** The hook saw only the outer command.
+- **Cost.** Claude Code and Codex started Node on each shell call, about 25 ms, also when the call did not commit.
+- **Four agents, three adapters.** Claude Code, Codex, pi, and omp each loaded the hook in their own way.
+
+The git hook also scans your own commits. A secret in your commit does the same damage as one in an agent's commit.
+
+### Files
+
+| File                          | Deployed to `~/.config/git/hooks/block-secret-commits/` | Role                                              |
+| ----------------------------- | ------------------------------------------------------- | ------------------------------------------------- |
+| `main.ts`                     | Yes                                                     | The hook, and the Node file and process functions |
+| `core.ts`                     | Yes                                                     | Both scans and the block messages                 |
+| `conf/betterleaks.toml`       | Yes                                                     | The shipped betterleaks config                    |
+| `README.md`, `docs/`, `test/` | No                                                      | Kept in the repo by `.chezmoiignore`              |

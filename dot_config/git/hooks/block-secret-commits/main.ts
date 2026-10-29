@@ -1,6 +1,10 @@
 /**
- * The file and process functions of ./core.ts under Node, for command.ts and
- * pi.ts.
+ * Git pre-commit hook, not an agent hook: blocks a commit that would add a
+ * secret. Exits 1 with the block message on stderr. A warning, such as a
+ * capped scan, goes to stderr with exit 0. ~/.config/git/config sets this
+ * hook for every commit, yours and an agent's. Design notes: README.md.
+ *
+ * Run: node main.ts, from git as a pre-commit hook.
  */
 
 import { spawn } from "node:child_process";
@@ -9,9 +13,18 @@ import { access, copyFile, mkdtemp, readFile, rm, stat } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Io, Settings } from "./core.ts";
+import { check, type Io, type Settings } from "./core.ts";
 
-export function nodeIo(root: string): Io {
+// Git runs the hook at the root of the worktree.
+const root = process.cwd();
+const verdict = await check(nodeIo(root), nodeSettings(root));
+for (const warning of verdict.warnings) process.stderr.write(`${warning}\n`);
+if (verdict.block) {
+  process.stderr.write(`${verdict.block}\n`);
+  process.exitCode = 1;
+}
+
+function nodeIo(root: string): Io {
   const at = (path: string) => resolve(root, path);
   return {
     run: (argv, timeoutMs) =>
@@ -55,11 +68,10 @@ export function nodeIo(root: string): Io {
   };
 }
 
-export function nodeSettings(root: string): Settings {
+function nodeSettings(root: string): Settings {
   return {
     root,
     allow: process.env.AGENT_ALLOW_SECRETS,
-    // import.meta.url is the real path, also when pi loads pi.ts by setting.
     config: fileURLToPath(new URL("./conf/betterleaks.toml", import.meta.url)),
   };
 }

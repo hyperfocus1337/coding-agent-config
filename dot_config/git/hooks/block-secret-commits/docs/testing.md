@@ -1,6 +1,6 @@
 # Testing
 
-[`test/check.ts`](../test/check.ts) is the end-to-end check for `guard.sh`, `command.ts`, and `pi.ts`. Run it from the hook folder:
+[`test/check.ts`](../test/check.ts) is the end-to-end check for `main.ts` and the hook command. Run it from the hook folder:
 
 ```sh
 node test/check.ts
@@ -13,13 +13,14 @@ Run the check after each change to the hook, and after each edit to `conf/better
 ## What it needs
 
 - **Node 23.6 or later**, which runs `.ts` files without a flag.
-- **git**, to build the throwaway repos.
+- **git** with config-based hooks, to build the throwaway repos and run the commits.
 - **betterleaks** on `PATH`, for most cases. Without it, the check runs only the cases in [Cases that run without betterleaks](#cases-that-run-without-betterleaks) and prints one `skip` line for the others.
-- **`sh`, `cat`, and `grep`**, which the guard cases put on their own `PATH`.
 
 ## How it runs
 
-Each case builds a throwaway git repo in a temporary folder. It runs `guard.sh` as a child process, as Claude Code does, with a Bash payload on stdin and `CLAUDE_PROJECT_DIR` set to the repo. Then it checks the exit code (0 allows, 2 blocks), and for some cases the block message.
+The check reads the hook command from [`dot_config/git/config`](../../../config) and sets it through `GIT_CONFIG_*` variables, with `GIT_CONFIG_GLOBAL=/dev/null`. `HOME` is a temporary folder that links to this hook folder, so the check runs this source and not the deployed copy.
+
+Each case builds a throwaway git repo in a temporary folder and runs a real `git commit`. Then it checks whether the commit blocked, and for some cases the block message on stderr.
 
 The check prints one `FAIL` line for each failed case, then `all pass` or the failure count. It exits 1 on a failure.
 
@@ -28,8 +29,8 @@ The secrets in the fixtures are random strings shaped like a GitHub token. They 
 ## Cases that run without betterleaks
 
 - **A binary with no betterleaks on `PATH`** must block. The binary scan never fails open on a missing scanner.
+- **No `node` on `PATH`** must block, with a message that names `node 23.6 or later`. **A `node` that exits 1** must block too. Each of these `PATH` values holds a link to the git of the test, so the hook still runs.
 - **An error in the binary scan** must block. The case gives the core a fake `Io` whose every call throws.
-- **`guard.sh` with no `node`, and with a `node` that exits 1,** must block `git commit` and allow `ls -la`, `git add .git/hooks/commit-msg`, and `git commits`.
 
 ## Binary scan
 
@@ -50,22 +51,16 @@ The fixtures hold a NUL byte. git then reports the blob as binary, which is the 
 
 ## Content scan
 
-- A staged secret blocks a commit, and does not block `git add`.
-- `git add hooks/block-secret-commits/test` and `git add .git/hooks/commit-msg` must allow, because `commit` in a path is not the subcommand. `git -C . commit` must block.
-- Clean content, an empty stage, an unstaged secret, a folder that is not a repo, and an unrelated command must allow.
+- A staged secret must block.
+- Clean content, an empty commit, and an unstaged secret must allow.
 - The message must name the rule, file, and line, and give the fingerprint. It must keep the secret value out, offer `.betterleaksignore`, and mark `.agent-allow-secrets` as the last resort, with the command that adds it to the exclude file of the repo.
-- stdout must stay empty on a block and on an allow, because Codex reports any stdout as a failed hook.
 
-## git commit -a
+## Commits that stage for themselves
 
-- `-am`, `-a -m`, `--all`, and a bare `-a` must each block on a secret in a tracked file that is not staged.
-- The same repo must allow `git commit -m wip`, `git commit -m "add -a flag"`, and `git commit --allow-empty -m wip`.
+- `git commit -am`, `git commit --all -m`, and `git commit -m wip app.py` must each block on a secret in a tracked file that is not staged. Git gives the hook the temporary index of these commits.
+- The same repo must allow `git commit --allow-empty -m wip`, because the change is not part of that commit.
 
 ## Allowlist
 
 - A path, a basename, and `AGENT_ALLOW_SECRETS` must each exempt a content finding. The basename case also clears the `secret-filename` finding on `config/prod.env`.
 - A second file that is not in the list must still block.
-
-## pi.ts
-
-A stub `pi` keeps the `tool_call` handler. A staged secret must return `{ block: true }` with the finding in the reason. Clean content and other tools must return nothing.

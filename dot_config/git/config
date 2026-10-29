@@ -12,3 +12,18 @@
 [hook "format-staged-files-post"]
 	event = post-commit
 	command = "[ -f \"$(git rev-parse --git-path format-staged-files)\" ] || exit 0; command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.config/git/hooks/format-staged-files/main.ts\" post-commit || true"
+# Every commit, yours too: block a commit that would add a secret. It runs
+# after format-staged-files, so it scans the index that git commits. Unlike
+# that hook, it fails closed: with no node, or a node that cannot run a .ts
+# file, each commit blocks.
+# Source: coding-agent-config, dot_config/git/hooks/block-secret-commits/
+[hook "block-secret-commits"]
+	event = pre-commit
+	command = "command -v node >/dev/null || { echo 'Blocked: block-secret-commits needs node 23.6 or later on the PATH of git. Put node on the PATH, then run the commit again.' >&2; exit 1; }; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.config/git/hooks/block-secret-commits/main.ts\""
+# Agent sessions: block a commit message with a Co-Authored-By trailer. Git
+# adds the message file as the last argument, so node comes last. Fails
+# closed, as above.
+# Source: coding-agent-config, dot_config/git/hooks/block-commit-attribution/
+[hook "block-commit-attribution"]
+	event = commit-msg
+	command = "command -v node >/dev/null || { echo 'Blocked: block-commit-attribution needs node 23.6 or later on the PATH of git. Put node on the PATH, then run the commit again.' >&2; exit 1; }; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.config/git/hooks/block-commit-attribution/main.ts\""

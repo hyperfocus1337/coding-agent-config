@@ -6,15 +6,12 @@ This file states the decisions. [research.md](research.md) holds the measurement
 
 ## Files
 
-| File                          | Deployed to `~/.claude/hooks/block-secret-commits/` | Role                                                                     |
-| ----------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------ |
-| `core.ts`                     | Yes                                                 | Both scans and the block messages. The adapters pass the file functions. |
-| `io.ts`                       | Yes                                                 | The file and process functions under Node                                |
-| `guard.sh`                    | Yes                                                 | Runs `command.ts`. Blocks a commit when `command.ts` gives no verdict.   |
-| `command.ts`                  | Yes                                                 | Command hook for Claude Code and Codex                                   |
-| `pi.ts`                       | Yes                                                 | pi and omp extension                                                     |
-| `conf/betterleaks.toml`       | Yes                                                 | The rule config that the hook passes with `--config`                     |
-| `README.md`, `docs/`, `test/` | No                                                  | Kept in the repo by `.chezmoiignore`                                     |
+| File                          | Deployed to `~/.config/git/hooks/block-secret-commits/` | Role                                                                    |
+| ----------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `core.ts`                     | Yes                                                     | Both scans and the block messages. `main.ts` passes the file functions. |
+| `main.ts`                     | Yes                                                     | The pre-commit hook, and the file and process functions under Node      |
+| `conf/betterleaks.toml`       | Yes                                                     | The rule config that the hook passes with `--config`                    |
+| `README.md`, `docs/`, `test/` | No                                                      | Kept in the repo by `.chezmoiignore`                                    |
 
 ## Execution order
 
@@ -22,38 +19,25 @@ The repo root comes first, because the allowlist is a file under it and each git
 
 The two scans run last, binary first and content second. The binary scan usually finds nothing to check and returns after one `git diff`, so ordering it first costs almost nothing and lets a blocked binary skip the staged scan entirely.
 
-## Host contract
+## Git contract
 
-`check()` in the core returns a verdict: a block message, and warnings that do not block. Each adapter turns it into the form of its agent:
+`check()` in the core returns a verdict: a block message, and warnings that do not block. `main.ts` writes each warning to stderr. For a block, it writes the message to stderr and exits 1. Git stops the commit on each exit code other than 0, and passes the stderr of the hook through, also with `git commit -q`. An agent reads that output in the result of its shell call.
 
-- **`command.ts`** (Claude Code and Codex): a block is exit 2 with the message on stderr, and the agent gives stderr to the model. A warning goes to stderr with exit 0. stdout stays empty. The settings entries run it through `guard.sh`, see [The guard](#the-guard).
-- **`pi.ts`** (pi and omp): a block is `{ block: true, reason }`. A warning is a notification for the user.
+Git runs the hook only for a commit, so the hook reads no command text. Before, an agent hook had to find `git commit` in the command with a word test, and it ran before a `git add` in the same command had staged its files.
 
-The bash hook also printed a JSON verdict for Cursor on stdout. Codex reports any stdout of a command hook as a failed hook and lets the call run (tested on 2026-10-19), so the TypeScript hook prints nothing on stdout. Cursor is not a target any more.
+## Fail closed without Node
 
-## The guard
+The agent hooks of Claude Code and Codex blocked only on exit 2, so a broken `node` let a commit pass with no scan, and a `guard.sh` wrapper had to turn each other exit code into a block. Git blocks on each exit code other than 0, so a `node` that is older than 23.6 or that fails already blocks the commit. The hook command in `dot_config/git/config` handles the one case that `node` cannot report: when `command -v node` finds no `node`, it prints a block message that names the problem and exits 1.
 
-Claude Code and Codex block only on exit 2. Each other result lets the call run. So if `command.ts` cannot give a verdict, a commit passes with no scan and no sign. This occurs when `node` is missing from `$PATH`, is older than 23.6 and cannot run a `.ts` file, or when `command.ts` fails, for example on a payload that it cannot parse.
-
-`guard.sh` reads the payload once and passes it to `node command.ts`. It keeps the exit code when it is 0 or 2. For each other exit code, it blocks the call when the raw payload holds a commit, with the same word test as `isCommit()`, and allows other calls. So a broken Node blocks commits only, and the message tells the user to fix `$PATH`.
-
-In this state, the raw payload test also blocks a call such as `git log --grep commit`. This is acceptable, because it occurs only while Node is broken.
-
-The guard adds one `sh` start and one `cat` to each Bash call. The cost is too small to measure: 20 calls took 0.42 s with the guard and 0.43 s without it. `grep` runs only when `node` failed.
-
-## Trigger filter
-
-The hook fires on `git commit` only.
-
-Both scans read the index. The hook runs before the command it guards, so at `git add` time the index does not yet hold the files being added and there is nothing to read. By `git commit` time it does, because the git slash commands stage and commit in the same response. Staging a secret is therefore not blocked at the moment of the `git add`; the commit that would act on it is.
-
-`isCommit()` reads the command text. A match that is too wide does no harm, because a wrong match only runs the scans, and the scans block only on a real finding.
-
-`commit` has to be a word of its own. A plain `*git*commit*` glob also matched the path `hooks/block-secret-commits/`, so a `git add` of a path with that word ran the content scan on an index that the command had not written yet. Whitespace must come before `commit`, which rejects `-commits` and `/commit`. A letter, a digit, `_`, or `-` after it rejects `commit-msg`. `git` and `commit` are tested apart, because flags come between them in `git -C /tmp commit`.
+This also blocks your own commits from an app that has no `node` on its `PATH`. On 2026-10-29 this was preferred to a fail-open path for your own commits, because a secret in your commit does the same damage as one in an agent's commit.
 
 ## Repo root
 
-`command.ts` takes `CLAUDE_PROJECT_DIR`, then the `cwd` of the payload, then its own working folder. Codex does not set `CLAUDE_PROJECT_DIR`, so it uses the payload `cwd`. `pi.ts` takes `ctx.cwd`. Each git and betterleaks run starts in the root. If the root does not exist, no program can start, so the binary scan finds no files and the content scan finds no betterleaks: the commit is allowed.
+Git runs a `pre-commit` hook at the root of the worktree, so `main.ts` takes its working folder as the root. Each git and betterleaks run starts there.
+
+## Which index
+
+`betterleaks git --staged` and `git diff --cached` read the index through git, and git reads `$GIT_INDEX_FILE`. For `git commit -a`, `git commit <path>`, and `git commit --only`, git builds a temporary index, sets `GIT_INDEX_FILE` to it, and then runs the hook. Each child of the hook gets that variable, so the scans read the files that this commit takes, with no special case. Tested with git 2.56.0 on 2026-10-29: a secret in a tracked file blocks `git commit -am`, `git commit --all`, and `git commit -m wip app.py`.
 
 ## Allowlist overrides
 
@@ -139,7 +123,7 @@ The file list is the one exception. If `git diff --cached` fails, for example ou
 
 Putting the file in `~/.config` would therefore imply a convention betterleaks does not follow, and a hand-run `betterleaks git --staged` would silently use different rules than this hook enforces. For a security check, manual verification disagreeing with the enforced check is the worst available failure mode.
 
-`io.ts` finds the file from `import.meta.url`, which also keeps the hook self-contained. A copy of the directory works anywhere with no environment set up, and the tests need no shim to point at the working tree.
+`main.ts` finds the file from `import.meta.url`, which also keeps the hook self-contained. A copy of the directory works anywhere with no environment set up, and the tests need no shim to point at the working tree.
 
 ### Precedence
 
@@ -149,7 +133,7 @@ Rather than re-implement that table, the hook asks `betterleaks config path`, wh
 
 ```toml
 [extend]
-path = "~/.claude/hooks/block-secret-commits/conf/betterleaks.toml"
+path = "~/.config/git/hooks/block-secret-commits/conf/betterleaks.toml"
 ```
 
 ### Rule dialect
@@ -172,27 +156,17 @@ The env arm is `[^/]*\.env(\.[^/]*)?`, which accepts a prefix. It was once ancho
 
 ## Scan cap
 
-Each betterleaks run gets a cap of 4 s, through the `timeout` option of `spawn` in `io.ts`, which stops the child with `SIGTERM`.
+Each betterleaks run gets a cap of 4 s, through the `timeout` option of `spawn` in `main.ts`, which stops the child with `SIGTERM`.
 
 A large high-entropy staged blob otherwise runs far past any sane hook budget: about 104 MB of base64 takes 41 s, while 20 MB of ordinary code takes 2 s, so only generated or encoded content reaches the cap ([measured](research.md#scan-cap-timings)).
 
-Without the cap, the agent stops the hook at the timeout of its settings entry, which Claude Code reads as an error and not as a block. The scan has to cap itself instead.
+Git has no timeout for a hook, so without the cap the commit waits for the whole scan. The scan has to cap itself.
 
 A capped scan allows the commit, in line with the rest of the fail-open behaviour, but it is the one fail-open path a reader cannot infer from a clean run. It prints a warning to stderr naming the command to run by hand. To fail closed instead, make `scanContent()` return a block message when `ran.timedOut` is true.
 
 ### Do not use betterleaks' own `--timeout`
 
 The native flag aborts the scan and reports **success**, which is indistinguishable from a clean result, so swapping to it would convert the one loud fail-open path into a silent pass. `--max-target-megabytes` is no help either; it governs `dir` scans and not git blobs. [The measurements](research.md#betterleaks-own---timeout-fails-silently).
-
-## `git commit -a`
-
-`-a` stages tracked modifications as part of the commit itself, after this hook has run, so the index the hook reads does not hold them yet. When the command carries `-a` or `--all` and the staged scan came back clean, the hook runs a second scan with `betterleaks git --pre-commit`, which reads the unstaged tracked diff.
-
-"Clean" means that the staged scan reported no finding before the allowlist filter. A staged finding in an allowlisted file skips the second scan, and the allowlist then drops that finding, so the commit proceeds with no scan of the working tree.
-
-`stagesAll()` cuts the command at `-m ` or `--message` before testing, so `git commit -m "add -a flag"` is not mistaken for an `-a` commit. The cut also hides a flag after the message, so `git commit -m wip -a` runs no second scan. A message glued straight to the flag (`-m"..."`) defeats the cut and costs one extra scan, which can block on a working-tree secret the commit would not have included. `--all` is anchored on both ends, so `--allow-empty` does not read as `--all`.
-
-The flag test exists rather than always running both scans. Running both unconditionally would delete `stagesAll()`, but every commit would then block on an unrelated secret sitting anywhere in the dirty working tree.
 
 ## Content scan
 
@@ -219,7 +193,6 @@ The name rule earns its place because a `.pgpass` or a `.netrc` holds a human-ch
 | clean scan               | allow                  |
 | betterleaks missing      | allow                  |
 | error in the scan code   | allow                  |
-| not a git repository     | allow                  |
 | config fails to parse    | allow                  |
 | scan hits the 4 s cap    | allow, warns on stderr |
 
@@ -229,15 +202,13 @@ The name rule earns its place because a `.pgpass` or a `.netrc` holds a human-ch
 
 The report is JSON on stdout (`-r -`), and the core parses it only on exit code 9. A report that does not parse throws, and the content scan then allows, as for any other scanner error.
 
-The command is read for `-a` only when the first scan is clean, so a blocking scan never runs the second one.
-
 Findings in an allowlisted file are dropped before the hook decides, which is what makes `.agent-allow-secrets` cover the content scan as well as the binary scan.
 
 ## Cost
 
-In Claude Code and Codex, a command that is not a commit costs about 25 ms, which is the Node start. The bash hook took about 1 ms. This case runs before every Bash call.
+A command that does not commit costs nothing, because git runs the hook only for a commit. As an agent hook in Claude Code and Codex, it cost about 25 ms on each Bash call, which was the Node start.
 
-A clean commit also pays for the scan, about 50 ms. A binary adds one `betterleaks dir`, paid only when a binary is actually added. The `settings.json` timeout of 10 s covers the worst case of two capped scans on an `-a` commit. [The full table](research.md#cost).
+A clean commit pays for one Node start and the scan, about 50 ms. A binary adds one `betterleaks dir`, paid only when a binary is actually added. The worst case is one capped scan, about 4 s. [The full table](research.md#cost).
 
 ## Changing this hook
 

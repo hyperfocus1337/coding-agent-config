@@ -6,7 +6,7 @@
 # these rules in a repo that has its own config, extend this path from it:
 #
 #   [extend]
-#   path = "~/.claude/hooks/block-secret-commits/conf/betterleaks.toml"
+#   path = "~/.config/git/hooks/block-secret-commits/conf/betterleaks.toml"
 #
 # Regexes use Go RE2. RE2 has no lookahead or backreference. Express an
 # exemption in the [allowlist] block below, not as a negative pattern.

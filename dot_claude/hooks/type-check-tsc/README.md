@@ -119,7 +119,7 @@ The hook fails open in every agent: a failure lets the stop pass, so a broken ch
 
 The design gave Claude Code a mod on `classic.Stop`. In a live test on 2026-10-19 with Claude Code 2.1.303, the mod loaded but did not run. The debug log said `classic.Stop bypassed by cc-plugin-sec-default (tier user)`, with `cc-plugin-sec-default@builtin seated outermost: the organization is team`.
 
-For a Team organization, that built-in plugin skips each user mod on a `classic.*` event, but not on `tool.call`. The settings hook beneath it still runs. So Claude Code runs `command.ts` from `settings.json`, as it does for `block-secret-commits`.
+For a Team organization, that built-in plugin skips each user mod on a `classic.*` event, but not on `tool.call`. The settings hook beneath it still runs. So Claude Code runs `command.ts` from `settings.json`.
 
 ### Why a stop and not each edit
 

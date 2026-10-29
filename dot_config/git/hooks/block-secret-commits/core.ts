@@ -1,11 +1,8 @@
 /**
- * The block-secret-commits logic: before a `git commit`, scans the newly added
- * binary files and the staged content with betterleaks. The adapters pass in
- * the file and process functions. The reasons for each step are in
+ * The block-secret-commits logic: in the pre-commit hook, scans the newly
+ * added binary files and the staged content with betterleaks. main.ts passes
+ * in the file and process functions. The reasons for each step are in
  * docs/implementation.md.
- *
- * Adapters: command.ts (Claude Code and Codex command hook), pi.ts (pi and
- * omp). There is no mod: the mod API cannot copy a binary file.
  */
 
 interface Ran {
@@ -32,7 +29,7 @@ export interface Io {
 }
 
 export interface Settings {
-  /** The repo root: CLAUDE_PROJECT_DIR, or the working folder of the agent. */
+  /** The repo root, where git runs the hook. */
   root: string;
   /** AGENT_ALLOW_SECRETS: paths or basenames, whitespace or colon separated. */
   allow?: string;
@@ -40,7 +37,7 @@ export interface Settings {
   config: string;
 }
 
-/** The verdict. `block` is the message for the model. */
+/** The verdict. `block` is the message that git shows. */
 export interface Verdict {
   block?: string;
   /** Messages for the user that do not block, such as a capped scan. */
@@ -57,36 +54,16 @@ const COPY_MAX = 100 * 1024 * 1024;
 /** Found leaks exit 9, so the error exit of 1 stays apart and allows. */
 const FLAGS = ["--no-banner", "--redact", "--log-level", "error", "--exit-code", "9", "-f", "json"];
 
-/**
- * A `git commit`: `git` anywhere, and `commit` as a word with whitespace
- * before it. So `git -C . commit` matches, and `git add .git/hooks/commit-msg`
- * and `hooks/block-secret-commits/` do not.
- */
-function isCommit(command: string): boolean {
-  return command.includes("git") && /(^|\s)commit([^A-Za-z0-9_-]|$)/.test(command);
-}
-
-/**
- * Whether the command has `-a` or `--all`, which stage tracked changes after
- * the hook has run. The text from `-m ` or `--message` on is not read, so a
- * message that holds `-a` is not a flag.
- */
-function stagesAll(command: string): boolean {
-  const flags = command.split("-m ")[0]!.split("--message")[0]!;
-  return /(^|\s)(-[a-zA-Z]*a|--all(\s|$))/.test(flags);
-}
-
 /** A path is allowed when the list holds the path or its basename. */
 const allowed = (list: string[], path: string) =>
   list.includes(path) || list.includes(path.slice(path.lastIndexOf("/") + 1));
 
 /**
- * The verdict for a Bash command. The binary scan fails closed: an error in
- * it blocks. The content scan fails open: an error in it allows.
+ * The verdict for the commit. The binary scan fails closed: an error in it
+ * blocks. The content scan fails open: an error in it allows.
  */
-export async function check(command: string, io: Io, settings: Settings): Promise<Verdict> {
+export async function check(io: Io, settings: Settings): Promise<Verdict> {
   const warnings: string[] = [];
-  if (!isCommit(command)) return { warnings };
   let setup: Setup;
   try {
     setup = await prepare(io, settings);
@@ -99,7 +76,7 @@ export async function check(command: string, io: Io, settings: Settings): Promis
     };
   }
   try {
-    const block = await scanContent(command, io, setup, settings.root, warnings);
+    const block = await scanContent(io, setup, settings.root, warnings);
     return { block, warnings };
   } catch {
     // Fail open: a broken content scan must not block every commit.
@@ -204,49 +181,39 @@ interface Finding {
 
 /**
  * The block message for a secret value or a secret file name in the staged
- * content, or in the working tree for `git commit -a`. A missing scanner, a
- * scan error, and a capped scan allow.
+ * content. A missing scanner, a scan error, and a capped scan allow.
  */
 async function scanContent(
-  command: string,
   io: Io,
   setup: Setup,
   root: string,
   warnings: string[],
 ): Promise<string | undefined> {
   if (!setup.betterleaks) return undefined;
-  const scan = async (mode: string) => {
-    const ran = await io.run(
-      ["betterleaks", "git", mode, ...setup.config, ...FLAGS, "-r", "-"],
-      CAP_MS,
+  // betterleaks reads the index through git, which takes $GIT_INDEX_FILE, so
+  // `git commit -a` and `git commit <path>` get the files that they commit.
+  const ran = await io.run(
+    ["betterleaks", "git", "--staged", ...setup.config, ...FLAGS, "-r", "-"],
+    CAP_MS,
+  );
+  if (ran?.timedOut)
+    warnings.push(
+      `Warning: betterleaks hit the ${CAP_MS / 1000}s scan cap, so this commit was NOT scanned for secret values. Run 'betterleaks git --staged --redact' by hand before you trust it.`,
     );
-    if (ran?.timedOut)
-      warnings.push(
-        `Warning: betterleaks hit the ${CAP_MS / 1000}s scan cap on 'git ${mode}', so this commit was NOT scanned for secret values. Run 'betterleaks git ${mode} --redact' by hand before you trust it.`,
-      );
-    return ran?.exitCode === 9 ? (JSON.parse(ran.stdout) as Finding[]) : [];
-  };
-  let mode = "--staged";
-  let where = "staged content";
-  let findings = await scan(mode);
-  if (!findings.length && stagesAll(command)) {
-    mode = "--pre-commit";
-    where = "working tree, which `git commit -a` stages for you";
-    findings = await scan(mode);
-  }
+  const findings = ran?.exitCode === 9 ? (JSON.parse(ran.stdout) as Finding[]) : [];
   // The allowlist covers the content scan too, so one list covers every check.
   const lines = findings
     .filter((finding) => finding.File && !allowed(setup.list, finding.File))
     .map((f) => `  - ${f.RuleID} in ${f.File}:${f.StartLine} (fingerprint: ${f.Fingerprint})`);
   if (!lines.length) return undefined;
   return [
-    `Blocked: betterleaks flagged the ${where}:`,
+    "Blocked: betterleaks flagged the staged content:",
     ...lines,
     "",
     "A 'secret-filename' rule means the file name alone marks it as a secret.",
     "Any other rule means a secret value was found on that line.",
     "",
-    `Inspect with: betterleaks git ${mode} --redact --verbose`,
+    "Inspect with: betterleaks git --staged --redact --verbose",
     // Portable fixes first: the betterleaks ones work for anyone who scans
     // this repo, the local list only for a user of this hook.
     "Fix one of:",

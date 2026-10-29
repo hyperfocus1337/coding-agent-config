@@ -3,8 +3,8 @@
 # the repo stops deploying (docs/hooks/decisions.md).
 .claude/hooks/enforce-cli-tools/hook.sh
 .claude/hooks/lint-all-languages
-.claude/hooks/block-commit-attribution/hook.sh
-.claude/hooks/block-secret-commits/hook.sh
+.claude/hooks/block-commit-attribution
+.claude/hooks/block-secret-commits
 .claude/hooks/format-all-languages
 .claude/hooks/format-org-tables/hook.sh
 .claude/hooks/format-staged-files
