@@ -1,6 +1,6 @@
 ---
 allowed-tools: Bash(mktemp:*), Bash(git rev-parse:*), Bash(git show:*), Bash(git ls-tree:*), Bash(git hash-object:*), Bash(GIT_INDEX_FILE=* git read-tree *), Bash(GIT_INDEX_FILE=* git add *), Bash(GIT_INDEX_FILE=* git apply *), Bash(GIT_INDEX_FILE=* git update-index *), Bash(GIT_INDEX_FILE=* git diff *), Bash(GIT_INDEX_FILE=* git write-tree), Bash(git commit-tree:*), Bash(git update-ref:*), Bash(git reset -q -- *), Bash(git status:*), Bash(git diff:*), Bash(git log:*)
-description: Commit this conversation's changes while other sessions commit on the same branch
+description: Commit this conversation's changes, safe when other sessions commit at the same time
 ---
 
 ## Context
