@@ -37,7 +37,7 @@ The 7 advisory hooks and `block-destructive-commands` have a toggle. An advisory
 - `type-check-tsc` and `type-check-pyrefly`
 - `block-destructive-commands`
 
-Turning off `block-destructive-commands` skips all dcg checks, including the pack that blocks agent writes to hook toggle keys. This also happens with `all`. Prefer `dcg allow-once <code>` when you only need to approve one command.
+Turning off `block-destructive-commands` skips all dcg checks, including the pack that blocks agent writes to hook toggle keys, and the pack that blocks `git commit --no-verify`. An agent can then skip the git guards `block-secret-commits` and `block-commit-attribution`. This also happens with `all`. Prefer `dcg allow-once <code>` when you only need to approve one command.
 
 `PARTS` in [`core.ts`](core.ts) lists the formatters that have their own key: `terraform`, `shfmt`, and `ruff` of `format-code`.
 

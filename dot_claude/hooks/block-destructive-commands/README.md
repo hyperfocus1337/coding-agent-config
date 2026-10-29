@@ -62,7 +62,7 @@ All adapters read `AGENT_HOOKS_DISABLE` as hook names separated by spaces or com
 
 Claude Code and Codex use the hook process directory for the git config read; pi and omp use the session directory. The check does not follow a `cd` or `git -C` inside the command. In Codex, set the variable before launch or change the git config in your own terminal, because Codex has no `/toggle-hook` command.
 
-**Warning:** Turning this hook off skips all dcg checks, including protection against agent writes to hook toggle keys. Prefer `dcg allow-once <code>` for one command. The other guard hooks stay active.
+**Warning:** Turning this hook off skips all dcg checks, including protection against agent writes to hook toggle keys. It also lets an agent run `git commit --no-verify`, which skips the git guards `block-secret-commits` and `block-commit-attribution`. Prefer `dcg allow-once <code>` for one command. The other guard hooks stay active.
 
 ## Configuration
 

@@ -43,7 +43,7 @@ Each hook has one TypeScript core with an adapter for each agent: a Claude Code 
 
 **One switch for the supported hooks.** `AGENT_HOOKS_DISABLE` lists the hooks that are off, separated by spaces or commas. The formatters, `lint-code`, `lint-prose`, the type checkers, and `block-destructive-commands` read it on each run, and do nothing when it names them. [`/toggle-hook`](toggle-hook/README.md) changes it in the running agent. In Codex, set it at launch.
 
-The other guards do not read the variable, and `format-staged-files` removes it before it runs the formatters. Turning off `block-destructive-commands`, including through `all`, skips all dcg checks.
+The other guards do not read the variable, and `format-staged-files` removes it before it runs the formatters. Turning off `block-destructive-commands`, including through `all`, skips all dcg checks. This includes the `--no-verify` block, so an agent can then skip the git guards.
 
 **One switch for each repository.** The same hooks also do nothing when the git config of the repository of a file sets `agent-hook.<hook>.enabled` to `false`. `format-code` also reads `agent-hook.format-code.terraform`, `agent-hook.format-code.shfmt`, and `agent-hook.format-code.ruff`. `/toggle-hook --repo <hook>` writes the key, and the key applies across sessions and in `format-staged-files`. The dcg pack `local.agent_hook` blocks an agent command that writes the key.
 
