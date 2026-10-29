@@ -53,8 +53,9 @@ Plan the commits that a commit command would make. Commit nothing, stage nothing
       - <path>
       - <path> (partial)
 
-   Left out:
-   - <path>: <one reason, for example "changed before this conversation">
+   Left out, <reason>:
+   - <path>
+   - <path> (untracked)
 
    ## <top level> (external)
 
@@ -64,9 +65,10 @@ Plan the commits that a commit command would make. Commit nothing, stage nothing
 
    - Give one section per repository, this repository first. Number the commits across all sections.
    - Write `~` for the home directory in a top level, and paths relative to the top level.
-   - Mark a path `(partial)` when only some of its hunks are in the commit.
-   - Name each candidate repository that the **Repositories** step left out in the "Left out" list of this repository, with its top level and reason.
-   - Leave out an empty "Left out" list, and a section with no commits and nothing left out.
+   - Mark a path `(partial)` when only some of its hunks are in the commit or in a "Left out" group, and `(untracked)` when git does not track it.
+   - Group the left-out paths by reason, with one `Left out, <reason>:` heading per reason and a blank line between groups. Write the reason once in the heading, never after a path. When you cannot tie a change to anyone, the reason is "not changed in this conversation". Do not guess that another session made it.
+   - Name each candidate repository that the **Repositories** step left out in a "Left out" group of this repository, with its top level, for example `Left out, fixture repository:`.
+   - Leave out an empty "Left out" group, and a section with no commits and nothing left out.
    - For `extend`, write each target as `` `<short sha> <subject>` (amend) `` or `` `<short sha> <subject>` (fixup) ``, with the method that `extend` would use. Add `(pushed)` to a pushed target. Write a change that belongs to no existing commit as `` `<Conventional Commits subject>` (new commit) ``.
 
 The user can change the plan in the next messages. The target command follows the plan with those changes.
