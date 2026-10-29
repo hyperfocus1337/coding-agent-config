@@ -1,0 +1,27 @@
+# Blocks an agent command that skips the git commit hooks with --no-verify
+# or -n. The guards block-secret-commits and block-commit-attribution are
+# git hooks in dot_config/git/hooks, so this flag would turn them off. Your
+# own commits do not go through dcg. Tested with dcg 0.15.3: README.md
+# "Custom packs".
+schema_version: 1
+id: local.git_hooks
+name: Git hook bypass
+version: 1.0.0
+description: Blocks git commit --no-verify and -n, which skip the commit hooks.
+keywords:
+  - commit
+destructive_patterns:
+  # git, its global options, then commit, then whole arguments up to the
+  # flag. A quoted argument is one match, so a -n in a message passes. In a
+  # cluster such as -anm, the letters before n take no value. git accepts
+  # --no-verif and --no-veri as abbreviations.
+  - name: commit-no-verify
+    pattern: >-
+      \bgit(?:\s+(?:-[Cc]\s+(?:"[^"]*"|'[^']*'|\S+)|--(?:git-dir|work-tree|namespace|exec-path|config-env)(?:=|\s+)(?:"[^"]*"|'[^']*'|\S+)|-\S+))*\s+commit(?:\s+(?:"[^"]*"|'[^']*'|[^\s"';&|]+))*?\s+(?:--no-veri(?:f|fy)?|-[aeiopqsvz]*n[A-Za-z]*)(?=\s|$|[;&|])
+    severity: critical
+    executables: [git]
+    description: Agents must not skip the git commit hooks
+    explanation: |
+      --no-verify and -n skip the pre-commit and commit-msg hooks, which
+      include block-secret-commits and block-commit-attribution. Fix what
+      the hook reports and run the commit again without the flag.

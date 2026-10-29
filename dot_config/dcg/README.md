@@ -45,16 +45,24 @@ dcg enables these packs when no configuration exists.
 
 `custom_paths` in [`config.toml`](config.toml) loads each YAML pack in `~/.config/dcg/packs/`. chezmoi installs the packs from [`packs/`](packs/).
 
-| Pack                                        | Rule                            | Blocks                                                                                                                                                     | Why                                                                                                                                                                          |
-| ------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`local.agent_hook`](packs/agent-hook.yaml) | `local.agent_hook:config-write` | A `git config` command that writes, removes, or adds an `agent-hook.*` key, at any scope. A command with `get`, `list`, `--get`, `--list`, or `-l` passes. | The keys turn the advisory hooks off in one repository. Only you change them, with `/toggle-hook --repo`. See [`toggle-hook`](../../dot_claude/hooks/toggle-hook/README.md). |
+| Pack                                        | Rule                               | Blocks                                                                                                                                                     | Why                                                                                                                                                                                   |
+| ------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`local.agent_hook`](packs/agent-hook.yaml) | `local.agent_hook:config-write`    | A `git config` command that writes, removes, or adds an `agent-hook.*` key, at any scope. A command with `get`, `list`, `--get`, `--list`, or `-l` passes. | The keys turn the advisory hooks off in one repository. Only you change them, with `/toggle-hook --repo`. See [`toggle-hook`](../../dot_claude/hooks/toggle-hook/README.md).          |
+| [`local.git_hooks`](packs/git-hooks.yaml)   | `local.git_hooks:commit-no-verify` | A `git commit` with `--no-verify`, its abbreviations `--no-verif` and `--no-veri`, or `-n`, also in a cluster such as `-anm`.                              | The flag skips the git hooks [`block-secret-commits`](../git/hooks/block-secret-commits/README.md) and [`block-commit-attribution`](../git/hooks/block-commit-attribution/README.md). |
 
-Tests with dcg 0.15.3 on 2026-10-21, with `dcg test --config`:
+Tests of `local.agent_hook` with dcg 0.15.3 on 2026-10-21, with `dcg test --config`:
 
 - **Blocked:** `git config agent-hook.x.enabled false`, with `--local`, `--global`, `--add`, `--unset`, `--unset-all`, `--remove-section`, `set`, or `unset`. Also with `-C <dir>`, `-c <key>=<value>`, `--git-dir=<dir>`, a quoted key, a key in other case, `/usr/bin/git`, `sudo`, after `cd <dir> &&`, and in `bash -c`.
 - **Allowed:** `git config --get`, `--get-all`, `--get-regexp`, `get`, `--list`, `list`, `-l`, and `git config user.name <name>`.
 
-The pack does not catch a write that does not name the key: an edit of `.git/config`, `git config --edit`, or a key in a shell variable. dcg also reads the body of a heredoc in a command as shell text. So an agent command whose heredoc holds a line such as `git config agent-hook.x.enabled false`, for example a script that writes documentation, is blocked. Write such text with the file tools of the agent.
+Tests of `local.git_hooks` with dcg 0.15.3 on 2026-10-29, with `dcg test --config`:
+
+- **Blocked:** `git commit` with `--no-verify` before or after `-m x`, `-n -m x`, `-nm x`, `-anm x`, and `-qnm 'x'` after `git add . &&`. Also `--no-verif` after `git -C /tmp`, `/usr/bin/git`, after `cd <dir> &&`, and in `bash -c`.
+- **Allowed:** `-n` and `--no-verify` inside a quoted message, `head -n` and `rg -n` after the commit, `git log -n 5`, `--amend --no-edit`, `-sm x`, `-m nope`, and a heredoc message on `-F -` that mentions `git commit --no-verify`.
+
+`local.git_hooks` does not catch other ways to skip a git hook: `git config hook.<name>.enabled false`, a `-c hook.<name>...` override, `GIT_CONFIG_GLOBAL` set to another file, or `git commit-tree`. Agents use `--no-verify` out of habit when a hook blocks them, and the other ways are rare.
+
+The `local.agent_hook` pack does not catch a write that does not name the key: an edit of `.git/config`, `git config --edit`, or a key in a shell variable. dcg also reads the body of a heredoc in a command as shell text. So an agent command whose heredoc holds a line such as `git config agent-hook.x.enabled false`, for example a script that writes documentation, is blocked. Write such text with the file tools of the agent.
 
 ## Exceptions
 
