@@ -10,16 +10,22 @@ export interface Io {
 }
 
 export const FALLBACK = "Blocked by dcg (destructive command).";
+export const FAILURE =
+  "Blocked: dcg could not check the command. Check its installation and output.";
 
 /** Returns the block reason, or `undefined` to allow. */
 export async function check(command: string, io: Io): Promise<string | undefined> {
   if (!command.trim()) return undefined;
   const run = await io.dcg(command);
-  // Fail open: a missing dcg, a dcg error, or a timeout lets the call run.
-  if (!run || (run.exitCode !== 0 && run.exitCode !== 1)) return undefined;
+  if (!run || (run.exitCode !== 0 && run.exitCode !== 1)) return FAILURE;
   const fallback = run.exitCode === 1 ? FALLBACK : undefined;
+  if (!run.stdout.trim()) return fallback;
   try {
-    const output = JSON.parse(run.stdout)?.hookSpecificOutput;
+    const parsed = JSON.parse(run.stdout);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return FAILURE;
+    const output = parsed.hookSpecificOutput;
+    if (output !== undefined && !["allow", "deny"].includes(output?.permissionDecision))
+      return FAILURE;
     if (output?.permissionDecision !== "deny") return fallback;
     let reason =
       typeof output.permissionDecisionReason === "string" && output.permissionDecisionReason
@@ -34,6 +40,6 @@ export async function check(command: string, io: Io): Promise<string | undefined
     }
     return reason;
   } catch {
-    return fallback;
+    return fallback ?? FAILURE;
   }
 }

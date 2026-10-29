@@ -87,7 +87,7 @@ ours=$(cat <<'EOF'
         "hooks": [
           {
             "command": "sh \"$HOME/.claude/hooks/block-destructive-commands/guard.sh\"",
-            "timeout": 5,
+            "timeout": 10,
             "type": "command"
           },
           {

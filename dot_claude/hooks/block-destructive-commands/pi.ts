@@ -12,8 +12,7 @@ export default function (pi: ExtensionAPI) {
     if (event.toolName !== "bash") return;
     const { command } = event.input as { command?: unknown };
     if (typeof command !== "string") return;
-    // nodeIo never rejects, and check() allows when dcg fails. pi blocks the
-    // call when a handler throws.
+    // check() blocks when dcg fails. pi also blocks if this handler throws.
     const reason = await check(command, nodeIo(ctx.cwd));
     if (reason) return { block: true, reason };
   });

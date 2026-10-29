@@ -11,7 +11,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { check, FALLBACK, type Io } from "../core.ts";
+import { check, FAILURE, FALLBACK, type Io } from "../core.ts";
 import { DCG, nodeIo } from "../io.ts";
 import extension from "../pi.ts";
 
@@ -71,13 +71,13 @@ assert.equal(
   await check("x", stub(0, '{"hookSpecificOutput":{"permissionDecision":"allow"}}')),
   undefined,
 );
-assert.equal(await check("x", stub(0, "not json")), undefined);
-assert.equal(await check("x", stub(0, "null")), undefined);
+for (const output of ["not json", "null", "[]", '{"hookSpecificOutput":{}}']) {
+  assert.equal(await check("x", stub(0, output)), FAILURE);
+}
 assert.equal(await check("x", stub(1, "not json")), FALLBACK);
 assert.equal(await check("x", stub(1, "{}")), FALLBACK);
-assert.equal(await check("x", stub(3)), undefined);
-assert.equal(await check("x", stub(-1)), undefined);
-assert.equal(await check("x", { dcg: async () => undefined }), undefined);
+for (const code of [2, 3, 127, -1]) assert.equal(await check("x", stub(code)), FAILURE);
+assert.equal(await check("x", { dcg: async () => undefined }), FAILURE);
 let ran = false;
 await check("  ", { dcg: async () => ((ran = true), undefined) });
 assert.equal(ran, false, "an empty command does not run dcg");
@@ -104,14 +104,14 @@ assert.equal(await nodeIo(join(tmp, "missing"), echo).dcg("ls"), undefined);
 const io = nodeIo(tmp, echo);
 for (const value of ["block-destructive-commands", "lint-code,block-destructive-commands\ttypo"]) {
   process.env.AGENT_HOOKS_DISABLE = value;
-  assert.equal(await io.dcg(command), undefined);
+  assert.equal(await check(command, io), undefined, "session toggle still allows");
 }
 process.env.AGENT_HOOKS_DISABLE = "block-destructive-commands-extra";
 assert.ok(await io.dcg(command), "only the exact hook name turns it off");
 delete process.env.AGENT_HOOKS_DISABLE;
 const global = process.env.GIT_CONFIG_GLOBAL;
 writeFileSync(global, '[agent-hook "block-destructive-commands"]\n enabled = false\n');
-assert.equal(await io.dcg(command), undefined, "global toggle");
+assert.equal(await check(command, io), undefined, "global toggle");
 const repo = join(tmp, "repo");
 mkdirSync(repo);
 assert.equal(spawnSync("git", ["init", repo]).status, 0);
@@ -122,11 +122,11 @@ config("true");
 assert.ok(await nodeIo(repo, echo).dcg(command), "repo true overrides global false");
 writeFileSync(global, "");
 config("false");
-assert.equal(await nodeIo(repo, echo).dcg(command), undefined, "repo toggle");
+assert.equal(await check(command, nodeIo(repo, echo)), undefined, "repo toggle");
 config("banana");
 assert.ok(await nodeIo(repo, echo).dcg(command), "invalid config keeps dcg on");
 
-// Command hooks preserve stdin, dcg output, exit status, and self-heal setting.
+// Command hooks preserve stdin, dcg output, and self-heal setting, but fail closed.
 const home = join(tmp, "home");
 mkdirSync(join(home, ".local", "bin"), { recursive: true });
 writeFileSync(
@@ -143,26 +143,51 @@ const shell = (off = "") =>
     encoding: "utf8",
   });
 let result = shell();
-assert.equal(result.status, 1);
+assert.equal(result.status, 2);
 assert.equal(result.stdout, `1|${payload}`);
 for (const off of ["block-destructive-commands", "lint-code,block-destructive-commands\ttypo"]) {
   result = shell(off);
   assert.equal(result.status, 0);
   assert.equal(result.stdout, "");
 }
-assert.equal(shell("block-destructive-commands-extra").status, 1);
+assert.equal(shell("block-destructive-commands-extra").status, 2);
 config("false");
 assert.equal(shell().stdout, "");
 assert.equal(shell().status, 0);
 config("true");
 writeFileSync(global, '[agent-hook "block-destructive-commands"]\n enabled = false\n');
-assert.equal(shell().status, 1, "repo true overrides global false");
+assert.equal(shell().status, 2, "repo true overrides global false");
 config("false");
 assert.equal(shell().status, 0);
 writeFileSync(localConfig, "");
 assert.equal(shell().status, 0, "global false applies without a repo key");
 writeFileSync(global, "");
-assert.equal(shell().status, 1, "unset config keeps dcg on");
+assert.equal(shell().status, 2, "unset config keeps dcg on");
+
+// Missing binaries, execution errors, malformed output, and timeouts block.
+const binary = join(home, ".local", "bin", "dcg");
+rmSync(binary);
+assert.equal(shell().status, 2, "missing dcg");
+assert.equal(await check("ls", nodeIo(tmp, binary)), FAILURE);
+for (const code of [0, 1, 2, 3, 127]) {
+  writeFileSync(binary, `#!/bin/sh\nexit ${code}\n`, { mode: 0o755 });
+  assert.equal(shell().status, code === 0 ? 0 : 2, `dcg exit ${code}`);
+}
+writeFileSync(binary, '#!/bin/sh\nprintf "not json"\n', { mode: 0o755 });
+assert.equal(shell().status, 2, "invalid JSON");
+writeFileSync(binary, `#!/bin/sh\nprintf '%s' '${deny}'\n`, { mode: 0o755 });
+assert.equal(shell().stdout, deny, "preserve JSON denials and approval codes");
+const hangs = '#!/bin/sh\ntrap "" TERM\nwhile :; do :; done\n';
+writeFileSync(binary, hangs, { mode: 0o755 });
+const timed = spawnSync("sh", [new URL("../guard.sh", import.meta.url).pathname], {
+  cwd: repo,
+  env: { ...process.env, HOME: home },
+  input: payload,
+  encoding: "utf8",
+  timeout: 8000,
+});
+assert.equal(timed.status, 2, "internal timeout blocks before the agent timeout");
+assert.equal(await check("ls", nodeIo(tmp, binary)), FAILURE);
 
 // pi: only a bash call with a string command reaches dcg.
 type Handler = (event: unknown, ctx: unknown) => Promise<unknown>;

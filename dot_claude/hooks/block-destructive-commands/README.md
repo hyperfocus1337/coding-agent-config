@@ -28,10 +28,12 @@ Codex runs a new hook only after you trust it: open `/hooks` in Codex once after
 
 ## Failure behavior
 
-The hook fails open. When dcg is missing, exits with an error (exit 3 or more), or runs longer than 5 s, the command runs:
+The hook fails closed. A missing dcg binary, execution error, invalid JSON, or a run longer than 5 s blocks the command. An explicit hook toggle still skips the check.
 
-- **Claude Code and Codex** treat a command hook that cannot start or that times out as a non-blocking error.
-- **pi and omp:** [`core.ts`](core.ts) blocks on a hook JSON `permissionDecision: "deny"`, including the normal exit 0 response. Exit 1 also blocks. Other exit codes or an invalid exit 0 response allow the call.
+- **Claude Code:** the command handler sets `onFailure: "block"`, which requires Claude Code 2.1.295 or later. This also blocks if the wrapper cannot start or reaches the outer 10 s timeout.
+- **Claude Code and Codex:** [`guard.sh`](guard.sh) uses Node to run dcg with a 5 s timeout and converts nonzero exits and execution failures to blocking exit 2. It preserves successful dcg output, including JSON denials and approval codes. Node must be on `PATH`; a missing Node blocks too. The outer hook timeout is 10 s so the wrapper can report its internal timeout first.
+- **Codex limitation:** a failure to start the wrapper itself, or an outer hook timeout, can still fail open. The wrapper cannot handle a failure outside its own process.
+- **pi and omp:** [`core.ts`](core.ts) blocks on a hook JSON `permissionDecision: "deny"`, exit 1, execution failures, timeouts, and invalid responses. Exit 0 with empty output, `{}`, or an explicit allow passes.
 
 ## pi and omp
 
@@ -72,7 +74,7 @@ dcg reads `~/.config/dcg/config.toml` and a `.dcg.toml` in the project. This rep
 node test/check.ts
 ```
 
-from this folder, or `just hooks-check`. The check tests `core.ts` with stub dcg results, `io.ts` with stub dcg scripts, `guard.sh` with a stub binary, and `pi.ts` with a stub pi. It checks session, repository, and global toggles, repository precedence, invalid values, and shell payload and exit-status preservation. The last group runs the installed `~/.local/bin/dcg` on `git reset --hard HEAD~1` and on `ls -la`, and is skipped when the binary is missing.
+from this folder, or `just hooks-check`. The check tests `core.ts` with stub dcg results, `io.ts` with stub dcg scripts, `guard.sh` with a stub binary, and `pi.ts` with a stub pi. It checks session, repository, and global toggles, repository precedence, invalid values, and shell payload preservation, blocking exit codes, missing binaries, invalid JSON, and internal timeouts. The last group runs the installed `~/.local/bin/dcg` on `git reset --hard HEAD~1` and on `ls -la`, and is skipped when the binary is missing.
 
 ## Files
 

@@ -19,7 +19,7 @@ export function nodeIo(cwd: string, bin = DCG): Io {
           .split(/[\s,]+/)
           .includes("block-destructive-commands")
       )
-        return Promise.resolve(undefined);
+        return Promise.resolve({ exitCode: 0, stdout: "" });
       try {
         const config = spawnSync(
           "git",
@@ -27,7 +27,7 @@ export function nodeIo(cwd: string, bin = DCG): Io {
           { cwd, encoding: "utf8", timeout: 1000 },
         );
         if (config.status === 0 && config.stdout.trim() === "false")
-          return Promise.resolve(undefined);
+          return Promise.resolve({ exitCode: 0, stdout: "" });
       } catch {
         // An unavailable git config does not turn the guard off.
       }
@@ -41,6 +41,7 @@ export function nodeIo(cwd: string, bin = DCG): Io {
             env: { ...process.env, DCG_NO_SELF_HEAL: "1" },
             stdio: ["pipe", "pipe", "ignore"],
             timeout: 5000,
+            killSignal: "SIGKILL",
           });
         } catch {
           return done(undefined);
