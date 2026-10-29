@@ -1,7 +1,7 @@
 ---
 name: prose-cleanup
 description: Fix the old prose alerts that the lint-prose hook does not report, across files, directories, the repository, or the files changed since HEAD. Scans with Vale and the hook's rules or another Vale config, asks which files to fix, and fixes them.
-argument-hint: <path... | --changed> [--config FILE | --config repo] [--report]
+argument-hint: "<path... | --changed> [--config FILE | --config repo] [--report]"
 disable-model-invocation: true
 ---
 
