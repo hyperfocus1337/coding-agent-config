@@ -35,14 +35,19 @@ import type { AutocompleteProvider } from "@earendil-works/pi-tui";
 
 /** Complete slash names at a whitespace boundary without replacing nearby text. */
 export function withInlineCommands(provider: AutocompleteProvider): AutocompleteProvider {
-  const slashPrefix = (lines: string[], line: number, col: number) =>
-    /(?:^|\s)(\/[^\s/]*)$/.exec((lines[line] ?? "").slice(0, col))?.[1];
+  const slashToken = (lines: string[], line: number, col: number) => {
+    const text = lines[line] ?? "";
+    const prefix = /(?:^|\s)(\/[^\s/]*)$/.exec(text.slice(0, col))?.[1];
+    if (!prefix) return undefined;
+    const suffix = /^[^\s/]*/.exec(text.slice(col))![0];
+    return { value: prefix + suffix, start: col - prefix.length, end: col + suffix.length };
+  };
   return {
     triggerCharacters: provider.triggerCharacters,
     async getSuggestions(lines, line, col, options) {
-      const prefix = slashPrefix(lines, line, col);
-      if (prefix) {
-        const suggestions = await provider.getSuggestions([prefix], 0, prefix.length, {
+      const token = slashToken(lines, line, col);
+      if (token) {
+        const suggestions = await provider.getSuggestions([token.value], 0, token.value.length, {
           ...options,
           force: false,
         });
@@ -51,11 +56,13 @@ export function withInlineCommands(provider: AutocompleteProvider): Autocomplete
       return provider.getSuggestions(lines, line, col, options);
     },
     applyCompletion(lines, line, col, item, prefix) {
-      if (prefix === slashPrefix(lines, line, col) && !item.value.includes("/")) {
+      const token = slashToken(lines, line, col);
+      if (token && prefix === token.value && !item.value.includes("/")) {
         const result = provider.applyCompletion([prefix], 0, prefix.length, item, prefix);
-        const start = col - prefix.length;
+        const start = token.start;
         const updated = [...lines];
-        updated[line] = lines[line].slice(0, start) + result.lines[0] + lines[line].slice(col);
+        updated[line] =
+          lines[line].slice(0, start) + result.lines[0] + lines[line].slice(token.end);
         return {
           lines: updated,
           cursorLine: line,

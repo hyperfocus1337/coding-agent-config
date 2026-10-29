@@ -317,6 +317,44 @@ if (process.env.PI_PACKAGE) {
         if (line) assert.equal(result.lines[0], lines[0]);
       }
     });
+    await check(
+      "completion uses the whole command when the cursor is inside its name",
+      async () => {
+        const commands = withInlineCommands(
+          new CombinedAutocompleteProvider(
+            [
+              "git:commit:any",
+              "git:commit:audit",
+              "git:commit:conversation",
+              "git:commit:extend",
+            ].map((name) => ({ name, description: name })),
+            root,
+          ),
+        );
+        for (const before of ["", "Please ", "First line\n  then "]) {
+          for (const name of ["/git:commit:conversation", "/git:commit:conver"]) {
+            const lines = (before + name + " argument").split("\n");
+            const line = lines.length - 1;
+            const start = lines[line].indexOf("/");
+            for (const offset of [1, "/git:commit:".length, name.length]) {
+              const col = start + offset;
+              const suggestions = await commands.getSuggestions(lines, line, col, options);
+              assert.equal(suggestions.items[0].value, "git:commit:conversation");
+              assert.equal(suggestions.prefix, name);
+              const result = commands.applyCompletion(
+                lines,
+                line,
+                col,
+                suggestions.items[0],
+                suggestions.prefix,
+              );
+              assert.equal(result.lines.join("\n"), before + "/git:commit:conversation  argument");
+              assert.equal(result.cursorCol, start + "/git:commit:conversation ".length);
+            }
+          }
+        }
+      },
+    );
     await check("typing slash triggers the editor provider after text and newlines", async () => {
       const InlineEditor = inlineCommandEditor(Editor);
       const editor = new InlineEditor(
@@ -353,6 +391,26 @@ if (process.env.PI_PACKAGE) {
         assert.equal(editor.getText(), text + "/git:commit:single ");
         editor.handleInput("\x1b");
       }
+      editor.setAutocompleteProvider(
+        new CombinedAutocompleteProvider(
+          ["git:commit:any", "git:commit:audit", "git:commit:conversation"].map((name) => ({
+            name,
+          })),
+          root,
+        ),
+      );
+      editor.setText("/git:commi:conversation");
+      editor.handleInput("\x01");
+      for (let index = 0; index < "/git:commi".length; index++) editor.handleInput("\x1b[C");
+      editor.handleInput("t");
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      assert.ok(editor.isShowingAutocomplete());
+      let submitted;
+      editor.onSubmit = (text) => {
+        submitted = text;
+      };
+      editor.handleInput("\r");
+      assert.equal(submitted.trim(), "/git:commit:conversation");
     });
     await check("file and argument completion delegate unchanged", async () => {
       const calls = [];

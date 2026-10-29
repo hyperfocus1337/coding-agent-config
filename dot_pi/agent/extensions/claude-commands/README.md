@@ -25,7 +25,7 @@ A `name:` in frontmatter replaces the leaf only, not the path. `README.md` at an
 
 ## Completion
 
-Typing `/` at the start of the prompt, after whitespace, or on a later line opens the command dropdown. Selecting a command keeps the text before and after the cursor. URLs and paths that contain another `/` use pi's existing completion behavior.
+Typing `/` at the start of the prompt, after whitespace, or on a later line opens the command dropdown. Completion matches the whole command name, including text after the cursor, so an exact match stays first when the cursor is inside the name. Selecting a command replaces that name and keeps the surrounding text. URLs and paths that contain another `/` use pi's existing completion behavior.
 
 This changes completion only. Claude commands still execute only at the start of the submitted prompt; an inline command name remains literal text. The extension uses a custom editor, so another extension that replaces the editor can override this behavior.
 
