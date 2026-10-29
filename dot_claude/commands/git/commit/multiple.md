@@ -40,4 +40,4 @@ The one exception is a staging command that fails with `Unable to create '<lock>
 
 ## Output
 
-Print one line per commit as inline code: `<short sha> <subject>`. Before the lines of an external repository, print its top level on its own line. No other text.
+Print one line per commit as inline code: `<short sha> <subject>`. When you commit in more than one repository, print each top level on its own line before its lines, this repository first, with `~` for the home directory. Put a blank line before each top level after the first. No other text.

@@ -43,4 +43,4 @@ Do not edit files.
 
 ## Output
 
-Print one line per commit as inline code: `<short sha> <subject>`, plus `left: <count> paths` when anything stayed uncommitted. Before the lines of an external repository, print its top level on its own line. No other text.
+Print one line per commit as inline code: `<short sha> <subject>`, plus `left: <count> paths` when anything stayed uncommitted. When you commit in more than one repository, print each top level on its own line before its lines, this repository first, with `~` for the home directory, and put `left: <count> paths` under the repository that holds those paths. Put a blank line before each top level after the first, and before each `left:` line. No other text.
