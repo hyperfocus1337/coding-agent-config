@@ -12,6 +12,7 @@ SKILL_CATALOG := REPO / "dot_claude/skills/install-skills/references/skills.json
 PLUGIN_CATALOG := REPO / "dot_claude/skills/install-plugins/references/plugins.json"
 CONTAINER := "coding-agent-sandbox-devcontainer"
 CONTAINER_USER := "user" # devcontainer runs as non-root `user`; exec as root hits wrong $HOME + missing PATH
+CONTAINER_REPO := "/workspaces/groups/agents/coding-agent-config"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Setup & integration
@@ -59,7 +60,7 @@ chezmoi *PATHS:
 # Run `just chezmoi` inside the devcontainer.
 [group('chezmoi')]
 chezmoi-devcontainer:
-    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just chezmoi
+    docker exec -u {{ CONTAINER_USER }} -w {{ CONTAINER_REPO }} -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just chezmoi
 
 # Run `just chezmoi` both locally and inside the devcontainer.
 [group('chezmoi')]
@@ -78,7 +79,7 @@ chezmoi-diff *PATHS:
 # Run `just chezmoi-diff` inside the devcontainer.
 [group('chezmoi')]
 chezmoi-diff-devcontainer:
-    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just chezmoi-diff
+    docker exec -u {{ CONTAINER_USER }} -w {{ CONTAINER_REPO }} -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just chezmoi-diff
 
 # Track a $HOME file in this repo: `just chezmoi-add ~/.config/foo`.
 [group('chezmoi')]
@@ -95,7 +96,7 @@ apm:
 # Run `just apm` inside the devcontainer.
 [group('apm')]
 apm-devcontainer:
-    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just apm
+    docker exec -u {{ CONTAINER_USER }} -w {{ CONTAINER_REPO }} -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just apm
 
 # Run `just apm` both locally and inside the devcontainer.
 [group('apm')]
@@ -120,7 +121,7 @@ extensions:
 # Run `just extensions` inside the devcontainer.
 [group('extensions')]
 extensions-devcontainer:
-    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just extensions
+    docker exec -u {{ CONTAINER_USER }} -w {{ CONTAINER_REPO }} -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just extensions
 
 # Run `just extensions` both locally and inside the devcontainer.
 [group('extensions')]
@@ -284,7 +285,7 @@ stale:
 # Run `just stale` inside the devcontainer.
 [group('inspect')]
 stale-devcontainer:
-    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config {{ CONTAINER }} just stale
+    docker exec -u {{ CONTAINER_USER }} -w {{ CONTAINER_REPO }} {{ CONTAINER }} just stale
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Cleanup
@@ -305,7 +306,7 @@ clean-stale:
 # Run `just clean-stale` inside the devcontainer.
 [group('cleanup')]
 clean-stale-devcontainer:
-    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just clean-stale
+    docker exec -u {{ CONTAINER_USER }} -w {{ CONTAINER_REPO }} -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just clean-stale
 
 # `-` on the local run: clean-stale exits 1 on abort or when only catalog rows remain,
 # and the devcontainer has its own stale paths and its own prompt.
@@ -335,7 +336,7 @@ clean-backups:
 # Run `just clean-backups` inside the devcontainer.
 [group('cleanup')]
 clean-backups-devcontainer:
-    docker exec -u {{ CONTAINER_USER }} -w /workspaces/coding-agent-config -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just clean-backups
+    docker exec -u {{ CONTAINER_USER }} -w {{ CONTAINER_REPO }} -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just clean-backups
 
 # Run `just clean-backups` both locally and inside the devcontainer.
 [group('cleanup')]
