@@ -48,7 +48,7 @@ The hook does not log other tools that write files, for example a tool of anothe
 
 ### Limits
 
-- A Bash call snapshots only the repo of its working directory and the repos in the session log. So a Bash write to another repo is not logged until a tool that names its files changes that repo, or a call runs with its working directory there. Bash writes to git-ignored files are not logged.
+- A Bash call snapshots only the repo of its working directory, the repos in the session log, and the repos of the folders that the command names, see [Settings](#settings). So at the default setting, a Bash write to another repo without a `cd` there, such as `cp x ~/other/y`, is not logged until a tool that names its files changes that repo, or a call runs with its working directory there. Bash writes to git-ignored files are not logged.
 - A Bash snapshot cannot tell which process wrote a file. A file that another process changes during the call is logged as a change of the call. The overlap filter of the `agent-changed-files` package drops such a write when another session logged it with a tool path.
 - A background Bash call (`run_in_background`) returns before the command ends, so the hook misses its later writes.
 - In Claude Code, the mod reads a file through `$.fs`, which refuses a file over 4 MiB, and `$.process.run` keeps 4 MiB of output. So a session log over 4 MiB gives no touched repos, an Edit of a file over 4 MiB gets no before blob, and a patch over 4 MiB gives the paths with an empty line. `command.ts` and `pi.ts` read up to 64 MiB of output.
@@ -69,14 +69,14 @@ A tool that names its files, such as Edit or pi `edit`, gives the path in its in
 
 ### Snapshots
 
-Bash names no file, so the hook stores the work tree in a git index before the call. After the call, it logs the files that differ from that index. It snapshots the repo of the working directory and each repo in the repo field of the session log, and `apply_patch` also snapshots the repos of its files.
+Bash names no file, so the hook stores the work tree in a git index before the call. After the call, it logs the files that differ from that index. It snapshots the repo of the working directory and each repo in the repo field of the session log. A Bash call also snapshots the repos of the folders that its command names, see [Settings](#settings), and `apply_patch` also snapshots the repos of its files.
 
 The blobs of a snapshot go to the session `objects/`, see [Blobs](#blobs). The snapshot state is in `~/.cache/track-session-changes/<agent>/<session id>/`:
 
 | Path                        | Content                                                                                                                |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `index/<hash>`              | The git index of one repo, named by the SHA-1 of the repo path                                                         |
-| `repos.json`                | The repo of each directory that a call looked up                                                                       |
+| `repos.json`                | The repo of each directory that a call looked up, null outside every repo                                              |
 | `calls/<id>.<n>.<ms>.index` | A link to the index of repo n at the start of the call, made at time `<ms>`, removed at the end of the call            |
 | `pending/<id>`              | Codex only: the start time and the repo records from `PreToolUse`, removed at the end of the call                      |
 | `blobs.git`                 | An empty bare repo. git writes no object outside a repo, so the blobs of a file outside every repo go through this one |
@@ -139,7 +139,24 @@ A line with 7 fields has no `before` and `after`. A blob ID is empty also when t
 
 ## Settings
 
-The hook has no variables or config files, and it does not read `AGENT_HOOKS_DISABLE`. To turn it off for one agent, remove its entry from the file in the "Loaded by" column of the adapter table.
+`TRACK_SESSION_CHANGES_BASH_PATHS` sets which folders of a Bash command the hook snapshots, in addition to the working directory and the repos in the session log. Each adapter reads it from the environment of the agent at each Bash call, so set it in the shell that starts the agent. An unset or unknown value counts as `cd`.
+
+| Value      | Folders that the hook snapshots                                                                           | Folders per command | Commands with a folder |
+| ---------- | --------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------- |
+| `off`      | None                                                                                                      | 0                   | 0 %                    |
+| `cd`       | The target of each `cd` or `pushd` at the start of a command, and of each `git -C`                        | 0.36                | 34 %                   |
+| `absolute` | Also the folder of each word that starts with `/`, `~/`, or `$HOME/`, also as the value of a `--flag=`    | 1.10                | 63 %                   |
+| `all`      | Also the folder of each other word with a `/`, from the working directory or from the last `cd` before it | 2.02                | 86 %                   |
+
+The counts come from 2419 Bash commands of Claude Code sessions on the host, from 2026-10-26 to 2026-10-29. A folder costs this much on the host:
+
+- **New folder:** one `git rev-parse` of 12 to 24 ms, once per folder per session. `repos.json` keeps the result, also for a folder outside every repo.
+- **Extra repo:** a snapshot of about 25 ms at the start of the call and 20 ms at its end. After the session logs a change in that repo, each later Bash call of the session snapshots it too.
+- **Wrong changes:** each extra repo also logs the changes that another process makes there during the call, see [Limits](#limits). A folder that the command only reads, as in `cat ~/other/x`, adds its repo too.
+
+The parse splits words, and it is not a shell parser. A word with a `$` other than `$HOME`, a backtick, or `://` is skipped. A glob counts up to its first `*`, `?`, `[`, or `{`. A quote inside a word splits the word, and the text of a heredoc counts as commands.
+
+The hook does not read `AGENT_HOOKS_DISABLE`. To turn it off for one agent, remove its entry from the file in the "Loaded by" column of the adapter table.
 
 ## Failure behavior
 

@@ -10,7 +10,9 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import {
+  BASH_PATHS,
   beginCall,
+  commandDirs,
   endCall,
   patchFiles,
   pendingFile,
@@ -60,6 +62,12 @@ async function run(agent: string, payload: Payload) {
         where,
         cwd,
         patch?.map((change) => change.path),
+        commandDirs(
+          tool === "Bash" ? payload.tool_input?.command : undefined,
+          cwd,
+          where.home,
+          process.env[BASH_PATHS],
+        ),
       );
       if (pending) await io.write(file, JSON.stringify(pending));
     } else if (event === "PostToolUse" || event === "PostToolUseFailure") {

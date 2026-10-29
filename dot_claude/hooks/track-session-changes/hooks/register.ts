@@ -9,6 +9,7 @@
 import type { EngineInterface, Register } from "claude-code";
 import {
   beginCall,
+  commandDirs,
   dropCall,
   endCall,
   prune,
@@ -96,13 +97,16 @@ export const register: Register = (on) => {
       const home = await $.env.get("HOME");
       if (!home) return undefined;
       const where = { home, agent: "claude", session: await $.session.id() };
-      return { where, cwd: await $.session.cwd(), start: new Date() };
+      // The engine needs a literal name here: the BASH_PATHS of the core.
+      const bashPaths = await $.env.get("TRACK_SESSION_CHANGES_BASH_PATHS");
+      return { where, cwd: await $.session.cwd(), start: new Date(), bashPaths };
     };
     const call = await begin().catch(() => undefined);
     if (!call) return next(e);
 
     if (e.tool === "Bash") {
-      const pending = await beginCall(io, call.where, call.cwd).catch(() => undefined);
+      const dirs = commandDirs(e.command, call.cwd, call.where.home, call.bashPaths);
+      const pending = await beginCall(io, call.where, call.cwd, [], dirs).catch(() => undefined);
       let ran;
       try {
         ran = await next(e);

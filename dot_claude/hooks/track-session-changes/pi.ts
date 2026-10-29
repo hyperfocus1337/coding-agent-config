@@ -16,8 +16,10 @@
 import { homedir } from "node:os";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import {
+  BASH_PATHS,
   beginCall,
   changedLine,
+  commandDirs,
   endCall,
   prune,
   recordFiles,
@@ -98,7 +100,9 @@ export function track(pi: ExtensionAPI, tools: Tools) {
       const session = where(ctx.sessionManager.getSessionId());
       const start = new Date();
       if (tools.snapshots(event.toolName, event.input)) {
-        const pending = await beginCall(io, session, ctx.cwd);
+        const command = event.toolName === "bash" ? event.input.command : undefined;
+        const dirs = commandDirs(command, ctx.cwd, session.home, process.env[BASH_PATHS]);
+        const pending = await beginCall(io, session, ctx.cwd, [], dirs);
         started.set(event.toolCallId, { start, pending, before: new Map() });
         return;
       }

@@ -14,7 +14,9 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import {
+  BASH_PATHS,
   changedLine,
+  commandDirs,
   headerPath,
   hunkLine,
   lineEndings,
@@ -97,6 +99,23 @@ await check("apply_patch: add, update, delete, move, relative and absolute", () 
     { status: "D", path: "/w/from.txt" },
     { status: "A", path: "/w/to.txt" },
   ]);
+});
+
+await check("Bash folders: cd and git -C by default, more words per setting", () => {
+  const command = [
+    "cd ~/a && cp x ../b/y; git -C '/c d' status",
+    "echo cd /no; pushd sub >/dev/null",
+    'sed -i "s|a|b|" /e/f.txt --out=$HOME/g/ h/i "$X/j" https://k/l /m/*.txt',
+  ].join("\n");
+  const dirs = (setting?: string) => commandDirs(command, "/w", "/home", setting);
+  assert.deepEqual(dirs(), ["/home/a", "/c d", "/home/a/sub"]);
+  assert.deepEqual(dirs("unknown"), dirs());
+  assert.deepEqual(dirs("off"), []);
+  const absolute = ["/home/a", "/c d", "/", "/home/a/sub", "/dev", "/e", "/home/g", "/m"];
+  assert.deepEqual(dirs("absolute"), absolute);
+  const all = ["/home/a", "/home/b", ...absolute.slice(1, -1), "/home/a/sub/h", "/m"];
+  assert.deepEqual(dirs("all"), all);
+  assert.deepEqual(commandDirs(undefined, "/w", "/home", "all"), []);
 });
 
 await check("CRLF: originalFile gets the CRLF of the file, mixed gives none", () => {
@@ -498,10 +517,41 @@ await check("a repo without commits", () => {
   assert.deepEqual(logged("s3"), [`Bash\tA\t${empty}\t${empty}/e.txt\t1`]);
 });
 
-await check("outside a repo, with no touched repo, no state and no log", () => {
-  bash(path.join(tmp, "plain"), () => {}, { session: "s4" });
-  assert.equal(fs.existsSync(stateOf("s4")), false);
+await check("outside a repo, with no touched repo, only the cached miss and no log", () => {
+  const plain = path.join(tmp, "plain");
+  bash(plain, () => {}, { session: "s4" });
+  assert.deepEqual(fs.readdirSync(stateOf("s4")), ["repos.json"]);
+  const cache = fs.readFileSync(path.join(stateOf("s4"), "repos.json"), "utf8");
+  assert.deepEqual(JSON.parse(cache), { [plain]: null });
   assert.equal(fs.existsSync(logOf("s4")), false);
+});
+
+await check("a cached miss gives way to a git init", () => {
+  const later = path.join(tmp, "later");
+  fs.mkdirSync(later);
+  bash(later, () => {}, { session: "s7" });
+  sh(later, "git init -q .");
+  bash(later, () => sh(later, "echo n >n.txt"), { session: "s7" });
+  assert.deepEqual(logged("s7"), [`Bash\tA\t${later}\t${later}/n.txt\t1`]);
+});
+
+// r4 is a repo that a session changes only through a cd in a Bash command.
+const r4 = repo("r4", { "a.txt": lines(2) });
+const cdWrite = { command: `cd ${r4} && echo z >>a.txt` };
+/** The log line of the last cdWrite, which appended the last line of r4/a.txt. */
+const cdRow = (tool: string) =>
+  `${tool}\tM\t${r4}\t${r4}/a.txt\t${fs.readFileSync(`${r4}/a.txt`, "utf8").split("\n").length - 1}`;
+
+await check("Bash: snapshots the repo of a cd in the command, off by the setting", () => {
+  bash(r1, () => sh(r4, "echo z >>a.txt"), { session: "s8", input: cdWrite });
+  assert.deepEqual(logged("s8"), [cdRow("Bash")]);
+  process.env[BASH_PATHS] = "off";
+  try {
+    bash(r1, () => sh(r4, "echo z >>a.txt"), { session: "s9", input: cdWrite });
+  } finally {
+    delete process.env[BASH_PATHS];
+  }
+  assert.deepEqual(logged("s9"), []);
 });
 
 await check("a session id with a slash writes nothing", () => {
@@ -779,6 +829,14 @@ await check("mod Bash: a snapshot before next, the log after it", async () => {
   assert.deepEqual(callLinks("m1"), []);
 });
 
+await check("mod Bash: snapshots the repo of a cd in the command", async () => {
+  await modCall("mcd", rm, { tool: "Bash", ...cdWrite }, async () => {
+    sh(r4, "echo z >>a.txt");
+    return { result: {}, text: "" };
+  });
+  assert.deepEqual(logged("mcd"), [cdRow("Bash")]);
+});
+
 await check("mod Bash: a denied call logs nothing and keeps no link", async () => {
   const denied = { deny: "no" };
   const out = await modCall("m1", rm, { tool: "Bash", command: "x" }, async () => {
@@ -965,6 +1023,11 @@ await check("pi bash: a call ID with | and / still snapshots", async () => {
     `bash\tM\t${pr}\t${pr}/f.txt\t2`,
     `bash\tA\t${pr}\t${pr}/n.txt\t1`,
   ]);
+});
+
+await check("pi bash: snapshots the repo of a cd in the command", async () => {
+  await load("pi", "p9")("bash", cdWrite, () => sh(r4, "echo z >>a.txt"));
+  assert.deepEqual(logged("p9", "pi"), [cdRow("bash")]);
 });
 
 await check(

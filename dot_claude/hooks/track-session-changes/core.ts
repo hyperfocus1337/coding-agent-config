@@ -189,8 +189,9 @@ async function repoAt(io: Io, dir: string): Promise<Repo | undefined> {
  * `repoAt` with a cache in `repos.json` of the session state, so a call starts
  * no `rev-parse` for a directory that an earlier call looked up. An entry
  * holds while `<top>/.git` exists and no directory between `dir` and the top
- * has a `.git`. A directory outside every repo is not cached, so a later
- * `git init` there counts. The result maps each of `dirs` to its repo,
+ * has a `.git`. A directory outside every repo is cached as null, which holds
+ * while no directory from `dir` up to `/` has a `.git`, so a later `git init`
+ * or clone there counts. The result maps each of `dirs` to its repo,
  * undefined outside a repo.
  */
 async function cachedRepos(
@@ -200,16 +201,18 @@ async function cachedRepos(
 ): Promise<Map<string, Repo | undefined>> {
   if (dirs.length === 0) return new Map();
   const file = `${state}/repos.json`;
-  let cache: Record<string, Repo> = {};
+  let cache: Record<string, Repo | null> = {};
   try {
-    cache = JSON.parse((await io.read(file)) ?? "{}") as Record<string, Repo>;
+    cache = JSON.parse((await io.read(file)) ?? "{}") as Record<string, Repo | null>;
   } catch {
     // A broken cache is rebuilt.
   }
-  const holds = async (dir: string, { top }: Repo) => {
-    if (!(await io.exists(`${top}/.git`))) return false;
-    for (; dir !== top; dir = dirname(dir))
-      if (dir === dirname(dir) || (await io.exists(`${dir}/.git`))) return false;
+  const holds = async (dir: string, repo: Repo | null) => {
+    if (repo && !(await io.exists(`${repo.top}/.git`))) return false;
+    for (; dir !== repo?.top; dir = dirname(dir)) {
+      if (await io.exists(`${dir}/.git`)) return false;
+      if (dir === dirname(dir)) return !repo;
+    }
     return true;
   };
   let changed = false;
@@ -217,10 +220,11 @@ async function cachedRepos(
   for (const dir of dirs) {
     if (repos.has(dir)) continue;
     const known = cache[dir];
-    let repo = known && (await holds(dir, known)) ? known : undefined;
-    if (!repo) {
+    let repo: Repo | undefined;
+    if (known !== undefined && (await holds(dir, known))) repo = known ?? undefined;
+    else {
       repo = await repoAt(io, dir);
-      if (repo) [cache[dir], changed] = [repo, true];
+      [cache[dir], changed] = [repo ?? null, true];
     }
     repos.set(dir, repo);
   }
@@ -754,21 +758,86 @@ export interface Pending {
   repos: (Repo & { link: string })[];
 }
 
+/** The variable that sets which folders of a Bash command `commandDirs` gives. */
+export const BASH_PATHS = "TRACK_SESSION_CHANGES_BASH_PATHS";
+
+/**
+ * The folders that a Bash command names, so that `beginCall` also snapshots
+ * their repos. `setting` is the value of `BASH_PATHS`:
+ * - `off`: none.
+ * - `cd`, also when unset or unknown: the target of each `cd` or `pushd` at
+ *   the start of a command, and of each `git -C`.
+ * - `absolute`: also the folder of each word that starts with `/`, `~/`, or
+ *   `$HOME/`, also as the value of a `--flag=`.
+ * - `all`: also the folder of each other word with a `/`.
+ * A relative word counts from `cwd`, or from the last `cd` before it. A word
+ * that ends in `/` is the folder itself. A glob counts up to its first `*`,
+ * `?`, `[`, or `{`. A word with another `$`, a backtick, or `://` is skipped.
+ * shortcut: a word split, not a shell parser: a quote inside a word splits
+ * it, and heredoc text counts as commands. A wrong folder costs one cached
+ * lookup. Upgrade path: a shell parser such as tree-sitter-bash.
+ */
+export function commandDirs(
+  command: unknown,
+  cwd: string,
+  home: string,
+  setting: string | undefined,
+): string[] {
+  const scope = setting === "off" || setting === "absolute" || setting === "all" ? setting : "cd";
+  if (typeof command !== "string" || scope === "off") return [];
+  const words = [...command.matchAll(/"([^"]*)"|'([^']*)'|([^\s;&|()<>"']+)|([;&|()<>\n]+)/g)].map(
+    ([, double, single, bare, op]) => ({
+      text: double ?? single ?? bare ?? "",
+      op: op !== undefined,
+    }),
+  );
+  const path = (text: string) => {
+    const full = text.replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, home);
+    return /[$`]|:\/\//.test(full) ? "" : full.replace(/[*?[{].*$/, "");
+  };
+  const dirs = new Set<string>();
+  let base = cwd;
+  for (let i = 0; i < words.length; i++) {
+    const { text, op } = words[i]!;
+    if (op) continue;
+    const start = i === 0 || words[i - 1]!.op;
+    const skip = start && (text === "cd" || text === "pushd") ? 1 : 0;
+    const target = skip
+      ? words[i + 1]
+      : text === "git" && words[i + 1]?.text === "-C" && words[i + 2];
+    if (target) {
+      const dir = !target.op && !target.text.startsWith("-") && path(target.text);
+      if (dir) {
+        dirs.add(resolve(base, dir));
+        if (skip) base = resolve(base, dir);
+      }
+      i += skip || 2;
+      continue;
+    }
+    if (scope === "cd") continue;
+    const file = path(text.replace(/^-[\w-]*=/, ""));
+    if (!file.includes("/") || (!file.startsWith("/") && scope !== "all")) continue;
+    dirs.add(file.endsWith("/") ? resolve(base, file) : dirname(resolve(base, file)));
+  }
+  return [...dirs];
+}
+
 /**
  * Snapshots the repos that a call can change, before it runs: the repo of
- * `cwd`, the repos of `paths`, and the repos the session changed so far. The
- * adapter keeps the result until the end of the call. A link name holds its
- * time, which the prune reads.
+ * `cwd`, the repos of the files `paths` and of the folders `folders`, and the
+ * repos the session changed so far. The adapter keeps the result until the
+ * end of the call. A link name holds its time, which the prune reads.
  */
 export async function beginCall(
   io: Io,
   where: Where,
   cwd: string,
   paths: string[] = [],
+  folders: string[] = [],
 ): Promise<Pending | undefined> {
   if (!safeName(where.agent, where.session)) return undefined;
   const state = stateDir(where);
-  const dirs = [cwd, ...paths.map(dirname)];
+  const dirs = [cwd, ...paths.map(dirname), ...folders];
   const repos = new Map<string, Repo>();
   for (const repo of (
     await cachedRepos(io, state, [...dirs, ...(await touchedRepos(io, where))])

@@ -70,7 +70,9 @@ A Bash call starts 2 git processes per repo when it changes nothing, 3 when it a
 
 The top is `cwd` plus `--show-cdup`, so it keeps symlinks. `--show-toplevel` would resolve them.
 
-An entry of `repos.json` holds while `<top>/.git` exists and no directory between the directory and the top has a `.git`. A directory outside every repo is not kept, so a later `git init` there counts.
+An entry of `repos.json` holds while `<top>/.git` exists and no directory between the directory and the top has a `.git`. A directory outside every repo is kept as null, which holds while no directory from it up to `/` has a `.git`, so a later `git init` or clone there counts. Before 2026-10-29 a miss was not kept, and each Bash call ran `rev-parse` again for a working directory outside every repo, 12 to 24 ms on the host. The folders of a Bash command made misses common: `/tmp`, `/dev`, and target directories of chezmoi such as `~/.claude/commands`.
+
+The folders of a Bash command come from `commandDirs`, see the [Settings](../README.md#settings) of the README. Before 2026-10-29 a Bash call snapshotted only the repo of its working directory and the repos in the session log. A session that ran in the chezmoi repo and wrote to coding-agent-config with `cd ~/Repositories/agents/coding-agent-config && cp …` logged nothing, and the agent overview showed no session for those files.
 
 `GIT_OBJECT_DIRECTORY` points at the session `objects/`, and `GIT_ALTERNATE_OBJECT_DIRECTORIES` at the repo objects, so git reads the repo objects and writes new objects only to the session. git does not find a repo when the folder in `GIT_OBJECT_DIRECTORY` does not exist, so the core makes it first.
 
