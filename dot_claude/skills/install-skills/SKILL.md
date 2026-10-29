@@ -150,7 +150,7 @@ A `local` skill is already deployed by chezmoi, so user scope means creating it 
 
 Only for `user` scope, and only after the user confirms the write.
 
-Locate the config repo in this order: `$AGENT_CONFIG_REPO`, then `/workspaces/coding-agent-config` if it exists, then ask.
+Locate the config repo in this order: `$AGENT_CONFIG_REPO`, then `/workspaces/groups/agents/coding-agent-config` if it exists, then ask.
 
 Add or update the row in `<config-repo>/dot_claude/skills/install-skills/references/skills.json`, with `scope: "user"`, a `why`, and a `use_when`. Without the row, `scripts/extensions/skills/install.sh` cannot reproduce a `vendor-cli` skill after a clean rebuild.
 

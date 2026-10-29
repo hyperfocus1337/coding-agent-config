@@ -143,7 +143,7 @@ Only jcodemunch ships a rule today. The rule files live in [`rules/`](rules/).
 
 Only for `user` scope, and only after the user confirms the write. A user-scope server that is not declared in the config repo disappears on the next clean rebuild.
 
-Locate the config repo in this order: `$AGENT_CONFIG_REPO`, then `/workspaces/coding-agent-config` if it exists, then ask.
+Locate the config repo in this order: `$AGENT_CONFIG_REPO`, then `/workspaces/groups/agents/coding-agent-config` if it exists, then ask.
 
 Resolve the dep as in step 3, then run the same `apm mcp install` command from the config repo root so it writes that manifest, and install globally:
 

@@ -109,7 +109,7 @@ claude plugin install <id> --scope user
 
 Only for `user` scope, and only after the user confirms the write.
 
-Locate the config repo in this order: `$AGENT_CONFIG_REPO`, then `/workspaces/coding-agent-config` if it exists, then ask.
+Locate the config repo in this order: `$AGENT_CONFIG_REPO`, then `/workspaces/groups/agents/coding-agent-config` if it exists, then ask.
 
 Add or update the row in `<config-repo>/dot_claude/skills/install-plugins/references/plugins.json` with `scope: "user"`, a `why`, and a `use_when`. When the plugin ships MCP servers the user does not want loaded, also add `"<id>": false` to `enabledPlugins` in `<config-repo>/dot_claude/settings.json.tmpl`. Then tell the user to commit both changes and, on other machines, to run `just extensions` to reproduce them.
 

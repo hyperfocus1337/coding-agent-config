@@ -40,7 +40,7 @@ State once, before the hand-off, what the three scopes cost:
 
 ### 3. Keep user scope reproducible
 
-A user-scope install that is not declared in the config repo disappears on the next clean rebuild. Every skill writes the declaration back for that reason, after the user confirms. The config repo is found in this order: `$AGENT_CONFIG_REPO`, then `/workspaces/coding-agent-config` if it exists, then ask the user.
+A user-scope install that is not declared in the config repo disappears on the next clean rebuild. Every skill writes the declaration back for that reason, after the user confirms. The config repo is found in this order: `$AGENT_CONFIG_REPO`, then `/workspaces/groups/agents/coding-agent-config` if it exists, then ask the user.
 
 ## Notes
 
