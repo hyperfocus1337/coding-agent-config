@@ -49,6 +49,24 @@ export default function fileSearch(pi: ExtensionAPI): void {
       root,
       provider: new CombinedAutocompleteProvider([], root, fd),
     }));
-    ctx.ui.addAutocompleteProvider((current) => extendSearch(current, cwd, sources));
+    ctx.ui.addAutocompleteProvider((current) => {
+      const provider = extendSearch(current, cwd, sources);
+      return {
+        ...provider,
+        async getSuggestions(...args) {
+          const result = await provider.getSuggestions(...args);
+          if (!result?.prefix.startsWith("@")) return result;
+          return {
+            ...result,
+            items: result.items.map(({ description, ...item }) => ({
+              ...item,
+              label: description
+                ? description + (item.label.endsWith("/") && !description.endsWith("/") ? "/" : "")
+                : item.label,
+            })),
+          };
+        },
+      };
+    });
   });
 }

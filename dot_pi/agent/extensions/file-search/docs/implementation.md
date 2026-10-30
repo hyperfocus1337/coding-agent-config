@@ -8,6 +8,8 @@
 
 The wrapper uses the native result prefix to decide whether to extend an unqualified `@` query. It never implements a second token parser. If the local provider has no result, a broader provider can supply the prefix and matches. Explicit-path queries with no local results can run redundant native searches before the wrapper discards those results; their search and insertion behaviour is unchanged.
 
+The outer provider wrapper in `index.ts` displays each `@` result as a single path label without a description column. Pi's native select list otherwise clips the filename to a narrow primary column while repeating the path in the description. A single column uses the available menu width. The wrapper preserves each completion value and directory-label trailing slash, so insertion and directory navigation remain native. Commands and ordinary-path menus are unchanged.
+
 ## Paths and ranking
 
 `search.ts` validates extra roots, resolves directory aliases, and deduplicates roots. For each match it resolves the actual target, drops missing targets, removes duplicates, and rejects additional-root matches whose symlinks lead outside that root. Root paths come only from Git or user configuration, not from project-owned executable configuration.
@@ -28,4 +30,4 @@ Roots and configuration are discovered at session startup, including after `/rel
 
 The repository's `scripts/extensions/pi/check.sh` type-checks all extension entry points against the installed Pi and TUI declarations, then runs each extension's self-check. Loader checks use a temporary copy of the extension and modify only temporary configuration, not the source or installed configuration.
 
-An interactive visual check is still needed after `/reload` to confirm the menu in the user's terminal.
+The checks also render a long filename through Pi's native select list, verify narrow-terminal display width, and verify unchanged insertion and directory navigation after menu formatting. An interactive visual check is still needed after `/reload` to confirm the menu in the user's terminal.

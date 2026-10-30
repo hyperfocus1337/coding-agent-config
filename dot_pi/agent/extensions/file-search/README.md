@@ -10,7 +10,7 @@ For example, from `my-project/src/`, type `@design`. A matching document in the 
 - Keep native completion for explicit paths such as `@../`, `@~/`, and `@/absolute/path/`, and for commands and ordinary paths.
 - Reuse Pi's filename/path matching, ignore rules, hidden-file handling, cancellation, and search bounds. This does not search file contents or change Pi's matching algorithm.
 - Rank exact filenames before filename prefixes and other matches. Prefer working-folder results when match quality is equal.
-- Show up to 20 results, with paths that distinguish identical filenames. Deduplicate targets across overlapping roots.
+- Show up to 20 results in one path column that uses the available menu width. This avoids clipping filenames in Pi's narrow filename column and distinguishes identical filenames without repeating the path. Paths longer than the terminal width can still be clipped. Deduplicate targets across overlapping roots.
 - Keep native quoting and directory insertion. Files with double quotes or line breaks in their paths are not added from broader search roots.
 - Do not add symlink targets outside a broader search root. Built-in working-folder completion is unchanged.
 

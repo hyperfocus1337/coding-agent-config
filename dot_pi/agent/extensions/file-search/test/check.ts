@@ -260,7 +260,61 @@ try {
       assert.equal(wrappers.length, 1);
       assert.deepEqual(warnings, []);
       const live = wrappers[0](current);
-      assert.ok((await get("@design", live)).items.some((item) => item.description === "../design.md"));
+      assert.ok((await get("@design", live)).items.some((item) => item.label === "../design.md"));
+      await check("long filenames use the full menu width without duplicate columns", async () => {
+        const filename = "long-project-implementation-design-document.md";
+        write(path.join(root, filename));
+        const result = await get("@long", live);
+        const item = result.items.find((item) => item.label === `../${filename}`);
+        assert.ok(item);
+        assert.equal(item.description, undefined);
+        const { SelectList } = await import(
+          pathToFileURL(path.join(path.dirname(piPackage), "pi-tui/dist/components/select-list.js"))
+            .href
+        );
+        const identity = (text: string) => text;
+        const menu = new SelectList([item], 5, {
+          selectedPrefix: identity,
+          selectedText: identity,
+          description: identity,
+          scrollInfo: identity,
+          noMatch: identity,
+        });
+        assert.equal(menu.render(100)[0], `→ ../${filename}`);
+        const { visibleWidth } = await import(
+          pathToFileURL(path.join(path.dirname(piPackage), "pi-tui/dist/utils.js")).href
+        );
+        assert.ok(visibleWidth(menu.render(30)[0]) <= 30);
+        assert.equal(
+          live.applyCompletion(["@long"], 0, 5, item, result.prefix).lines[0],
+          `@../${filename} `,
+        );
+      });
+      await check("single-column directory labels keep native navigation", async () => {
+        const result = await get("@nested", live);
+        const item = result.items.find((item) => item.label === "../nested/");
+        assert.ok(item);
+        assert.equal(
+          live.applyCompletion(["@nested"], 0, 7, item, result.prefix).lines[0],
+          "@../nested/",
+        );
+      });
+      await check("menu formatting preserves commands and explicit-path insertion", async () => {
+        assert.deepEqual(await get("/hel", live), await get("/hel", current));
+        const text = "@../design";
+        const original = await get(text, current);
+        const formatted = await get(text, live);
+        assert.deepEqual(
+          formatted.items.map((item) => item.value),
+          original.items.map((item) => item.value),
+        );
+        for (let i = 0; i < original.items.length; i++) {
+          assert.deepEqual(
+            live.applyCompletion([text], 0, text.length, formatted.items[i], formatted.prefix),
+            current.applyCompletion([text], 0, text.length, original.items[i], original.prefix),
+          );
+        }
+      });
       fs.writeFileSync(configPath, '{"extraRoots":["relative"]}');
       await start({}, context);
       assert.equal(
