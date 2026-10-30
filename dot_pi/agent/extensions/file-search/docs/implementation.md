@@ -2,7 +2,7 @@
 
 ## Integration
 
-`index.ts` registers a `session_start` handler. In TUI mode it finds the Git root, reads the optional user configuration through `getAgentDir()`, validates directories, and resolves a managed or system `fd` executable. Non-interactive modes and `PI_FILE_SEARCH=0` return before filesystem discovery or subprocess work.
+`index.ts` registers a `session_start` handler. In TUI mode it finds the Git root, reads the optional adjacent `config.json` through `import.meta.url`, validates directories, and resolves a managed or system `fd` executable. Non-interactive modes and `PI_FILE_SEARCH=0` return before filesystem discovery or subprocess work.
 
 `ctx.ui.addAutocompleteProvider()` wraps the existing provider. Each additional root has a native `CombinedAutocompleteProvider`, so Pi retains ownership of token parsing, filename/path matching, ignore rules, process cancellation, and per-search result limits. The existing provider still handles commands and applies every selected completion. No custom editor, prompt rewriting, model calls, index, watchers, or dependencies are added.
 
@@ -28,12 +28,12 @@ The command does not add or remove providers, write configuration, or reload Pi.
 
 A malformed extra-root configuration does not disable the Git root. Missing configured folders warn once at session startup. A failed provider does not remove local results. Searches share Pi's abort signal; cancelled results are discarded. Native providers close their own search subprocesses, so the extension owns no session resources to release.
 
-Roots and configuration are discovered at session startup, including after `/reload` or session replacement. There is no working-directory mutation. `dot_pi/agent/file-search.json` tracks the startup configuration through chezmoi, with `defaultEnabled: false` and no additional roots. A live toggle does not modify that file.
+Roots and configuration are discovered at session startup, including after `/reload` or session replacement. There is no working-directory mutation. `dot_pi/agent/extensions/file-search/config.json` tracks the startup configuration through chezmoi, with `defaultEnabled: false` and no additional roots. A live toggle does not modify that file.
 
 ## Validation
 
 `test/check.ts` imports the installed native provider and uses the installed extension loader to load `index.ts`. Temporary repositories cover nested sessions, identical filenames, overlapping roots, spaces, quoted prompts, Unicode, `.gitignore`, `.git`, symlink escape, exact-match ranking, directory insertion, cancellation, missing folders, malformed configuration, a failing provider, result limits, non-TUI mode, and the off switch.
 
-The repository's `scripts/extensions/pi/check.sh` type-checks all extension entry points against the installed Pi and TUI declarations, then runs each extension's self-check. Loader checks use a temporary copy of the extension and modify only temporary configuration, not the source or installed configuration.
+The repository's `scripts/extensions/pi/check.sh` type-checks all extension entry points against the installed Pi and TUI declarations, then runs each extension's self-check. Loader checks use a temporary copy of the extension and modify only its adjacent configuration, not the source or installed configuration. A separate check loads the shipped `config.json` to verify the off-by-default setting.
 
 The checks also render a long filename through Pi's native select list, verify narrow-terminal display width, and verify unchanged insertion and directory navigation after menu formatting. An interactive visual check is still needed after `/reload` to confirm the menu in the user's terminal.

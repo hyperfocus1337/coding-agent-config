@@ -1,6 +1,7 @@
 /** Extend unqualified @ searches to the Git root and user-configured folders. */
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { getAgentDir, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { CombinedAutocompleteProvider } from "@earendil-works/pi-tui";
 import { extendSearch, extraRoots, searchRoots } from "./search.ts";
@@ -47,7 +48,7 @@ export default function fileSearch(pi: ExtensionAPI): void {
     } catch {
       // Outside Git, keep working-folder completion and any configured folders.
     }
-    const configPath = path.join(getAgentDir(), "file-search.json");
+    const configPath = fileURLToPath(new URL("./config.json", import.meta.url));
     try {
       const config: unknown = JSON.parse(fs.readFileSync(configPath, "utf8"));
       const configuredRoots = extraRoots(config);

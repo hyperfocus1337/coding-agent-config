@@ -235,8 +235,7 @@ try {
           path.join(extensionDir, file),
         );
       }
-      fs.mkdirSync(process.env.PI_CODING_AGENT_DIR, { recursive: true });
-      const configPath = path.join(process.env.PI_CODING_AGENT_DIR, "file-search.json");
+      const configPath = path.join(extensionDir, "config.json");
       const loaded = await loadExtensions([path.join(extensionDir, "index.ts")], cwd);
       assert.deepEqual(loaded.errors, []);
       const start = loaded.extensions[0].handlers.get("session_start")[0];
@@ -422,6 +421,19 @@ try {
           );
         }
       });
+      await check(
+        "shipped adjacent configuration starts off without changing the source",
+        async () => {
+          fs.copyFileSync(path.resolve(import.meta.dirname, "../config.json"), configPath);
+          await start({}, context);
+          await command.handler("status", commandContext);
+          assert.match(notices.at(-1), /off/);
+          assert.deepEqual(
+            await get("@design", wrappers.at(-1)(current)),
+            await get("@design", current),
+          );
+        },
+      );
       await check("invalid startup settings warn and retain the default", async () => {
         for (const invalid of [null, "false", 0, [], {}]) {
           const previousWarnings = warnings.length;

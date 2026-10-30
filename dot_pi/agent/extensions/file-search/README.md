@@ -18,7 +18,7 @@ The extension runs only in the terminal UI. It does not change the agent's tools
 
 ## Additional folders
 
-The tracked startup configuration is `dot_pi/agent/file-search.json`, installed as `~/.pi/agent/file-search.json`. It sets `defaultEnabled` to `false` and leaves `extraRoots` empty. To add folders later, use this structure:
+The tracked startup configuration is `dot_pi/agent/extensions/file-search/config.json`, installed as `~/.pi/agent/extensions/file-search/config.json` beside `index.ts`. It sets `defaultEnabled` to `false` and leaves `extraRoots` empty. To add folders later, use this structure:
 
 ```json
 {
@@ -46,7 +46,7 @@ Use these commands to compare the extension with native Pi completion without re
 
 After switching, type the same `@` query again to compare results. The toggle changes neither files nor saved settings.
 
-Each new session or `/reload` reads `defaultEnabled` from `~/.pi/agent/file-search.json`. Set it to `false` to start with native completion and permit `/file-search on`, or `true` to start with extended completion. If the setting is omitted, the extension defaults to on. The value must be a JSON boolean, not a string. If no broader search roots are available, the status reports that native completion is in use even when the toggle is on.
+Each new session or `/reload` reads `defaultEnabled` from `~/.pi/agent/extensions/file-search/config.json`. Set it to `false` to start with native completion and permit `/file-search on`, or `true` to start with extended completion. If the setting is omitted, the extension defaults to on. The value must be a JSON boolean, not a string. If no broader search roots are available, the status reports that native completion is in use even when the toggle is on.
 
 Set `PI_FILE_SEARCH=0` before starting Pi to disable startup discovery and registration of the completion wrapper. The command cannot override this environment variable. To uninstall the extension, remove its installed directory as well as its source; chezmoi does not remove deleted source files automatically.
 
