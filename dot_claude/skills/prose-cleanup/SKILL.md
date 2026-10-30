@@ -22,26 +22,64 @@ Input: $ARGUMENTS
 | Option          | Effect                                                                                                                                                                                                        |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--config FILE` | Use the rules of the Vale config `FILE`, not the hook's rules. For the repository's own rules, give its `.vale.ini`. `--config=FILE` also works. If `FILE` lists `Packages`, the scan runs `vale sync` first. |
-| `--report`      | Scan and report, then stop: change no file. The skill handles this option itself, and does not pass it to the scan.                                                                                           |
+| `--report`      | Stop after the counts in step 3 and change no file.                                                                                                                                                           |
+
+## Reports
+
+Each scan writes a report file to this path:
+
+```
+~/.local/state/prose-cleanup/<repository>/<YYYYMMDD-HHMMSS>-<kind>[-<config>].txt
+```
+
+Two reports compare only with the same `<kind>`, `<config>`, and for `paths`, the same paths.
+
+| Name part      | Value                                                                                                              |
+| -------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `<repository>` | The path of the repository under `$HOME`, with each `/` as `-`, such as `Repositories-agents-coding-agent-config`. |
+| `<kind>`       | `all` for no input, `changed` for `--changed`, `paths` for paths. The `scope:` line of the report gives the paths. |
+| `<config>`     | The `--config` file name without `.ini` and a leading dot, such as `readability`. None for the hook's rules.       |
+
+A header gives the `root`, the `scope`, the `config`, and the `alerts` count. One `path:line:column:rule:message` row follows per alert, with an absolute path. Emacs opens the file in grep mode, so `RET` on a row opens the line of the alert.
+
+The report of `/prose-cleanup docs`:
+
+```
+-*- mode: grep -*-
+root:   /Users/me/project
+scope:  docs
+config: the lint-prose hook rules
+alerts: 1 in 1 files
+
+/Users/me/project/docs/setup.md:1:4:Writing.ParagraphLength:Paragraph over 5 sentences. Split it at its topic changes, and turn a sequence into a list.
+```
+
+A fix run writes two reports with the same input and config: one before the fixes, in step 1, and one after, in step 5. The current alerts of the whole repository are in its newest report that ends in `-all.txt`, or in `-all-<config>.txt` for another config.
+
+To find it for the hook's rules:
+
+```sh
+fd -- '-all.txt$' ~/.local/state/prose-cleanup/<repository> | sort | tail -1
+```
 
 ## Steps
 
-1. Run the scan for the input, without `--report`. It prints one `path:line:column:rule:message` row per alert. For the hook's rules, `line` is the first line of the paragraph.
+1. Run the scan for the input. `--report` is an option of the skill, not of the scan, and the scan stops on it: leave it out. The scan writes the report file, and prints its path, the alert count, and the counts per file and per rule. For the hook's rules, `line` in a row is the first line of the paragraph.
 
    ```sh
    bash ~/.claude/skills/prose-cleanup/scripts/scan.sh <input>
    ```
 
 2. Act on the exit code:
-   - 0: report that there is no alert, and stop.
+   - 0: report that there is no alert, give the report path, and stop.
    - 1: go to step 3.
    - 2: the scan did not run, for example because `vale` is missing, a rule is broken, or a config does not exist. Show the error, and stop.
-3. Show the count of alerts per file and the count per rule. With `--report`, stop here. Otherwise ask which files to fix, and wait for the answer.
+3. Show the report path, the count of alerts per file, and the count per rule. With `--report`, stop here. Otherwise ask which files to fix, and wait for the answer.
    - Four files or fewer: ask through the AskUserQuestion tool.
    - More than four files: ask with a numbered list.
-4. Fix each alert in the chosen files. For `Writing.ParagraphLength`, split the paragraph as described under "How to split". For an alert on a score of the whole file, follow "How to raise a score". Leave the text without an alert as it is.
-5. Run the scan again on the fixed files, with the same `--config`, and fix what it still reports.
-6. Do not commit. Report the files you changed, and each alert you left, with the reason.
+4. Read the rows of the chosen files from the report, with `rg -F '<absolute path>:' <report>`. Fix each alert. For `Writing.ParagraphLength`, split the paragraph as described under "How to split". For an alert on a score of the whole file, follow "How to raise a score". Leave the text without an alert as it is.
+5. Run the scan again with the same input and `--config`, so that the new report shows the state of the whole scope after the fix. Fix what it still reports in the chosen files.
+6. Do not commit. Report the files you changed, each alert you left, with the reason, and the paths of the two reports.
 
 ## How to split
 

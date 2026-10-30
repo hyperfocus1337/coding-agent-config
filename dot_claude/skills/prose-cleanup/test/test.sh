@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Smoke test for scan.sh: each input form, the .txt rule, --config, and the
-# exit codes.
+# Smoke test for scan.sh: each input form, the .txt rule, --config, the report
+# file, and the exit codes.
 # Run: bash test.sh. Needs vale, fd, and git on PATH.
 set -u
 
@@ -15,14 +15,20 @@ for bin in vale fd git; do
   }
 done
 
-tmp=$(mktemp -d)
+# Physical, like the git root that scan.sh names the report directory after.
+tmp=$(cd "$(mktemp -d)" && pwd -P)
 trap 'rm -rf "$tmp"' EXIT
 fail=0
+# The reports go to $tmp/state/prose-cleanup/repo/, not to the real state.
+export HOME=$tmp XDG_STATE_HOME=$tmp/state
 
-# Run scan.sh in $tmp/repo, capture stdout and stderr and the exit status.
+# Run scan.sh in $tmp/repo, capture stdout and stderr and the exit status, and
+# add the report file to the output.
 run() {
   out=$(cd "$tmp/repo" && bash "$SCAN" "$@" 2>&1)
   status=$?
+  report=$(sed -n 's/^report: //p' <<<"$out")
+  [[ -f "$report" ]] && out+=$'\n'$(<"$report")
 }
 
 check() { # name, expected status, expected substring in output ('' for none)
@@ -56,12 +62,20 @@ check "no input: the whole repository" 1 'docs/old.md:1:'
   fail=1
 } ||
   echo "ok   a .txt file in a directory is not checked"
+check "the report directory is named after the path under HOME" 1 "report: $tmp/state/prose-cleanup/repo/"
+check "a scan of the whole repository names its report -all" 1 $'-all.txt\n'
+check "the report starts with the Emacs grep mode line" 1 $'\n-*- mode: grep -*-\nroot:   '"$tmp/repo"
+check "the report rows have absolute paths" 1 "$tmp/repo/docs/old.md:1:"
+check "the counts show a path relative to the root" 1 $' 1 docs/old.md\nper rule:'
 
 run notes.txt
 check "a named .txt file is checked" 1 'notes.txt:1:'
+check "a scan of paths names its report -paths" 1 $'-paths.txt\n'
 
 run --changed
 check "--changed: no change, no alert" 0 ''
+check "a --changed scan names its report -changed" 0 $'-changed.txt\n'
+check "no alert still writes a report" 0 $'\nalerts: 0\n-*- mode: grep -*-'
 
 printf '%s\n' "$long" >"$tmp/repo/new.org"
 run --changed
@@ -94,12 +108,14 @@ check "--config: no match, no alert" 0 ''
 
 run --changed --config "$tmp/cfg/custom.ini"
 check "--config combines with --changed" 1 'new.org:1:'
+check "a --config scan adds the config name to the report" 1 $'-changed-custom.txt\n'
 
 cp -r "$tmp/cfg/styles" "$tmp/repo/styles"
 cp "$tmp/cfg/custom.ini" "$tmp/repo/.vale.ini"
 printf 'Short.\n' >"$tmp/repo/docs/short.md"
 run --config .vale.ini docs
 check "--config: a relative path, the repository's .vale.ini" 1 'short.md:1:'
+check "the config name of .vale.ini has no leading dot" 1 $'-paths-vale.txt\n'
 
 run --config missing.ini
 check "a bad config stops the scan" 2 'no such config'
