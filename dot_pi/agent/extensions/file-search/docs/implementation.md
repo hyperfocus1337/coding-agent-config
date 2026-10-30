@@ -18,6 +18,12 @@ Repository matches become paths relative to the session working folder. Other ro
 
 Candidates rank by exact basename, basename prefix, then basename substring. Working-folder results win ties, followed by relative path depth and lexical path order. The merged list contains at most 20 entries. Native providers already bound their candidate lists, so ranking applies to returned candidates rather than every file in a large repository. The extension does not promise full fuzzy subsequence matching.
 
+## Live toggle
+
+`/file-search` toggles a boolean read by the registered provider wrapper. Explicit `on` and `off` arguments are idempotent; `status` only reports state. Invalid arguments leave state unchanged. When off, the wrapper delegates directly to the previous provider without broader searches or menu formatting. If a search finishes after the switch turns off, its extended results are discarded and the wrapper requests native results instead.
+
+The command does not add or remove providers, write configuration, or reload Pi. State resets on `session_start` or extension reload. A separate availability flag reports when no broader provider was registered. The startup `PI_FILE_SEARCH=0` override still prevents discovery and cannot be overridden by the command.
+
 ## Failure and lifecycle
 
 A malformed extra-root configuration does not disable the Git root. Missing configured folders warn once at session startup. A failed provider does not remove local results. Searches share Pi's abort signal; cancelled results are discarded. Native providers close their own search subprocesses, so the extension owns no session resources to release.

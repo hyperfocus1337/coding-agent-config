@@ -315,6 +315,65 @@ try {
           );
         }
       });
+      const command = loaded.extensions[0].commands.get("file-search");
+      assert.ok(command);
+      const notices: string[] = [];
+      const commandContext = {
+        ...context,
+        ui: { ...context.ui, notify: (message) => notices.push(message) },
+      };
+      await check("live off switch restores native search and both display columns", async () => {
+        await command.handler("off", commandContext);
+        assert.match(notices.at(-1), /off \(native search and display\)/);
+        for (const text of ["@design", "@long", "@main", "@../design", "/hel", "main"]) {
+          assert.deepEqual(await get(text, live), await get(text, current), text);
+        }
+        await command.handler("off", commandContext);
+        await command.handler("status", commandContext);
+        assert.match(notices.at(-1), /off/);
+        assert.deepEqual(await get("@design", live), await get("@design", current));
+      });
+      await check(
+        "live toggle re-enables search and single-column paths without reload",
+        async () => {
+          await command.handler("", commandContext);
+          assert.match(notices.at(-1), /on \(repository search and single-column paths\)/);
+          assert.ok(
+            (await get("@design", live)).items.some((item) => item.label === "../design.md"),
+          );
+          await command.handler("on", commandContext);
+          await command.handler("status", commandContext);
+          assert.match(notices.at(-1), /on/);
+          await command.handler("", commandContext);
+          assert.deepEqual(await get("@design", live), await get("@design", current));
+          await command.handler(" ON ", commandContext);
+          assert.ok(
+            (await get("@design", live)).items.some((item) => item.label === "../design.md"),
+          );
+        },
+      );
+      await check("invalid toggle arguments do not change state", async () => {
+        await command.handler("invalid", commandContext);
+        assert.match(notices.at(-1), /Usage:/);
+        await command.handler("status", commandContext);
+        assert.match(notices.at(-1), /on/);
+      });
+      await check("switching off during a search discards extended results", async () => {
+        const pending = get("@design", live);
+        await command.handler("off", commandContext);
+        assert.deepEqual(await pending, await get("@design", current));
+        await command.handler("on", commandContext);
+      });
+      await check("startup off switch and non-TUI modes cannot be enabled by command", async () => {
+        process.env.PI_FILE_SEARCH = "0";
+        await command.handler("on", commandContext);
+        assert.match(notices.at(-1), /unavailable/);
+        delete process.env.PI_FILE_SEARCH;
+        await command.handler("off", { ...commandContext, mode: "print" });
+        assert.match(notices.at(-1), /unavailable/);
+        await command.handler("status", commandContext);
+        assert.match(notices.at(-1), /on/);
+      });
       fs.writeFileSync(configPath, '{"extraRoots":["relative"]}');
       await start({}, context);
       assert.equal(
