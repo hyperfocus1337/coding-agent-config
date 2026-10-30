@@ -1,5 +1,7 @@
 # Hook scoping: the events each hook attaches to
 
+**Historical snapshot, 2026-10-19.** The attachments and verdicts below describe the source at that date, not the current configuration. On 2026-10-29, `block-secret-commits` moved to git `pre-commit` and `block-commit-attribution` to git `commit-msg`. See the [migration decision](../../hooks/decisions.md) and [current hook list](../../../dot_claude/hooks/README.md).
+
 Checks, for each hook in [`dot_claude/hooks/`](../../../dot_claude/hooks/README.md), that it attaches to the right event, matcher, and tool names in Claude Code, pi, omp, and Codex. [`docs/hooks/platforms.md`](../../hooks/platforms.md) holds the API facts of each agent, and this file does not repeat them. It replaces `hook-events.md`, which used the old hook names, and re-checks its 5 findings. A new `toggle-hook` folder appeared as uncommitted work while this check ran. It attaches to `session.start`, `command.run`, and `session_start` only, and this file does not check it.
 
 Read from source and tested live on 2026-10-19. Each finding says which parts were tested live.
@@ -11,7 +13,7 @@ Read from source and tested live on 2026-10-19. Each finding says which parts we
 | omp         | 18.12.2 | `omp --version`; the npm tarball `@oh-my-pi/pi-coding-agent@18.12.2`, which holds the TypeScript source (`src/`)                                                                                     |
 | Codex       | 0.163.0 | `codex --version`; `codex app-server generate-json-schema`; upstream source at tag `rust-v0.163.0` (commit `83086188`)                                                                               |
 
-## Current attachments
+## Attachments at the time of the check
 
 Read from the adapters. "Before" means that the hook acts before the tool runs. "After" means that it acts after the tool. A mod hook on `tool.call` acts after the tool when it calls `next` first.
 

@@ -1,5 +1,7 @@
 # Hook performance
 
+**Historical measurements.** The `block-secret-commits` rows measure its former agent-hook adapters, before the move to git `pre-commit` on 2026-10-29. They do not describe current overhead: the hook now runs only on commits, not on each shell call. Keep those rows as evidence for the [migration decision](../decisions.md), not as a current hook ranking.
+
 This folder gives the run time of each TypeScript hook in [`dot_claude/hooks/`](../../../dot_claude/hooks/README.md) for each tool call. [`scripts/extensions/hooks/perf.ts`](../../../scripts/extensions/hooks/perf.ts) replays the tool calls of the Claude Code transcripts in `~/.claude/projects/*/*.jsonl` through each hook. The numbers are in two CSV files, see [Data](#data). This README tells how to read them and what they show. [`docs/method.md`](docs/method.md) tells how the test made them.
 
 ## Usage

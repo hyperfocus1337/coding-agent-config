@@ -177,4 +177,4 @@ A binary costs one extra `betterleaks dir` (about 34 ms), and a blocked one a se
 
 betterleaks costs about 35 ms of fixed startup plus about 0.18 ms per KB of staged diff. A 50000-line (3.5 MB) diff scans in 656 ms.
 
-Supports [Cost](implementation.md#cost) and [Scan cap](implementation.md#scan-cap).
+Supports [How it works](../README.md#how-it-works) and [Scan cap](implementation.md#scan-cap).

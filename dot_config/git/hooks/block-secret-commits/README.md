@@ -2,7 +2,7 @@
 
 A git `pre-commit` hook that blocks a commit that would add a secret. It is a safety net for an accidental `git add .`, not a replacement for a good `.gitignore`.
 
-It is a git hook, not an agent hook. It runs on every commit: yours, and the commits of Claude Code, pi, omp, and Codex. [`main.ts`](main.ts) runs the scanner in [`core.ts`](core.ts). An agent cannot skip it with `git commit --no-verify` or `-n`: the [`local.git_hooks`](../../../dcg/README.md#custom-packs) pack of dcg blocks that command.
+It is a git hook, not an agent hook. It runs on every commit: yours, and the commits of Claude Code, pi, omp, and Codex. [`main.ts`](main.ts) holds both scans and the git entry point. An agent cannot skip it with `git commit --no-verify` or `-n`: the [`local.git_hooks`](../../../dcg/README.md#custom-packs) pack of dcg blocks that command.
 
 This file tells what the hook does and how to work around it. [docs/implementation.md](docs/implementation.md) gives the reason for each decision. [docs/research.md](docs/research.md) holds the measurements, and the alternatives that were tested and rejected.
 
@@ -96,10 +96,7 @@ A content block message names the rule, the file, the line, and the fingerprint 
 
 A binary block message lists the paths of the files. It gives the command to inspect a file and lists the fixes: drop the file or add it to `.gitignore`, `.agent-allow-secrets`, or `AGENT_ALLOW_SECRETS`.
 
-A passing commit gives no output from this hook, with these exceptions:
-
-- **A capped scan:** when the betterleaks scan reaches its 4 s cap, the hook writes a warning with the command to run by hand, and the commit continues.
-- **No usable Node:** the `SessionStart` check of Claude Code and Codex gives a warning at the start of the session, see [the hooks README](../../../../dot_claude/hooks/README.md#shared-conventions).
+A passing commit gives no output from this hook unless the content scan reaches its 4 s cap. In that case, the hook writes a warning with the command to run by hand, and the commit continues.
 
 ## Settings
 
@@ -229,9 +226,8 @@ The git hook also scans your own commits. A secret in your commit does the same 
 
 ### Files
 
-| File                          | Deployed to `~/.config/git/hooks/block-secret-commits/` | Role                                              |
-| ----------------------------- | ------------------------------------------------------- | ------------------------------------------------- |
-| `main.ts`                     | Yes                                                     | The hook, and the Node file and process functions |
-| `core.ts`                     | Yes                                                     | Both scans and the block messages                 |
-| `conf/betterleaks.toml`       | Yes                                                     | The shipped betterleaks config                    |
-| `README.md`, `docs/`, `test/` | No                                                      | Kept in the repo by `.chezmoiignore`              |
+| File                          | Deployed to `~/.config/git/hooks/block-secret-commits/` | Role                                                |
+| ----------------------------- | ------------------------------------------------------- | --------------------------------------------------- |
+| `main.ts`                     | Yes                                                     | Both scans, block messages, and the git entry point |
+| `conf/betterleaks.toml`       | Yes                                                     | The shipped betterleaks config                      |
+| `README.md`, `docs/`, `test/` | No                                                      | Kept in the repo by `.chezmoiignore`                |
