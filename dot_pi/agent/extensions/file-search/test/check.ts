@@ -382,6 +382,57 @@ try {
         "invalid extra folders must not disable Git-root completion",
       );
       assert.equal(warnings.length, 1);
+      await check(
+        "startup setting off keeps native completion but permits live enabling",
+        async () => {
+          fs.writeFileSync(
+            configPath,
+            JSON.stringify({ defaultEnabled: false, extraRoots: [extra] }),
+          );
+          await start({}, context);
+          const configured = wrappers.at(-1)(current);
+          await command.handler("status", commandContext);
+          assert.match(notices.at(-1), /off/);
+          assert.deepEqual(await get("@design", configured), await get("@design", current));
+          await command.handler("on", commandContext);
+          const result = await get("@design", configured);
+          assert.ok(result.items.some((item) => item.label === "../design.md"));
+          assert.ok(result.items.some((item) => item.label === path.join(extra, "design.md")));
+        },
+      );
+      await check("new sessions restore the configured startup setting", async () => {
+        await start({}, context);
+        await command.handler("status", commandContext);
+        assert.match(notices.at(-1), /off/);
+        assert.deepEqual(
+          await get("@design", wrappers.at(-1)(current)),
+          await get("@design", current),
+        );
+      });
+      await check("true and omitted startup settings enable completion", async () => {
+        for (const config of [{ defaultEnabled: true }, {}]) {
+          fs.writeFileSync(configPath, JSON.stringify(config));
+          await start({}, context);
+          await command.handler("status", commandContext);
+          assert.match(notices.at(-1), /on/);
+          assert.ok(
+            (await get("@design", wrappers.at(-1)(current))).items.some(
+              (item) => item.label === "../design.md",
+            ),
+          );
+        }
+      });
+      await check("invalid startup settings warn and retain the default", async () => {
+        for (const invalid of [null, "false", 0, [], {}]) {
+          const previousWarnings = warnings.length;
+          fs.writeFileSync(configPath, JSON.stringify({ defaultEnabled: invalid }));
+          await start({}, context);
+          assert.equal(warnings.length, previousWarnings + 1);
+          assert.match(warnings.at(-1), /defaultEnabled must be a boolean/);
+          await command.handler("status", commandContext);
+          assert.match(notices.at(-1), /on/);
+        }
+      });
     } finally {
       if (savedDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
       else process.env.PI_CODING_AGENT_DIR = savedDir;

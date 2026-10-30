@@ -49,7 +49,14 @@ export default function fileSearch(pi: ExtensionAPI): void {
     }
     const configPath = path.join(getAgentDir(), "file-search.json");
     try {
-      roots.push(...extraRoots(JSON.parse(fs.readFileSync(configPath, "utf8"))));
+      const config: unknown = JSON.parse(fs.readFileSync(configPath, "utf8"));
+      const configuredRoots = extraRoots(config);
+      const startup = (config as { defaultEnabled?: unknown }).defaultEnabled;
+      if (startup !== undefined && typeof startup !== "boolean") {
+        throw new Error("defaultEnabled must be a boolean");
+      }
+      enabled = startup ?? true;
+      roots.push(...configuredRoots);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
         warn(`${configPath}: ${error instanceof Error ? error.message : String(error)}`);
