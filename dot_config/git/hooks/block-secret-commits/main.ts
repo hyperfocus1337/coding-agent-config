@@ -9,7 +9,7 @@
 
 import { spawn } from "node:child_process";
 import { constants } from "node:fs";
-import { access, copyFile, mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { access, mkdtemp, open, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -59,11 +59,21 @@ function nodeIo(root: string): Io {
       }
     },
     tempDir: () => mkdtemp(join(tmpdir(), "block-secret-commits-")).catch(() => undefined),
-    copy: (from, to) =>
-      copyFile(at(from), to).then(
-        () => true,
-        () => false,
-      ),
+    exportBlob: async (path, to) => {
+      const file = await open(to, "wx");
+      try {
+        return await new Promise<boolean>((done) => {
+          const child = spawn("git", ["cat-file", "blob", `:${path}`], {
+            cwd: root,
+            stdio: ["ignore", file.fd, "ignore"],
+          });
+          child.on("error", () => done(false));
+          child.on("close", (code) => done(code === 0));
+        });
+      } finally {
+        await file.close();
+      }
+    },
     remove: (path) => rm(path, { recursive: true, force: true }),
   };
 }

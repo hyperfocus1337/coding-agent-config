@@ -30,14 +30,19 @@ The secrets in the fixtures are random strings shaped like a GitHub token. They 
 
 - **A binary with no betterleaks on `PATH`** must block. The binary scan never fails open on a missing scanner.
 - **No `node` on `PATH`** must block, with a message that names `node 23.6 or later`. **A `node` that exits 1** must block too. Each of these `PATH` values holds a link to the git of the test, so the hook still runs.
-- **An error in the binary scan** must block. The case gives the core a fake `Io` whose every call throws.
+- **An error in the binary scan** must block. A git shim fails the staged diff, and the real hook must report that it could not list the binaries. `GIT_EXEC_PATH` selects the shim because git prepends that directory to the hook's `PATH`.
 
 ## Binary scan
 
 - An ordinary binary and a GIF must allow.
 - A binary that holds a secret under the name `payload.dat` must block, and the message must name the file.
 - A secret in a `.png` and in a `.pdf` must block. The default config exempts these extensions, so they block only because the hook scans a copy with a neutral name.
-- A binary named `we ird".dat` must block, which proves that the `-z` parse keeps a space and a quote.
+- Binaries with spaces, quotes, newlines, and a leading colon in their names must block. This checks NUL-delimited parsing and index-blob addressing.
+- A staged binary secret must block after a clean worktree replacement, removal, or symlink replacement. A clean staged blob must allow despite a worktree secret or worktree removal.
+- A path-only commit must allow when a staged binary secret is outside its temporary index. A subsequent commit of that binary must block.
+- A binary secret must block on the first commit, with no `HEAD` yet.
+- A failed blob export must block. A git shim fails only `git cat-file blob`.
+- A binary above 100 MiB must block, including under an extension that betterleaks normally exempts. An explicit allowlist entry must still allow it.
 - A modified tracked binary must allow, because `--diff-filter=A` covers added files only.
 - `.agent-allow-secrets` must exempt a binary.
 

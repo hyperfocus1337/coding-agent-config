@@ -23,8 +23,8 @@ export interface Io {
   size(path: string): Promise<number | undefined>;
   /** A new empty temporary folder; undefined when it cannot be made. */
   tempDir(): Promise<string | undefined>;
-  /** Whether the copy succeeded. */
-  copy(from: string, to: string): Promise<boolean>;
+  /** Whether the index blob was exported to the temporary file. */
+  exportBlob(path: string, to: string): Promise<boolean>;
   remove(path: string): Promise<void>;
 }
 
@@ -49,7 +49,7 @@ export interface Verdict {
  * betterleaks: it stops the scan and exits 0, so a cut scan reads as clean.
  */
 const CAP_MS = 4000;
-/** Above this size a binary keeps its own name, so its extension can exempt it. */
+/** Do not export larger blobs to the temporary folder; block them instead. */
 const COPY_MAX = 100 * 1024 * 1024;
 /** Found leaks exit 9, so the error exit of 1 stays apart and allows. */
 const FLAGS = ["--no-banner", "--redact", "--log-level", "error", "--exit-code", "9", "-f", "json"];
@@ -111,41 +111,41 @@ type Setup = Awaited<ReturnType<typeof prepare>>;
  */
 async function scanBinary(io: Io, setup: Setup): Promise<string[]> {
   const diff = await io.run(["git", "diff", "--cached", "--numstat", "-z", "--diff-filter=A"]);
-  const binaries = (diff?.exitCode === 0 ? diff.stdout.split("\0") : [])
+  if (diff?.exitCode !== 0) throw new Error("git could not list the staged binary files");
+  const binaries = diff.stdout
+    .split("\0")
     .filter((record) => record.startsWith("-\t-\t"))
     .map((record) => record.slice(4))
     .filter((path) => !allowed(setup.list, path));
-  // No scanner: no file can be cleared.
-  if (!setup.betterleaks) return binaries;
+  if (!binaries.length || !setup.betterleaks) return binaries;
+
   const offenders: string[] = [];
-  const real: { path: string; size: number }[] = [];
-  for (const path of binaries) {
-    const size = await io.size(path);
-    // Unreadable or removed from the worktree: it cannot be cleared.
-    if (size === undefined) offenders.push(path);
-    else real.push({ path, size });
-  }
-  if (!real.length) return offenders;
-  // The default config exempts image, font, and office extensions from every
-  // rule, so each file is scanned as a copy with a neutral name.
   const stage = await io.tempDir();
+  if (!stage) throw new Error("could not create the binary scan folder");
   try {
-    const scan: string[] = [];
-    for (const [i, { path, size }] of real.entries()) {
+    const scan: { path: string; copy: string }[] = [];
+    for (const [i, path] of binaries.entries()) {
+      const blob = `:${path}`;
+      const size = await io.run(["git", "cat-file", "-s", blob]);
+      const bytes = Number(size?.stdout.trim());
+      if (size?.exitCode !== 0 || !Number.isSafeInteger(bytes) || bytes < 0 || bytes > COPY_MAX) {
+        offenders.push(path);
+        continue;
+      }
+      // Export the index blob, not the worktree file. A neutral name defeats
+      // extension allowlists, also for a staged symlink or a removed file.
       const copy = `${stage}/${i}.dat`;
-      scan.push(stage && size <= COPY_MAX && (await io.copy(path, copy)) ? copy : path);
+      if (await io.exportBlob(path, copy)) scan.push({ path, copy });
+      else offenders.push(path);
     }
     const dir = (paths: string[]) =>
-      io.run(
-        ["betterleaks", "dir", ...paths, ...setup.config, ...FLAGS, "-r", "/dev/null"],
-        CAP_MS,
-      );
-    // One scan for all files. Only a dirty set pays to find which file.
-    if ((await dir(scan))?.exitCode !== 0)
-      for (const [i, path] of scan.entries())
-        if ((await dir([path]))?.exitCode !== 0) offenders.push(real[i]!.path);
+      io.run(["betterleaks", "dir", ...paths, ...setup.config, ...FLAGS, "-r", "/dev/null"], CAP_MS);
+    // One scan for a clean set; only a dirty set pays for per-file scans.
+    if (scan.length && (await dir(scan.map(({ copy }) => copy)))?.exitCode !== 0)
+      for (const { path, copy } of scan)
+        if ((await dir([copy]))?.exitCode !== 0) offenders.push(path);
   } finally {
-    if (stage) await io.remove(stage);
+    await io.remove(stage);
   }
   return offenders;
 }
@@ -162,13 +162,14 @@ function binaryMessage(offenders: string[], root: string): string {
     "Blocked: this commit would add binary file(s) that hold a secret, or that could not be scanned:",
     ...offenders.map((path) => `  - ${path}`),
     "",
+    "Binaries above 100 MiB cannot be scanned by this hook.",
     "Fix one of:",
     "  * drop the file, or add it to .gitignore if it is build output (recommended), or",
     `  * list the path(s) in ${root}/.agent-allow-secrets (persistent, per-repo),`,
     `    and keep it out of git: ${excludeCommand(root)}, or`,
     "  * set AGENT_ALLOW_SECRETS to the path(s), colon-separated (one-off)",
     "",
-    "Inspect with: betterleaks dir <path> --redact --verbose",
+    "Inspect with: betterleaks dir <path> --redact --verbose (reads the worktree, not the index)",
   ].join("\n");
 }
 

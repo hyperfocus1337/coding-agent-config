@@ -80,13 +80,13 @@ The version is in both the tag and the file name. Check the [releases page](http
 5. It runs `betterleaks git --staged`, which scans the index against `HEAD`.
 6. It removes the findings in allowlisted files and blocks on each finding that is left. To block, it writes the block message to stderr and exits 1, and git stops the commit.
 
-A clean commit costs one Node start and the scans, about 50 ms to 80 ms ([Cost](docs/research.md#cost)). A shell command that does not commit costs nothing.
+A commit costs one Node start and the scans. A shell command that does not commit costs nothing. The [historical measurements](docs/research.md#cost) predate the staged-blob export and are not timings of the current hook.
 
 ### The binary scan
 
 git selects the newly added files that it cannot show as text. These are the files that `betterleaks git` skips. The hook scans them with `betterleaks dir`, which reads binary files.
 
-The hook copies each file to a neutral name first. The default betterleaks config exempts image, font, and office extensions from every rule, so a key in `logo.png` or a password list in `notes.xlsx` would scan clean under its own name. A file above 100 MiB keeps its own path, because the copy costs more than the gap that it closes. See [The extension allowlist](docs/implementation.md#the-extension-allowlist).
+The hook exports each staged blob to a temporary file with a neutral name. It does not read the working-tree file, which can differ from the staged blob or be absent. The default betterleaks config exempts image, font, and office extensions from every rule, so a key in `logo.png` or a password list in `notes.xlsx` would scan clean under its own name. A binary above 100 MiB blocks unless allowlisted, to limit temporary disk use. See [The extension allowlist](docs/implementation.md#the-extension-allowlist).
 
 ## What the model and you see
 
@@ -194,16 +194,16 @@ Use it for a one-time or session-scoped exemption that leaves no trace in the re
 
 The two checks fail in opposite directions by design. The betterleaks scan fails open: when it cannot run, it allows the commit. The binary scan fails closed: it blocks each file that it cannot clear.
 
-| Failure                                                                                         | Result                         | What you see                              |
-| ----------------------------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------- |
-| `node` missing on the `PATH` of git                                                             | Each commit blocks             | A block message that names the problem    |
-| `node` older than 23.6, or `main.ts` fails                                                      | Each commit blocks             | The error text of `node`                  |
-| betterleaks missing                                                                             | betterleaks scan allows        | Nothing                                   |
-| betterleaks missing                                                                             | Each newly added binary blocks | A binary block message                    |
-| Scanner error, report that does not parse, or config that does not parse                        | betterleaks scan allows        | Nothing                                   |
-| betterleaks scan reaches the 4 s cap                                                            | betterleaks scan allows        | A warning with the command to run by hand |
-| `betterleaks dir` fails or reaches the cap, or a staged file is unreadable or left the worktree | That binary blocks             | A binary block message                    |
-| An error in the binary scan code                                                                | The commit blocks              | `the binary scan of this commit failed`   |
+| Failure                                                                                               | Result                         | What you see                              |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------- |
+| `node` missing on the `PATH` of git                                                                   | Each commit blocks             | A block message that names the problem    |
+| `node` older than 23.6, or `main.ts` fails                                                            | Each commit blocks             | The error text of `node`                  |
+| betterleaks missing                                                                                   | betterleaks scan allows        | Nothing                                   |
+| betterleaks missing                                                                                   | Each newly added binary blocks | A binary block message                    |
+| Scanner error, report that does not parse, or config that does not parse                              | betterleaks scan allows        | Nothing                                   |
+| betterleaks scan reaches the 4 s cap                                                                  | betterleaks scan allows        | A warning with the command to run by hand |
+| `betterleaks dir` fails or reaches the cap, a staged blob cannot be read, or a binary exceeds 100 MiB | That binary blocks             | A binary block message                    |
+| Git cannot list staged binaries, or an error occurs in the binary scan code                           | The commit blocks              | `the binary scan of this commit failed`   |
 
 The hook runs on your own commits too, so a git client without `node` on its `PATH` blocks each commit. An app that you start from the macOS Dock, such as a GUI git client or an editor, can get a shorter `$PATH` than your terminal, so this block can occur there first. Put `node` on the `PATH` of that app.
 

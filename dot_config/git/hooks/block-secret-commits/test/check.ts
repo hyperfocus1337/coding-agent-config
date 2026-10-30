@@ -12,11 +12,18 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  truncateSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { check as verdict, type Io } from "../core.ts";
 
 const here = fileURLToPath(new URL("..", import.meta.url));
 const repoRoot = resolve(here, "../../../..");
@@ -151,14 +158,17 @@ await check("blocks a commit when node fails", () =>
   blocks(mkrepo("oldnode"), ["--allow-empty", "-m", "x"], { PATH: oldNode }),
 );
 
-// A fake Io whose every call throws: the binary scan fails closed and the
-// content scan fails open.
-await check("an error in the binary scan blocks", async () => {
-  const broken = new Proxy({} as Io, {
-    get: () => () => Promise.reject(new Error("broken")),
+// A failed index read must not be treated as an empty binary list.
+await check("an error in the binary scan blocks", () => {
+  const repo = mkrepo("broken-diff");
+  const brokenGit = bin("broken-git", {
+    git: `#!/bin/sh\nif [ "$1" = diff ]; then exit 1; fi\nexec "${gitPath}" "$@"\n`,
   });
-  const result = await verdict(broken, { root: "/", config: "" });
-  assert.match(result.block ?? "", /binary scan of this commit failed/);
+  const ran = commit(repo, ["--allow-empty", "-m", "x"], {
+    GIT_EXEC_PATH: brokenGit,
+  });
+  assert.notEqual(ran.status, 0);
+  assert.match(ran.stderr, /binary scan of this commit failed/);
 });
 
 if (haveBetterleaks) {
@@ -184,10 +194,75 @@ if (haveBetterleaks) {
   for (const name of ["logo.png", "notes.pdf"])
     await check(`secret inside ${name} blocked`, () => blocks(mkrepo(name, { [name]: secretBin })));
 
-  // A name with a space and a quote must survive the -z parse.
-  await check("binary with space and quote blocked", () =>
-    blocks(mkrepo("binodd", { 'we ird".dat': secretBin })),
-  );
+  // Spaces, quotes, newlines, and revision-like names must survive parsing.
+  for (const [i, name] of ['we ird".dat', "line\nbreak.dat", ":blob.dat"].entries())
+    await check(`binary with unusual name ${JSON.stringify(name)} blocked`, () => {
+      const repo = mkrepo(`binodd-${i}`, { [name]: secretBin });
+      const ran = commit(repo);
+      assert.notEqual(ran.status, 0);
+      assert.ok(ran.stderr.includes(name));
+    });
+
+  await check("staged binary secret blocks after a clean worktree replacement", () => {
+    const repo = mkrepo("bin-staged-secret", { "payload.dat": secretBin });
+    write(repo, { "payload.dat": plainBin });
+    blocks(repo);
+  });
+  await check("clean staged binary allows despite a worktree secret", () => {
+    const repo = mkrepo("bin-staged-clean", { "payload.dat": plainBin });
+    write(repo, { "payload.dat": secretBin });
+    allows(repo);
+  });
+  for (const [name, content, shouldBlock] of [
+    ["removed-secret", secretBin, true],
+    ["removed-clean", plainBin, false],
+  ] as const)
+    await check(`staged binary is scanned after worktree removal: ${name}`, () => {
+      const repo = mkrepo(name, { "payload.dat": content });
+      rmSync(join(repo, "payload.dat"));
+      if (shouldBlock) blocks(repo);
+      else allows(repo);
+    });
+
+  await check("staged secret blocks after replacement with a worktree symlink", () => {
+    const repo = mkrepo("bin-symlink", { "payload.dat": secretBin });
+    rmSync(join(repo, "payload.dat"));
+    symlinkSync("seed.txt", join(repo, "payload.dat"));
+    blocks(repo);
+  });
+
+  await check("binary scan uses the temporary index of a path-only commit", () => {
+    const repo = mkrepo("bin-only", { "payload.dat": secretBin, "clean.txt": "clean\n" });
+    allows(repo, ["--only", "-m", "clean only", "clean.txt"]);
+    blocks(repo);
+  });
+
+  await check("binary secret blocks on the first commit", () => {
+    const repo = join(tmp, "bin-initial");
+    mkdirSync(repo);
+    git(repo, "init", "-q", ".");
+    write(repo, { "payload.dat": secretBin });
+    git(repo, "add", "-A");
+    blocks(repo);
+  });
+
+  await check("binary export failure blocks", () => {
+    const repo = mkrepo("bin-export-error", { "payload.dat": plainBin });
+    const brokenGit = bin("broken-export", {
+      git: `#!/bin/sh\nif [ "$1" = cat-file ] && [ "$2" = blob ]; then exit 1; fi\nexec "${gitPath}" "$@"\n`,
+    });
+    blocks(repo, undefined, { GIT_EXEC_PATH: brokenGit });
+  });
+
+  await check("binary above 100 MiB blocks unless allowlisted", () => {
+    const repo = mkrepo("bin-large", { "large.png": plainBin });
+    truncateSync(join(repo, "large.png"), 100 * 1024 * 1024 + 1);
+    git(repo, "add", "large.png");
+    const ran = commit(repo);
+    assert.notEqual(ran.status, 0);
+    assert.match(ran.stderr, /100 MiB/);
+    allows(repo, undefined, { AGENT_ALLOW_SECRETS: "large.png" });
+  });
 
   // --diff-filter=A covers added files only.
   await check("modified tracked binary allowed", () => {

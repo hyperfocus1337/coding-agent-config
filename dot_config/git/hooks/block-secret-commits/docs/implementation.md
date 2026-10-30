@@ -57,7 +57,7 @@ The list is still the right answer for one content case. A `secret-filename` exe
 `.betterleaksignore` is keyed by fingerprint alone: only an exact `file:rule:line` entry suppresses anything, and a bare path or a glob matches nothing ([measured](research.md#what-betterleaksignore-accepts)). Two properties of the binary scan put it outside that keying:
 
 - The scan hands betterleaks a **copy at a neutral name** in a new temporary folder, for the reason in [The extension allowlist](#the-extension-allowlist). A `dir` finding does carry a fingerprint, but it carries the path it was given, so the fingerprint is `<temporary folder>/block-secret-commits-XXXXXX/0.dat:private-key:1` and it changes on every run. Passing the real path instead would restore the fingerprint and lose the extension-allowlist defeat, which is the more valuable half.
-- The fail-closed paths produce **no finding**, so there is no fingerprint to write: betterleaks missing, the file unreadable, the file staged and then removed from the worktree, or the file above `COPY_MAX` and unscannable under its own name.
+- The fail-closed paths produce **no finding**, so there is no fingerprint to write: betterleaks missing, the staged blob unreadable, an export error, or the file above `COPY_MAX`.
 
 `[allowlist] paths` in a `.betterleaks.toml` is the one native mechanism that is path-keyed and line-independent. It still cannot exempt a binary. The scan matches `paths` against the copy at `<temporary folder>/<n>.dat`, never against the path written in the config, and the hook passes `--config` only when `betterleaks config path` answers `default`, so a repo adding that file drops the shipped rules rather than extending them.
 
@@ -75,13 +75,20 @@ The name rules do not close this on their own. `pkcs12-file` is already in the u
 
 `git diff --cached --numstat` prints `-` in place of the added and deleted line counts for a blob it cannot diff as text. That is the same NUL-byte test betterleaks uses to skip a file. So the set this scan collects is, by construction, the set the staged scan could not read, with no second name list to maintain.
 
+### Which bytes are scanned
+
+For each candidate, `git cat-file -s :<path>` reads the staged blob size. A blob above 100 MiB blocks unless allowlisted. `git cat-file blob :<path>` exports an eligible blob directly to a temporary file descriptor, without buffering it in Node or applying checkout filters.
+
+Both commands inherit `GIT_INDEX_FILE`. Reading the working-tree path instead would scan the wrong bytes after a partially staged edit, deletion, or symlink replacement. A staged secret could then pass after the worktree file was replaced with clean content. Tests cover both directions of this mismatch and removal of the worktree file.
+
+
 ### Why the verdict is delegated, not assumed
 
 Selecting that set is not the same as condemning it. An earlier version blocked every newly added binary outright, on the reasoning that an unreadable file cannot be cleared. That blocks an ordinary PNG, and it pushed every committed image, font and icon into `.agent-allow-secrets`.
 
 `betterleaks dir` reads binaries, so the hook hands it exactly the paths git selected and blocks only on a finding. An ordinary image or a random blob passes; a binary holding a private key blocks even under an innocuous name, which no file-name rule would ever match. The earlier rejection of `dir` was measured over the whole repo and does not apply to an explicit path list. [The measurements](research.md#delegating-the-binary-verdict).
 
-Two calls at most: one over the whole set, and a per-file loop only when that set is dirty, to name which file.
+One batched call checks the exported files. If it does not succeed, one call per file identifies the paths that block. For N exported files, this is at most N + 1 scanner calls. Each call has its own timeout.
 
 ### The extension allowlist
 
@@ -97,7 +104,7 @@ Upstream sets these to suppress false positives on compressed bytes. The cost is
 
 Only the file name decides, so the hook copies each candidate to a neutral name and scans the copy. Rule selection and a symlink were both tried and neither defeats the allowlist; a per-file `betterleaks stdin` does, but it multiplies the 4 s cap by the number of files, while one batched `dir` keeps a single bound. Scanning 300 real images, fonts and PDFs under neutral names produced no finding, so the copy does not reintroduce what the allowlist suppresses. [The measurements](research.md#defeating-the-extension-allowlist).
 
-`COPY_MAX` (100 MiB) stops the copy from dominating on large media. A file above it keeps its own path and stays exempt if its extension is listed. Closing that remainder would mean copying a file large enough to fill the temporary folder.
+`COPY_MAX` limits each export to 100 MiB. Larger blobs block rather than falling back to their original names, which could exempt them by extension. The limit is per file, not a total temporary-disk budget. The temporary folder is removed in `finally`.
 
 A fixture may use any extension, because the name no longer decides.
 
@@ -111,9 +118,7 @@ A fixture may use any extension, because the name no longer decides.
 
 ### Failure behaviour
 
-This is the one check that never fails open. Anything that stops a candidate being cleared blocks it: betterleaks missing, a scan error, a timeout, or a file staged and then removed from the worktree, which `dir` cannot read.
-
-The file list is the one exception. If `git diff --cached` fails, for example outside a git repository or in a root that does not exist, the scan has no file to check and allows.
+No binary candidate may pass unless the scanner clears it or the user exempts it. Missing betterleaks, an unreadable index blob, an export error, an oversized blob, a scanner error, and a timeout all block. Failure to list staged binaries also blocks, rather than treating an unknown set as empty.
 
 ## Config resolution
 
@@ -208,7 +213,7 @@ Findings in an allowlisted file are dropped before the hook decides, which is wh
 
 A command that does not commit costs nothing, because git runs the hook only for a commit. As an agent hook in Claude Code and Codex, it cost about 25 ms on each Bash call, which was the Node start.
 
-A clean commit pays for one Node start and the scan, about 50 ms. A binary adds one `betterleaks dir`, paid only when a binary is actually added. The worst case is one capped scan, about 4 s. [The full table](research.md#cost).
+A clean commit pays for one Node start and the scan, about 50 ms. A binary adds one `betterleaks dir`, paid only when a binary is actually added. Each scanner run has a 4 s cap, but a dirty binary set can require per-file scans. Git operations and blob exports have no time cap. [The full table](research.md#cost).
 
 ## Changing this hook
 
