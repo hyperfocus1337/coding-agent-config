@@ -77,6 +77,15 @@ function throwaway(file: string, settings: Settings): boolean {
   return plain.startsWith("/tmp/") || plain.startsWith("/var/tmp/") || plain.startsWith(tmpdir);
 }
 
+/** Fold dot segments without Node imports: the Claude Code mod runs this core too. */
+function normalize(path: string): string {
+  const parts: string[] = [];
+  for (const part of path.split("/"))
+    if (part === "..") parts.pop();
+    else if (part !== "" && part !== ".") parts.push(part);
+  return `/${parts.join("/")}`;
+}
+
 const parent = (path: string) => path.slice(0, path.lastIndexOf("/")) || "/";
 
 async function toplevel(dir: string, io: Io): Promise<string | undefined> {
@@ -159,7 +168,11 @@ async function sweep(call: Call, io: Io): Promise<string[]> {
  */
 async function targets(call: Call, io: Io, settings: Settings): Promise<string[]> {
   const named = call.filePaths ?? (call.filePath ? [call.filePath] : undefined);
-  const candidates = named ?? (await sweep(call, io));
+  // oxfmt rejects any path containing `..`, even an absolute one. Normalize
+  // before deduplication and filtering so all adapters and the sweep agree.
+  const candidates = (named ?? (await sweep(call, io))).map((file) =>
+    normalize(file.startsWith("/") ? file : `${call.cwd}/${file}`),
+  );
   const extensions = named ? EDITED : MARKDOWN;
   const kept: string[] = [];
   // One git run for each folder: a commit can name many files.

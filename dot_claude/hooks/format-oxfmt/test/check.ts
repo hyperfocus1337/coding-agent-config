@@ -216,6 +216,13 @@ unaligned(`${outer}/vendor/REL.md`);
 bash(outer, "sed -i s/a/b/ vendor/REL.md");
 await formatted("relative path named in the command", `${outer}/vendor/REL.md`);
 
+// Parent-relative paths must not make oxfmt reject the whole batch.
+unaligned(`${outer}/vendor/PARENT.md`);
+unaligned(`${outer}/BATCH.md`);
+await quiet("parent-relative Bash path", bash(`${outer}/plain`, "echo ../vendor/PARENT.md"));
+await formatted("parent-relative path named in Bash", `${outer}/vendor/PARENT.md`);
+await formatted("other file in the same Bash batch", `${outer}/BATCH.md`);
+
 await quiet("a named path that does not exist", bash(outer, "rm gone.md"));
 
 // Write and commit in one call leaves a clean tree. With `git commit` in the
@@ -369,6 +376,28 @@ for (const [what, config, programs] of [
     );
   });
 
+await check("paths: normalize and deduplicate all candidates before formatting", async () => {
+  const ran: string[][] = [];
+  await format(
+    {
+      cwd: "/x/sub",
+      filePaths: ["../a.md", "/x/sub/../a.md", "/x/./a.md", "/../../x/a.md"],
+    },
+    configIo({}, ran) as never,
+    {},
+  );
+  assert.deepEqual(
+    ran.filter(([program]) => program === "oxfmt"),
+    [["oxfmt", "/x/a.md"]],
+  );
+});
+
+await check("paths: normalize before the scratch-file filter", async () => {
+  const ran: string[][] = [];
+  await format({ cwd: "/x", filePath: "/x/../tmp/a.md" }, configIo({}, ran) as never, {});
+  assert.deepEqual(ran, []);
+});
+
 // --- pi.ts, omp.ts, and hooks/register.ts, with stubs over the real files ---
 
 type Handler = (event: unknown, ctx: unknown) => Promise<unknown>;
@@ -384,6 +413,14 @@ await check("pi.ts: formats the file of an edit", async () => {
   );
   assert.equal(result, undefined);
   aligned(`${outer}/pi.md`);
+});
+await check("pi.ts: formats a parent-relative edit path", async () => {
+  unaligned(`${outer}/pi-parent.md`);
+  await piHandler?.(
+    { toolName: "edit", input: { path: "../pi-parent.md" }, content: [] },
+    { cwd: `${outer}/plain` },
+  );
+  aligned(`${outer}/pi-parent.md`);
 });
 unaligned(`${committed}/PI.md`);
 git(committed, "add", "-A");

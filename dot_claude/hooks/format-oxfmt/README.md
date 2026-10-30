@@ -63,7 +63,7 @@ The hook starts the `oxfmt` binary directly, as `lint-code` starts its linters. 
 
 1. If `AGENT_HOOKS_DISABLE` names `format-oxfmt`, the hook stops.
 2. The hook collects the candidate files: the file of a Write or an Edit, or the Markdown files of the [Bash sweep](#bash-markdown-sweep).
-3. It keeps each candidate once, and only if the extension matches, the path is not a throwaway path, and the path is a regular file.
+3. It resolves each candidate against the session folder and removes `.` and `..` path segments, because oxfmt rejects paths that contain `..`. It keeps each normalized candidate once, and only if the extension matches, the path is not a throwaway path, and the path is a regular file.
 4. It drops each file whose repository sets `agent-hook.format-oxfmt.enabled` to `false` in git config. It runs one `git config` for each folder, and only for the files that step 3 kept.
 5. It runs `oxfmt <files>` once, in the session folder. oxfmt finds the config of each file, see [Config](#config). The hook stops oxfmt after 20 s.
 6. If a Bash command committed, it compares each file before and after oxfmt and can give the [amend hint](#write-and-commit-in-one-command).
