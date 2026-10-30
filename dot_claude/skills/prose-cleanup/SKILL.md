@@ -1,7 +1,7 @@
 ---
 name: prose-cleanup
 description: Fix the old prose alerts that the lint-prose hook does not report, across files, directories, the repository, or the files changed since HEAD. Scans with Vale and the hook's rules or another Vale config, asks which files to fix, and fixes them.
-argument-hint: "<path... | --changed> [--config FILE | --config repo] [--report]"
+argument-hint: "<path... | --changed> [--config FILE] [--report]"
 disable-model-invocation: true
 ---
 
@@ -19,11 +19,10 @@ Input: $ARGUMENTS
 | Paths       | The named files, a `.txt` file too, and the prose files in the named directories                                     |
 | `--changed` | The prose files that differ from `HEAD`                                                                              |
 
-| Option          | Effect                                                                                                                                                         |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--config FILE` | Lint with the rules of the Vale config `FILE` instead of the hook's rules. When the config lists `Packages`, the scan runs `vale sync` first to download them. |
-| `--config repo` | Lint with the repository's own `.vale.ini` or `_vale.ini`.                                                                                                     |
-| `--report`      | Scan and report, then stop: change no file. The skill handles this option itself, and does not pass it to the scan.                                            |
+| Option          | Effect                                                                                                                                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--config FILE` | Use the rules of the Vale config `FILE`, not the hook's rules. For the repository's own rules, give its `.vale.ini`. `--config=FILE` also works. If `FILE` lists `Packages`, the scan runs `vale sync` first. |
+| `--report`      | Scan and report, then stop: change no file. The skill handles this option itself, and does not pass it to the scan.                                                                                           |
 
 ## Steps
 
