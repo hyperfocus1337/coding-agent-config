@@ -68,6 +68,13 @@ check "the report starts with the Emacs grep mode line" 1 $'\n-*- mode: grep -*-
 check "the report rows have absolute paths" 1 "$tmp/repo/docs/old.md:1:"
 check "the counts show a path relative to the root" 1 $' 1 docs/old.md\nper rule:'
 
+run --all
+check "--all: the whole repository, like no input" 1 'docs/old.md:1:'
+check "an --all scan names its report -all" 1 $'-all.txt\n'
+
+run --all docs
+check "--all with paths stops the scan" 2 'give one scope'
+
 run notes.txt
 check "a named .txt file is checked" 1 'notes.txt:1:'
 check "a scan of paths names its report -paths" 1 $'-paths.txt\n'
@@ -85,6 +92,9 @@ check "--changed: only the changed file" 1 'new.org:1:'
   fail=1
 } ||
   echo "ok   --changed leaves unchanged files out"
+
+run --changed docs
+check "--changed with paths stops the scan" 2 'give one scope'
 
 run missing.md
 check "a bad path stops the scan" 2 'no such file'

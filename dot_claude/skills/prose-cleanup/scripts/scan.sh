@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Pick the prose files for a cleanup and lint them in one check.sh run, so the
 # exit code tells an alert from a Vale failure: fd -X and xargs would replace it.
-#   scan.sh              the prose files in the repository (the current directory
+#   scan.sh [--all]      the prose files in the repository (the current directory
 #                        outside git)
 #   scan.sh PATH...      the named files (a .txt file too), and the prose files
 #                        in the named directories
@@ -29,9 +29,10 @@ die() {
 vale --version >/dev/null 2>&1 || die "vale is not installed, or does not run"
 
 # --- Options ---
-changed=0 config='' paths=()
+all=0 changed=0 config='' paths=()
 while (($#)); do
   case $1 in
+    --all) all=1 ;;
     --changed) changed=1 ;;
     --config)
       (($# > 1)) || die "--config needs a file"
@@ -44,7 +45,7 @@ while (($#)); do
   esac
   shift
 done
-((changed && ${#paths[@]})) && die "--changed takes no paths"
+((all + changed + (${#paths[@]} > 0) > 1)) && die "give one scope: --all, paths, or --changed"
 root=$(git rev-parse --show-toplevel 2>/dev/null)
 # Physical, like the git root, so the counts can show paths relative to it.
 base=${root:-$(pwd -P)}

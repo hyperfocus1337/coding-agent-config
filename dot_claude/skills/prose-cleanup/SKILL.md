@@ -1,7 +1,7 @@
 ---
 name: prose-cleanup
 description: Fix the old prose alerts that the lint-prose hook does not report, across files, directories, the repository, or the files changed since HEAD. Scans with Vale and the hook's rules or another Vale config, asks which files to fix, and fixes them.
-argument-hint: "<path... | --changed> [--config FILE] [--report]"
+argument-hint: "[FILE|DIR... | --changed | --all] [--config FILE] [--report]"
 disable-model-invocation: true
 ---
 
@@ -13,11 +13,13 @@ Input: $ARGUMENTS
 
 ## Input
 
-| Input       | Files it checks                                                                                                      |
-| ----------- | -------------------------------------------------------------------------------------------------------------------- |
-| Empty       | The `.md`, `.markdown`, `.org`, `.html`, and `.htm` files in the repository, or in the current directory outside git |
-| Paths       | The named files, a `.txt` file too, and the prose files in the named directories                                     |
-| `--changed` | The prose files that differ from `HEAD`                                                                              |
+Give at most one input. Without an input, the scan uses `--all`.
+
+| Input                 | Files it checks                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Paths: `FILE\|DIR...` | Each named file, `.txt` included, and the prose files in each named directory                                            |
+| `--changed`           | The prose files that differ from `HEAD`                                                                                  |
+| `--all`               | The prose files (`.md`, `.markdown`, `.org`, `.html`, `.htm`) in the repository, or in the current directory outside git |
 
 | Option          | Effect                                                                                                                                                                                                        |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -34,11 +36,11 @@ Each scan writes a report file to this path:
 
 Two reports compare only with the same `<kind>`, `<config>`, and for `paths`, the same paths.
 
-| Name part      | Value                                                                                                              |
-| -------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `<repository>` | The path of the repository under `$HOME`, with each `/` as `-`, such as `Repositories-agents-coding-agent-config`. |
-| `<kind>`       | `all` for no input, `changed` for `--changed`, `paths` for paths. The `scope:` line of the report gives the paths. |
-| `<config>`     | The `--config` file name without `.ini` and a leading dot, such as `readability`. None for the hook's rules.       |
+| Name part      | Value                                                                                                                         |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `<repository>` | The path of the repository under `$HOME`, with each `/` as `-`, such as `Repositories-agents-coding-agent-config`.            |
+| `<kind>`       | `all` for `--all` or no input, `changed` for `--changed`, `paths` for paths. The `scope:` line of the report gives the paths. |
+| `<config>`     | The `--config` file name without `.ini` and a leading dot, such as `readability`. None for the hook's rules.                  |
 
 A header gives the `root`, the `scope`, the `config`, and the `alerts` count. One `path:line:column:rule:message` row follows per alert, with an absolute path. Emacs opens the file in grep mode, so `RET` on a row opens the line of the alert.
 
