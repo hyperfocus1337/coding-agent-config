@@ -79,6 +79,18 @@
       "global_args": "--path $HOME/$SKILLS_DIR"
     },
     {
+      "id": "cap",
+      "channel": "vendor-cli",
+      "command": "cap agents install --component skill --yes",
+      "requires": ["cap"],
+      "scope": "user",
+      "status": "user-keep",
+      "why": "about 150 resident tokens for 2 skills, cap and cap-demo. The CLI has no project mode: it writes ~/.claude/skills only, so project_args is empty and both arg sets name the harness. The cap binary ships inside Cap Desktop, which runs on macOS and Windows only, so the devcontainer skips this row. --component skill leaves the cap MCP server to install-mcp.",
+      "use_when": "recording, sharing, or reading Cap screen recordings from an agent",
+      "project_args": "",
+      "global_args": "--target claude"
+    },
+    {
       "id": "antonbabenko/terraform-skill/skills/terraform-skill",
       "channel": "apm",
       "scope": "user",

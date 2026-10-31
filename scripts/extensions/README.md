@@ -36,7 +36,7 @@ Enable and disable state is not in the catalog. `enabledPlugins` in [`dot_claude
 
 ## Standalone CLI skills
 
-Skills installed by a vendor CLI rather than a plugin or APM, because they ship with a companion binary. The set is declared in [`skills.json`](../../dot_claude/skills/install-skills/references/skills.json), which `skills/install.sh` reads: `playwright` via `playwright-cli install --skills`, and `orbit` via `glab skills install`. Both rows are project scope today, so the script installs neither at user scope.
+Skills installed by a vendor CLI rather than a plugin or APM, because they ship with a companion binary. The set is declared in [`skills.json`](../../dot_claude/skills/install-skills/references/skills.json), which `skills/install.sh` reads: `playwright` via `playwright-cli install --skills`, `orbit` via `glab skills install`, and `cap` via `cap agents install`. Only `cap` is user scope, so the script installs only `cap`. The `cap` binary ships inside Cap Desktop, so the script installs the `cap` cask and links the CLI on macOS only. It skips a row whose `requires` binary is missing.
 
 ---
 

@@ -10,7 +10,7 @@ Ask Claude to "install the <skill> skill in this project", or invoke the `instal
 
 - **APM**: `apm install <ref> --target claude` in the project, which writes `.claude/skills/`, `apm.yml`, and `apm.lock.yaml`, and gitignores `apm_modules/`. A skill subset (neon takes 3 of the package's skills) repeats `--skill <name>` per skill; apm writes the names into the `skills:` key of the package entry and unions them across runs. A repo whose root has no `apm.yml` or `SKILL.md` (cmux, 22 skills under `skills/`) cannot be subset: the row's `id` carries a `<name>` placeholder and its `skills` list names the 7 to install, one `apm install manaflow-ai/cmux/skills/<name>` each.
 - **Local**: copy the directory out of this repo into `<project>/.claude/skills/`. The copy forks. Later edits here do not reach it.
-- **Vendor CLI**: run the vendor's command in the project. Both vendor CLIs install into the project by default and need an explicit argument for user scope, which is the reverse of the plugin CLI. Each row splits `command` from `project_args` and `global_args`, because the two scopes need different paths, not just a flag.
+- **Vendor CLI**: run the vendor's command in the project. The playwright and glab CLIs install into the project by default and need an explicit argument for user scope, which is the reverse of the plugin CLI. The cap CLI writes user scope only and has no project mode. Each row splits `command` from `project_args` and `global_args`, because the two scopes need different paths, not just a flag.
 
 ## Reading the catalog
 

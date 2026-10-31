@@ -54,14 +54,40 @@ else
   echo "!! glab not managed by brew or mise, skipping update"
 fi
 
+# --- Cap CLI ---
+# https://github.com/CapSoftware/Cap/tree/main/apps/cli
+# Provides the `cap` binary the cap skill row runs. The binary ships inside Cap
+# Desktop, which has no Linux build, so the devcontainer skips it. The cask
+# auto-updates, so only a missing app is installed. install-cli links the
+# bundled binary into ~/.local/bin; CAP_NO_MODIFY_PATH keeps it out of the
+# chezmoi-managed shell profiles.
+if [ "$(uname)" = Darwin ] && command -v brew >/dev/null 2>&1; then
+  echo "==> Installing Cap CLI"
+  if ! brew list --cask cap >/dev/null 2>&1; then
+    HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask cap
+  fi
+  CAP_NO_MODIFY_PATH=1 /Applications/Cap.app/Contents/MacOS/cap-cli desktop install-cli
+else
+  echo "!! Cap Desktop needs macOS with brew, skipping the Cap CLI"
+fi
+
 # --- User-scope vendor skills ---
-# Each row supplies its command and the args that switch it to user scope. Both
-# vendor CLIs install into the current project by default, so those args are
-# required here. No row is user-scoped today: playwright and orbit are both
-# project-candidates, installed per repo by the install-skills skill.
+# Each row supplies its command and the args that switch it to user scope.
+# playwright and orbit install into the current project by default, so those
+# args are required here; both are project-candidates, installed per repo by
+# the install-skills skill. A row whose `requires` binary is missing is skipped,
+# because some CLIs (cap) have no build for every platform this script runs on.
 echo "==> Installing user-scope vendor skills"
 count=0
-while IFS=$'\t' read -r id command global_args; do
+while IFS=$'\t' read -r id command global_args requires; do
+  missing=""
+  for bin in $requires; do
+    command -v "$bin" >/dev/null 2>&1 || missing="$missing $bin"
+  done
+  if [ -n "$missing" ]; then
+    echo "!! Skill: $id, missing:$missing, skipping"
+    continue
+  fi
   echo "==> Skill: $id"
   # global_args carries $HOME and $SKILLS_DIR as literal text; expand both here.
   global_args="${global_args//\$SKILLS_DIR/$SKILLS_DIR}"
@@ -69,7 +95,7 @@ while IFS=$'\t' read -r id command global_args; do
   # shellcheck disable=SC2086 # both are catalog-declared argv, not one word each
   (cd "$HOME" && $command $global_args)
   count=$((count + 1))
-done < <(jq -r '.skills[] | select(.channel == "vendor-cli" and .scope == "user") | [.id, .command, .global_args] | @tsv' "$CATALOG")
+done < <(jq -r '.skills[] | select(.channel == "vendor-cli" and .scope == "user") | [.id, .command, .global_args, ((.requires // []) | join(" "))] | @tsv' "$CATALOG")
 if [ "$count" -eq 0 ]; then
   echo "==> none declared"
 fi
