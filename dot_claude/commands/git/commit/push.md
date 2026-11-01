@@ -16,3 +16,5 @@ Commit all changes above as one commit, then push the branch to origin. Use Conv
 ## Output
 
 Print one line as inline code: `<short sha> <subject> -> <remote branch>`. No other text.
+
+When the working tree is clean, commit nothing and print `Nothing to commit. Clean: <top level>`. Then push only when the status shows `ahead`. On the next line, print `-> <remote branch>` after a push, or `Nothing to push`.

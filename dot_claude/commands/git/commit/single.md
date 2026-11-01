@@ -16,3 +16,5 @@ Commit all changes above as one commit. Use Conventional Commits with a concise 
 ## Output
 
 Print one line as inline code: `<short sha> <subject>`. No other tools, no other text.
+
+When the working tree is clean, commit nothing and print `Nothing to commit. Clean: <top level>`.

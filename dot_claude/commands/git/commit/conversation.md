@@ -44,3 +44,5 @@ Do not edit files.
 ## Output
 
 Print one line per commit as inline code: `<short sha> <subject>`, plus `left: <count> paths` when anything stayed uncommitted. When you commit in more than one repository, print each top level on its own line before its lines, this repository first, with `~` for the home directory, and put `left: <count> paths` under the repository that holds those paths. Put a blank line before each top level after the first, and before each `left:` line. No other text.
+
+When you make no commit, print `Nothing to commit. Clean: <top level>, <top level>` if every repository that you checked is clean, this repository first. Otherwise print `Nothing to commit from this conversation`, then the top level and `left:` lines as above.

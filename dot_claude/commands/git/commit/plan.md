@@ -69,6 +69,7 @@ Plan the commits that a commit command would make. Commit nothing, stage nothing
    - Group the left-out paths by reason, with one `Left out, <reason>:` heading per reason and a blank line between groups. Write the reason once in the heading, never after a path. When you cannot tie a change to anyone, the reason is "not changed in this conversation". Do not guess that another session made it.
    - Name each candidate repository that the **Repositories** step left out in a "Left out" group of this repository, with its top level, for example `Left out, fixture repository:`.
    - Leave out an empty "Left out" group, and a section with no commits and nothing left out.
+   - When no section is left, every candidate repository is clean. Under the header, print `Nothing to commit. Clean: <top level>, <top level>`, with each repository that you checked, this repository first. For `extend`, print `Nothing to fold` in place of `Nothing to commit`. Do not print the header alone.
    - For `extend`, write each target as `` `<short sha> <subject>` (amend) `` or `` `<short sha> <subject>` (fixup) ``, with the method that `extend` would use. Add `(pushed)` to a pushed target. Write a change that belongs to no existing commit as `` `<Conventional Commits subject>` (new commit) ``.
 
 The user can change the plan in the next messages. The target command follows the plan with those changes.

@@ -42,3 +42,5 @@ Never run `git commit`, `git stash`, `git checkout`, or `git restore`, and never
 ## Output
 
 Print one line per commit as inline code: `<short sha> <subject>`, plus `left: <count> paths` when anything stayed uncommitted. No other text.
+
+When you make no commit, print `Nothing to commit. Clean: <top level>` if the working tree is clean. Otherwise print `Nothing to commit from this conversation` and the `left:` line.
