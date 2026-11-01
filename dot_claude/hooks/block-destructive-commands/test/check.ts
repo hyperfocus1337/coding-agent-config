@@ -11,7 +11,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { check, FAILURE, FALLBACK, type Io, verdict } from "../core.ts";
+import { check, FAILURE, FALLBACK, type Io, RETRY_HINT, retried, verdict } from "../core.ts";
 import { DCG, nodeIo } from "../io.ts";
 import extension from "../pi.ts";
 
@@ -22,6 +22,8 @@ delete process.env.AGENT_HOOKS_DISABLE;
 process.env.GIT_CONFIG_GLOBAL = join(tmp, "gitconfig");
 process.env.GIT_CONFIG_NOSYSTEM = "1";
 process.env.GIT_CONFIG_COUNT = "0";
+// The retry state, in core.ts, guard.sh, and pi.ts.
+process.env.TMPDIR = tmp;
 
 const stub = (exitCode: number, stdout = ""): Io => ({
   dcg: async () => ({ exitCode, stdout }),
@@ -93,6 +95,16 @@ assert.equal((await verdict("x", stub(0, guardrails)))?.confirmable, false, "gua
 assert.equal((await verdict("x", stub(0, complete)))?.confirmable, false, "no pack ID");
 assert.equal((await verdict("x", stub(1)))?.confirmable, false, "exit 1 fallback");
 assert.equal((await verdict("x", stub(2)))?.confirmable, false, "failure");
+// retried: true only for the same session, directory, and command.
+assert.equal(retried("s1", "/a", "x"), false);
+assert.equal(retried("s1", "/a", "x"), true);
+assert.equal(retried("s1", "/a", "x"), true, "later attempts ask too");
+assert.equal(retried("s1", "/b", "x"), false, "another directory");
+assert.equal(retried("s1", "/a", "y"), false, "another command");
+assert.equal(retried("s2", "/a", "x"), false, "another session");
+writeFileSync(join(tmp, "not-a-directory"), "");
+assert.equal(retried("s1", "/a", "x", join(tmp, "not-a-directory")), false, "no state denies");
+assert.equal(retried("s1", "/a", "x", join(tmp, "not-a-directory")), false);
 let ran = false;
 await check("  ", { dcg: async () => ((ran = true), undefined) });
 assert.equal(ran, false, "an empty command does not run dcg");
@@ -192,11 +204,19 @@ writeFileSync(binary, '#!/bin/sh\nprintf "not json"\n', { mode: 0o755 });
 assert.equal(shell().status, 2, "invalid JSON");
 writeFileSync(binary, `#!/bin/sh\nprintf '%s' '${deny}'\n`, { mode: 0o755 });
 assert.equal(shell().stdout, deny, "preserve JSON denials and approval codes");
-// --ask, from Claude Code: a confirmable denial becomes a permission prompt,
-// only in the modes that surely show it.
+// --ask, from Claude Code: a confirmable denial goes to the agent with a hint,
+// and the same command again becomes a permission prompt, only in the modes
+// that surely show it.
+let session = 0;
 const ask = (
   mode: string | undefined,
-  input = JSON.stringify({ tool_name: "Bash", tool_input: { command }, permission_mode: mode }),
+  input = JSON.stringify({
+    tool_name: "Bash",
+    tool_input: { command },
+    permission_mode: mode,
+    session_id: `guard-${++session}`,
+    cwd: repo,
+  }),
 ) =>
   spawnSync("sh", [new URL("../guard.sh", import.meta.url).pathname, "--ask"], {
     cwd: repo,
@@ -204,8 +224,20 @@ const ask = (
     input,
     encoding: "utf8",
   });
+const hinted = JSON.parse(deny);
+hinted.hookSpecificOutput.permissionDecisionReason += `\n\n${RETRY_HINT}`;
 for (const mode of ["default", "acceptEdits", "plan", "auto"]) {
-  result = ask(mode);
+  const input = JSON.stringify({
+    tool_name: "Bash",
+    tool_input: { command },
+    permission_mode: mode,
+    session_id: `mode-${mode}`,
+    cwd: repo,
+  });
+  result = ask(mode, input);
+  assert.equal(result.status, 0);
+  assert.deepEqual(JSON.parse(result.stdout), hinted, "the first denial goes to the agent");
+  result = ask(mode, input);
   assert.equal(result.status, 0);
   assert.deepEqual(JSON.parse(result.stdout).hookSpecificOutput, {
     hookEventName: "PreToolUse",
@@ -214,11 +246,18 @@ for (const mode of ["default", "acceptEdits", "plan", "auto"]) {
   });
 }
 for (const mode of ["bypassPermissions", "dontAsk", undefined]) {
-  assert.equal(ask(mode).stdout, deny, `${mode} keeps the denial`);
+  const input = JSON.stringify({ tool_input: { command }, permission_mode: mode, session_id: "k" });
+  assert.equal(ask(mode, input).stdout, deny, `${mode} keeps the denial`);
+  assert.equal(ask(mode, input).stdout, deny, `${mode} keeps the denial on a retry`);
 }
 writeFileSync(binary, `#!/bin/sh\nprintf '%s' '${guardrails}'\n`, { mode: 0o755 });
-assert.equal(ask("default").stdout, guardrails, "guardrails keeps the denial");
-assert.equal(JSON.parse(ask("default").stdout).hookSpecificOutput.permissionDecision, "deny");
+const again = JSON.stringify({
+  tool_input: { command },
+  permission_mode: "default",
+  session_id: "g",
+});
+assert.equal(ask("default", again).stdout, guardrails, "guardrails keeps the denial");
+assert.equal(ask("default", again).stdout, guardrails, "guardrails keeps it on a retry");
 writeFileSync(binary, `#!/bin/sh\nprintf '%s' '${deny}'\n`, { mode: 0o755 });
 assert.equal(ask("default", "not json").status, 2, "a malformed payload blocks");
 const hangs = '#!/bin/sh\ntrap "" TERM\nwhile :; do :; done\n';
@@ -264,22 +303,36 @@ if (existsSync(DCG)) {
   assert.match(blocked.reason, /core\.git:reset-hard/);
   assert.match(blocked.reason, /dcg allow-once \d{6}\b/);
 
-  // pi dialog: only the TUI asks, and only for a confirmable denial.
+  // pi dialog: the first denial goes to the agent, a retry asks, only in the
+  // TUI, and only for a confirmable denial.
   let asked = 0;
-  const dialog = (mode: string, answer: boolean, cmd = "git reset --hard HEAD~1") =>
+  const dialog = (mode: string, answer: boolean, cmd = "git reset --hard HEAD~1", id = "pi") =>
     handler!(
       { toolName: "bash", input: { command: cmd } },
-      { cwd: tmp, mode, ui: { confirm: async () => (asked++, answer) } },
-    ) as Promise<{ block: boolean } | undefined>;
-  assert.equal(await dialog("tui", true), undefined, "a yes runs the command");
+      {
+        cwd: tmp,
+        mode,
+        sessionManager: { getSessionId: () => id },
+        ui: { confirm: async () => (asked++, answer) },
+      },
+    ) as Promise<{ block: boolean; reason: string } | undefined>;
+  const first = await dialog("tui", true);
+  assert.equal(first?.block, true, "the first denial blocks");
+  assert.ok(first?.reason.endsWith(RETRY_HINT), "with the hint");
+  assert.equal(asked, 0, "without a dialog");
+  assert.equal(await dialog("tui", true), undefined, "a yes on the retry runs the command");
   assert.equal((await dialog("tui", false))?.block, true, "a no blocks");
   assert.equal(asked, 2);
+  assert.equal((await dialog("tui", true, undefined, "pi-2"))?.block, true, "another session");
+  assert.equal(asked, 2);
   assert.equal((await dialog("rpc", true))?.block, true, "rpc does not ask");
-  assert.equal(
-    (await dialog("tui", true, "dcg allowlist add core.git:reset-hard -r x"))?.block,
-    true,
-    "guardrails does not ask",
-  );
+  for (let i = 0; i < 2; i++) {
+    assert.equal(
+      (await dialog("tui", true, "dcg allowlist add core.git:reset-hard -r x"))?.block,
+      true,
+      "guardrails does not ask",
+    );
+  }
   assert.equal(asked, 2);
 } else {
   console.log(`skipped: ${DCG} is missing`);

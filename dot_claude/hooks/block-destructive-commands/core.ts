@@ -4,6 +4,11 @@
  * stdout with exit 0. Exit 1 is also treated as a denial.
  */
 
+import { createHash } from "node:crypto";
+import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 export interface Io {
   /** Runs dcg on the command. `undefined` when dcg cannot start. */
   dcg(command: string): Promise<{ exitCode: number; stdout: string } | undefined>;
@@ -27,6 +32,40 @@ export interface Verdict {
  */
 export function confirmable(output: { packId?: unknown } | undefined): boolean {
   return typeof output?.packId === "string" && !/(^|\.)guardrails$/.test(output.packId);
+}
+
+/** Added to the first confirmable denial, so that the agent looks for another way first. */
+export const RETRY_HINT =
+  "First look for a safer command that reaches the same goal, and use it. Only if no such command exists, tell the user why you need this command, then run it again unchanged in the same directory. The user then gets a prompt to approve it once.";
+
+const sha = (text: string) => createHash("sha256").update(text).digest("hex");
+
+/**
+ * Records a confirmable denial. Returns true when the session already got a
+ * denial for the same command in the same directory: the agent found no other
+ * way, so the user gets the prompt. A state that cannot be read or written
+ * returns false, which keeps the denial.
+ */
+export function retried(
+  session: string,
+  cwd: string,
+  command: string,
+  dir = join(tmpdir(), "block-destructive-commands"),
+): boolean {
+  const file = join(dir, sha(session));
+  const key = sha(`${cwd}\0${command}`);
+  try {
+    if (readFileSync(file, "utf8").split("\n").includes(key)) return true;
+  } catch {
+    // No denial in this session yet.
+  }
+  try {
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
+    appendFileSync(file, `${key}\n`, { mode: 0o600 });
+  } catch {
+    // Without a record, the next retry is denied again and the code still works.
+  }
+  return false;
 }
 
 /** Returns the block reason, or `undefined` to allow. */

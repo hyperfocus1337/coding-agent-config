@@ -27,25 +27,35 @@ const run = spawnSync(join(process.env.HOME, ".local/bin/dcg"), [], {
 let stdout = run.stdout;
 if (stdout) {
   if (run.status === 0) {
-    let output;
-    try { output = JSON.parse(stdout).hookSpecificOutput; }
+    let parsed, output;
+    try { parsed = JSON.parse(stdout); output = parsed.hookSpecificOutput; }
     catch {
       console.error("Blocked: dcg returned invalid JSON.");
       process.exit(2);
     }
-    // Turn a confirmable denial into the permission prompt of Claude Code, in
-    // the modes that show it to the user (auto: tested 2026-11-01). Other
-    // modes keep the denial.
+    // A confirmable denial first goes to the agent, with a hint to look for
+    // another way. The same command again in the same session becomes the
+    // permission prompt of Claude Code, because the reason of an ask goes to
+    // the user and not to the agent. Only in the modes that show the prompt
+    // to the user (auto: tested 2026-11-01). Other modes keep the denial.
+    let payload;
     if (process.env.GUARD_ASK === "--ask" && output?.permissionDecision === "deny" &&
-        ["default", "acceptEdits", "plan", "auto"].includes(JSON.parse(input).permission_mode)) {
-      const { confirmable } = await import(pathToFileURL(process.env.GUARD_CORE).href);
-      if (confirmable(output)) {
-        const why = /^Reason: (.*)$/m.exec(output.permissionDecisionReason ?? "")?.[1];
-        stdout = JSON.stringify({ hookSpecificOutput: {
-          hookEventName: "PreToolUse",
-          permissionDecision: "ask",
-          permissionDecisionReason: `dcg ${output.ruleId}` + (why ? `: ${why}` : ""),
-        } });
+        ["default", "acceptEdits", "plan", "auto"].includes((payload = JSON.parse(input)).permission_mode)) {
+      const core = await import(pathToFileURL(process.env.GUARD_CORE).href);
+      if (core.confirmable(output)) {
+        const command = String(payload.tool_input?.command ?? "");
+        if (core.retried(String(payload.session_id ?? ""), String(payload.cwd ?? ""), command)) {
+          const why = /^Reason: (.*)$/m.exec(output.permissionDecisionReason ?? "")?.[1];
+          stdout = JSON.stringify({ hookSpecificOutput: {
+            hookEventName: "PreToolUse",
+            permissionDecision: "ask",
+            permissionDecisionReason: `dcg ${output.ruleId}` + (why ? `: ${why}` : ""),
+          } });
+        } else {
+          output.permissionDecisionReason =
+            `${output.permissionDecisionReason ?? ""}\n\n${core.RETRY_HINT}`.trim();
+          stdout = JSON.stringify(parsed);
+        }
       }
     }
   }

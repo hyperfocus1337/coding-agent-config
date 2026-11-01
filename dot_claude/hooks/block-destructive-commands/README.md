@@ -37,15 +37,19 @@ The hook fails closed. A missing dcg binary, execution error, invalid JSON, or a
 
 ## Fast approval
 
-A confirmable denial asks you first, so the agent does not stop and need a retry. A denial is confirmable when dcg returns a pack ID and the pack is not the guardrails pack. The guardrails pack protects dcg itself, for example against `dcg allowlist add` or a hook toggle, so its denials always keep the `dcg allow-once` flow. A confirmation does not register a dcg exception: `dcg allow-once list` does not show it, and dcg does not get a spare code for the same command. The agent transcript records the call.
+A confirmable denial first goes to the agent, with the full dcg reason and a hint: look for a safer command that reaches the same goal, and run the denied command again unchanged only if none exists. When the agent runs the same command in the same directory again in the same session, you get a prompt. A denial is confirmable when dcg returns a pack ID and the pack is not the guardrails pack. The guardrails pack protects dcg itself, for example against `dcg allowlist add` or a hook toggle, so its denials always keep the `dcg allow-once` flow.
 
-| Agent       | Prompt                                                                                | Shown when                                                       |
+The agent must see the denial first, because the reason of a Claude Code `ask` goes to you and not to the agent. `retried()` in [`core.ts`](core.ts) records each first denial as a hash of the directory and command, in one file per session under `$TMPDIR/block-destructive-commands/`. After the first denial, each later run of the same command asks. If the state cannot be written, the hook keeps the denial.
+
+A confirmation does not register a dcg exception: `dcg allow-once list` does not show it, and dcg does not get a spare code for the same command. The agent transcript records the call.
+
+| Agent       | Prompt on the retry                                                                   | Shown when                                                       |
 | ----------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | Claude Code | `guard.sh --ask` changes `deny` to `ask`, and Claude Code shows its permission prompt | `permission_mode` is `default`, `acceptEdits`, `plan`, or `auto` |
 | pi          | `pi.ts` shows a `ctx.ui.confirm` dialog with the command and the dcg reason           | `ctx.mode` is `tui`                                              |
 | Codex, omp  | None                                                                                  | Never                                                            |
 
-In all other cases, the hook denies as before and returns the `dcg allow-once` code.
+In all other cases, the hook denies each run without the hint and returns the `dcg allow-once` code.
 
 In `auto` mode, a hook `ask` shows the prompt to you and the classifier does not answer it (tested on 2026-11-01). Claude Code keeps the denial in `bypassPermissions` and `dontAsk`, because nobody tested these modes. `dontAsk` never prompts, and the reason of an `ask` goes to you and not to the agent, so the agent would not get the `dcg allow-once` code.
 
@@ -90,13 +94,13 @@ dcg reads `~/.config/dcg/config.toml` and a `.dcg.toml` in the project. This rep
 node test/check.ts
 ```
 
-from this folder, or `just hooks-check`. The check tests `core.ts` with stub dcg results, `io.ts` with stub dcg scripts, `guard.sh` with a stub binary, and `pi.ts` with a stub pi. It checks session, repository, and global toggles, repository precedence, invalid values, and shell payload preservation, blocking exit codes, missing binaries, invalid JSON, and internal timeouts. It also checks which denials are confirmable and the `--ask` rewrite in each permission mode. The last group runs the installed `~/.local/bin/dcg` on `git reset --hard HEAD~1`, on `ls -la`, and through the pi dialog, and is skipped when the binary is missing.
+from this folder, or `just hooks-check`. The check tests `core.ts` with stub dcg results, `io.ts` with stub dcg scripts, `guard.sh` with a stub binary, and `pi.ts` with a stub pi. It checks session, repository, and global toggles, repository precedence, invalid values, and shell payload preservation, blocking exit codes, missing binaries, invalid JSON, and internal timeouts. It also checks which denials are confirmable, the retry state, and in each permission mode the first denial and the `--ask` rewrite on a retry. The last group runs the installed `~/.local/bin/dcg` on `git reset --hard HEAD~1`, on `ls -la`, and through the pi dialog, and is skipped when the binary is missing.
 
 ## Files
 
 | File                             | Role                                                                             |
 | -------------------------------- | -------------------------------------------------------------------------------- |
-| [`core.ts`](core.ts)             | Turns the dcg exit code and JSON into a block reason.                            |
+| [`core.ts`](core.ts)             | Turns the dcg exit code and JSON into a block reason, and records retries.       |
 | [`io.ts`](io.ts)                 | Sends a Bash hook payload to `~/.local/bin/dcg`, with a 5 s timeout.             |
 | [`guard.sh`](guard.sh)           | Checks toggles and passes the original payload to dcg for Claude Code and Codex. |
 | [`pi.ts`](pi.ts)                 | The pi and omp extension.                                                        |
