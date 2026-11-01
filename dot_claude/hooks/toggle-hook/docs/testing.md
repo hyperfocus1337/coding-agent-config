@@ -24,7 +24,7 @@ node test/check.ts
   - A `false` in an included file, which stands in for `~/.config/git/config`, gets a `true` in the global file, and the included file stays as it is.
   - A global write that a repository key overrides says so.
   - `--repo` outside a repository prints `Not changed:`. A value that is not a boolean keeps the name on.
-- **The mod:** `hooks/register.ts` with a stub `on` and `$`, whose `$.process.run` runs git in the test repository. It registers the command, shows a value set at launch in the status line, sets the variable and the status line, writes git config for `--repo`, and prints `Not changed:` when the write is refused.
+- **The mod:** `hooks/register.ts` with a stub `on` and `$`, whose `$.process.run` runs git in the test repository. It registers the command, shows a value set at launch in the status line, sets the variable and the status line, writes git config for `--repo`, and prints `Not changed:` when the write is refused. Its `prompt.autocomplete` hook completes the first word and the word after a scope flag, keeps the rows of the engine first, and adds no rows for other commands or for a third word.
 - **`pi.ts`:** with a stub `pi` and a `ctx.cwd` in the test repository. It sets `process.env` and the status line, writes git config for `--repo`, shows the repository state at session start, and completes `--repo`, `--global`, the hook names, the formatter names after a flag, and `all`. Completion also checks partial hook names after a scope flag, case-insensitive matching, extra spaces, unknown names, and preservation of the scope flag.
 
 ## Tests in other hooks

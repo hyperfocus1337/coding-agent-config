@@ -4,7 +4,7 @@ Adds the `/toggle-hook` command, which turns a supported hook off or on. Without
 
 | Agent       | Adapter                                                                                                                                                | Loaded by                                                                                          |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `$.command.register` and a `command.run` hook                                                         | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `$.command.register`, a `command.run` hook, and a `prompt.autocomplete` hook for completion           | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
 | pi and omp  | [`pi.ts`](pi.ts): `registerCommand`, with completion of `--repo`, `--global`, and the hook names                                                       | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
 | Codex       | None. Codex has no extension commands, so set the variable at launch, `AGENT_HOOKS_DISABLE=lint-prose codex`, or run `git config` in your own terminal | Not applicable                                                                                     |
 
@@ -24,7 +24,9 @@ The hook checks nothing. It runs when you type `/toggle-hook`, and the argument 
 | A guard name                      | Changes nothing, and names the escape hatch of that guard                                    |
 | Any other text                    | Changes nothing, and lists the hook names                                                    |
 
-In pi and omp, completion matches any part of a hook name, without case sensitivity. For example, `--repo destructive` suggests `--repo block-destructive-commands`, and `--repo shfmt` suggests `--repo format-code.shfmt`. Selecting a suggestion preserves the scope flag.
+Completion matches any part of a hook name, without case sensitivity. For example, `--repo destructive` suggests `block-destructive-commands`, and `--repo shfmt` suggests `format-code.shfmt`. Selecting a suggestion preserves the scope flag.
+
+The first word suggests the flags, the hook names, and `all`. After `--repo` or `--global`, it suggests the formatter names too. In Claude Code, the list shows only after you type one letter of the word, because the engine sends no completion request for an empty word.
 
 The session can only turn a hook off. A hook that git config turns off stays off when you flip it with no flag: the command then changes nothing and names the flag to use. A formatter name, such as `format-code.shfmt`, works only with `--repo` or `--global`.
 

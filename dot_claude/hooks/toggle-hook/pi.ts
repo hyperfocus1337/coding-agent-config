@@ -11,7 +11,7 @@
 
 import { spawnSync } from "node:child_process";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { command, globalFile, HOOKS, NAMES, readConfig, status, type Git } from "./core.ts";
+import { choices, command, globalFile, readConfig, status, type Git } from "./core.ts";
 
 /** git in `cwd`; undefined when git cannot start. */
 const gitIn =
@@ -36,14 +36,11 @@ export default function (pi: ExtensionAPI) {
     getArgumentCompletions: (prefix) => {
       const text = prefix.trim();
       const flag = ["--repo", "--global"].find((flag) => text.split(/\s+/)[0] === flag);
-      const query = (flag ? text.slice(flag.length).trim() : text).toLowerCase();
-      const choices = flag ? [...NAMES, "all"] : ["--repo", "--global", ...HOOKS, "all"];
-      return choices
-        .filter((choice) => choice.includes(query))
-        .map((choice) => {
-          const value = flag ? `${flag} ${choice}` : choice;
-          return { value, label: value };
-        });
+      const query = flag ? text.slice(flag.length).trim() : text;
+      return choices(query, flag).map((choice) => {
+        const value = flag ? `${flag} ${choice}` : choice;
+        return { value, label: value };
+      });
     },
     handler: async (args, ctx) => {
       const { value, text, config } = await command(

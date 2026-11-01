@@ -39,6 +39,16 @@ export const NAMES = HOOKS.flatMap((hook) => [
 ]);
 
 /**
+ * The completions of one word of the argument: after a scope flag, the names
+ * and `all`; else the flags, the hooks, and `all`. A choice matches when it
+ * holds `query` anywhere, without case sensitivity.
+ */
+export function choices(query: string, flag?: string): string[] {
+  const all = flag ? [...NAMES, "all"] : ["--repo", "--global", ...HOOKS, "all"];
+  return all.filter((choice) => choice.includes(query.toLowerCase()));
+}
+
+/**
  * The guards have no toggle: what to use in place of one. A Map, so that a
  * name such as `constructor` does not find an Object.prototype property.
  */

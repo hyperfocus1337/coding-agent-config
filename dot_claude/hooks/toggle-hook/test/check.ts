@@ -354,6 +354,28 @@ await check("mod: --repo writes git config and the status", async () => {
   await run("--repo lint-code");
   assert.equal(statuses.at(-1), "hooks off: lint-prose");
 });
+await check("mod: completes the word at the cursor, after the command", async () => {
+  const engine = { text: "engine-row" };
+  const complete = async (text: string) => {
+    const start = text.search(/\S*$/);
+    const e = { text, cursor: text.length, token: text.slice(start), start };
+    const result = (await hooks.get("prompt.autocomplete")?.(stub$, e, async () => ({
+      suggestions: [engine],
+    }))) as { suggestions: { text: string }[] };
+    assert.equal(result.suggestions[0], engine);
+    return result.suggestions.slice(1).map((row) => row.text);
+  };
+  assert.deepEqual(await complete("/toggle-hook type"), ["type-check-tsc", "type-check-pyrefly"]);
+  assert.deepEqual(await complete("/toggle-hook --r"), ["--repo"]);
+  assert.deepEqual(await complete("/toggle-hook --repo SHFMT"), ["format-code.shfmt"]);
+  assert.deepEqual(await complete("/toggle-hook  --global   destructive"), [
+    "block-destructive-commands",
+  ]);
+  assert.deepEqual(await complete("/toggle-hook shfmt"), []);
+  assert.deepEqual(await complete("/toggle-hook lint-code lint"), []);
+  assert.deepEqual(await complete("/other type"), []);
+  assert.deepEqual(await complete("/toggle-hook"), []);
+});
 await check("mod: a denied write says so", async () => {
   stub$.env.set = async () => ({ deny: "policy" }) as never;
   assert.deepEqual(await run("lint-code"), { text: "Not changed: policy" });

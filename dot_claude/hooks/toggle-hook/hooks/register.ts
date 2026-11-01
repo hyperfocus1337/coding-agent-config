@@ -8,7 +8,7 @@
  */
 
 import type { Register } from "claude-code";
-import { command, globalFile, readConfig, status, type Git } from "../core.ts";
+import { choices, command, globalFile, readConfig, status, type Git } from "../core.ts";
 
 export const register: Register = (on) => {
   on("session.start", async ($, e, next) => {
@@ -40,5 +40,14 @@ export const register: Register = (on) => {
     if (set.deny !== undefined) return { text: `Not changed: ${set.deny}` };
     $.ui.status(status(value, config));
     return { text };
+  });
+  // The typeahead replaces only the word at the cursor, so a flag before it
+  // stays. The event has no rows for an empty word: type one letter.
+  on("prompt.autocomplete", async ($, e, next) => {
+    const before = /^\s*\/toggle-hook\s+(?:(--repo|--global)\s+)?$/.exec(e.text.slice(0, e.start));
+    const result = await next(e);
+    if (!before) return result;
+    const rows = choices(e.token, before[1]).map((text) => ({ text }));
+    return { suggestions: [...result.suggestions, ...rows] };
   });
 };
