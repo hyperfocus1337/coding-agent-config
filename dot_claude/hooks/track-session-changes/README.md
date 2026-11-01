@@ -56,6 +56,7 @@ The hook does not log other tools that write files, for example a tool of anothe
 - The paths in an omp log keep the logical working directory, for example `/tmp/x`. pi logs the resolved path, `/private/tmp/x` on macOS.
 - The prune deletes the `objects/` of a session when both its log and its state are gone, so after 30 days of no use.
 - A blob ID is the SHA-1 of git. A repo with SHA-256 object names gets IDs that it does not hold.
+- `/clear` in Claude Code and `/new` in Pi start a new session id, and the changes before it stay in the log of the old session. See [docs/improvements.md](docs/improvements.md) for a proposed fix.
 
 ## Requirements
 
