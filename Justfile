@@ -192,6 +192,11 @@ hooks-perf-view file="summary" agent="":
 cloud-tools-check:
     "{{ SCRIPTS }}/cloud/check.sh"
 
+# Set the templates/web/mise.toml pins for dcg and chezmoi to the host versions, then lock and run cloud-tools-check. Needs docker.
+[group('cloud')]
+cloud-tools-bump:
+    "{{ SCRIPTS }}/cloud/bump.sh"
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Lint & format
 # ──────────────────────────────────────────────────────────────────────────────

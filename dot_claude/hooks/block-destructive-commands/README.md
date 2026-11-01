@@ -22,7 +22,7 @@ The hooks run the link by its full path, not through `PATH`, so the guard also r
 
 Each hook sets `DCG_NO_SELF_HEAL=1`. dcg resolves the link to the versioned install path. Without the variable, it can rewrite its Claude Code hook to that path, which the next upgrade breaks.
 
-To upgrade, change the version in the three pins. For the cloud pin, also follow the steps in [`templates/web/README.md`](../../../templates/web/README.md). Then change the tag in the links of [`dot_config/dcg/README.md`](../../../dot_config/dcg/README.md).
+To upgrade, change the version in the three pins. The monthly `mise-bump` script bumps the host pin. For the cloud pin, run `just cloud-tools-bump`, which copies the host pin and locks it (see [`templates/web/README.md`](../../../templates/web/README.md)). Then change the tag in the links of [`dot_config/dcg/README.md`](../../../dot_config/dcg/README.md).
 
 Codex runs a new hook only after you trust it: open `/hooks` in Codex once after the first apply.
 
