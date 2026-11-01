@@ -11,7 +11,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { check, FAILURE, FALLBACK, type Io } from "../core.ts";
+import { check, FAILURE, FALLBACK, type Io, verdict } from "../core.ts";
 import { DCG, nodeIo } from "../io.ts";
 import extension from "../pi.ts";
 
@@ -31,7 +31,16 @@ const deny = JSON.stringify({
     permissionDecision: "deny",
     permissionDecisionReason: "reset discards work",
     ruleId: "core.git:reset-hard",
+    packId: "core.git",
     allowOnceCode: "123456",
+  },
+});
+const guardrails = JSON.stringify({
+  hookSpecificOutput: {
+    permissionDecision: "deny",
+    permissionDecisionReason: "Reason: self-weakening",
+    ruleId: "careful_company_running_windows.guardrails:dcg-policy-self-weakening",
+    packId: "careful_company_running_windows.guardrails",
   },
 });
 const expected =
@@ -78,6 +87,12 @@ assert.equal(await check("x", stub(1, "not json")), FALLBACK);
 assert.equal(await check("x", stub(1, "{}")), FALLBACK);
 for (const code of [2, 3, 127, -1]) assert.equal(await check("x", stub(code)), FAILURE);
 assert.equal(await check("x", { dcg: async () => undefined }), FAILURE);
+// verdict: only a denial with a pack ID outside the guardrails pack is confirmable.
+assert.deepEqual(await verdict("x", stub(0, deny)), { reason: expected, confirmable: true });
+assert.equal((await verdict("x", stub(0, guardrails)))?.confirmable, false, "guardrails");
+assert.equal((await verdict("x", stub(0, complete)))?.confirmable, false, "no pack ID");
+assert.equal((await verdict("x", stub(1)))?.confirmable, false, "exit 1 fallback");
+assert.equal((await verdict("x", stub(2)))?.confirmable, false, "failure");
 let ran = false;
 await check("  ", { dcg: async () => ((ran = true), undefined) });
 assert.equal(ran, false, "an empty command does not run dcg");
@@ -177,6 +192,35 @@ writeFileSync(binary, '#!/bin/sh\nprintf "not json"\n', { mode: 0o755 });
 assert.equal(shell().status, 2, "invalid JSON");
 writeFileSync(binary, `#!/bin/sh\nprintf '%s' '${deny}'\n`, { mode: 0o755 });
 assert.equal(shell().stdout, deny, "preserve JSON denials and approval codes");
+// --ask, from Claude Code: a confirmable denial becomes a permission prompt,
+// only in the modes that surely show it.
+const ask = (
+  mode: string | undefined,
+  input = JSON.stringify({ tool_name: "Bash", tool_input: { command }, permission_mode: mode }),
+) =>
+  spawnSync("sh", [new URL("../guard.sh", import.meta.url).pathname, "--ask"], {
+    cwd: repo,
+    env: { ...process.env, HOME: home, AGENT_HOOKS_DISABLE: "" },
+    input,
+    encoding: "utf8",
+  });
+for (const mode of ["default", "acceptEdits", "plan", "auto"]) {
+  result = ask(mode);
+  assert.equal(result.status, 0);
+  assert.deepEqual(JSON.parse(result.stdout).hookSpecificOutput, {
+    hookEventName: "PreToolUse",
+    permissionDecision: "ask",
+    permissionDecisionReason: "dcg core.git:reset-hard",
+  });
+}
+for (const mode of ["bypassPermissions", "dontAsk", undefined]) {
+  assert.equal(ask(mode).stdout, deny, `${mode} keeps the denial`);
+}
+writeFileSync(binary, `#!/bin/sh\nprintf '%s' '${guardrails}'\n`, { mode: 0o755 });
+assert.equal(ask("default").stdout, guardrails, "guardrails keeps the denial");
+assert.equal(JSON.parse(ask("default").stdout).hookSpecificOutput.permissionDecision, "deny");
+writeFileSync(binary, `#!/bin/sh\nprintf '%s' '${deny}'\n`, { mode: 0o755 });
+assert.equal(ask("default", "not json").status, 2, "a malformed payload blocks");
 const hangs = '#!/bin/sh\ntrap "" TERM\nwhile :; do :; done\n';
 writeFileSync(binary, hangs, { mode: 0o755 });
 const timed = spawnSync("sh", [new URL("../guard.sh", import.meta.url).pathname], {
@@ -219,6 +263,24 @@ if (existsSync(DCG)) {
   assert.equal(blocked.block, true);
   assert.match(blocked.reason, /core\.git:reset-hard/);
   assert.match(blocked.reason, /dcg allow-once \d{6}\b/);
+
+  // pi dialog: only the TUI asks, and only for a confirmable denial.
+  let asked = 0;
+  const dialog = (mode: string, answer: boolean, cmd = "git reset --hard HEAD~1") =>
+    handler!(
+      { toolName: "bash", input: { command: cmd } },
+      { cwd: tmp, mode, ui: { confirm: async () => (asked++, answer) } },
+    ) as Promise<{ block: boolean } | undefined>;
+  assert.equal(await dialog("tui", true), undefined, "a yes runs the command");
+  assert.equal((await dialog("tui", false))?.block, true, "a no blocks");
+  assert.equal(asked, 2);
+  assert.equal((await dialog("rpc", true))?.block, true, "rpc does not ask");
+  assert.equal(
+    (await dialog("tui", true, "dcg allowlist add core.git:reset-hard -r x"))?.block,
+    true,
+    "guardrails does not ask",
+  );
+  assert.equal(asked, 2);
 } else {
   console.log(`skipped: ${DCG} is missing`);
 }

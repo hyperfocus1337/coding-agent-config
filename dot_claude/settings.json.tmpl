@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"$HOME/.claude/hooks/block-destructive-commands/guard.sh\"",
+            "command": "sh \"$HOME/.claude/hooks/block-destructive-commands/guard.sh\" --ask",
             "timeout": 10,
             "onFailure": "block"
           }

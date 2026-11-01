@@ -2,11 +2,11 @@
 
 Blocks a shell command that [dcg](https://github.com/Dicklesworthstone/destructive_command_guard) (destructive_command_guard) denies, for example `git reset --hard`, `rm -rf` outside a temporary directory, or `DROP TABLE`. dcg is a Rust binary with its own rule packs. This folder holds the pi and omp adapter and a shell wrapper for Claude Code and Codex. Each adapter checks the standard hook toggles before it runs dcg.
 
-| Agent       | Adapter                                                                              | Loaded by                                                                                          |
-| ----------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Claude Code | [`guard.sh`](guard.sh), `PreToolUse` on `Bash\|PowerShell\|Monitor`, the first entry | `hooks` in `dot_claude/settings.json.tmpl`                                                         |
-| Codex       | [`guard.sh`](guard.sh), the first `PreToolUse` handler on `Bash`                     | `dot_codex/modify_hooks.json`                                                                      |
-| pi and omp  | [`pi.ts`](pi.ts): `tool_call` on bash returns `{ block, reason }`                    | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
+| Agent       | Adapter                                                                                    | Loaded by                                                                                          |
+| ----------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Claude Code | [`guard.sh --ask`](guard.sh), `PreToolUse` on `Bash\|PowerShell\|Monitor`, the first entry | `hooks` in `dot_claude/settings.json.tmpl`                                                         |
+| Codex       | [`guard.sh`](guard.sh), the first `PreToolUse` handler on `Bash`                           | `dot_codex/modify_hooks.json`                                                                      |
+| pi and omp  | [`pi.ts`](pi.ts): `tool_call` on bash returns `{ block, reason }`                          | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
 
 ## Install
 
@@ -34,6 +34,22 @@ The hook fails closed. A missing dcg binary, execution error, invalid JSON, or a
 - **Claude Code and Codex:** [`guard.sh`](guard.sh) uses Node to run dcg with a 5 s timeout and converts nonzero exits and execution failures to blocking exit 2. It preserves successful dcg output, including JSON denials and approval codes. Node must be on `PATH`; a missing Node blocks too. The outer hook timeout is 10 s so the wrapper can report its internal timeout first.
 - **Codex limitation:** a failure to start the wrapper itself, or an outer hook timeout, can still fail open. The wrapper cannot handle a failure outside its own process.
 - **pi and omp:** [`core.ts`](core.ts) blocks on a hook JSON `permissionDecision: "deny"`, exit 1, execution failures, timeouts, and invalid responses. Exit 0 with empty output, `{}`, or an explicit allow passes.
+
+## Fast approval
+
+A confirmable denial asks you first, so the agent does not stop and need a retry. A denial is confirmable when dcg returns a pack ID and the pack is not the guardrails pack. The guardrails pack protects dcg itself, for example against `dcg allowlist add` or a hook toggle, so its denials always keep the `dcg allow-once` flow. A confirmation does not register a dcg exception: `dcg allow-once list` does not show it, and dcg does not get a spare code for the same command. The agent transcript records the call.
+
+| Agent       | Prompt                                                                                | Shown when                                                       |
+| ----------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Claude Code | `guard.sh --ask` changes `deny` to `ask`, and Claude Code shows its permission prompt | `permission_mode` is `default`, `acceptEdits`, `plan`, or `auto` |
+| pi          | `pi.ts` shows a `ctx.ui.confirm` dialog with the command and the dcg reason           | `ctx.mode` is `tui`                                              |
+| Codex, omp  | None                                                                                  | Never                                                            |
+
+In all other cases, the hook denies as before and returns the `dcg allow-once` code.
+
+In `auto` mode, a hook `ask` shows the prompt to you and the classifier does not answer it (tested on 2026-11-01). Claude Code keeps the denial in `bypassPermissions` and `dontAsk`, because nobody tested these modes. `dontAsk` never prompts, and the reason of an `ask` goes to you and not to the agent, so the agent would not get the `dcg allow-once` code.
+
+pi keeps the denial in RPC mode because an RPC client can be a program that answers dialogs itself. In omp, the denial stays because the omp extension context has no `ctx.mode` field (omp 18.14.1). Codex does not get `--ask`, because nobody tested how Codex handles a hook `ask`.
 
 ## pi and omp
 
@@ -74,7 +90,7 @@ dcg reads `~/.config/dcg/config.toml` and a `.dcg.toml` in the project. This rep
 node test/check.ts
 ```
 
-from this folder, or `just hooks-check`. The check tests `core.ts` with stub dcg results, `io.ts` with stub dcg scripts, `guard.sh` with a stub binary, and `pi.ts` with a stub pi. It checks session, repository, and global toggles, repository precedence, invalid values, and shell payload preservation, blocking exit codes, missing binaries, invalid JSON, and internal timeouts. The last group runs the installed `~/.local/bin/dcg` on `git reset --hard HEAD~1` and on `ls -la`, and is skipped when the binary is missing.
+from this folder, or `just hooks-check`. The check tests `core.ts` with stub dcg results, `io.ts` with stub dcg scripts, `guard.sh` with a stub binary, and `pi.ts` with a stub pi. It checks session, repository, and global toggles, repository precedence, invalid values, and shell payload preservation, blocking exit codes, missing binaries, invalid JSON, and internal timeouts. It also checks which denials are confirmable and the `--ask` rewrite in each permission mode. The last group runs the installed `~/.local/bin/dcg` on `git reset --hard HEAD~1`, on `ls -la`, and through the pi dialog, and is skipped when the binary is missing.
 
 ## Files
 
