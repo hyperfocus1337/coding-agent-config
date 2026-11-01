@@ -1,6 +1,6 @@
 # Implementation notes
 
-Why the hook is built the way it is, and what each rule counts in each format. [README.md](../README.md) describes the behavior for a user of the hook. This file is for a person who changes it or adds a rule.
+Why the hook is built the way it is, and what Vale counts in each format. [README.md](../README.md) describes the behavior for a user of the hook. This file is for a person who changes the hook. To add a rule, see the [`styles` README](../../../../dot_config/vale/styles/README.md).
 
 The format behavior below was run on Vale 3.23.0, not reasoned about: Markdown, Org, and HTML on 2026-09-27, and plain text on 2026-10-04.
 
@@ -21,15 +21,7 @@ The cost is a second copy of the payload read and the temp-file skip, about 10 l
 
 ## Rules
 
-All rules live in [`dot_config/vale/styles/Writing/`](../../../../dot_config/vale/styles/Writing/), one YAML file per rule, so every lint-prose hook uses the same rules. [`vale.ini`](../../../../dot_config/vale/vale.ini) applies the `Writing` style to `.md`, `.markdown`, `.org`, `.html`, `.htm`, and `.txt`. `check.sh` runs Vale with `--no-global --config`, so a repository's own `.vale.ini` and the user's global Vale config are never read.
-
-| Rule                                                                                | Level   | Checks                                                                        |
-| ----------------------------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------- |
-| [`ParagraphLength`](../../../../dot_config/vale/styles/Writing/ParagraphLength.yml) | `error` | A paragraph, list item, or blockquote has at most 5 sentences (`writing.md`). |
-
-`ParagraphLength` is a Vale `occurrence` check with `max: 5`. It counts sentence ends: a `.`, `!`, or `?` before white space or the end of the text. A lookbehind keeps abbreviations such as "e.g.", "i.e.", "etc.", and "vs." from ending a sentence.
-
-To add a rule, add a YAML file to `dot_config/vale/styles/Writing/`, add a row to the table above, and add a pass case and a fail case to `test/check.ts`. Vale exits 1 only on an `error` alert, so a rule at `warning` or `suggestion` never blocks and the model never sees it. See [Why it blocks](#why-it-blocks).
+All rules live in [`dot_config/vale/styles/Writing/`](../../../../dot_config/vale/styles/Writing/), so every lint-prose hook uses the same rules. Its [README](../../../../dot_config/vale/styles/README.md) lists the rules and tells how to add one. `check.sh` runs Vale with `--no-global --config`, so a repository's own `.vale.ini` and the user's global Vale config are never read.
 
 ## What each format counts
 

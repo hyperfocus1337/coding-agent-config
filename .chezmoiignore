@@ -29,6 +29,7 @@ README.md
 .codex/test/**
 .codex/skills/**/test/**
 .config/vale/**/README.md
+.config/vale/docs/**
 .config/git/hooks/**/README.md
 .config/dcg/README.md
 .config/git/hooks/**/test/**

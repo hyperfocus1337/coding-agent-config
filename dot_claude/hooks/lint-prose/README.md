@@ -13,7 +13,13 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
 ## What it checks
 
-The hook runs after a Write or an Edit, on the file that the call names. It checks one rule for now: a paragraph, list item, or blockquote has at most 5 sentences, the limit in `writing.md`. [`docs/implementation.md`](docs/implementation.md#rules) tells how to add a rule.
+The hook runs after a Write or an Edit, on the file that the call names. It checks the limits in `writing.md`:
+
+- A paragraph, list item, or blockquote has at most 5 sentences and at most 100 words.
+- A section without subheadings has at most 400 words.
+- A paragraph does not walk through steps with "First, ... Then, ... Finally, ...". A list holds steps.
+
+The [`styles` README](../../../dot_config/vale/styles/README.md) lists the rules and tells how to add a rule.
 
 Vale reads only the prose. It skips frontmatter, Org keyword lines, headings, code, `<script>`, and `<pre>`. [`docs/implementation.md`](docs/implementation.md#what-each-format-counts) lists what each format counts.
 
