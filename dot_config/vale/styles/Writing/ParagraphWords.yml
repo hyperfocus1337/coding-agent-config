@@ -1,0 +1,10 @@
+# writing.md: at most 100 words in a paragraph. ParagraphLength counts
+# sentences, so 5 long sentences pass it; this rule counts the words. A list
+# item and a blockquote count as paragraphs, and Vale measures each list item
+# on its own.
+extends: metric
+message: "Paragraph of %s words, over 100. Split it at its topic changes, and turn a sequence into a list."
+level: error
+scope: [paragraph, list, blockquote]
+formula: words
+condition: "> 100"

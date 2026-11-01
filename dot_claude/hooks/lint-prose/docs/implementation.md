@@ -64,6 +64,8 @@ The filter reads `git diff -U0` for the file and collects the changed line numbe
 
 Vale reports a paragraph alert at the first line of the paragraph. The hook keeps an alert when a changed line falls between that line and the next blank line.
 
+A `SectionWords` alert is on the heading line of the section, and the heading is a span of its own. So for a tracked file, the hook keeps the alert only when the edit changed the heading line. An edit that makes the text of a section too long does not report it, but a new or untracked file and `/prose-cleanup` do.
+
 | Case                                         | Compared against     |
 | -------------------------------------------- | -------------------- |
 | A tracked file                               | `HEAD`               |

@@ -124,6 +124,43 @@ await check("5 sentences are allowed", () => assert.ok(!ran.out.includes("long.m
 ran = run(edit(write(`${tmp}/item.md`, `- ${long}\n- Short item.\n`)));
 await expect("a list item over 5 sentences is blocked", ran, 2, "item.md:1:");
 
+// One sentence of n words.
+const words = (n: number) => `${Array(n).fill("word").join(" ")}.`;
+ran = run(edit(write(`${tmp}/words.md`, `${words(101)}\n\n- ${words(101)}\n\n${words(100)}\n`)));
+await expect("a paragraph over 100 words is blocked", ran, 2, "words.md:1:");
+await check("a list item over 100 words is blocked, 100 words pass", () => {
+  assert.ok(ran.out.includes("words.md:3:"), ran.out);
+  assert.ok(!ran.out.includes("words.md:5:"), ran.out);
+});
+
+// n paragraphs of 90 words. Vale counts the heading words too.
+const paragraphs = (n: number) => Array(n).fill(words(90)).join("\n\n");
+const section = paragraphs(5);
+ran = run(edit(write(`${tmp}/section.md`, `# Title\n\n${section}\n`)));
+await expect("a section over 400 words is blocked", ran, 2, "section.md:1:");
+ran = run(
+  edit(write(`${tmp}/section.md`, `# Title\n\n## A\n\n${section}\n\n## B\n\n${section}\n`)),
+);
+await expect("a section over 400 words is blocked under its own heading", ran, 2, "section.md:3:");
+await check("a section with subheadings counts each one", () =>
+  assert.equal(ran.out.match(/SectionWords/g)?.length, 2, ran.out),
+);
+ran = run(
+  edit(
+    write(`${tmp}/section.md`, `# Title\n\n## A\n\n${paragraphs(1)}\n\n## B\n\n${paragraphs(4)}\n`),
+  ),
+);
+await expect("sections of 400 words or less pass", ran, 0);
+
+ran = run(edit(write(`${tmp}/steps.md`, "First, install it. Then, run it. Finally, check it.\n")));
+await expect("steps in prose are blocked", ran, 2, "steps.md:1:");
+ran = run(
+  edit(
+    write(`${tmp}/steps.md`, "Then, run it. Also, check it.\n\n- First, a. Then, b. Finally, c.\n"),
+  ),
+);
+await expect("2 sequence words, or steps in a list item, pass", ran, 0);
+
 ran = run(
   edit(
     write(

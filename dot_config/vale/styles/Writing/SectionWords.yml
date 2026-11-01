@@ -1,0 +1,13 @@
+# writing.md: at most 400 words in a section without subheadings. Vale wraps
+# each heading and its text in a section element, and sections nest, so a
+# section that holds another one counts the words of both. The rule counts
+# only a section that holds no other section, so a subheading clears the
+# alert. The alert is on the heading line. doc() needs Vale 3.21.0 or later.
+# shortcut: the text above the first subheading of a section is not counted.
+# The upgrade is a selector for that text alone, which Vale 3.25.1 lacks.
+extends: metric
+message: "Section of %s words, over 400. Add subheadings, or move detail into a list or table."
+level: error
+scope: "doc(section:not(:has(section)))"
+formula: words
+condition: "> 400"

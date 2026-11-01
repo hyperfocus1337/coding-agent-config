@@ -1,0 +1,10 @@
+# writing.md: use a list for sets of items. More than 2 sequence words with a
+# comma in one paragraph, such as "First, ... Then, ... Finally, ...", walk
+# through steps or items in prose.
+extends: occurrence
+message: "Paragraph lists steps or items in prose. Turn it into a numbered or bulleted list."
+level: error
+scope: paragraph
+max: 2
+ignorecase: true
+token: '\b(?:first|second|third|fourth|then|next|finally|lastly|additionally|also|furthermore|moreover),'

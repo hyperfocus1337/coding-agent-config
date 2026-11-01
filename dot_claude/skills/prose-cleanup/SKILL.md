@@ -82,7 +82,8 @@ fd -- '-all.txt$' ~/.local/state/prose-cleanup/<repository> | sort | tail -1
    - Four files or fewer: ask through the AskUserQuestion tool.
    - More than four files: ask with a numbered list.
 4. **Fix.** Read the rows of the chosen files from the report, with `rg -F '<absolute path>:' <report>`. Fix each alert, and leave the text without an alert as it is.
-   - `Writing.ParagraphLength`: split the paragraph as described under "How to split".
+   - `Writing.ParagraphLength`, `Writing.ParagraphWords`, `Writing.ListInDisguise`: split the paragraph as described under "How to split".
+   - `Writing.SectionWords`: add subheadings where the topic of the section changes, or move detail into a list or table.
    - An alert on a score of the whole file: follow "How to raise a score".
 5. **Scan again.** Use the same input and `--config`, so that the new report shows the state of the whole scope after the fix. Fix what it still reports in the chosen files.
 6. **Report.** Do not commit. Report the files you changed, each alert you left, with the reason, and the paths of the two reports.
