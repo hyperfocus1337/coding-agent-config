@@ -124,17 +124,19 @@ Each session writes one log: `~/.local/state/agent-changes/<agent>/<session id>.
 
 The log has one line per file per call, with tab-separated fields:
 
-| Field  | Example                    | Note                                                          |
-| ------ | -------------------------- | ------------------------------------------------------------- |
-| start  | `2026-10-14T09:12:03.120Z` | UTC with milliseconds                                         |
-| end    | `2026-10-14T09:12:03.480Z` | UTC with milliseconds                                         |
-| tool   | `Bash`                     | The tool name of the agent, such as `Edit` or pi's `edit`     |
-| status | `M`                        | `A`, `M`, or `D`. A type change, such as file to link, is `M` |
-| repo   | `/Users/me/repo`           | Top of the git work tree. Empty outside a repo                |
-| path   | `/Users/me/repo/x.org`     | Absolute                                                      |
-| line   | `412`                      | First changed line after the call. Empty for `D` or unknown   |
-| before | `3b18e512dbc8…`            | Git blob ID of the file before the call. Empty for `A`        |
-| after  | `9daeafb9864c…`            | Git blob ID of the file after the call. Empty for `D`         |
+| Field  | Example                    | Note                                                               |
+| ------ | -------------------------- | ------------------------------------------------------------------ |
+| start  | `2026-10-14T09:12:03.120Z` | UTC with milliseconds                                              |
+| end    | `2026-10-14T09:12:03.480Z` | UTC with milliseconds                                              |
+| tool   | `Bash`                     | The tool name of the agent, such as `Edit` or pi's `edit`          |
+| status | `M`                        | `A`, `M`, `D`, or `C`. A type change, such as file to link, is `M` |
+| repo   | `/Users/me/repo`           | Top of the git work tree. Empty outside a repo                     |
+| path   | `/Users/me/repo/x.org`     | Absolute                                                           |
+| line   | `412`                      | First changed line after the call. Empty for `D` or unknown        |
+| before | `3b18e512dbc8…`            | Git blob ID of the file before the call. Empty for `A`             |
+| after  | `9daeafb9864c…`            | Git blob ID of the file after the call. Empty for `D`              |
+
+When a shell call moves `HEAD` of a repo, for example with a commit, the hook also writes a `C` line for that repo. Its path and line are empty, and `before` and `after` hold the commit IDs of `HEAD` before and after the call. `before` is empty for the first commit of a repo. See [Commits](docs/implementation.md#commits) for the limits.
 
 A line with 7 fields has no `before` and `after`. A blob ID is empty also when the hook cannot know it, see [Blobs](#blobs). The `agent-changed-files` package reads the blobs to find the changes of one session in a file.
 

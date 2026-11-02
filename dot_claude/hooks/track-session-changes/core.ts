@@ -8,6 +8,9 @@
  * start, end, tool, status (A, M, D), repo, path, line, before, after. The
  * line is the first changed line after the call, empty for D or when it is not
  * known. Before and after are the git blob IDs of the file around the call.
+ * A shell call that moves HEAD of a repo, such as a commit, also gives a line
+ * with status C, an empty path and line, and the commit IDs of HEAD before and
+ * after the call; before is empty for the first commit of a repo.
  *
  * Objects: ~/.local/state/agent-changes/<agent>/<session id>/objects/, a git
  * object directory with the blobs of the snapshots and of each before and
@@ -22,8 +25,8 @@
 
 /** One changed file of one tool call. */
 export interface Change {
-  status: "A" | "M" | "D";
-  /** Absolute path. */
+  status: "A" | "M" | "D" | "C";
+  /** Absolute path; "" for C. */
   path: string;
   /** First changed line after the call. Undefined for D or when not known. */
   line?: number;
@@ -320,6 +323,33 @@ async function storeFiles(
     rest = rest.slice(found.length + 1);
   }
   return ids;
+}
+
+const COMMIT = /^[0-9a-f]{40}([0-9a-f]{24})?$/;
+
+/**
+ * The commit of HEAD, from the files of the repo, so that a call starts no
+ * git: a detached HEAD, the loose ref, or the ref in packed-refs. Only a
+ * reftable repo or a repo with no commit runs `git rev-parse`. Undefined for
+ * a repo with no commit.
+ */
+async function headOf(io: Io, repo: Repo): Promise<string | undefined> {
+  const head = (await io.read(`${dirname(repo.index)}/HEAD`))?.trim() ?? "";
+  if (COMMIT.test(head)) return head;
+  const ref = /^ref: (refs\/\S+)$/.exec(head)?.[1];
+  // Refs other than HEAD live in the common git directory, above the objects.
+  const common = dirname(repo.objects);
+  if (ref) {
+    const loose = (await io.read(`${common}/${ref}`))?.trim() ?? "";
+    if (COMMIT.test(loose)) return loose;
+    for (const line of ((await io.read(`${common}/packed-refs`)) ?? "").split("\n")) {
+      const [id = "", name] = line.split(" ");
+      if (name === ref && COMMIT.test(id)) return id;
+    }
+  }
+  const out = await git(io, repo.top, ["rev-parse", "--verify", "-q", "HEAD"]);
+  const id = out?.stdout.trim() ?? "";
+  return COMMIT.test(id) ? id : undefined;
 }
 
 /**
@@ -752,10 +782,13 @@ export async function recordTool(
 
 // ── Tools without a path: Bash and apply_patch ────────────────────────────────
 
-/** The snapshots of a running call: its start, and the index link of each repo. */
+/**
+ * The snapshots of a running call: its start, and the index link and the
+ * commit of HEAD of each repo.
+ */
 export interface Pending {
   start: string;
-  repos: (Repo & { link: string })[];
+  repos: (Repo & { link: string; head?: string })[];
 }
 
 /** The variable that sets which folders of a Bash command `commandDirs` gives. */
@@ -852,7 +885,8 @@ export async function beginCall(
   for (const repo of repos.values()) {
     const n = pending.repos.length;
     const link = `${state}/calls/${id}.${n}.${Date.now()}.index`;
-    if (await snapshot(io, where, repo, link)) pending.repos.push({ ...repo, link });
+    if (await snapshot(io, where, repo, link))
+      pending.repos.push({ ...repo, link, head: await headOf(io, repo) });
   }
   return pending.repos.length ? pending : undefined;
 }
@@ -864,10 +898,14 @@ export async function dropCall(io: Io, pending: Pending | undefined) {
 
 /**
  * Compares the work tree with the index of each repo from `beginCall` and logs
- * the difference. With `named`, the call named its files (apply_patch): only
- * those are logged, and the snapshot gives their lines and blobs. A named file
- * outside the snapshot repos gets line 1 for A and no line for M, and no
- * before blob.
+ * the difference, and a C line for each repo whose HEAD moved. With `named`,
+ * the call named its files (apply_patch): only those are logged, and the
+ * snapshot gives their lines and blobs. A named file outside the snapshot
+ * repos gets line 1 for A and no line for M, and no before blob.
+ * shortcut: HEAD that moved in the window of the call counts for the call,
+ * also a commit from a terminal or a parallel call in that window, and two
+ * parallel calls of the session both log a commit in their windows. Upgrade
+ * path: the reflog of each repo, which names the command of each move.
  */
 export async function endCall(
   io: Io,
@@ -880,11 +918,16 @@ export async function endCall(
   const end = new Date();
   const start = pending ? new Date(pending.start) : end;
   const changes: Change[] = [];
-  for (const { link, ...repo } of pending?.repos ?? []) {
+  const moves: Change[] = [];
+  for (const { link, head, ...repo } of pending?.repos ?? []) {
     changes.push(...(await diffCall(io, where, repo, link)));
     await io.remove(link);
+    // A HEAD that goes away, as in `git checkout --orphan`, is no commit.
+    const now = named ? undefined : await headOf(io, repo);
+    if (now && now !== head)
+      moves.push({ status: "C", path: "", repo: repo.top, before: head, after: now });
   }
-  if (!named) return append(io, where, tool, start, end, changes);
+  if (!named) return append(io, where, tool, start, end, [...changes, ...moves]);
   const found = new Map(changes.map((change) => [change.path, change]));
   for (const change of named) {
     const snap = found.get(change.path);

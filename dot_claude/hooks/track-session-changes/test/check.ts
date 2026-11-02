@@ -407,6 +407,45 @@ await check("a cached repo gives way to a repo made in a directory below it", ()
   fs.rmSync(sub, { recursive: true });
 });
 
+const rc = repo("rc", { "a.txt": lines(3) });
+const commit =
+  "git -c user.name=t -c user.email=t@t -c maintenance.auto=false commit -q --no-verify";
+const headOf = (dir: string) =>
+  execFileSync("git", ["-C", dir, "rev-parse", "HEAD"]).toString().trim();
+
+await check("Bash: a commit gives a C line with HEAD before and after", () => {
+  const old = headOf(rc);
+  bash(rc, () => sh(rc, `echo b >>a.txt && git add a.txt && ${commit} -m b`), { session: "sc" });
+  assert.deepEqual(logged("sc"), [`Bash\tM\t${rc}\t${rc}/a.txt\t4`, `Bash\tC\t${rc}\t\t`]);
+  assert.deepEqual(blobs("sc").at(-1), [old, headOf(rc)]);
+});
+
+await check("C: none for a commit between calls, or a HEAD that only detaches", () => {
+  const at = rows("sc").length;
+  sh(rc, `echo c >>a.txt && git add a.txt && ${commit} -m c`);
+  bash(rc, () => sh(rc, "git checkout -q --detach"), { session: "sc" });
+  assert.equal(rows("sc").length, at);
+});
+
+await check("C: a detached HEAD, a packed ref, and the first commit of a repo", () => {
+  const ids = () => blobs("sc").filter((_, i) => logged("sc")[i]?.startsWith("Bash\tC"));
+  const old = headOf(rc);
+  bash(rc, () => sh(rc, `${commit} --allow-empty -m d`), { session: "sc" });
+  assert.deepEqual(ids().at(-1), [old, headOf(rc)]);
+  sh(rc, "git checkout -q - && git pack-refs --all");
+  // The loose ref is gone, so the hook reads HEAD from packed-refs.
+  const branch = execFileSync("git", ["-C", rc, "symbolic-ref", "HEAD"]).toString().trim();
+  assert.ok(!fs.existsSync(path.join(rc, ".git", branch)));
+  const packed = headOf(rc);
+  bash(rc, () => sh(rc, `${commit} --allow-empty -m e`), { session: "sc" });
+  assert.deepEqual(ids().at(-1), [packed, headOf(rc)]);
+  const fresh = path.join(tmp, "rc-new");
+  fs.mkdirSync(fresh);
+  sh(fresh, "git init -q .");
+  bash(fresh, () => sh(fresh, `${commit} --allow-empty -m first`), { session: "sc" });
+  assert.deepEqual(ids().at(-1), ["", headOf(fresh)]);
+});
+
 const r2 = repo("r2", { "a.txt": lines(5) });
 // r3 is a repo that the session never changed.
 repo("r3", { "a.txt": lines(5) });

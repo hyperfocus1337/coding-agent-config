@@ -106,6 +106,26 @@ The patch parse reads the path from the `diff --git a/P b/P` header. Both sides 
 
 A patch larger than 64 MiB, or 4 MiB in the mod, is cut, and the paths stay with an empty line. `--ignore-submodules=dirty` logs a submodule only when its commit moves, and does not look into its work tree.
 
+## Commits
+
+A commit changes no file in the work tree, so the snapshot does not see it. The start of a shell call reads `HEAD` of each repo that it snapshots, and the end reads it again. When `HEAD` moved to a commit, the end logs a `C` line with the two commit IDs. A move to no commit, as in `git checkout --orphan`, logs nothing. The `agent-changed-files` package reads these lines to tell which lines of a file went into a commit of the session.
+
+`headOf` reads `HEAD` from the files of the repo, so a call starts no extra git process:
+
+1. A detached `HEAD` holds the commit ID.
+2. Else `HEAD` names a ref. The loose ref file in the common git directory, the parent of the object directory, holds the ID.
+3. Else the line of the ref in `packed-refs` holds it, for example after `git pack-refs` or `git gc`.
+4. Else `git rev-parse --verify -q HEAD` runs: in a reftable repo, or in a repo with no commit.
+
+The limits:
+
+- A `HEAD` that moves in the window of the call counts for the call. A commit from a terminal, or from a parallel call, in that window gets a `C` line too.
+- Two parallel calls of one session that both span a commit both log it.
+- A commit outside every shell call, such as a commit from a terminal between two calls, gets no line.
+- `apply_patch` names its files and cannot commit, so its end does not read `HEAD`.
+
+The reflog of each repo names the command of each move. It could tell a commit of the call from a commit of the terminal, at the cost of one more read per repo.
+
 ## Blobs
 
 Each log line holds the blob IDs of the file before and after the call, see [README.md](../README.md#blobs). The `agent-changed-files` package diffs them to find the lines that one session changed, also after other writes and after a commit.
