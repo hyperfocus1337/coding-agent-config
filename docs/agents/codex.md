@@ -38,12 +38,12 @@ Some lines in `tools.md` name things Codex does not have: the Grep and Glob tool
 
 Codex sends Claude's hook payload with Claude's tool name `Bash`, so the scripts run unchanged. `hooks.json` has the same entries as the `hooks` block in [`dot_claude/settings.json.tmpl`](../../dot_claude/settings.json.tmpl):
 
-| Event         | Matcher       | Hooks                                                                                           |
-| ------------- | ------------- | ----------------------------------------------------------------------------------------------- |
-| `PreToolUse`  | `Bash`        | dcg, `enforce-cli-tools`                                                                        |
-| `PostToolUse` | `Bash`        | `format-oxfmt`, `format-org-tables`, `format-code`, `lint-code`                                 |
-| `PostToolUse` | `apply_patch` | the same four and `lint-prose`, through `apply-patch.ts`                                        |
-| `Stop`        |               | `type-check-tsc`, `type-check-pyrefly`; Codex sends `stop_hook_active`, so the loop guard works |
+| Event         | Matcher       | Hooks                                                                                                        |
+| ------------- | ------------- | ------------------------------------------------------------------------------------------------------------ |
+| `PreToolUse`  | `Bash`        | dcg, `enforce-cli-tools`                                                                                     |
+| `PostToolUse` | `Bash`        | `format-oxfmt`, `format-org-tables`, `format-code`                                                           |
+| `PostToolUse` | `apply_patch` | the same three and `lint-prose`, through `apply-patch.ts`                                                    |
+| `Stop`        |               | `lint-code`, `type-check-tsc`, `type-check-pyrefly`; Codex sends `stop_hook_active`, so the loop guard works |
 
 Codex has no `PostToolUseFailure` event, and does not need one for Bash: a command that exits non-zero is a successful tool result, so `PostToolUse` fires and the file hooks run (Codex 0.163.0 source, `tools/registry.rs`). A failed `apply_patch` gets no `PostToolUse`.
 

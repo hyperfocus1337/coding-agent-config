@@ -598,7 +598,7 @@ interface Hook {
   core(c: Ctx, phase: Phase, m: Modules): Promise<{ acted?: boolean; off?: boolean }>;
 }
 
-/** The call of a formatter or of lint-code: a file, or a command. */
+/** The call of a formatter: a file, or a command. */
 const toolCall = (c: Ctx) =>
   c.call?.tool === "Bash"
     ? { command: c.command, cwd: c.cwd }
@@ -642,17 +642,15 @@ const HOOK_LIST: Hook[] = [
   formatter("format-code", "format", ["terraform", "shfmt", "ruff"]),
   {
     name: "lint-code",
-    on: { Write: ["post"], Edit: ["post"], Bash: ["post"] },
+    on: { Stop: ["post"] },
     tools: ["ruff", "oxlint", "shellcheck", "yamllint", "ansible-lint", "tflint"],
     state: true,
-    mtime: true,
     args: [],
     work: "reported lint errors",
     core: async (c, _phase, m) => {
       const io = watch(m.io.nodeIo(c.cwd), c.trace);
       const settings = { ...m.io.nodeSettings(), configDir: LINT_CONFIG };
-      const files = await m.core.targets(toolCall(c), io, settings);
-      return { acted: (await m.core.lint(files, io, settings)) !== undefined };
+      return { acted: (await m.core.check(c.cwd, io, settings)) !== undefined };
     },
   },
   {

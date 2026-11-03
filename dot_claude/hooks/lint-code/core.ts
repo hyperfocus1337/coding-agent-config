@@ -1,15 +1,8 @@
-/**
- * The lint-code logic: finds the files a tool call changed and lints
- * each by its extension. The adapters pass in the file and process functions,
- * because a mod reaches them only through `$`.
- *
- * Adapters: hooks/register.ts (Claude Code mod), pi.ts and omp.ts (pi and
- * omp), command.ts (Codex command hook).
- */
+/** Lints changed and untracked source files once at the stop boundary. */
 
 export interface Io {
-  /** Whether the path is a regular file, and its mtime; undefined if missing. */
-  stat(path: string): Promise<{ isFile: boolean; mtimeMs: number } | undefined>;
+  /** Whether the path is a regular file; undefined if missing. */
+  stat(path: string): Promise<{ isFile: boolean } | undefined>;
   read(path: string): Promise<string>;
   /**
    * The exit code and output; undefined when the program cannot start. Runs
@@ -32,67 +25,37 @@ export interface Settings {
   hooksOff?: string;
 }
 
-/**
- * The tool call: a Write or Edit names a file, a Bash call a command. A
- * relative path resolves against cwd.
- */
-export interface Call {
-  filePath?: string;
-  command?: string;
-  cwd: string;
-}
-
-/** A path a Bash command names, by the extensions this hook lints. */
-const NAMED = /[^\s:;|&"'`()<>=]+\.(?:py|jsx?|tsx?|mjs|cjs|mts|cts|sh|bash|ya?ml|tf)\b/g;
-
-/**
- * Whether the git config of the repository that holds `dir` sets
- * agent-hook.lint-code.enabled to false, as /toggle-hook --repo does.
- * Outside git, a missing key, or a value that is not a boolean: false. -C,
- * because `run` runs in the session folder.
- */
-async function repoOff(dir: string, io: Io): Promise<boolean> {
-  const key = "agent-hook.lint-code.enabled";
-  const ran = await io.run(["git", "-C", dir, "config", "--type=bool", "--get", key]);
-  return ran?.output.trim() === "false";
-}
-
-/**
- * The files to lint. A Write or Edit: the one file it names. A Bash call: the
- * paths its command names that it just wrote, by an mtime of at most 120 s.
- * A path the command only read is not linted, so `cat app.py` never blocks
- * on an error that was already there. A file whose repository turns off the
- * hook is not linted. shortcut: a command that writes early and then runs
- * for minutes falls outside the window. The upgrade is a start time stamped
- * before the call.
- */
-export async function targets(
-  call: Call,
-  io: Io,
-  settings: Settings,
-  now = Date.now(),
-): Promise<string[]> {
-  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("lint-code")) return [];
-  const named = call.filePath
-    ? [call.filePath]
-    : [...(call.command ?? "").matchAll(NAMED)].map(([path]) => path);
-  // Scratch and temp files are not project code. macOS resolves /tmp to
-  // /private/tmp, so both sides drop that prefix.
-  const tmpdir = (settings.tmpdir || "/nonexistent").replace(/^\/private/, "");
-  const kept = new Set<string>();
-  // One git run for each folder.
-  const asked = new Map<string, Promise<boolean>>();
-  for (const path of named) {
-    const file = path.startsWith("/") ? path : `${call.cwd}/${path}`;
+/** Checks the repository that holds cwd; returns all lint failures together. */
+export async function check(cwd: string, io: Io, settings: Settings): Promise<string | undefined> {
+  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("lint-code")) return;
+  const top = await io.run(["git", "rev-parse", "--show-toplevel"], { cwd });
+  if (top?.exitCode !== 0) return;
+  const root = top.output.replace(/\n$/, "");
+  const run: Io["run"] = (argv, options) => io.run(argv, { cwd: options?.cwd ?? root });
+  const off = await run(["git", "config", "--type=bool", "--get", "agent-hook.lint-code.enabled"]);
+  if (off?.output.trim() === "false") return;
+  const git = async (...args: string[]) => {
+    const ran = await run(["git", ...args]);
+    return ran?.exitCode === 0 ? ran.output.split("\0").filter(Boolean) : [];
+  };
+  // shortcut: git includes edits from before this session. Track transcript
+  // paths instead if checks must exclude pre-existing uncommitted work.
+  const changed = new Set([
+    ...(await git("diff", "--name-only", "-z", "--diff-filter=d", "HEAD")),
+    ...(await git("ls-files", "-z", "--others", "--exclude-standard")),
+  ]);
+  const tmpdir = settings.tmpdir?.replace(/^\/private/, "").replace(/\/$/, "");
+  const files: string[] = [];
+  for (const name of changed) {
+    if (!/\.(?:py|jsx?|tsx?|mjs|cjs|mts|cts|sh|bash|ya?ml|tf)$/.test(name)) continue;
+    const file = `${root}/${name}`;
     const plain = file.replace(/^\/private/, "");
-    if (/^\/(var\/)?tmp\//.test(plain) || plain.startsWith(tmpdir)) continue;
-    const stat = await io.stat(file);
-    if (!stat?.isFile || (!call.filePath && now - stat.mtimeMs > 120_000)) continue;
-    const dir = file.slice(0, file.lastIndexOf("/")) || "/";
-    if (!asked.has(dir)) asked.set(dir, repoOff(dir, io));
-    if (!(await asked.get(dir))) kept.add(file);
+    if (/^\/(var\/)?tmp\//.test(plain) || (tmpdir && plain.startsWith(`${tmpdir}/`))) continue;
+    if ((await io.stat(file))?.isFile) files.push(file);
   }
-  return [...kept];
+  const output = await lint(files, { ...io, run }, settings);
+  if (output === undefined) return;
+  return `Lint errors:\n${output}\nFix the lint errors, rerun the relevant checks, then stop. Report any remaining failures.\n`;
 }
 
 /**

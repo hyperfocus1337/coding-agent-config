@@ -1,186 +1,79 @@
 # lint-code
 
-Lints each file that a Write, an Edit, or a Bash call changed, with the linter for its extension, and gives the errors to the model. The model then sees a lint error in the result of the call that caused it, not only when a later edit touches the same file.
+Lints changed and untracked source files once when the agent is about to stop. The model gets the findings together and has one automatic correction opportunity. It does not receive lint output after each unfinished edit. Formatters still run after edits.
 
-One core, [`core.ts`](core.ts), serves four agents through three adapters. An adapter is the code that connects the core to one agent:
-
-| Agent       | Adapter                                                                                                                                                                 | Loaded by                                                                            |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash adds `context` after `next`                                                       | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                    |
-| pi          | [`pi.ts`](pi.ts): `tool_result` on write, edit, and bash returns `{ content, isError: true }`                                                                           | `extensions` in `dot_pi/agent/modify_settings.json`                                  |
-| omp         | [`pi.ts`](pi.ts) as in pi, and [`omp.ts`](omp.ts): `tool_result` on an omp edit of more than one file, an `ast_edit` that a write to `xd://resolve` applies, and `eval` | `extensions` in `dot_omp/private_agent/private_config.yml`                           |
-| Codex       | [`command.ts`](command.ts): exit code 2 with the errors on stderr                                                                                                       | `PostToolUse` on Bash, and on `apply_patch` through `dot_codex/hooks/apply-patch.ts` |
+| Agent                 | Adapter                                                                     | Loaded by                                                         |
+| --------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Pi                    | `pi.ts`: `agent_before_settle` appends findings and requests a continuation | `dot_pi/agent/modify_settings.json`                               |
+| omp                   | `omp.ts`: `session_stop` returns findings as `additionalContext`            | `dot_omp/private_agent/private_config.yml`                        |
+| Claude Code and Codex | `command.ts`: `Stop`, exit 2 with findings on stderr                        | `dot_claude/settings.json.tmpl` and `dot_codex/modify_hooks.json` |
 
 ## What it checks
 
-The hook lints these files, by extension:
+The hook finds the repository root, then reads `git diff --name-only -z --diff-filter=d HEAD` and `git ls-files -z --others --exclude-standard`. It checks each supported regular file once, including staged and unstaged changes. Deleted files, ignored untracked files, and files under `/tmp`, `/var/tmp`, or `$TMPDIR` are skipped. Outside git, nothing runs. Before the first commit, only untracked files count.
 
-| Extension                                             | Linter                                                  | Invocation                                | Documentation                                 |
-| ----------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------- | --------------------------------------------- |
-| `.py`                                                 | [ruff](https://github.com/astral-sh/ruff)               | `ruff check --quiet`                      | https://docs.astral.sh/ruff/                  |
-| `.js` `.jsx` `.ts` `.tsx` `.mts` `.cts` `.mjs` `.cjs` | [oxlint](https://github.com/oxc-project/oxc)            | `oxlint --deny-warnings`                  | https://oxc.rs/docs/guide/usage/linter        |
-| `.sh` `.bash`                                         | [shellcheck](https://github.com/koalaman/shellcheck)    | `shellcheck -S warning`                   | https://www.shellcheck.net/wiki/              |
-| `.yml` `.yaml` (plain)                                | [yamllint](https://github.com/adrienverge/yamllint)     | `yamllint -c config/.yamllint`            | https://yamllint.readthedocs.io/              |
-| `.yml` `.yaml` (Ansible)                              | [ansible-lint](https://github.com/ansible/ansible-lint) | `ansible-lint -c config/.ansible-lint -q` | https://ansible.readthedocs.io/projects/lint/ |
-| `.tf`                                                 | [tflint](https://github.com/terraform-linters/tflint)   | `tflint --filter=<file> --format=compact` | https://github.com/terraform-linters/tflint   |
+Git also reports uncommitted work from before the session. Such files can produce findings too. The hook does not track session-specific paths, and it does not check clean files elsewhere in the repository.
 
-YAML goes to one of two linters, see [YAML routing](#yaml-routing). Terraform goes to tflint in the folder of the file, see [Terraform](#terraform). The hook does not lint `.tfvars` files. [`format-code`](../format-code/README.md) formats `.tf` and `.tfvars` files, because `terraform fmt` is a formatter, not a linter.
+| Extensions                                                   | Linter and arguments                                                    |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| `.py`                                                        | `ruff check --quiet`                                                    |
+| `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, `.cjs`, `.mts`, `.cts` | `oxlint --deny-warnings`                                                |
+| `.sh`, `.bash`                                               | `shellcheck -S warning`                                                 |
+| `.yml`, `.yaml`                                              | `yamllint -c <bundled config>` or `ansible-lint -c <bundled config> -q` |
+| `.tf`                                                        | `tflint --filter=<file> --format=compact --no-color`                    |
 
-Do not add an extension that [`lint-prose`](../lint-prose/README.md) checks (`.md`, `.org`, `.html`, `.txt`) without a change to `lint-prose`. In pi and omp, this hook runs first and sets `isError` on a result with lint errors, and [`lint-prose/pi.ts`](../lint-prose/pi.ts) skips every result with `isError`, so it would not check that file.
+`.tfvars` and prose are not checked. [`lint-prose`](../lint-prose/README.md) remains a separate per-edit hook.
 
-The hook runs after each of these calls, also after a call that failed, because a failed Bash call can still have written a file:
+### YAML routing
 
-- **Write and Edit:** the file that the call names.
-- **Bash:** the files that the command names and just wrote. See [Bash calls](#bash-calls).
-- **omp only:** each file of an `edit` of more than one file, each file that an applied `ast_edit` changed, and the files that the code of an `eval` call names.
+A file goes to ansible-lint when its path contains `roles/`, `tasks/`, `handlers/`, `playbooks/`, `group_vars/`, `host_vars/`, or `molecule/`; when its entry-point name is `site`, `playbook`, `main`, or `requirements`; or when its content matches the Ansible markers in `core.ts`. Other YAML goes to yamllint. Both use the bundled configurations, not repository configurations.
 
-The hook skips files under `/tmp`, `/var/tmp`, and `$TMPDIR`. A scratchpad file is not project code, so a lint error in it must not block a tool result.
+### Terraform
+
+Tflint runs in the module folder, with `--filter` to keep findings for the changed file. A parse failure can still refer to the whole module. A module-local `.tflint.hcl` or `.tflint.json` wins over the bundled config. The hook does not install plugins.
+
+## Correction and loop guard
+
+All findings start with `Lint errors:` and end with instructions to fix the errors, rerun the relevant checks, and report remaining failures.
+
+- **Pi:** lint and type-check handlers append to the same boundary entries, so their findings reach one correction run together. Each handler checks at most once until `agent_settled`, including when its initial check passes. No separate follow-up messages are queued.
+- **Claude Code, Codex, and omp:** `stop_hook_active` lets the stop after a correction pass without another automatic check.
+- **Pi and omp:** cancellation or an agent error starts no correction run.
+
+This gives one automatic correction opportunity, not a guarantee of a clean result. The model must rerun checks itself during correction and report unresolved failures.
+
+Claude Code uses a settings command hook, not a mod. See the [type-check design notes](../type-check-tsc/README.md#why-not-a-mod-in-claude-code) for the organization security restriction on Stop mods.
 
 ## Requirements
 
-The hook calls each linter binary directly, with no `npx` fallback. Install the linters that you want active. The hook skips a linter that is not installed.
-
-macOS (Homebrew):
+Install only the linters that you need. Missing linters are skipped. The hook also needs git; Claude Code and Codex need Node 23.6 or later to run `command.ts`.
 
 ```sh
-brew install ruff shellcheck yamllint ansible-lint
-pnpm add -g oxlint
-mise use -g tflint@0.64.0 # Homebrew has no tflint formula
-```
-
-Debian and Ubuntu:
-
-```sh
-apt install -y shellcheck yamllint
-uv tool install ruff # apt's ruff lags; uv tracks upstream
+uv tool install ruff
 uv tool install ansible-lint
-npm install -g oxlint
+pnpm add -g oxlint
 mise use -g tflint@0.64.0
 ```
 
-Then install the tflint plugins of the bundled config, once on each machine. `--init` downloads them from GitHub to `~/.tflint.d/plugins`. Set `GITHUB_TOKEN` if GitHub limits the API calls:
+Install shellcheck and yamllint through the platform package manager. Initialize bundled tflint plugins on each machine:
 
 ```sh
 tflint --init --config ~/.claude/hooks/lint-code/config/.tflint.hcl
 ```
 
-On Debian and Ubuntu, install ruff with `uv`, because `apt` ships an older build. [`docs/research.md`](docs/research.md) compares the install methods and tells why the hook uses oxlint.
-
-The adapters have these requirements:
-
-- **Claude Code 2.1.296 or later** for the mod. It is the oldest version tested.
-- **Node 23.6 or later** on `PATH` for `command.ts` and `dot_codex/hooks/apply-patch.ts`, which Codex runs. Node 23.6 runs `.ts` files without a flag. The mod, `pi.ts`, and `omp.ts` run in the runtime of their agent and need no `node`.
-- **Codex trust:** Codex runs a hook only after you trust its entry. After the change from `hook.sh` to `command.ts`, trust the hooks again in the Codex TUI, on the host and in the devcontainer. See [`docs/agents/codex.md`](../../../docs/agents/codex.md#trust).
-
-## How it works
-
-For each tool call, the core does these steps:
-
-1. It finds the target files of the call. A Write or an Edit names one file, which the hook lints at any age. For a Bash call, see [Bash calls](#bash-calls). A relative path resolves against the session working directory.
-2. It drops each path under `/tmp`, `/var/tmp`, or `$TMPDIR`, each path that does not exist, and each path that is not a regular file. Then it drops each file whose repository sets `agent-hook.lint-code.enabled` to `false` in git config, with one `git -C <folder> config` for each folder.
-3. It picks the linter for the extension of each file. It skips a file when `CLAUDE_LINT_DISABLE` turns its linter off, or when no linter is installed.
-4. It runs the linters one file after the other, and lints every target before it stops. So one Bash command reports every file that it wrote, not only the first failure.
-5. When at least one linter exits with a code other than 0, it gives the output of all the linters that ran to the model.
-
-### Bash calls
-
-A Bash payload names no file. So the hook reads the paths out of `tool_input.command`, the way [`format-org-tables`](../format-org-tables/README.md) does, and keeps the paths with a supported extension.
-
-A command also names the files that it only reads, as in `cat app.py`. So the hook lints a named file only when its mtime is at most 120 seconds old, which shows that the command wrote it. A command that writes a file early and then runs for minutes falls outside that window, and the hook lints the file again on the next edit.
-
-[`docs/implementation.md`](docs/implementation.md#paths-in-a-bash-command) gives the reasons for this design.
-
-### YAML routing
-
-The hook treats a YAML file as Ansible and sends it to `ansible-lint`, which runs yamllint internally, when one of these is true:
-
-- The path holds a standard Ansible directory: `roles/`, `tasks/`, `handlers/`, `playbooks/`, `group_vars/`, `host_vars/`, or `molecule/`.
-- The file has an entry point name: `site`, `playbook`, `main`, or `requirements`, with the extension `.yml` or `.yaml`.
-- A line of the file starts with the key `hosts:`, `tasks:`, or `roles:`, after optional spaces and an optional `- `.
-
-All other YAML goes to `yamllint`.
-
-### Terraform
-
-tflint lints a whole module, which is all the `.tf` files of one folder. So the hook runs tflint in the folder of the file, and `--filter=<file>` keeps only the issues of that file. An issue in another file of the module does not reach the model. A parse error does, from each file of the module, because tflint cannot load a module that does not parse.
-
-The hook uses the `.tflint.hcl` or `.tflint.json` of the module folder when it has one. Else it passes the bundled [`config/dot_tflint.hcl`](config/dot_tflint.hcl) with `--config`. A config in a parent folder does not count, the same as when you run `tflint` in the module folder.
-
-## What the model sees
-
-A Write or an Edit has already run when the hook starts, so the hook cannot block it. The hook gives the errors to the model in the way that each agent allows:
-
-- **Claude Code:** the mod adds the errors to the `context` of the result, after the line `Lint errors in the files this call changed. Fix them:`. The model gets them with the result.
-- **pi and omp:** the extension appends a text block that starts with `Lint errors:` to the result content, and marks the result as an error.
-- **Codex:** `command.ts` writes the errors to stderr and exits 2. A `PostToolUse` hook reaches the model only with exit code 2. With exit code 0, its output goes to the transcript only.
-
-`command.ts` uses these exit codes:
-
-- **0:** no linter failed, or the call changed no file to lint. No output.
-- **1:** the payload is not valid JSON. The model does not see it.
-- **2:** at least one linter failed. The output of all the linters that ran is on stderr.
-
-The hook reports only when a linter exits with a code other than 0. `oxlint` 1.87.0 reports its built-in rules as warnings, also a real bug such as an assignment to a `const`, and exits 0 for warnings. So the hook passes `--deny-warnings`, which makes oxlint exit 1 on a warning.
-
-## What you see
-
-In Codex, when Node 23.6 or later is not on `PATH`, a `SessionStart` check shows a warning. The warning lists `lint-code` with the other hooks that are off.
+After a Codex hook entry changes, trust it again in the Codex TUI on each machine. See [Codex trust](../../../docs/agents/codex.md#trust).
 
 ## Settings
 
-### Turn the hook off
+- **Session:** `/toggle-hook lint-code`, or set `AGENT_HOOKS_DISABLE=lint-code` at launch. Codex uses the environment variable.
+- **Repository:** `/toggle-hook --repo lint-code`. Codex users can set `agent-hook.lint-code.enabled` to `false` in their repository git config.
+- **Linter:** `CLAUDE_LINT_DISABLE` accepts `py`, `js`, `sh`, `yaml`, `tf`, or `all`, separated by spaces or commas. `all` also disables lint-prose.
+- **Permanent removal:** remove the adapter entry from the configuration in the agent table.
 
-To turn the whole hook off in a running agent, run `/toggle-hook lint-code`. The command adds `lint-code` to `AGENT_HOOKS_DISABLE`. Codex has no such command, so set `AGENT_HOOKS_DISABLE=lint-code` when you start it. See [`toggle-hook`](../toggle-hook/README.md).
+The bundled files in `config/` set YAML and default Terraform rules. Ruff and oxlint retain their normal project configuration discovery. No rule severity or suppression is changed by this stop-time migration.
 
-To turn the hook off in one repository, across sessions, run `/toggle-hook --repo lint-code`. In Codex, run `git config agent-hook.lint-code.enabled false` in your own terminal. Outside git, or with a value that is not a boolean, the hook stays on. The dcg pack `local.agent_hook` blocks an agent command that writes this key.
+## Failure behavior and tests
 
-To remove the hook from one agent for good, remove its entry from the file in the "Loaded by" column of the table at the top.
+Each process has a 30-second timeout; the Claude Code and Codex command hooks also have a 60-second total timeout. Missing binaries, missing tflint plugins, mise shims without a version, timeouts, and adapter exceptions fail open. A malformed JSON payload exits 1, which does not block the stop. Reported lint findings exit 2; a pass or skip exits 0 without output.
 
-### Turn off one linter
-
-`CLAUDE_LINT_DISABLE` holds a list of keys, separated by spaces or commas. The hook reads it at run time, so export it in your shell, or set it in `env` in `settings.json`.
-
-| Key    | Turns off                                                        |
-| ------ | ---------------------------------------------------------------- |
-| `py`   | ruff                                                             |
-| `js`   | oxlint                                                           |
-| `sh`   | shellcheck                                                       |
-| `yaml` | yamllint and ansible-lint                                        |
-| `tf`   | tflint                                                           |
-| `all`  | The whole hook, and also [`lint-prose`](../lint-prose/README.md) |
-
-```sh
-export CLAUDE_LINT_DISABLE="yaml"      # stop linting YAML
-export CLAUDE_LINT_DISABLE="yaml,sh"   # skip YAML and shell
-export CLAUDE_LINT_DISABLE="all"       # off
-```
-
-### Tune the linters
-
-To tune YAML instead of turning it off, edit the bundled configs in [`config/`](config/). The hook passes them with `-c` on each run. So the hook ignores the `.yamllint` and `.ansible-lint` of a repository, and you do not copy a config into each project. For Terraform, the config of the module wins, see [Terraform](#terraform).
-
-- [`config/dot_yamllint`](config/dot_yamllint), deployed as `.yamllint`, sets relaxed indentation and line-length rules for plain YAML ([yamllint config docs](https://yamllint.readthedocs.io/en/stable/configuration.html)).
-- [`config/dot_ansible-lint`](config/dot_ansible-lint), deployed as `.ansible-lint`, silences the noisy `yaml[indentation]` and `yaml[line-length]` findings for Ansible files with `skip_list` ([ansible-lint config docs](https://ansible.readthedocs.io/projects/lint/configuring/)). To get them as warnings that do not block, use the `warn_list` that the file holds as a comment. ansible-lint finds its embedded yamllint config by a directory search, so you tune the indentation for Ansible in this file, not in `config/dot_yamllint`.
-
-- [`config/dot_tflint.hcl`](config/dot_tflint.hcl), deployed as `.tflint.hcl`, turns on the `recommended` preset of the bundled `terraform` ruleset, and the `aws` and `azurerm` plugins ([tflint config docs](https://github.com/terraform-linters/tflint/blob/master/docs/user-guide/config.md)). The `aws` plugin finds values that AWS does not accept, such as an unknown instance type. Its `deep_check` stays off, because it calls the AWS API and needs credentials on each run. After you add a plugin or change a version, run `tflint --init` again.
-
-oxlint finds a project `.oxlintrc.json` in the directory of the file. A rule that this file sets to `off` stays off, also with `--deny-warnings`.
-
-If a linter reports too much, change its severity in [`core.ts`](core.ts), for example to `shellcheck -S error`.
-
-## Failure behavior
-
-The hook fails open in every agent: when the lint run breaks, the tool result stays as it is.
-
-- **A linter is not installed:** the hook skips its files.
-- **A mise shim has no version set:** the shim exits 1 with `No version is set for shim`, and the hook skips the file, as for a linter that is not installed.
-- **A tflint plugin is not installed:** tflint stops with `Did you run "tflint --init"?`, and the hook skips the file. This also applies to a plugin that the `.tflint.hcl` of a module names.
-- **The mod throws in Claude Code:** Claude Code skips the mod hook, and the result stands.
-- **`pi.ts` or `omp.ts` throws:** `pi.ts` catches its own errors, and the result stays as it is. `omp.ts` runs through the same code.
-- **`command.ts` gets a bad payload:** it exits 1. Only exit code 2 reaches the model.
-- **A linter runs too long:** the mod stops each linter after 30 s, the default timeout of `$.process.run`. Codex stops the whole hook after 15 s.
-- **Codex has no `node`:** the Codex entries start with `command -v node >/dev/null || exit 0`, so a machine without Node is not blocked.
-
-## Testing
-
-`node test/check.ts` tests the core and each adapter, and `just hooks-check` runs it. [`docs/testing.md`](docs/testing.md) tells how to run it, what each group of cases checks, and what it needs on `PATH`.
+Run `node test/check.ts` from this directory, or `just hooks-check` from the repository. Tests use git and stand-in linters. See [testing](docs/testing.md) and [implementation](docs/implementation.md).

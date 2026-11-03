@@ -40,17 +40,17 @@ Codex has no Write or Edit tool. It edits every file through one tool, `apply_pa
 With no `file_path`, each hook takes its Bash branch, which guesses the files from a shell command:
 
 - `format-oxfmt` formats only the markdown files that git shows as changed. It skips `src/app.py`.
-- `lint-code`, `format-org-tables`, and `format-code` search the text for strings that look like file names. A patch is not a shell command, so they miss files or pick wrong ones.
+- `format-org-tables` and `format-code` search the text for strings that look like file names. A patch is not a shell command, so they miss files or pick wrong ones.
 - `lint-prose` has no Bash branch, so it checks nothing.
 
-Without the wrapper, most files that Codex edits are not formatted or linted.
+Without the wrapper, most files that Codex edits are not formatted or prose-linted. Code linting uses a separate Stop hook and reads changed paths from git, so it does not need the wrapper.
 
 ### What the wrapper does
 
 `hooks.json` calls the wrapper once per file hook on the `apply_patch` matcher, with the `command.ts` of the hook as the argument:
 
 ```sh
-node "$HOME/.codex/hooks/apply-patch.ts" "$HOME/.claude/hooks/lint-code/command.ts"
+node "$HOME/.codex/hooks/apply-patch.ts" "$HOME/.claude/hooks/format-code/command.ts"
 ```
 
 1. Read the patch text from `tool_input.command`. Take the paths on the `*** Add File:`, `*** Update File:`, and `*** Move to:` lines. Resolve a relative path against the payload's `cwd`.

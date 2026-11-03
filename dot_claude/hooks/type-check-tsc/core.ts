@@ -62,5 +62,5 @@ export async function check(cwd: string, io: Io, settings: Settings): Promise<st
   const ran = await io.run(["tsc", "--noEmit"], root);
   if (!ran || ran.exitCode === 0) return undefined;
   const output = (ran.stdout + ran.stderr).replace(/\n+$/, "");
-  return `${output}\nType check failed. Fix the errors above, then stop.\n`;
+  return `${output}\nType check failed. Fix the errors above, rerun the relevant checks, then stop. Report any remaining failures.\n`;
 }

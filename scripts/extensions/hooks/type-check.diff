@@ -31,9 +31,9 @@
 +  // A missing pyrefly is a skip. pyrefly exits 1 when its config matches no
 +  // files, which is nothing to check, not a type error.
 +  const ran = await io.run(["pyrefly", "check"], root);
--  return `${output}\nType check failed. Fix the errors above, then stop.\n`;
+-  return `${output}\nType check failed. Fix the errors above, rerun the relevant checks, then stop. Report any remaining failures.\n`;
 +  if (output.includes("No Python files matched")) return undefined;
-+  return `${output}\nType check failed. For missing imports, first verify the project configuration, import roots, and Python environment used by Pyrefly before changing imports. Use the project's existing dependency and environment setup. Do not suppress diagnostics or weaken checking to obtain a pass. Fix the cause, rerun the check, then stop.\n`;
++  return `${output}\nType check failed. For missing imports, first verify the project configuration, import roots, and Python environment used by Pyrefly before changing imports. Use the project's existing dependency and environment setup. Do not suppress diagnostics or weaken checking to obtain a pass. Fix the cause, rerun the check, then stop. Report any remaining failures.\n`;
 === io.ts
 - * The file and process functions of ./core.ts under Node, for command.ts,
 - * pi.ts, and omp.ts.
@@ -54,15 +54,5 @@
 + * context, so the model fixes them. Loaded through `extensions` in the omp
 + * config, in place of ./pi.ts.
 === pi.ts
-- * pi extension: runs tsc on the project when a run ends. On errors it sends
-- * them to the model as a follow-up message that starts one more run, so the
-- * model fixes them. The end of that run passes without a check: pi has no
-- * `stop_hook_active`, so this flag is the loop guard. Loaded through the
-- * `extensions` setting of pi. omp loads ./omp.ts instead.
-+ * pi extension: runs pyrefly on the project when a run ends. On errors it
-+ * sends them to the model as a follow-up message that starts one more run,
-+ * so the model fixes them. The end of that run passes without a check: pi
-+ * has no `stop_hook_active`, so this flag is the loop guard. Loaded through
-+ * the `extensions` setting of pi. omp loads ./omp.ts instead.
--          customType: "type-check-tsc",
-+          customType: "type-check-pyrefly",
+-            customType: "type-check-tsc",
++            customType: "type-check-pyrefly",

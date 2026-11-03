@@ -34,11 +34,6 @@ ours=$(cat <<'EOF'
             "type": "command"
           },
           {
-            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/lint-code/command.ts\"",
-            "timeout": 15,
-            "type": "command"
-          },
-          {
             "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/track-session-changes/command.ts\" codex",
             "timeout": 10,
             "type": "command"
@@ -61,11 +56,6 @@ ours=$(cat <<'EOF'
           {
             "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.codex/hooks/apply-patch.ts\" \"$HOME/.claude/hooks/format-code/command.ts\"",
             "timeout": 10,
-            "type": "command"
-          },
-          {
-            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.codex/hooks/apply-patch.ts\" \"$HOME/.claude/hooks/lint-code/command.ts\"",
-            "timeout": 15,
             "type": "command"
           },
           {
@@ -133,6 +123,11 @@ ours=$(cat <<'EOF'
     "Stop": [
       {
         "hooks": [
+          {
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/lint-code/command.ts\"",
+            "timeout": 60,
+            "type": "command"
+          },
           {
             "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/type-check-tsc/command.ts\"",
             "timeout": 60,

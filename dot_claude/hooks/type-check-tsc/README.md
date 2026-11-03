@@ -6,7 +6,7 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters. An ad
 
 | Agent                 | Adapter                                                                                                                      | Loaded by                                                                   |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| pi                    | [`pi.ts`](pi.ts): `agent_end` sends the errors with `sendMessage` and `triggerTurn`, which starts one more run               | `extensions` in `dot_pi/agent/modify_settings.json`                         |
+| pi                    | [`pi.ts`](pi.ts): `agent_before_settle` appends findings and requests one shared correction run                              | `extensions` in `dot_pi/agent/modify_settings.json`                         |
 | omp                   | [`omp.ts`](omp.ts): `session_stop` returns `{ continue: true, additionalContext }` with the errors, which runs one more turn | `extensions` in `dot_omp/private_agent/private_config.yml`                  |
 | Claude Code and Codex | [`command.ts`](command.ts): exit code 2 with the errors on stderr                                                            | `Stop` in `dot_claude/settings.json.tmpl` and `dot_codex/modify_hooks.json` |
 
@@ -15,7 +15,7 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters. An ad
 The hook runs once each time the agent stops:
 
 - **Claude Code and Codex:** on the `Stop` event, as a command hook. A command hook is a program that the agent starts, with the event as JSON on stdin. Claude Code does not run this hook as a mod, see [Why not a mod in Claude Code](#why-not-a-mod-in-claude-code).
-- **pi:** on `agent_end`, at the end of each run.
+- **Pi:** on `agent_before_settle`, after retries and queued work, before final settlement.
 - **omp:** on `session_stop`, when the main agent is about to stop.
 
 A stop carries no file path, so the hook asks git which files changed. `tsc` starts only when both of these are true:
@@ -57,7 +57,11 @@ The hook skips these cases with no output:
 
 A check that the model cannot fix must not block every stop after it. Claude Code and Codex set `stop_hook_active` to `true` in a stop that follows a block, and `command.ts` then lets the stop pass.
 
-pi has no `stop_hook_active`. `pi.ts` keeps a flag instead: after it starts a run, the end of that run passes without a check, and the run after it is checked again. `pi.ts` also starts no run when you stopped the run or the run failed.
+Pi has no `stop_hook_active`. Each `pi.ts` handler checks once per activity, even when its check passes. It appends findings to the existing boundary entries and requests a continuation. The lint and type-check findings therefore reach one correction run together. Further boundaries skip checking until `agent_settled` resets the flag.
+
+Aborted or failed activities start no correction run.
+
+One automatic correction opportunity does not guarantee a pass. The model must rerun relevant checks during correction and report remaining failures.
 
 omp sets `stop_hook_active` on the stop after a `session_stop` continuation, and `omp.ts` then lets the stop pass. omp also allows at most 8 continuations. `omp.ts` starts no turn when you stopped the run or the run failed.
 
@@ -66,11 +70,11 @@ omp sets `stop_hook_active` on the stop after a `session_stop` continuation, and
 The model gets the output of `tsc` (stdout, then stderr), and then this line:
 
 ```text
-Type check failed. Fix the errors above, then stop.
+Type check failed. Fix the errors above, rerun the relevant checks, then stop. Report any remaining failures.
 ```
 
 - **Claude Code and Codex:** `command.ts` exits 2 with the errors on stderr, which blocks the stop. The model continues with the errors. When `type-check-pyrefly` also blocks the same stop, the model gets both outputs.
-- **pi:** `pi.ts` sends the errors as a message that the model reads, and the message starts one more run. `pi -p` also runs it.
+- **Pi:** `pi.ts` appends a visible custom message to the pre-settlement boundary and requests one correction run. `pi -p` also runs it.
 - **omp:** `omp.ts` returns the errors from `session_stop` as context for one more turn, which omp runs before it settles. This also works in `omp -p`, see [Why omp.ts in omp](#why-ompts-in-omp).
 
 `command.ts` uses these exit codes:
@@ -123,13 +127,13 @@ For a Team organization, that built-in plugin skips each user mod on a `classic.
 
 ### Why a stop and not each edit
 
-The other file hooks run after each Write or Edit, because they act on the one file that the call changed. A type checker reads the whole project. After each edit, it would check everything again and print the same unrelated errors each time, which fills the context with the same output.
+Formatters and lint-prose run after edits. Lint-code and the type checkers run at stop time, so unfinished code does not produce repeated diagnostics after each edit. Type checkers read the whole project, while lint-code checks changed supported files.
 
-At a stop, the hook runs once and still keeps the agent working until the errors are gone. `SessionEnd` does not work for this. Its output goes to the terminal as the process stops, so the model never reads it, and the event carries no file path.
+At a stop, the hook runs once and gives the model one correction opportunity. `SessionEnd` does not work for this. Its output goes to the terminal as the process stops, so the model never reads it, and the event carries no file path.
 
 ### Why omp.ts in omp
 
-omp does not await `agent_end`. So the message of `pi.ts` was lost when omp settled first: in `omp -p` 18.12.2, also with a check of 217 ms. omp awaits `session_stop`, so `omp.ts` keeps the run, also in `omp -p`.
+omp does not await `agent_end`. So the message of `pi.ts` was lost when omp settled first: in `omp -p` 18.12.2, also with a check of 217 ms. omp awaits `session_stop`, so `omp.ts` keeps the run, also in `omp -p`. Pi now uses `agent_before_settle` rather than the old `agent_end` adapter.
 
 ### Files
 

@@ -1,49 +1,33 @@
 # lint-code implementation
 
-This file holds the design detail that you do not need to use the hook. [`README.md`](../README.md) tells what the hook does and how to set it.
+## Files and boundaries
 
-## Files
+`core.ts` selects changed files and routes them to linters. `io.ts` supplies file reads and bounded process execution. `command.ts` handles Claude Code and Codex Stop payloads. `pi.ts` handles Pi's `agent_before_settle`; `omp.ts` handles omp's `session_stop`. There is no Claude Code mod and no per-tool lint adapter.
 
-| File                                                                      | Deployed to `~/.claude/hooks/lint-code/`                | Role                                                                      |
-| ------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `core.ts`                                                                 | Yes                                                     | Finds the files, picks the linter, and runs it through an `Io`            |
-| `hooks/register.ts`, `hooks/hooks.json`                                   | Yes                                                     | Claude Code mod                                                           |
-| `dot_claude-plugin/plugin.json`                                           | Yes, as `.claude-plugin/plugin.json`                    | Plugin manifest                                                           |
-| `pi.ts`                                                                   | Yes                                                     | The pi extension, which omp also loads                                    |
-| `omp.ts`                                                                  | Yes                                                     | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see |
-| `command.ts`                                                              | Yes                                                     | Codex command hook                                                        |
-| `io.ts`                                                                   | Yes                                                     | The `Io` and the settings under Node, for `pi.ts` and `command.ts`        |
-| `config/dot_yamllint`, `config/dot_ansible-lint`, `config/dot_tflint.hcl` | Yes, as `.yamllint`, `.ansible-lint`, and `.tflint.hcl` | Linter configs                                                            |
-| `README.md`, `docs/`, `test/`                                             | No                                                      | Kept in the repo by `.chezmoiignore`                                      |
+The config files are deployed under `~/.claude/hooks/lint-code/config/`, with chezmoi's `dot_` prefix changed to a leading dot. README files, docs, and tests stay in the repository.
 
-## Paths in a Bash command
+## Changed paths
 
-A `Write` or `Edit` payload names the file in `tool_input.file_path`. A Bash payload names none. Before the hook read the command text, a file that a shell command wrote (`cat > setup.py <<'EOF'`, a `sed -i`, a redirect) reached no linter, and the error showed only when a later `Edit` touched the same file.
+The hook resolves the git root from the session directory. NUL-separated git output preserves spaces, newlines, and non-ASCII names. A set removes duplicates between the tracked diff and untracked list. File modification times and shell-command parsing are not used.
 
-The `NAMED` pattern in [`core.ts`](../core.ts) takes each word of the command that ends in a supported extension. A path ends at a space or at one of the characters ``: ; | & " ' ` ( ) < > =``.
+Each retained path must have a supported extension and be a regular file on disk. Scratch paths are excluded. On macOS, both the path and `$TMPDIR` lose a leading `/private` before comparison. `$TMPDIR` matches a directory boundary, not an arbitrary prefix.
 
-A named path is not always a written path. `cat app.py` names the file too, and to block a read on an error that was already in the file helps nobody. So the hook lints a named file only when its mtime is within 120 seconds of the hook run, which separates a file that the command wrote from a file that it read.
+The git diff includes work from before the session. A `shortcut:` comment names the limit and the upgrade to transcript-based path tracking. Before the first commit, the diff against HEAD fails and only the untracked list contributes paths.
 
-A command that writes early and then runs for minutes falls outside that window and is missed. A `shortcut:` comment in `core.ts` marks this trade-off. The upgrade is a start time that a hook stamps before the call.
+Linters run from the repository root unless they require a different directory. Tflint runs in the module folder: tflint 0.64.0 does not match the intended file with the previous `--chdir` approach. Its `--filter` keeps findings for each changed file.
 
-## tflint and `--filter`
+## Pi boundary composition
 
-tflint 0.64.0 matches `--filter` against the file names of its issues, and with `--chdir` those names are relative to the folder that tflint started in. So `tflint --chdir=<folder> --filter=<file>` reports nothing, with a relative, an absolute, or a glob filter. The hook runs tflint in the module folder instead: `Io.run` takes an optional `cwd`, and the `linter` function of [`core.ts`](../core.ts) gives the folder with the argv.
+Each handler returns the existing `event.entries` plus its own visible `custom_message`, with `continue: true`. Pi evaluates all handlers before it starts the next model request. Lint, tsc, and Pyrefly therefore contribute to one correction run, without calling `sendMessage`.
 
-## Failed calls
+Each handler marks itself checked even when it passes or fails open. Later boundaries in the same activity skip it. The `agent_settled` notification resets the flag for the next activity. This prevents a type error introduced during lint correction from triggering another automatic correction run. The model must rerun relevant checks itself during correction.
 
-A Bash call that exits with a code other than 0 can still have written a file, as in `cat > setup.py <<'EOF' ... EOF && python setup.py`. So the hook lints a failed call too:
+Aborted or failed activities start no correction. Claude Code, Codex, and omp instead use `stop_hook_active` as their existing loop guard.
 
-- **Claude Code:** the mod runs after `next` for each result. It passes a call that a hook denied (`deny`) through without a lint.
-- **pi and omp:** pi sends `tool_result` for each result.
-- **Codex:** Codex sends `PostToolUse` for each Bash call.
+## Process handling
 
-## Temporary paths on macOS
-
-macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/...`. The path in a payload holds that prefix, but `$TMPDIR` does not. So both sides of the comparison drop a leading `/private`. Before this fix, a scratchpad script blocked the tool result on lint errors that nobody had to fix.
+Each process is killed after 30 seconds. A timeout returns no result, rather than truncated diagnostics. Streams use UTF-8 decoding across chunks. Missing tools, missing tflint plugins, and mise shims without configured versions are skipped.
 
 ## Ansible markers
 
-`isAnsible` in [`core.ts`](../core.ts) matches the content of a file with the pattern `^\s*(- )?(hosts|tasks|roles|ansible\.builtin\.):`, line by line. A key can have spaces before it, so a nested `tasks:` also matches, not only a top-level key.
-
-The pattern needs a colon right after `ansible.builtin.`. So a module key such as `ansible.builtin.copy:` does not match, and that branch of the pattern finds no real file. Such a file goes to `ansible-lint` only when its path or name matches.
+`isAnsible` matches `^\s*(- )?(hosts|tasks|roles|ansible\.builtin\.):` by line. The final branch requires a colon immediately after `ansible.builtin.`, so a module key such as `ansible.builtin.copy:` does not match. Path and entry-point detection remain unchanged.

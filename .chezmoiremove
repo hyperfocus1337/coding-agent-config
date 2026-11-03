@@ -3,6 +3,9 @@
 # the repo stops deploying (docs/hooks/decisions.md).
 .claude/hooks/enforce-cli-tools/hook.sh
 .claude/hooks/lint-all-languages
+.claude/hooks/lint-code/hooks/register.ts
+.claude/hooks/lint-code/hooks/hooks.json
+.claude/hooks/lint-code/.claude-plugin/plugin.json
 .claude/hooks/block-commit-attribution
 .claude/hooks/block-secret-commits
 .config/git/hooks/block-secret-commits/core.ts

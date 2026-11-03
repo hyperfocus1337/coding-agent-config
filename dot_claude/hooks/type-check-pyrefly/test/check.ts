@@ -112,7 +112,7 @@ function fresh(files: Record<string, string> = {}) {
   for (const [name, text] of Object.entries(files)) write(`${repo}/${name}`, text);
 }
 const failed =
-  "Type check failed. For missing imports, first verify the project configuration, import roots, and Python environment used by Pyrefly before changing imports. Use the project's existing dependency and environment setup. Do not suppress diagnostics or weaken checking to obtain a pass. Fix the cause, rerun the check, then stop.";
+  "Type check failed. For missing imports, first verify the project configuration, import roots, and Python environment used by Pyrefly before changing imports. Use the project's existing dependency and environment setup. Do not suppress diagnostics or weaken checking to obtain a pass. Fix the cause, rerun the check, then stop. Report any remaining failures.";
 
 // --- Checks ---
 fresh();
@@ -180,40 +180,40 @@ Object.assign(process.env, env);
 fresh({ "src/old.py": "x = 2\n" });
 
 type Handler = (event: unknown, ctx: unknown) => Promise<unknown>;
-let piHandler: Handler | undefined;
-const sent: { content: string; options: unknown }[] = [];
+const piHandlers = new Map<string, Handler>();
 extension({
-  on: (_name: string, handler: Handler) => (piHandler = handler),
-  sendMessage: (message: { content: string }, options: unknown) =>
-    sent.push({ content: message.content, options }),
+  on: (name: string, handler: Handler) => piHandlers.set(name, handler),
 } as never);
-const end = (stopReason = "stop") =>
-  piHandler?.(
-    { type: "agent_end", messages: [{ role: "assistant", stopReason }] },
+const prior = {
+  type: "custom_message",
+  customType: "other",
+  content: "earlier errors",
+  display: true,
+};
+const end = (outcome = "completed") =>
+  piHandlers.get("agent_before_settle")?.(
+    { type: "agent_before_settle", outcome, entries: [prior], continue: true },
     { cwd: `${repo}/src` },
   );
-await check("pi.ts: sends the errors and starts a run", async () => {
-  await end();
-  assert.equal(sent.length, 1);
-  assert.ok(sent[0]?.content.includes(`pyrefly error in ${repo}`));
-  assert.deepEqual(sent[0]?.options, {
-    triggerTurn: true,
-    deliverAs: "followUp",
-  });
+await check("pi.ts: checks at settlement and preserves earlier findings", async () => {
+  assert.deepEqual([...piHandlers.keys()].sort(), ["agent_before_settle", "agent_settled"]);
+  const result = (await end()) as { continue: boolean; entries: { content: string }[] };
+  assert.equal(result.continue, true);
+  assert.equal(result.entries[0], prior);
+  assert.ok(result.entries[1]?.content.includes(`pyrefly error in ${repo}`));
 });
-await check("pi.ts: the end of that run passes", async () => {
-  await end();
-  assert.equal(sent.length, 1);
+await check("pi.ts: correction boundaries do not check again", async () => {
+  assert.equal(await end(), undefined);
+  assert.equal(await end(), undefined);
 });
-await check("pi.ts: the next run is checked again", async () => {
-  await end();
-  assert.equal(sent.length, 2);
-  await end(); // the guard again
+await check("pi.ts: settlement resets the guard", async () => {
+  await piHandlers.get("agent_settled")?.({}, {});
+  assert.ok(await end());
+  await piHandlers.get("agent_settled")?.({}, {});
 });
 await check("pi.ts: a stopped or failed run starts nothing", async () => {
-  await end("aborted");
-  await end("error");
-  assert.equal(sent.length, 2);
+  assert.equal(await end("aborted"), undefined);
+  assert.equal(await end("error"), undefined);
 });
 
 // --- omp.ts, with a stub ---

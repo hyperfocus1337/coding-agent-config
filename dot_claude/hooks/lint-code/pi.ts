@@ -1,56 +1,35 @@
-/**
- * pi extension: lints the files a write, edit, or bash call changed, and
- * marks the result as an error with the linter output appended, so the
- * model fixes the file. Loaded through the `extensions` setting of pi and
- * omp. omp also loads ./omp.ts, which lints the files of the omp calls that
- * this file does not see.
- */
+/** Lints once before Pi settles; other checks share the same correction run. */
 
-import type {
-  ExtensionAPI,
-  ToolResultEvent,
-  ToolResultEventResult,
-} from "@earendil-works/pi-coding-agent";
-import { lint, targets, type Call } from "./core.ts";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { check } from "./core.ts";
 import { nodeIo, nodeSettings } from "./io.ts";
 
 export default function (pi: ExtensionAPI) {
-  pi.on("tool_result", (event, ctx) => {
-    const { command, path } = event.input;
-    const { cwd } = ctx;
-    const calls: Call[] =
-      event.toolName === "bash" && typeof command === "string"
-        ? [{ command, cwd }]
-        : ["write", "edit"].includes(event.toolName) && typeof path === "string"
-          ? [{ filePath: path, cwd }]
-          : [];
-    return lintCalls(calls, event.content, cwd);
+  let checked = false;
+  pi.on("agent_settled", () => {
+    checked = false;
   });
-}
-
-/**
- * Lints the files of `calls`. Returns `content` with the linter output
- * appended and the error flag, or undefined when no file failed. ./omp.ts
- * calls it too.
- */
-export async function lintCalls(
-  calls: Call[],
-  content: ToolResultEvent["content"],
-  cwd: string,
-): Promise<ToolResultEventResult | undefined> {
-  if (!calls.length) return;
-  try {
-    const io = nodeIo(cwd);
-    const settings = nodeSettings();
-    const found = new Set<string>();
-    for (const call of calls) for (const file of await targets(call, io, settings)) found.add(file);
-    const output = await lint([...found], io, settings);
-    if (output === undefined) return;
-    return {
-      content: [...content, { type: "text", text: `Lint errors:\n${output}` }],
-      isError: true,
-    };
-  } catch {
-    // Advisory on failure: a broken lint run must not change the result.
-  }
+  pi.on("agent_before_settle", async (event, ctx) => {
+    if (checked || event.outcome !== "completed") return;
+    // Mark even a pass, so another check's correction cannot start a loop.
+    checked = true;
+    try {
+      const errors = await check(ctx.cwd, nodeIo(ctx.cwd), nodeSettings());
+      if (errors === undefined) return;
+      return {
+        entries: [
+          ...event.entries,
+          {
+            type: "custom_message" as const,
+            customType: "lint-code",
+            content: errors,
+            display: true,
+          },
+        ],
+        continue: true,
+      };
+    } catch {
+      // Fails open: a broken check must not start a run.
+    }
+  });
 }

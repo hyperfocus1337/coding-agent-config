@@ -62,5 +62,5 @@ export async function check(cwd: string, io: Io, settings: Settings): Promise<st
   if (!ran || ran.exitCode === 0) return undefined;
   const output = (ran.stdout + ran.stderr).replace(/\n+$/, "");
   if (output.includes("No Python files matched")) return undefined;
-  return `${output}\nType check failed. For missing imports, first verify the project configuration, import roots, and Python environment used by Pyrefly before changing imports. Use the project's existing dependency and environment setup. Do not suppress diagnostics or weaken checking to obtain a pass. Fix the cause, rerun the check, then stop.\n`;
+  return `${output}\nType check failed. For missing imports, first verify the project configuration, import roots, and Python environment used by Pyrefly before changing imports. Use the project's existing dependency and environment setup. Do not suppress diagnostics or weaken checking to obtain a pass. Fix the cause, rerun the check, then stop. Report any remaining failures.\n`;
 }

@@ -4,9 +4,8 @@
  * context, so the model fixes them. Loaded through `extensions` in the omp
  * config, in place of ./pi.ts.
  *
- * `session_stop`, not the `agent_end` of pi.ts: omp does not await
- * `agent_end`, so the follow-up message of pi.ts is lost when omp settles
- * first. omp awaits `session_stop`, sends it in the main agent only, and sets
+ * omp does not have Pi's `agent_before_settle` boundary. It awaits
+ * `session_stop`, sends it in the main agent only, and sets
  * `stop_hook_active` on the stop after a continuation, which is the loop
  * guard (omp 18.12.2, src/session/agent-session.ts:5338 and :5353-5400).
  */

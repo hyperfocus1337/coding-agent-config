@@ -6,13 +6,13 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters. An ad
 
 | Agent                 | Adapter                                                                                                                      | Loaded by                                                                   |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| pi                    | [`pi.ts`](pi.ts): `agent_end` sends the errors with `sendMessage` and `triggerTurn`, which starts one more run               | `extensions` in `dot_pi/agent/modify_settings.json`                         |
+| pi                    | [`pi.ts`](pi.ts): `agent_before_settle` appends findings and requests one shared correction run                              | `extensions` in `dot_pi/agent/modify_settings.json`                         |
 | omp                   | [`omp.ts`](omp.ts): `session_stop` returns `{ continue: true, additionalContext }` with the errors, which runs one more turn | `extensions` in `dot_omp/private_agent/private_config.yml`                  |
 | Claude Code and Codex | [`command.ts`](command.ts): exit code 2 with the errors on stderr                                                            | `Stop` in `dot_claude/settings.json.tmpl` and `dot_codex/modify_hooks.json` |
 
 ## What it checks
 
-The hook runs once when the agent stops: on `Stop` in Claude Code and Codex, on `agent_end` in pi, and on `session_stop` in omp. A stop carries no file path, so the hook asks git which files changed. It runs `pyrefly check` only when a changed or untracked `.py` file is in the repository, and it then checks the whole project.
+The hook runs once when the agent stops: on `Stop` in Claude Code and Codex, on `agent_before_settle` in Pi, and on `session_stop` in omp. A stop carries no file path, so the hook asks git which files changed. It runs `pyrefly check` only when a changed or untracked `.py` file is in the repository, and it then checks the whole project.
 
 The hook skips these cases with no output:
 
@@ -59,13 +59,13 @@ The hook stops each program (`git` or pyrefly) after 60 s and counts it as missi
 The model gets the stdout and stderr of pyrefly, and then this line:
 
 ```text
-Type check failed. For missing imports, first verify the project configuration, import roots, and Python environment used by Pyrefly before changing imports. Use the project's existing dependency and environment setup. Do not suppress diagnostics or weaken checking to obtain a pass. Fix the cause, rerun the check, then stop.
+Type check failed. For missing imports, first verify the project configuration, import roots, and Python environment used by Pyrefly before changing imports. Use the project's existing dependency and environment setup. Do not suppress diagnostics or weaken checking to obtain a pass. Fix the cause, rerun the check, then stop. Report any remaining failures.
 ```
 
 ### Each agent
 
 - **Claude Code and Codex:** `command.ts` exits 2 with the errors on stderr, which blocks the stop. The model continues with the errors.
-- **pi:** `pi.ts` sends the errors as a follow-up message, and the message starts one more run.
+- **Pi:** `pi.ts` appends findings to the pre-settlement boundary entries. Lint and type-check findings reach one correction run together.
 - **omp:** `omp.ts` returns the errors from `session_stop` as context for one more turn.
 
 `command.ts` uses these exit codes:
@@ -79,7 +79,7 @@ Type check failed. For missing imports, first verify the project configuration, 
 The loop guard gives the model one try to fix the errors. A check that still fails does not block each stop after it.
 
 - **Claude Code, Codex, and omp:** the agent sets `stop_hook_active` on the stop after a block. The adapter then lets the stop pass.
-- **pi:** pi has no `stop_hook_active`, so `pi.ts` keeps a flag. The end of the run that it started passes without a check, and the run after it is checked again.
+- **Pi:** each handler checks once before settlement, even when it passes. Correction boundaries skip the check. `agent_settled` resets the flag for the next activity. The model must rerun checks itself during correction and report remaining failures.
 
 ## What you see
 

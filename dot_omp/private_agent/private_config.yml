@@ -18,7 +18,6 @@ commands:
 extensions:
   - ~/.claude/hooks/block-destructive-commands/pi.ts
   - ~/.claude/hooks/enforce-cli-tools/pi.ts
-  - ~/.claude/hooks/lint-code/pi.ts
   - ~/.claude/hooks/lint-code/omp.ts
   - ~/.claude/hooks/format-oxfmt/pi.ts
   - ~/.claude/hooks/format-oxfmt/omp.ts

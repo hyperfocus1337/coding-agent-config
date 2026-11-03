@@ -1,7 +1,4 @@
-/**
- * The file and process functions of ./core.ts under Node, for command.ts and
- * pi.ts. The mod defines the same functions over `$` in hooks/register.ts.
- */
+/** File and process functions for the stop-time adapters. */
 
 import { spawn } from "node:child_process";
 import { readFile, stat } from "node:fs/promises";
@@ -25,11 +22,21 @@ export function nodeIo(cwd: string): Io {
         });
         let stdout = "";
         let stderr = "";
-        child.stdout.on("data", (chunk) => (stdout += chunk));
-        child.stderr.on("data", (chunk) => (stderr += chunk));
-        // A program that cannot start (not installed) skips its file.
-        child.on("error", () => resolve(undefined));
-        child.on("close", (code) => resolve({ exitCode: code ?? 1, output: stdout + stderr }));
+        let timedOut = false;
+        const timer = setTimeout(() => {
+          timedOut = true;
+          child.kill("SIGKILL");
+        }, 30_000);
+        child.stdout.setEncoding("utf8").on("data", (chunk) => (stdout += chunk));
+        child.stderr.setEncoding("utf8").on("data", (chunk) => (stderr += chunk));
+        child.on("error", () => {
+          clearTimeout(timer);
+          resolve(undefined);
+        });
+        child.on("close", (code) => {
+          clearTimeout(timer);
+          resolve(timedOut ? undefined : { exitCode: code ?? 1, output: stdout + stderr });
+        });
       }),
   };
 }
