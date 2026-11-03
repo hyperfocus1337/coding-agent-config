@@ -1,6 +1,6 @@
 # cmux state
 
-Publishes Pi lifecycle state for the host bridge in [`coding-agent-sandbox/scripts/agents/pi-cmux.py`](../../../../../coding-agent-sandbox/scripts/agents/pi-cmux.py). The sandbox's `just pi` launcher sets `CMUX_PI_STATE_FILE` to a private temporary file inside the container. Without that variable, this extension registers no handlers.
+Publishes Pi lifecycle state for the host bridge in [`coding-agent-sandbox/scripts/cmux/pi-cmux.py`](../../../../../coding-agent-sandbox/scripts/cmux/pi-cmux.py). The sandbox's `just pi` launcher sets `CMUX_PI_STATE_FILE` to a private temporary file inside the container. Without that variable, this extension registers no handlers.
 
 | Pi event                             | State     |
 | ------------------------------------ | --------- |
