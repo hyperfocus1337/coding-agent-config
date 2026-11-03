@@ -142,9 +142,9 @@ The hook reads these variables at run time, so export them in your shell, or set
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | `CLAUDE_LINT_DISABLE` | Turns the hook off when its list holds `prose` or `all`. `all` also turns off `lint-code`. Separate the items with spaces or commas. |
 | `AGENT_HOOKS_DISABLE` | Turns the hook off when its list holds `lint-prose`. `/toggle-hook` sets it.                                                         |
+| `LINT_PROSE_VALE_DIR` | Replaces `~/.config/vale` as the directory of the config and `scripts/check.sh`. The tests set it to `dot_config/vale`.              |
 
 The hook also reads `git config agent-hook.lint-prose.enabled` in the repository of the file. The value `false` turns the hook off in that repository, across sessions. Outside git, or with a value that is not a boolean, the hook stays on.
-| `LINT_PROSE_VALE_DIR` | Replaces `~/.config/vale` as the directory of the config and `scripts/check.sh`. The tests set it to `dot_config/vale`. |
 
 To turn the hook off for all sessions, run:
 
