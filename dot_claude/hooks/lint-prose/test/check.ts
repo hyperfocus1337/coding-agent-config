@@ -243,7 +243,7 @@ const bash = (file: string, session: string) => ({
 });
 const shellMd = write(`${tmp}/shell.md`, `${long}\n`);
 logLine("codex", `${testId}-codex`, "Bash", shellMd);
-const since = String(Math.floor(Date.now() / 1000) - 1);
+const since = String(Date.now() - 1000);
 await expect(
   "a Bash payload lints the prose files of its log lines",
   run(bash(shellMd, `${testId}-codex`), {}, [since]),

@@ -104,11 +104,11 @@ A file that the command reaches through a glob or a variable is not checked. To 
 
 The hook must read the log after `track-session-changes` writes it. Each agent gets this order in a different way:
 
-| Agent       | Order                                                                                                                                                                                                                                                                  |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Claude Code | The first folder of `CLAUDE_CODE_PLUGIN_DIRS` is the outermost mod, so its code after `next` runs last, see [the probe of 2026-11-01](../../track-session-changes/docs/implementation.md). `lint-prose` is first in the list. It takes the start time before `next`.   |
-| pi and omp  | pi runs the `tool_result` handlers in the order of `extensions`, and each handler sees the result of the one before. `lint-prose` comes after `track-session-changes`. It takes the start time in its own `tool_call` handler.                                         |
-| Codex       | Codex runs the handlers of one event at the same time (`execute_handlers_with_metadata` in `codex-rs/hooks/src/engine/dispatcher.rs`). So one Bash entry runs `track-session-changes`, then `command.ts` with the time from `date +%s` before it, on the same payload. |
+| Agent       | Order                                                                                                                                                                                                                                                                                    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code | The first folder of `CLAUDE_CODE_PLUGIN_DIRS` is the outermost mod, so its code after `next` runs last, see [the probe of 2026-11-01](../../track-session-changes/docs/implementation.md). `lint-prose` is first in the list. It takes the start time before `next`.                     |
+| pi and omp  | pi runs the `tool_result` handlers in the order of `extensions`, and each handler sees the result of the one before. `lint-prose` comes after `track-session-changes`. It takes the start time in its own `tool_call` handler.                                                           |
+| Codex       | Codex runs the handlers of one event at the same time (`execute_handlers_with_metadata` in `codex-rs/hooks/src/engine/dispatcher.rs`). So one Bash entry runs `track-session-changes`, then `command.ts` with the time in ms from `node -p 'Date.now()'` before it, on the same payload. |
 
 In Claude Code, this order also puts `lint-prose` outside the formatter mods. So the hook lints a Write or an Edit after the formatters change the file, on the text that is on disk.
 

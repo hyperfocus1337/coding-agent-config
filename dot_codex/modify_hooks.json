@@ -34,7 +34,7 @@ ours=$(cat <<'EOF'
             "type": "command"
           },
           {
-            "command": "command -v node >/dev/null || exit 0; export NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\"; since=$(date +%s); payload=$(cat); printf '%s' \"$payload\" | node \"$HOME/.claude/hooks/track-session-changes/command.ts\" codex; printf '%s' \"$payload\" | node \"$HOME/.claude/hooks/lint-prose/command.ts\" \"$since\"",
+            "command": "command -v node >/dev/null || exit 0; export NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\"; since=$(node -p 'Date.now()'); payload=$(cat); printf '%s' \"$payload\" | node \"$HOME/.claude/hooks/track-session-changes/command.ts\" codex; printf '%s' \"$payload\" | node \"$HOME/.claude/hooks/lint-prose/command.ts\" \"$since\"",
             "timeout": 25,
             "type": "command"
           }

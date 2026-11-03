@@ -10,7 +10,7 @@
  * config, or alerts this session already reported. Exits 0 and prints
  * nothing otherwise.
  *
- * Run: node command.ts [<since>], with <since> in seconds since the epoch,
+ * Run: node command.ts [<since>], with <since> in ms since the epoch,
  * for a Bash payload.
  */
 
@@ -38,7 +38,7 @@ const files =
           io,
           { home: homedir(), agent: "codex", session },
           "Bash",
-          Number(since) * 1000,
+          Number(since),
           text(payload.tool_input?.command) ?? "",
         )
       : [];
