@@ -84,15 +84,33 @@ The key holds the paragraph text, not the line number, for two reasons:
 
 A payload with no `session_id`, or one with characters outside `A-Z a-z 0-9 _ -`, has no record, so every alert blocks. The record stays in `$TMPDIR` until the system clears it.
 
-## Why not Bash
+## Shell calls
 
-The hook ran on Bash until 2026-10-13. A Bash payload names no file, so the hook took the prose paths from the command text and kept the ones with an mtime under 120 seconds old.
+### History
 
-The command text also names files that the command only reads. In one session, 5 read-only commands such as `rg … config.org` and `sed -n 420p config.org` each blocked, because a parallel session had saved `config.org` in the last 2 minutes. An mtime cannot tell which process wrote the file.
+The hook first ran on Bash until 2026-10-13. A Bash payload names no file, so the hook took the prose paths from the command text and kept the ones with an mtime under 120 seconds old. The command text also names files that the command only reads. In one session, 5 read-only commands such as `rg … config.org` and `sed -n 420p config.org` each blocked, because a parallel session had saved `config.org` in the last 2 minutes. An mtime cannot tell which process wrote the file.
 
-To find the files a command wrote, the hook must compare the disk before and after the command, as [`track-session-changes`](../../track-session-changes/README.md) does. That is a `PreToolUse` snapshot and state per call, for prose that the model almost always writes with `Write` or `Edit`.
+From 2026-10-13 to 2026-11-03 the hook did not run on Bash, because the model was expected to write prose with `Write` or `Edit`. Auto mode of Claude Code broke that expectation: its system prompt tells the model that it can make small file changes with sed, heredocs, or short scripts. On 2026-11-03 a session added a clause to a 521-word Org paragraph through a `python3` heredoc, and the hook did not see the change.
 
-So the hook does not run on Bash, and prose that a Bash command writes, such as `cat > notes.md <<EOF`, is not checked. To check it, run `/prose-cleanup` or `check.sh`.
+### The log of track-session-changes
+
+[`track-session-changes`](../../track-session-changes/README.md) already takes a git snapshot of the work tree before each shell call, and logs the files that differ after it. A file that the command only reads does not differ, so it is not in the log. The hook reads the last 1000 lines of that log with `tail`, and takes no snapshot of its own.
+
+The snapshot cannot tell which process wrote a file. During a long call, such as a test run, another session can save a prose file in the same repository. So the hook keeps only a file whose basename the command text names. In pi and omp the text is the JSON of the tool input, so an `eval` call counts with its code.
+
+A file that the command reaches through a glob or a variable is not checked. To check it, run `/prose-cleanup` or `check.sh`.
+
+### Hook order
+
+The hook must read the log after `track-session-changes` writes it. Each agent gets this order in a different way:
+
+| Agent       | Order                                                                                                                                                                                                                                                                  |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code | The first folder of `CLAUDE_CODE_PLUGIN_DIRS` is the outermost mod, so its code after `next` runs last, see [the probe of 2026-11-01](../../track-session-changes/docs/implementation.md). `lint-prose` is first in the list. It takes the start time before `next`.   |
+| pi and omp  | pi runs the `tool_result` handlers in the order of `extensions`, and each handler sees the result of the one before. `lint-prose` comes after `track-session-changes`. It takes the start time in its own `tool_call` handler.                                         |
+| Codex       | Codex runs the handlers of one event at the same time (`execute_handlers_with_metadata` in `codex-rs/hooks/src/engine/dispatcher.rs`). So one Bash entry runs `track-session-changes`, then `command.ts` with the time from `date +%s` before it, on the same payload. |
+
+In Claude Code, this order also puts `lint-prose` outside the formatter mods. So the hook lints a Write or an Edit after the formatters change the file, on the text that is on disk.
 
 ## Why it blocks
 

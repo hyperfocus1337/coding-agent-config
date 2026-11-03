@@ -12,7 +12,8 @@ import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { check as lintProse } from "../core.ts";
+import { check as lintProse, shellFiles } from "../core.ts";
+import { nodeIo } from "../io.ts";
 import { register } from "../hooks/register.ts";
 import ompExtension from "../omp.ts";
 import extension from "../pi.ts";
@@ -52,8 +53,8 @@ const base: Record<string, string | undefined> = {
 };
 
 /** Runs command.ts on a payload; returns the exit code and stderr. */
-function run(payload: object, env: Record<string, string | undefined> = {}) {
-  const ran = spawnSync(process.execPath, [`${hook}/command.ts`], {
+function run(payload: object, env: Record<string, string | undefined> = {}, args: string[] = []) {
+  const ran = spawnSync(process.execPath, [`${hook}/command.ts`, ...args], {
     input: JSON.stringify(payload),
     encoding: "utf8",
     env: { ...base, ...env },
@@ -200,13 +201,65 @@ await expect("HTML: script and pre are not counted", ran, 0);
 ran = run(edit(write(`${tmp}/notes.txt`, `${long}\n\nShort.\n`)));
 await expect("plain text: a long paragraph is blocked", ran, 2, "notes.txt:1:");
 
-// --- Bash ---
-// Not wired to Bash, but a Bash payload that reaches the hook must not block.
-ran = run({
-  hook_event_name: "PostToolUse",
-  tool_input: { command: `cat ${longMd}` },
+// --- Shell calls, through the log of track-session-changes ---
+// The logs go in the real state folder, because vale is a mise shim that
+// needs the real HOME. A session id of this run keeps them apart.
+const testId = `lint-prose-test-${process.pid}`;
+const logs: string[] = [];
+/** Appends a log line as track-session-changes writes it. */
+function logLine(agent: string, session: string, tool: string, file: string, extra = {}) {
+  const { status, end } = { status: "M", end: new Date(), ...extra };
+  const dir = `${os.homedir()}/.local/state/agent-changes/${agent}`;
+  fs.mkdirSync(dir, { recursive: true });
+  const log = `${dir}/${session}.tsv`;
+  if (!logs.includes(log)) logs.push(log);
+  const time = end.toISOString();
+  fs.appendFileSync(log, `${[time, time, tool, status, "", file, "1", "", ""].join("\t")}\n`);
+}
+
+await check("shellFiles: keeps the named prose files that the call logged", async () => {
+  const session = `${testId}-files`;
+  const since = Date.now();
+  logLine("claude", session, "Bash", `${tmp}/old.md`, { end: new Date(since - 1000) });
+  for (const file of ["a.md", "a.md", "gone.md", "b.org", "other.md", "notes.log"])
+    logLine("claude", session, "Bash", `${tmp}/${file}`, file === "gone.md" ? { status: "D" } : {});
+  logLine("claude", session, "Edit", `${tmp}/edit.md`);
+  logLine("claude", session, "Bash", "", { status: "C" });
+  const text = "sed -i s/x/y/ a.md b.org gone.md old.md edit.md notes.log";
+  const log = { home: os.homedir(), agent: "claude", session };
+  assert.deepEqual(await shellFiles(nodeIo(), log, "Bash", since, text), [
+    `${tmp}/a.md`,
+    `${tmp}/b.org`,
+  ]);
+  for (const bad of [{ session: "../x" }, { session: `${testId}-none` }, { home: "" }])
+    assert.deepEqual(await shellFiles(nodeIo(), { ...log, ...bad }, "Bash", since, text), []);
 });
-await expect("a Bash payload is left alone", ran, 0);
+
+const bash = (file: string, session: string) => ({
+  hook_event_name: "PostToolUse",
+  session_id: session,
+  tool_name: "Bash",
+  tool_input: { command: `python3 edit.py ${path.basename(file)}` },
+});
+const shellMd = write(`${tmp}/shell.md`, `${long}\n`);
+logLine("codex", `${testId}-codex`, "Bash", shellMd);
+const since = String(Math.floor(Date.now() / 1000) - 1);
+await expect(
+  "a Bash payload lints the prose files of its log lines",
+  run(bash(shellMd, `${testId}-codex`), {}, [since]),
+  2,
+  "shell.md:1:",
+);
+await expect(
+  "a Bash payload without a time is left alone",
+  run(bash(shellMd, `${testId}-codex`)),
+  0,
+);
+await expect(
+  "a Bash payload with no log line is left alone",
+  run(bash(longMd, `${testId}-codex`), {}, [since]),
+  0,
+);
 
 // --- Only the changed paragraphs (a git repo) ---
 const repo = `${tmp}/repo`;
@@ -359,23 +412,33 @@ const clean = write(`${tmp}/clean.md`, "Short.\n");
 const notices: string[] = [];
 const ctx = {
   cwd: tmp,
-  sessionManager: { getSessionId: () => "pi" },
+  sessionManager: { getSessionId: () => `${testId}-pi` },
   ui: { notify: (text: string) => notices.push(text) },
 };
-/** Loads an extension; returns a function that calls its tool_result handler. */
+/**
+ * Loads an extension; returns a function that calls its tool_call handler,
+ * then `during`, the tool, then its tool_result handler.
+ */
 function caller(load: typeof extension) {
-  let handler: (event: unknown, ctx: unknown) => Promise<unknown>;
-  load({ on: (_name: string, on: typeof handler) => (handler = on) } as never);
-  return (toolName: string, input: object, isError = false) =>
-    handler(
+  type Handler = (event: unknown, ctx: unknown) => unknown;
+  const handlers: Record<string, Handler> = {};
+  load({ on: (name: string, on: Handler) => (handlers[name] = on) } as never);
+  let id = 0;
+  return (toolName: string, input: object, isError = false, during = () => {}) => {
+    const toolCallId = String((id += 1));
+    handlers.tool_call?.({ toolName, input, toolCallId }, ctx);
+    during();
+    return handlers.tool_result?.(
       {
         toolName,
+        toolCallId,
         input,
         content: [{ type: "text", text: "written" }],
         isError,
       },
       ctx,
     ) as Promise<{ content: { text: string }[]; isError: boolean } | undefined>;
+  };
 }
 const piCall = caller(extension);
 await check("pi.ts: appends the alerts and marks an error", async () => {
@@ -394,6 +457,19 @@ await check("pi.ts: leaves a clean file, a failed call, and other tools alone", 
   assert.equal(await piCall("edit", { path: "failed.md" }, true), undefined);
   assert.equal(await piCall("read", { path: "failed.md" }), undefined);
 });
+await check("pi.ts: a bash call, also a failed one, lints the files of its log lines", async () => {
+  const file = write(`${tmp}/pi-bash.md`, `${long}\n`);
+  const result = await piCall("bash", { command: "sed -i s/a/b/ pi-bash.md" }, true, () =>
+    logLine("pi", `${testId}-pi`, "bash", file),
+  );
+  assert.equal(result?.isError, true);
+  assert.match(result?.content[1]?.text ?? "", /pi-bash\.md:1:.*ParagraphLength/);
+});
+await check("pi.ts: a bash line from before the call is left alone", async () => {
+  const file = write(`${tmp}/pi-old.md`, `${long}\n`);
+  logLine("pi", `${testId}-pi`, "bash", file, { end: new Date(Date.now() - 1000) });
+  assert.equal(await piCall("bash", { command: "cat pi-old.md" }), undefined);
+});
 
 const ompCall = caller(ompExtension);
 await check("omp.ts: lints each file of a multi-file edit", async () => {
@@ -402,11 +478,19 @@ await check("omp.ts: lints each file of a multi-file edit", async () => {
   assert.equal(result?.isError, true);
   assert.match(result?.content[1]?.text ?? "", /omp\.md:1:.*ParagraphLength/);
 });
-await check("omp.ts: leaves the one file of an edit to pi.ts, and a failed call", async () => {
+await check("omp.ts: lints the one file of an edit once, and leaves a failed call", async () => {
   write(`${tmp}/omp-one.md`, `${long}\n`);
-  assert.equal(await ompCall("edit", { path: "omp-one.md", paths: ["omp-one.md"] }), undefined);
-  assert.equal(await ompCall("edit", { paths: ["omp-one.md", "clean.md"] }, true), undefined);
-  assert.equal(await ompCall("write", { path: "omp-one.md" }), undefined);
+  const result = await ompCall("edit", { path: "omp-one.md", paths: ["omp-one.md"] });
+  assert.equal(result?.content[1]?.text.match(/omp-one\.md:1:/g)?.length, 1);
+  write(`${tmp}/omp-failed.md`, `${long}\n`);
+  assert.equal(await ompCall("edit", { paths: ["omp-failed.md"] }, true), undefined);
+});
+await check("omp.ts: an eval call lints the files of its log lines", async () => {
+  const file = write(`${tmp}/omp-eval.md`, `${long}\n`);
+  const result = await ompCall("eval", { code: "open('omp-eval.md', 'w')" }, false, () =>
+    logLine("omp", `${testId}-pi`, "eval", file),
+  );
+  assert.match(result?.content[1]?.text ?? "", /omp-eval\.md:1:/);
 });
 
 type Hook = (...args: unknown[]) => Promise<unknown>;
@@ -417,7 +501,7 @@ register(
 );
 const toasts: string[] = [];
 const stub$ = {
-  session: { id: async () => "mod" },
+  session: { id: async () => `${testId}-mod` },
   env: { get: async (name: string) => process.env[name] },
   fs: {
     stat: async (file: string) => ({
@@ -470,6 +554,31 @@ await check("register.ts: passes a clean result, a deny, and an error through", 
   assert.equal(await modCall(`${tmp}/failed.md`, failed), failed);
 });
 
+await check("register.ts: a Bash call, also a failed one, lints the files of its log", async () => {
+  const file = write(`${tmp}/mod-bash.md`, `${long}\n`);
+  const failed = { isError: true, text: "exit 1" };
+  const done = (await modHook?.(
+    stub$,
+    { tool: "Bash", command: "sh x.sh mod-bash.md" },
+    async () => {
+      logLine("claude", `${testId}-mod`, "Bash", file);
+      return failed;
+    },
+  )) as { context?: string[] };
+  assert.match(done.context?.[0] ?? "", /^Prose lint errors[\s\S]*mod-bash\.md:1:/);
+});
+await check("register.ts: a Bash line from before the call is left alone", async () => {
+  const file = write(`${tmp}/mod-old.md`, `${long}\n`);
+  logLine("claude", `${testId}-mod`, "Bash", file, { end: new Date(Date.now() - 1000) });
+  const done = await modHook?.(
+    stub$,
+    { tool: "Bash", command: "cat mod-old.md" },
+    async () => result,
+  );
+  assert.equal(done, result);
+});
+
+for (const log of logs) fs.rmSync(log, { force: true });
 fs.rmSync(tmp, { recursive: true });
 if (failures) {
   console.error(`${failures} failed`);

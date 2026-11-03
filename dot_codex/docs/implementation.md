@@ -41,7 +41,7 @@ With no `file_path`, each hook takes its Bash branch, which guesses the files fr
 
 - `format-oxfmt` formats only the markdown files that git shows as changed. It skips `src/app.py`.
 - `format-org-tables` and `format-code` search the text for strings that look like file names. A patch is not a shell command, so they miss files or pick wrong ones.
-- `lint-prose` has no Bash branch, so it checks nothing.
+- `lint-prose` takes the files of a Bash call from the log of `track-session-changes`. An `apply_patch` payload is not a Bash call, so it checks nothing.
 
 Without the wrapper, most files that Codex edits are not formatted or prose-linted. Code linting uses a separate Stop hook and reads changed paths from git, so it does not need the wrapper.
 

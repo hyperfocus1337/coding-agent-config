@@ -1,19 +1,19 @@
 # lint-prose
 
-Lints the prose in each Markdown, Org, HTML, or plain-text file that a Write or an Edit changed, through [Vale](https://vale.sh/), a prose linter. It gives the alerts to the model, so that the model fixes the text.
+Lints the prose in each Markdown, Org, HTML, or plain-text file that a Write, an Edit, or a shell command changed, through [Vale](https://vale.sh/), a prose linter. It gives the alerts to the model, so that the model fixes the text.
 
 One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
-| Agent       | Adapter                                                                                                    | Loaded by                                                                |
-| ----------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write and Edit adds `context` after `next` | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                        |
-| pi          | [`pi.ts`](pi.ts): `tool_result` on write and edit returns `{ content, isError: true }`                     | `extensions` in `dot_pi/agent/modify_settings.json`                      |
-| omp         | [`pi.ts`](pi.ts) as in pi, and [`omp.ts`](omp.ts): `tool_result` on an omp edit of more than one file      | `extensions` in `dot_omp/private_agent/private_config.yml`               |
-| Codex       | [`command.ts`](command.ts): exit code 2 with the alerts on stderr, exit code 1 with a message for you      | `PostToolUse` on `apply_patch`, through `dot_codex/hooks/apply-patch.ts` |
+| Agent       | Adapter                                                                                                           | Loaded by                                                                                 |
+| ----------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash adds `context` after `next` | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`, first in the list                      |
+| pi          | [`pi.ts`](pi.ts): `tool_result` on write, edit, and bash returns `{ content, isError: true }`                     | `extensions` in `dot_pi/agent/modify_settings.json`, after `track-session-changes`        |
+| omp         | [`omp.ts`](omp.ts): the code of `pi.ts`, with `bash` and `eval` as shell tools                                    | `extensions` in `dot_omp/private_agent/private_config.yml`, after `track-session-changes` |
+| Codex       | [`command.ts`](command.ts): exit code 2 with the alerts on stderr, exit code 1 with a message for you             | `PostToolUse` on `apply_patch` through `dot_codex/hooks/apply-patch.ts`, and on Bash      |
 
 ## What it checks
 
-The hook runs after a Write or an Edit, on the file that the call names. It checks the limits in `writing.md`:
+The hook runs after a Write or an Edit on the file that the call names, and after a shell command on the prose files that it changed, see [Shell calls](#shell-calls). It checks the limits in `writing.md`:
 
 - A paragraph, list item, or blockquote has at most 5 sentences and at most 100 words.
 - A section without subheadings has at most 400 words.
@@ -32,10 +32,10 @@ Vale reads only the prose. It skips frontmatter, Org keyword lines, headings, co
 
 The hook skips these calls and files:
 
-- A denied or failed call in Claude Code, pi, and omp, because the call wrote nothing.
+- A denied call, and a failed Write or Edit, because the call wrote nothing. A failed shell command can have written files, so the hook checks it.
 - A file under `/tmp`, `/var/tmp`, or `$TMPDIR`.
 - A file with an extension that is not in the table above, and a path that is not a file.
-- Prose that a Bash command writes. See [Why not Bash](docs/implementation.md#why-not-bash).
+- A file that a shell command changed but does not name, for example through a glob such as `sed -i … *.md`. See [Shell calls](#shell-calls).
 
 ## Requirements
 
@@ -46,20 +46,39 @@ brew install vale # macOS
 mise use -g vale # Linux, or any system with mise
 ```
 
-The hook also needs the Vale config in `~/.config/vale/`, which `just chezmoi` deploys. The mod needs Claude Code 2.1.296 or later, the oldest version tested.
+The hook also needs the Vale config in `~/.config/vale/`, which `just chezmoi` deploys. For shell calls it needs [`track-session-changes`](../track-session-changes/README.md) in the same agent, because that hook writes the log of the changed files. The mod needs Claude Code 2.1.296 or later, the oldest version tested.
 
 `pi.ts`, `command.ts`, and `apply-patch.ts` need Node 23.6 or later, which runs `.ts` files without a flag. The Codex entry starts with `command -v node >/dev/null || exit 0`, so a machine without Node gets no error on each call. The `SessionStart` check then gives a warning, see [A missing `node` gives a warning](../README.md#shared-conventions).
 
-Codex runs a hook only after you trust its entry. After the change from `hook.sh` to `command.ts`, trust the hooks again in the Codex TUI, on the host and in the devcontainer. See [`docs/agents/codex.md`](../../../docs/agents/codex.md#trust).
+Codex runs a hook only after you trust its entry. After the change from `hook.sh` to `command.ts`, and after the new Bash entry of 2026-11-03, trust the hooks again in the Codex TUI, on the host and in the devcontainer. See [`docs/agents/codex.md`](../../../docs/agents/codex.md#trust).
 
 ## How it works
 
-After each Write or Edit, the hook does these steps:
+After each Write or Edit, and for each file of a shell call, the hook does these steps:
 
 1. It stops when the repository of the file sets `agent-hook.lint-prose.enabled` to `false` in git config. It runs this `git config` only for a prose file that exists outside a temp folder.
 2. It runs [`check.sh`](../../../dot_config/vale/scripts/check.sh) on the whole file. `check.sh` runs Vale with the shared [`vale.ini`](../../../dot_config/vale/vale.ini) in `~/.config/vale/`.
 3. It keeps only the alerts on the paragraphs that changed.
 4. It gives each new alert to the model. It gives an alert that this session already reported to you only.
+
+### Shell calls
+
+A shell command names no file that it writes, and a file that it names can be a file that it only reads. So for a shell call, the hook takes the files from the log of [`track-session-changes`](../track-session-changes/README.md), which compares a git snapshot before and after the call. These tools count as shell calls:
+
+| Agent       | Tools             |
+| ----------- | ----------------- |
+| Claude Code | `Bash`            |
+| pi          | `bash`            |
+| omp         | `bash` and `eval` |
+| Codex       | `Bash`            |
+
+The hook lints a file of the log when all of these are true:
+
+- The log line has the tool of the call, and status `A` or `M`.
+- The call of the log line ended at or after the start of this call.
+- The command text names the basename of the file, for example `testing.org`. The snapshot also logs a file that another process changed during the call, and this check drops most of those files.
+
+The log must be written before the hook reads it. [Hook order](docs/implementation.md#hook-order) tells how each agent gets this order.
 
 ### The shared Vale config
 

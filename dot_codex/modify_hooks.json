@@ -34,8 +34,8 @@ ours=$(cat <<'EOF'
             "type": "command"
           },
           {
-            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/track-session-changes/command.ts\" codex",
-            "timeout": 10,
+            "command": "command -v node >/dev/null || exit 0; export NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\"; since=$(date +%s); payload=$(cat); printf '%s' \"$payload\" | node \"$HOME/.claude/hooks/track-session-changes/command.ts\" codex; printf '%s' \"$payload\" | node \"$HOME/.claude/hooks/lint-prose/command.ts\" \"$since\"",
+            "timeout": 25,
             "type": "command"
           }
         ],

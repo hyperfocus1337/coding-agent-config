@@ -1,10 +1,10 @@
 /**
  * The lint-prose logic: lints the prose in the file a Write or Edit changed,
  * through check.sh and Vale. Only the alerts in paragraphs that git reports as
- * changed count, and each alert blocks once per session. Not on Bash: a
- * command names files it only reads, and a read must not block. The adapters
- * pass in the file and process functions, because a mod reaches them only
- * through `$`.
+ * changed count, and each alert blocks once per session. A shell call names
+ * no file it writes, so `shellFiles` takes its files from the log of
+ * track-session-changes. The adapters pass in the file and process functions,
+ * because a mod reaches them only through `$`.
  *
  * Adapters: hooks/register.ts (Claude Code mod), pi.ts and omp.ts (pi and
  * omp), command.ts (Codex). Design notes and the rules: docs/implementation.md.
@@ -43,6 +43,7 @@ export interface Result {
 
 const PROSE = /\.(md|markdown|org|html?|txt)$/;
 const BLANK = /^\s*$/;
+const SESSION = /^[A-Za-z0-9_-]+$/;
 
 const dirname = (path: string) => path.slice(0, path.lastIndexOf("/")) || "/";
 
@@ -94,6 +95,44 @@ async function repoOff(dir: string, io: Io): Promise<boolean> {
   const key = "agent-hook.lint-prose.enabled";
   const ran = await io.run(["git", "config", "--type=bool", "--get", key], dir);
   return ran?.stdout.trim() === "false";
+}
+
+/** The session of a track-session-changes log: its home folder, agent, and id. */
+export interface Log {
+  home: string;
+  agent: string;
+  session: string;
+}
+
+/**
+ * The prose files that a shell call wrote, from the log of
+ * track-session-changes: the lines of `tool` with status A or M that ended at
+ * or after `since`, in ms. The adapter makes sure that track-session-changes
+ * wrote them before this runs. A file counts only when `text`, the command,
+ * names its basename, because the snapshot also logs a file that another
+ * process changed during the call. docs/implementation.md "Shell calls".
+ */
+export async function shellFiles(
+  io: Io,
+  log: Log,
+  tool: string,
+  since: number,
+  text: string,
+): Promise<string[]> {
+  if (!log.home || !SESSION.test(log.session) || !SESSION.test(log.agent)) return [];
+  // The same path as `logFile` in ../track-session-changes/core.ts.
+  const file = `${log.home}/.local/state/agent-changes/${log.agent}/${log.session}.tsv`;
+  // shortcut: the last 1000 lines, so a call that logs more files can miss
+  // its first ones. The upgrade is a read from the log size at the call start.
+  const ran = await io.run(["tail", "-n", "1000", file], "/");
+  if (ran?.exitCode !== 0) return [];
+  const files = new Set<string>();
+  for (const line of ran.stdout.split("\n")) {
+    const [, end = "", name, status = "", , path = ""] = line.split("\t");
+    if (name !== tool || !/^[AM]$/.test(status) || !(Date.parse(end) >= since)) continue;
+    if (PROSE.test(path) && text.includes(path.slice(path.lastIndexOf("/") + 1))) files.add(path);
+  }
+  return [...files];
 }
 
 /** Lints one file. The session id keys the once-per-session record. */
@@ -154,7 +193,7 @@ export async function check(
   // edit that leaves it too long makes it new again. No valid session id, no
   // record: every alert blocks. docs/implementation.md "Once per session".
   const record =
-    session && /^[A-Za-z0-9_-]+$/.test(session)
+    session && SESSION.test(session)
       ? `${settings.tmpdir || "/tmp"}/lint-prose-${session}`
       : undefined;
   const before = record ? ((await io.read(record)) ?? "") : "";
