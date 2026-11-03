@@ -9,7 +9,7 @@ Publishes Pi lifecycle state for the host bridge in [`coding-agent-sandbox/scrip
 | `agent_settled`, when `ctx.isIdle()` | `idle`    |
 | `session_shutdown`                   | `closed`  |
 
-The host checks the latest state once per second and reports it to the cmux surface that launched Pi. It clears the indicator when `docker exec` exits, including an unexpected exit. Short transitions can occur between checks and will not appear in cmux.
+The host checks the latest state once per second and reports it to the cmux surface that launched Pi. It clears the indicator when `docker exec` exits, including an unexpected exit. Short transitions can occur between checks and will not appear in cmux. On a macOS host, the bridge also holds `caffeinate -i` while the state is `running`, so idle sleep does not pause Pi during a task. See [`docs/runtime/macos-sleep.md`](../../../../docs/runtime/macos-sleep.md).
 
 This extension sends no prompts, tool data, credentials, or session IDs. It does not use the cmux socket, send notifications, create Feed events, or save session-restore data. The launcher's existing notification extension still handles completion notifications.
 

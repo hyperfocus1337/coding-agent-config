@@ -13,9 +13,15 @@ This protection has two limits:
 
 Sleep monitors such as the Raycast Coffee extension count these processes as external caffeination, one for each Claude Code session that works.
 
+## Automatic sleep prevention for pi in the devcontainer
+
+When you start pi with `just pi <project>` from a cmux pane, the sandbox's host bridge, `coding-agent-sandbox/scripts/cmux/pi-cmux.py`, prevents idle sleep while pi works. The [`cmux-state`](../../dot_pi/agent/extensions/cmux-state/README.md) extension writes `running` or `idle` in the container. The bridge reads that state once per second on the host, and holds `caffeinate -i -w <bridge PID>` while the state is `running`. The `-w` flag ends `caffeinate` with the bridge, also when the bridge stops without cleanup.
+
+Like Claude Code, this stops between tasks. Without cmux, the bridge gets no state, and there is no sleep prevention. See `docs/cmux/pi-lifecycle.md` in the sandbox repository for details.
+
 ## Prevent idle sleep manually
 
-Use a manual `caffeinate` for agents in a devcontainer, for agents without built-in sleep prevention, or to keep the Mac awake between tasks.
+Use a manual `caffeinate` for Claude Code in a devcontainer, for pi outside cmux, for other agents, or to keep the Mac awake between tasks.
 
 1. Open a terminal tab on the **Mac host**, not inside the devcontainer.
 2. Run:
@@ -42,6 +48,6 @@ A Linux devcontainer cannot run macOS `caffeinate` or prevent the Mac host from 
 - Keep the Mac connected to power for long tasks. Sleep prevention does not prevent battery exhaustion.
 - Keep the agent terminal connected. Sleep prevention does not protect a session from terminal closure, container shutdown, or Docker shutdown.
 - An agent can still stop at a permission prompt or wait for input. Sleep prevention does not approve operations.
-- This repository configures no sleep prevention of its own. Tying it to the devcontainer lifetime would also keep the Mac awake while that container is idle; tracking only active sessions inside a devcontainer requires a host-side monitor.
+- Claude Code in a devcontainer has no automatic sleep prevention. Tying it to the devcontainer lifetime would also keep the Mac awake while that container is idle; tracking only active sessions requires a host-side monitor, as the pi bridge does with `cmux-state`.
 
 See `man caffeinate` on the Mac host for the available flags.
