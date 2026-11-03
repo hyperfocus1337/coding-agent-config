@@ -1,0 +1,25 @@
+# Shared execution rules
+
+## Prevent automatic writes
+
+A shell call can trigger automatic formatting, including a Markdown sweep of existing changes. Before the first shell call, record the state of the `format-oxfmt`, `format-org-tables`, and `format-code` hooks, then suspend only these hooks through supported session controls. A variable set inside the shell does not disable hooks in the parent agent. Restore the recorded state at the end, also on failure. If no safe session control exists, stop and ask the user to suspend these hooks.
+
+## Preparation
+
+Work from the git worktree root. Record the initial working tree status. Keep existing edits and the index as they are: do not stage, commit, reset, or stash.
+
+Read the installed hook core and adapters under `~/.claude/hooks/`, and the README if present. The code is the source for extensions, routing, flags, working directories, and configuration paths. If the code is not available, report this limit. Run the tools directly: an event adapter can hide failures, skip unchanged files, or write files.
+
+Honor `AGENT_HOOKS_DISABLE`, `CLAUDE_LINT_DISABLE`, repository `agent-hook.*` settings, the recorded formatter hook settings, and tool exclusions. Report disabled checks. Do not install tools, change configuration, or weaken rules to make a check pass.
+
+## Scope and results
+
+The scope is all tracked and non-ignored untracked files from NUL-delimited git output, not only changed files. Exclude deleted files, symlinks, submodules, dependency directories, generated output, and paths that tool configuration excludes.
+
+Run every applicable check, also after findings. Report findings apart from parse errors, timeouts, missing tools, and other execution failures. A skipped or failed check means the run is not a complete pass.
+
+Show a table by tool and project or file group: status, files checked, findings, and skip or failure reason. Include all diagnostic locations and messages. If the output is large, save it outside the repository and give its path with a summary.
+
+In check mode, use non-writing flags and write no build artifacts. At the end, compare the source status and diffs with the initial state, and report an unexpected change without discarding it.
+
+In apply or fix mode, use only tool output: no manual edits. Report changed files and remaining findings.
