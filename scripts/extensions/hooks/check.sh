@@ -93,7 +93,7 @@ cat >"${WORK}/node.tsconfig.json" <<JSON
     "types": [],
     "paths": { "@earendil-works/pi-coding-agent": ["${PI_PACKAGE}/dist/index.d.ts"] }
   },
-  "include": ["${HOOKS}/*/pi.ts", "${HOOKS}/*/omp.ts", "${HOOKS}/*/command.ts", "${CODEX_HOOKS}/*.ts", "${CODEX_HOOKS}/test/*.ts", "${GIT_HOOKS}/*/main.ts", "${GIT_HOOKS}/*/test/*.ts"]
+  "include": ["${HOOKS}/*/pi.ts", "${HOOKS}/*/omp.ts", "${HOOKS}/*/command.ts", "${HOOKS}/*/repository.ts", "${CODEX_HOOKS}/*.ts", "${CODEX_HOOKS}/test/*.ts", "${GIT_HOOKS}/*/main.ts", "${GIT_HOOKS}/*/test/*.ts"]
 }
 JSON
 

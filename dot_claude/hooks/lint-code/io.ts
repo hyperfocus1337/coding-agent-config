@@ -35,7 +35,14 @@ export function nodeIo(cwd: string): Io {
         });
         child.on("close", (code) => {
           clearTimeout(timer);
-          resolve(timedOut ? undefined : { exitCode: code ?? 1, output: stdout + stderr });
+          resolve(
+            timedOut
+              ? { exitCode: -1, output: "timed out after 30 seconds" }
+              : {
+                  exitCode: code ?? -1,
+                  output: stdout + stderr || (code === null ? "process terminated by signal" : ""),
+                },
+          );
         });
       }),
   };

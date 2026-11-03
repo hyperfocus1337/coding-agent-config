@@ -164,6 +164,11 @@ pi: pi-apply pi-check
 hooks-check:
     "{{ SCRIPTS }}/extensions/hooks/check.sh"
 
+# Check all supported code files, including clean files. Missing tools fail the check.
+[group('hooks')]
+lint-code directory=".":
+    node "{{ REPO }}/dot_claude/hooks/lint-code/repository.ts" "{{ directory }}"
+
 # Time the TypeScript hooks on tool calls replayed from ~/.claude/projects, and update docs/hooks/performance/. Takes hours.
 [group('hooks')]
 hooks-perf:

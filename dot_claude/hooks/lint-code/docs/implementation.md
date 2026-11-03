@@ -2,32 +2,36 @@
 
 ## Files and boundaries
 
-`core.ts` selects changed files and routes them to linters. `io.ts` supplies file reads and bounded process execution. `command.ts` handles Claude Code and Codex Stop payloads. `pi.ts` handles Pi's `agent_before_settle`; `omp.ts` handles omp's `session_stop`. There is no Claude Code mod and no per-tool lint adapter.
+`core.ts` selects files, discovers configurations, routes linters, and collects coverage notices. `io.ts` supplies file reads and process execution. `command.ts`, `pi.ts`, and `omp.ts` handle agent boundaries. `repository.ts` is the noninteractive full-repository entry point. The core has no Node imports.
 
-The config files are deployed under `~/.claude/hooks/lint-code/config/`, with chezmoi's `dot_` prefix changed to a leading dot. README files, docs, and tests stay in the repository.
+The configuration files deploy under `~/.claude/hooks/lint-code/config/`, with chezmoi's `dot_` prefix changed to a leading dot. Source-tree execution also accepts the `dot_` names. README files, docs, and tests stay in the repository.
 
-## Changed paths
+## File selection
 
-The hook resolves the git root from the session directory. NUL-separated git output preserves spaces, newlines, and non-ASCII names. A set removes duplicates between the tracked diff and untracked list. File modification times and shell-command parsing are not used.
+Git returns NUL-separated paths, preserving spaces, newlines, and non-ASCII names. The changed-file check combines the diff against HEAD with untracked files. Before HEAD exists, it uses tracked and untracked files, so staged initial files are included. The explicit full check uses tracked and untracked files regardless of HEAD.
 
-Each retained path must have a supported extension and be a regular file on disk. Scratch paths are excluded. On macOS, both the path and `$TMPDIR` lose a leading `/private` before comparison. `$TMPDIR` matches a directory boundary, not an arbitrary prefix.
+A set removes duplicate paths. Each selected file must have a supported extension and be a regular file. Stop hooks exclude temporary directories, including macOS `/private/tmp` and `$TMPDIR`; the explicit full check permits them. Selection failures produce coverage notices in stop hooks and fail the explicit command.
 
-The git diff includes work from before the session. A `shortcut:` comment names the limit and the upgrade to transcript-based path tracking. Before the first commit, the diff against HEAD fails and only the untracked list contributes paths.
+The diff includes pre-existing uncommitted work. A `shortcut:` comment names that limit and the upgrade to transcript-based tracking.
 
-Linters run from the repository root unless they require a different directory. Tflint runs in the module folder: tflint 0.64.0 does not match the intended file with the previous `--chdir` approach. Its `--filter` keeps findings for each changed file.
+## YAML configuration and exclusions
 
-## Pi boundary composition
+Configuration discovery walks from the target file's directory to the Git root, nearest first. The selected configuration is passed with `-c`; YAML tools run from its directory with a relative filename. Without a project config, tools use their bundled fallback and run from the repository root. This avoids differences between path-based exclusions in nested and root-level checks.
 
-Each handler returns the existing `event.entries` plus its own visible `custom_message`, with `continue: true`. Pi evaluates all handlers before it starts the next model request. Lint, tsc, and Pyrefly therefore contribute to one correction run, without calling `sendMessage`.
+The standalone fallback enables correctness rules only and uses `--strict` to make warnings actionable. Ansible-lint retains its own YAML policy. Helm chart templates are excluded only when the corresponding chart has a `Chart.yaml`.
 
-Each handler marks itself checked even when it passes or fails open. Later boundaries in the same activity skip it. The `agent_settled` notification resets the flag for the next activity. This prevents a type error introduced during lint correction from triggering another automatic correction run. The model must rerun relevant checks itself during correction.
+Ansible detection uses directory names or content markers, not generic entry-point names. The module marker accepts `ansible.builtin.copy:` and other builtin module names. It remains a heuristic; no YAML parser or schema dependency is added.
 
-Aborted or failed activities start no correction. Claude Code, Codex, and omp instead use `stop_hook_active` as their existing loop guard.
+## Correction and final verification
 
-## Process handling
+Pi checks once at `agent_before_settle`. Errors request one continuation; notices alone do not. The handler preserves entries and continuation decisions from earlier handlers. `agent_settled` then runs report-only verification and resets state; `sendMessage` displays the report without triggering a new turn.
 
-Each process is killed after 30 seconds. A timeout returns no result, rather than truncated diagnostics. Streams use UTF-8 decoding across chunks. Missing tools, missing tflint plugins, and mise shims without configured versions are skipped.
+Claude Code and Codex use exit 2 for initial lint findings. On `stop_hook_active`, they rerun checks and exit 0, putting remaining findings in `systemMessage`. Omp similarly returns `continue: false` for report-only verification. No final report requests another correction. Other stop hooks can cause additional guarded stop events, each of which remains report-only.
 
-## Ansible markers
+## Process and coverage failures
 
-`isAnsible` matches `^\s*(- )?(hosts|tasks|roles|ansible\.builtin\.):` by line. The final branch requires a colon immediately after `ansible.builtin.`, so a module key such as `ansible.builtin.copy:` does not match. Path and entry-point detection remain unchanged.
+Processes have a 30-second timeout. A missing executable returns no result. A timeout or signal returns a negative status, which the core treats as unavailable coverage, not as lint findings. Missing tflint plugins and mise version configuration also produce notices. Notices are deduplicated by tool and reason within each check.
+
+Stop hooks fail open with visible notices. The explicit full check collects those same notices as failures. Adapter exceptions are reported without requesting correction; the explicit command exits nonzero. Command-hook configuration has a separate overall timeout, which can still terminate a large check before it reports.
+
+Tflint runs in the module directory because its filter does not work with the previous `--chdir` approach. A module-local configuration wins over the bundled fallback. Ruff and oxlint retain their own configuration discovery.

@@ -1,6 +1,6 @@
 # Relaxed ansible-lint config for Ansible YAML.
-# The hook passes this to ansible-lint via `-c` on every invocation. Edit here
-# to change the defaults.
+# The hook uses this fallback only when no project configuration exists.
+# Edit here to change the fallback policy.
 #
 # Note: ansible-lint discovers its embedded yamllint config by directory
 # search and will NOT read the sibling .yamllint in this folder, so the noisy

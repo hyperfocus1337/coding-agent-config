@@ -1,13 +1,9 @@
-# Relaxed yamllint config for plain (non-Ansible) YAML.
-# The hook passes this to yamllint via `-c` on every invocation. Edit here to
-# change the defaults. Based on the built-in `relaxed` preset, with the two
-# rules that fire most often loosened further.
-
-extends: relaxed
-
+# Correctness only. oxfmt owns formatting; project configs override this fallback.
 rules:
-  # Accept any consistent indentation and don't force list items to indent.
-  indentation:
-    spaces: consistent
-    indent-sequences: false
-  line-length: disable
+  anchors:
+    forbid-undeclared-aliases: true
+  key-duplicates: enable
+  truthy:
+    allowed-values: ['true', 'false']
+    # GitHub Actions uses on: as a key.
+    check-keys: false

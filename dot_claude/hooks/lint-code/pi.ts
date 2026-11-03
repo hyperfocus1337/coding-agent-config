@@ -1,4 +1,4 @@
-/** Lints once before Pi settles; other checks share the same correction run. */
+/** One correction before settlement, then report-only final verification. */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { check } from "./core.ts";
@@ -6,30 +6,50 @@ import { nodeIo, nodeSettings } from "./io.ts";
 
 export default function (pi: ExtensionAPI) {
   let checked = false;
-  pi.on("agent_settled", () => {
+  pi.on("agent_settled", async (event, ctx) => {
+    const verify = checked && !event.aborted;
     checked = false;
+    if (!verify) return;
+    const reports: string[] = [];
+    try {
+      const errors = await check(ctx.cwd, nodeIo(ctx.cwd), {
+        ...nodeSettings(),
+        verify: true,
+        notice: (message) => reports.push(message),
+      });
+      if (errors) reports.push(errors);
+    } catch (error) {
+      reports.push(`Lint coverage incomplete: ${String(error)}`);
+    }
+    if (reports.length)
+      pi.sendMessage({ customType: "lint-code", content: reports.join("\n"), display: true });
   });
   pi.on("agent_before_settle", async (event, ctx) => {
     if (checked || event.outcome !== "completed") return;
-    // Mark even a pass, so another check's correction cannot start a loop.
     checked = true;
+    const notices: string[] = [];
+    let errors: string | undefined;
     try {
-      const errors = await check(ctx.cwd, nodeIo(ctx.cwd), nodeSettings());
-      if (errors === undefined) return;
-      return {
-        entries: [
-          ...event.entries,
-          {
-            type: "custom_message" as const,
-            customType: "lint-code",
-            content: errors,
-            display: true,
-          },
-        ],
-        continue: true,
-      };
-    } catch {
-      // Fails open: a broken check must not start a run.
+      errors = await check(ctx.cwd, nodeIo(ctx.cwd), {
+        ...nodeSettings(),
+        notice: (message) => notices.push(message),
+      });
+    } catch (error) {
+      notices.push(`Lint coverage incomplete: ${String(error)}`);
     }
+    if (!errors && !notices.length) return;
+    return {
+      entries: [
+        ...event.entries,
+        {
+          type: "custom_message" as const,
+          customType: "lint-code",
+          content: [...notices, ...(errors ? [errors] : [])].join("\n"),
+          display: true,
+        },
+      ],
+      // Preserve another handler's continuation; notices alone never request one.
+      continue: Boolean(errors) || event.continue,
+    };
   });
 }

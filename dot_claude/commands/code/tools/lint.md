@@ -10,7 +10,8 @@ Read and follow `~/.claude/commands/code/tools/shared.txt`. Accept only an empty
 
 Use the tools, severity levels, file routing, and configuration of the installed `lint-code` and `lint-prose` hooks. Gotchas:
 
-- yamllint or ansible-lint: use the hook's path and content detection and its bundled configuration selection.
+- Code: run `node ~/.claude/hooks/lint-code/repository.ts` from the target repository for the shared full-repository check. It includes clean tracked files and fails if a required tool cannot run.
+- yamllint or ansible-lint: use the hook's directory and content detection, nearest project configuration, bundled fallback, and Helm template exclusion.
 - tflint: run in each module directory, with the module's configuration or the hook's bundled fallback. Report each module finding once.
 - Vale: inspect the `lint-prose` wrapper before you call it. Check all eligible prose, without the hook's changed-paragraph filter or session deduplication.
 

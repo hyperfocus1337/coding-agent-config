@@ -64,7 +64,7 @@ assert.deepEqual(routed.ran, [
   ["oxlint", "--deny-warnings", "c.mts"],
   ["oxlint", "--deny-warnings", "c.cts"],
   ["shellcheck", "-S", "warning", "d.bash"],
-  ["yamllint", "-c", "/cfg/.yamllint", "e.yml"],
+  ["yamllint", "--strict", "-c", "/cfg/.yamllint", "e.yml"],
   ["ansible-lint", "-c", "/cfg/.ansible-lint", "-q", "/r/roles/f.yaml"],
   ["tflint", "--config=/cfg/.tflint.hcl", "--filter=main.tf", "--format=compact", "--no-color"],
 ]);
@@ -94,8 +94,55 @@ const ansible = stub([], { "x/deploy.yml": "- hosts: all\n" });
 await lint(["x/site.yaml", "x/deploy.yml", "x/other.yml"], ansible.io, settings);
 assert.deepEqual(
   ansible.ran.map((argv) => argv[0]),
-  ["ansible-lint", "ansible-lint", "yamllint"],
+  ["yamllint", "ansible-lint", "yamllint"],
 );
+// Project policy wins, nearest first, and discovery stops at the Git root.
+for (const name of [".yamllint", ".yamllint.yaml", ".yamllint.yml"]) {
+  const own = stub([`/r/nested/${name}`, "/r/.yamllint"]);
+  await lint(["/r/nested/a.yaml"], own.io, { ...settings, root: "/r" });
+  assert.deepEqual(own.ran[0], ["yamllint", "--strict", "-c", `/r/nested/${name}`, "a.yaml"]);
+  assert.equal(own.dirs[0], "/r/nested");
+}
+const outside = stub(["/.yamllint"]);
+await lint(["/r/a.yaml"], outside.io, { ...settings, root: "/r" });
+assert.deepEqual(outside.ran[0], ["yamllint", "--strict", "-c", "/cfg/.yamllint", "a.yaml"]);
+const ansibleOwn = stub(["/r/.ansible-lint"]);
+await lint(["/r/roles/a.yaml"], ansibleOwn.io, { ...settings, root: "/r" });
+assert.deepEqual(ansibleOwn.ran[0], [
+  "ansible-lint",
+  "-c",
+  "/r/.ansible-lint",
+  "-q",
+  "roles/a.yaml",
+]);
+const helm = stub(["/r/chart/Chart.yaml"]);
+await lint(["/r/chart/templates/a.yaml", "/r/templates/a.yaml"], helm.io, settings);
+assert.equal(helm.ran.length, 1);
+assert.equal(helm.ran[0]?.at(-1), "/r/templates/a.yaml");
+const modules = stub([], {
+  "/r/main.yaml": "plain: yaml\n",
+  "/r/task.yaml": "- ansible.builtin.copy:\n    src: a\n",
+});
+await lint(["/r/main.yaml", "/r/requirements.yml", "/r/task.yaml"], modules.io, settings);
+assert.deepEqual(
+  modules.ran.map((argv) => argv[0]),
+  ["yamllint", "yamllint", "ansible-lint"],
+);
+const notices: string[] = [];
+await lint(
+  ["a.py", "b.py"],
+  { ...stub().io, run: async () => undefined },
+  { ...settings, notice: (message) => notices.push(message) },
+);
+assert.equal(notices.length, 1);
+assert.match(notices[0]!, /ruff.*could not start/);
+const timeouts: string[] = [];
+await lint(
+  ["a.py"],
+  { ...stub().io, run: async () => ({ exitCode: -1, output: "timed out" }) },
+  { ...settings, notice: (message) => timeouts.push(message) },
+);
+assert.match(timeouts[0]!, /timed out/);
 const disabled = stub();
 await lint(["a.py", "b.ts", "c.sh", "/m/d.tf"], disabled.io, { ...settings, disable: "py,sh tf" });
 assert.deepEqual(
@@ -207,6 +254,25 @@ try {
   assert.equal(await nodeIo(tmp).run([`${tmp}/missing-linter`]), undefined);
   assert.equal(command().status, 0); // No changes.
   assert.deepEqual(starts(), []);
+  const full = spawnSync(process.execPath, [`${hook}/repository.ts`, repo], {
+    encoding: "utf8",
+    env,
+  });
+  assert.equal(full.status, 1);
+  assert.ok(full.stderr.includes("old.py")); // Clean tracked files are included.
+  assert.deepEqual(starts(), ["ruff", "ruff"]);
+  const baseIo = nodeIo(repo);
+  const unavailable: Io = {
+    ...baseIo,
+    run: (argv, options) =>
+      argv[0] === "ruff" ? Promise.resolve(undefined) : baseIo.run(argv, options),
+  };
+  assert.match(
+    (await checkLint(repo, unavailable, { ...settings, all: true }))!,
+    /coverage incomplete: ruff/,
+  );
+  assert.equal(await checkLint(repo, unavailable, settings), undefined);
+  clear();
   write(`${repo}/old.py`, "x = 2\n");
   git("add", "old.py"); // Includes staged and unstaged changes, once each.
   write(`${repo}/old.py`, "x = 3\n");
@@ -219,6 +285,13 @@ try {
   const failed = command();
   assert.equal(failed.status, 2, failed.stderr);
   assert.ok(failed.stderr.includes("Lint errors:"));
+  clear();
+  const final = command({ stop_hook_active: true });
+  assert.equal(final.status, 0);
+  assert.ok(final.stdout.includes("Final lint verification"));
+  assert.deepEqual(starts(), ["ruff", "ruff", "ruff"]);
+  clear();
+  command();
   assert.ok(failed.stderr.includes("space é.py"));
   assert.ok(failed.stderr.includes("new\nline.py"));
   assert.ok(!failed.stderr.includes("ignored.py"));
@@ -227,7 +300,6 @@ try {
   fs.mkdirSync(`${repo}/nested`);
   assert.ok(command({ cwd: `${repo}/nested` }).stderr.includes(`error in ${repo}:`));
   for (const [extra, vars] of [
-    [{ stop_hook_active: true }, {}],
     [{}, { AGENT_HOOKS_DISABLE: "lint-code" }],
     [{}, { CLAUDE_LINT_DISABLE: "all" }],
   ] as const) {
@@ -247,10 +319,12 @@ try {
   Object.assign(process.env, env);
   type Handler = (event: unknown, ctx: unknown) => unknown | Promise<unknown>;
   const handlers = new Map<string, Handler[]>();
+  const finalReports: string[] = [];
   const api = {
     on: (name: string, handler: Handler) => {
       handlers.set(name, [...(handlers.get(name) ?? []), handler]);
     },
+    sendMessage: (message: { content: string }) => finalReports.push(message.content),
   };
   extension(api as never);
   tscExtension(api as never);
@@ -285,6 +359,7 @@ try {
   assert.equal((await settle()).continue, false);
   assert.ok(!starts().includes("tsc"));
   await settled();
+  assert.ok(finalReports.some((message) => message.includes("Final lint verification")));
   const next = await settle();
   assert.deepEqual(
     next.entries.map((entry) => entry.customType),
@@ -309,7 +384,25 @@ try {
   };
   assert.equal(result.continue, true);
   assert.ok(result.additionalContext.includes("Lint errors:"));
-  assert.equal(await stop?.({ stop_hook_active: true }, { cwd: repo }), undefined);
+  const verified = (await stop?.({ stop_hook_active: true }, { cwd: repo })) as {
+    continue: boolean;
+    additionalContext: string;
+  };
+  assert.equal(verified.continue, false);
+  assert.ok(verified.additionalContext.includes("Final lint verification"));
+  // Optional real-yamllint check: source fallback, strict warnings, and anchored ignores.
+  if (spawnSync("yamllint", ["--version"]).status === 0) {
+    const yaml = `${repo}/nested/policy.yaml`;
+    write(yaml, "on: push\nempty:\npermissions: 0755\n");
+    const yamlSettings = { configDir: `${hook}/config`, root: repo };
+    assert.equal(await lint([yaml], nodeIo(repo), yamlSettings), undefined);
+    write(yaml, "enabled: yes\nport: 80\nport: 443\n");
+    const findings = await lint([yaml], nodeIo(repo), yamlSettings);
+    assert.match(findings!, /truthy/);
+    assert.match(findings!, /key-duplicates/);
+    write(`${repo}/.yamllint`, "extends: default\nignore: |\n  /nested/policy.yaml\n");
+    assert.equal(await lint([yaml], nodeIo(repo), yamlSettings), undefined);
+  }
   for (const stopReason of ["aborted", "error"]) {
     assert.equal(
       await stop?.(

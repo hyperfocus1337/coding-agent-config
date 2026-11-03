@@ -23,51 +23,118 @@ export interface Settings {
   tmpdir?: string;
   /** AGENT_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
   hooksOff?: string;
+  /** Explicit repository check, including clean tracked files; skips are failures. */
+  all?: boolean;
+  /** Final report only, with no request for another correction. */
+  verify?: boolean;
+  /** Repository boundary for configuration discovery. Set by check. */
+  root?: string;
+  /** Non-blocking coverage notices, deduplicated by lint. */
+  notice?: (message: string) => void;
 }
 
 /** Checks the repository that holds cwd; returns all lint failures together. */
 export async function check(cwd: string, io: Io, settings: Settings): Promise<string | undefined> {
-  if ((settings.hooksOff ?? "").split(/[\s,]+/).includes("lint-code")) return;
+  if (!settings.all && (settings.hooksOff ?? "").split(/[\s,]+/).includes("lint-code")) return;
   const top = await io.run(["git", "rev-parse", "--show-toplevel"], { cwd });
-  if (top?.exitCode !== 0) return;
+  if (!top || top.exitCode < 0) {
+    const message = `Lint coverage incomplete: git: ${top?.output || "could not start"}`;
+    settings.notice?.(message);
+    return settings.all ? `${message}\n` : undefined;
+  }
+  if (top.exitCode !== 0)
+    return settings.all ? "Lint check failed: not in a Git repository.\n" : undefined;
   const root = top.output.replace(/\n$/, "");
   const run: Io["run"] = (argv, options) => io.run(argv, { cwd: options?.cwd ?? root });
   const off = await run(["git", "config", "--type=bool", "--get", "agent-hook.lint-code.enabled"]);
-  if (off?.output.trim() === "false") return;
+  if (!settings.all && off?.output.trim() === "false") return;
   const git = async (...args: string[]) => {
     const ran = await run(["git", ...args]);
-    return ran?.exitCode === 0 ? ran.output.split("\0").filter(Boolean) : [];
+    if (ran?.exitCode === 0) return ran.output.split("\0").filter(Boolean);
+    throw new Error(`Cannot select lint targets: git ${args[0]} failed`);
   };
   // shortcut: git includes edits from before this session. Track transcript
   // paths instead if checks must exclude pre-existing uncommitted work.
-  const changed = new Set([
-    ...(await git("diff", "--name-only", "-z", "--diff-filter=d", "HEAD")),
-    ...(await git("ls-files", "-z", "--others", "--exclude-standard")),
-  ]);
+  const head = await run(["git", "rev-parse", "--verify", "HEAD"]);
+  const changed = new Set(
+    settings.all || head?.exitCode !== 0
+      ? await git("ls-files", "-z", "--cached", "--others", "--exclude-standard")
+      : [
+          ...(await git("diff", "--name-only", "-z", "--diff-filter=d", "HEAD")),
+          ...(await git("ls-files", "-z", "--others", "--exclude-standard")),
+        ],
+  );
   const tmpdir = settings.tmpdir?.replace(/^\/private/, "").replace(/\/$/, "");
   const files: string[] = [];
   for (const name of changed) {
     if (!/\.(?:py|jsx?|tsx?|mjs|cjs|mts|cts|sh|bash|ya?ml|tf)$/.test(name)) continue;
     const file = `${root}/${name}`;
     const plain = file.replace(/^\/private/, "");
-    if (/^\/(var\/)?tmp\//.test(plain) || (tmpdir && plain.startsWith(`${tmpdir}/`))) continue;
+    if (
+      !settings.all &&
+      (/^\/(var\/)?tmp\//.test(plain) || (tmpdir && plain.startsWith(`${tmpdir}/`)))
+    )
+      continue;
     if ((await io.stat(file))?.isFile) files.push(file);
   }
-  const output = await lint(files, { ...io, run }, settings);
-  if (output === undefined) return;
-  return `Lint errors:\n${output}\nFix the lint errors, rerun the relevant checks, then stop. Report any remaining failures.\n`;
+  const notices: string[] = [];
+  const output = await lint(
+    files,
+    { ...io, run },
+    {
+      ...settings,
+      root,
+      notice: (message) => {
+        notices.push(message);
+        settings.notice?.(message);
+      },
+    },
+  );
+  if (output === undefined && (!settings.all || notices.length === 0)) return;
+  const report = `${output ?? ""}${settings.all ? notices.join("\n") : ""}`;
+  return `${settings.verify ? "Final lint verification" : "Lint errors"}:\n${report}\n${settings.verify || settings.all ? "" : "Fix the lint errors, rerun the relevant checks, then stop. Report any remaining failures.\n"}`;
 }
 
 /**
- * Ansible YAML, by path, by entry-point name, or by content. ansible-lint
+ * Ansible YAML, by directory or content. Generic basenames alone are not evidence. ansible-lint
  * only runs on these; other YAML goes to yamllint.
  */
 async function isAnsible(file: string, io: Io): Promise<boolean> {
   return (
     /\/(roles|tasks|handlers|playbooks|group_vars|host_vars|molecule)\//.test(file) ||
-    /(^|\/)(site|playbook|main|requirements)\.ya?ml$/.test(file) ||
-    /^\s*(- )?(hosts|tasks|roles|ansible\.builtin\.):/m.test(await io.read(file).catch(() => ""))
+    /^\s*(?:-\s+)?(?:hosts|tasks|roles|ansible\.builtin\.[\w]+):/m.test(await io.read(file))
   );
+}
+
+/** Nearest project config, bounded by the repository root. */
+async function projectConfig(file: string, names: string[], io: Io, root?: string) {
+  let dir = file.includes("/") ? file.slice(0, file.lastIndexOf("/")) || "/" : ".";
+  while (true) {
+    for (const name of names) {
+      const config = `${dir === "/" ? "" : dir}/${name}`;
+      if ((await io.stat(config))?.isFile) return { config, dir };
+    }
+    if (dir === root || dir === "/" || dir === "." || !dir.includes("/")) return;
+    dir = dir.slice(0, dir.lastIndexOf("/")) || "/";
+  }
+}
+
+/** Accept both deployed names and chezmoi source names. */
+async function bundledConfig(name: string, io: Io, settings: Settings): Promise<string> {
+  const deployed = `${settings.configDir}/${name}`;
+  if ((await io.stat(deployed))?.isFile) return deployed;
+  const source = `${settings.configDir}/dot_${name.slice(1)}`;
+  return (await io.stat(source))?.isFile ? source : deployed;
+}
+
+/** Helm templates contain Go templates, not plain YAML. */
+async function helmTemplate(file: string, io: Io): Promise<boolean> {
+  const parts = file.split("/templates/");
+  for (let i = 0; i < parts.length - 1; i++) {
+    if ((await io.stat(`${parts.slice(0, i + 1).join("/templates/")}/Chart.yaml`))?.isFile)
+      return true;
+  }
+  return false;
 }
 
 /**
@@ -81,7 +148,6 @@ async function linter(
 ): Promise<{ argv: string[]; cwd?: string } | undefined> {
   const off = (settings.disable ?? "").split(/[ ,]+/);
   const disabled = (key: string) => off.includes("all") || off.includes(key);
-  const config = settings.configDir;
   switch (file.split(".").pop()) {
     case "py":
       return disabled("py") ? undefined : { argv: ["ruff", "check", "--quiet", file] };
@@ -98,13 +164,34 @@ async function linter(
     case "bash":
       return disabled("sh") ? undefined : { argv: ["shellcheck", "-S", "warning", file] };
     case "yml":
-    case "yaml":
-      if (disabled("yaml")) return undefined;
+    case "yaml": {
+      if (disabled("yaml") || (await helmTemplate(file, io))) return undefined;
+      const ansible = await isAnsible(file, io);
+      const own = await projectConfig(
+        file,
+        ansible
+          ? [
+              ".ansible-lint",
+              ".ansible-lint.yml",
+              ".ansible-lint.yaml",
+              ".config/ansible-lint.yml",
+              ".config/ansible-lint.yaml",
+            ]
+          : [".yamllint", ".yamllint.yaml", ".yamllint.yml"],
+        io,
+        settings.root,
+      );
+      const fallbackName = ansible ? ".ansible-lint" : ".yamllint";
+      const fallback = await bundledConfig(fallbackName, io, settings);
+      const cwd = own?.dir ?? settings.root;
+      const target = cwd && file.startsWith(`${cwd}/`) ? file.slice(cwd.length + 1) : file;
       return {
-        argv: (await isAnsible(file, io))
-          ? ["ansible-lint", "-c", `${config}/.ansible-lint`, "-q", file]
-          : ["yamllint", "-c", `${config}/.yamllint`, file],
+        argv: ansible
+          ? ["ansible-lint", "-c", own?.config ?? fallback, "-q", target]
+          : ["yamllint", "--strict", "-c", own?.config ?? fallback, target],
+        cwd,
       };
+    }
     case "tf": {
       if (disabled("tf")) return undefined;
       // tflint lints a whole module, so it runs in the folder of the file,
@@ -114,10 +201,11 @@ async function linter(
       const slash = file.lastIndexOf("/");
       const dir = file.slice(0, slash) || "/";
       const own = (await io.stat(`${dir}/.tflint.hcl`)) ?? (await io.stat(`${dir}/.tflint.json`));
+      const fallback = own ? undefined : await bundledConfig(".tflint.hcl", io, settings);
       return {
         argv: [
           "tflint",
-          ...(own ? [] : [`--config=${config}/.tflint.hcl`]),
+          ...(own ? [] : [`--config=${fallback}`]),
           `--filter=${file.slice(slash + 1)}`,
           "--format=compact",
           "--no-color",
@@ -146,16 +234,27 @@ export async function lint(
 ): Promise<string | undefined> {
   let failed = false;
   let output = "";
+  const notices = new Set<string>();
+  const notice = (message: string) => {
+    if (!notices.has(message)) settings.notice?.(message);
+    notices.add(message);
+  };
   for (const file of files) {
     const found = await linter(file, io, settings);
-    const ran = found && (await io.run(found.argv, { cwd: found.cwd }));
-    // Not a lint error: the linter or its plugin is missing.
+    if (!found) continue;
+    const program = found.argv[0];
+    const ran = await io.run(found.argv, { cwd: found.cwd });
     if (
       !ran ||
+      ran.exitCode < 0 ||
       TFLINT_PLUGIN_MISSING.test(ran.output) ||
       MISE_SHIM_VERSION_MISSING.test(ran.output)
-    )
+    ) {
+      notice(
+        `Lint coverage incomplete: ${program}: ${!ran ? "could not start (missing executable or invalid working directory)" : ran.output.trim()}`,
+      );
       continue;
+    }
     output += ran.output;
     if (ran.exitCode !== 0) failed = true;
   }
