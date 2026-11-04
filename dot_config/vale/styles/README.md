@@ -7,7 +7,7 @@ The `Writing` style holds the Vale rules for the limits in [`writing.md`](../../
 | Rule                                             | Level   | Checks                                                                               |
 | ------------------------------------------------ | ------- | ------------------------------------------------------------------------------------ |
 | [`ParagraphLength`](Writing/ParagraphLength.yml) | `error` | A paragraph, list item, or blockquote has at most 5 sentences.                       |
-| [`ParagraphWords`](Writing/ParagraphWords.yml)   | `error` | A paragraph, list item, or blockquote has at most 100 words.                         |
+| [`ParagraphWords`](Writing/ParagraphWords.yml)   | `error` | A paragraph, list item, or blockquote has at most 150 words.                         |
 | [`SectionWords`](Writing/SectionWords.yml)       | `error` | A section without subheadings has at most 400 words.                                 |
 | [`ListInDisguise`](Writing/ListInDisguise.yml)   | `error` | A paragraph has at most 2 sequence words with a comma, such as "First," and "Then,". |
 

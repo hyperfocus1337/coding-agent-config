@@ -127,9 +127,9 @@ await expect("a list item over 5 sentences is blocked", ran, 2, "item.md:1:");
 
 // One sentence of n words.
 const words = (n: number) => `${Array(n).fill("word").join(" ")}.`;
-ran = run(edit(write(`${tmp}/words.md`, `${words(101)}\n\n- ${words(101)}\n\n${words(100)}\n`)));
-await expect("a paragraph over 100 words is blocked", ran, 2, "words.md:1:");
-await check("a list item over 100 words is blocked, 100 words pass", () => {
+ran = run(edit(write(`${tmp}/words.md`, `${words(151)}\n\n- ${words(151)}\n\n${words(150)}\n`)));
+await expect("a paragraph over 150 words is blocked", ran, 2, "words.md:1:");
+await check("a list item over 150 words is blocked, 150 words pass", () => {
   assert.ok(ran.out.includes("words.md:3:"), ran.out);
   assert.ok(!ran.out.includes("words.md:5:"), ran.out);
 });

@@ -15,7 +15,7 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
 The hook runs after a Write or an Edit on the file that the call names, and after a shell command on the prose files that it changed, see [Shell calls](#shell-calls). It checks the limits in `writing.md`:
 
-- A paragraph, list item, or blockquote has at most 5 sentences and at most 100 words.
+- A paragraph, list item, or blockquote has at most 5 sentences and at most 150 words.
 - A section without subheadings has at most 400 words.
 - A paragraph does not walk through steps with "First, ... Then, ... Finally, ...". A list holds steps.
 
