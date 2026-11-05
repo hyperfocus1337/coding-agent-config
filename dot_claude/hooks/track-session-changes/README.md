@@ -4,12 +4,12 @@ A hook that logs each file that an agent session changes, with the tool, the cal
 
 One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
-| Agent       | Adapter                                                                                                                              | Loaded by                                                    |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts): a mod on `tool.call` and `session.start`                                                   | `CLAUDE_CODE_PLUGIN_DIRS` in `dot_claude/settings.json.tmpl` |
-| pi          | [`pi.ts`](pi.ts): `tool_call`, `tool_result`, and `session_start`                                                                    | `extensions` in `dot_pi/agent/modify_settings.json`          |
-| omp         | [`omp.ts`](omp.ts): the `track` of `pi.ts` with the omp tools, which adds a git snapshot around `eval` and a write to `xd://resolve` | `extensions` in `dot_omp/private_agent/private_config.yml`   |
-| Codex       | [`command.ts`](command.ts): a command hook, `node command.ts codex`                                                                  | `dot_codex/modify_hooks.json`                                |
+| Agent       | Adapter                                                                                                                              | Loaded by                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts): a mod on `tool.call` and `session.start`                                                   | `CLAUDE_CODE_PLUGIN_DIRS` in `dot_claude/private_settings.json.tmpl` |
+| pi          | [`pi.ts`](pi.ts): `tool_call`, `tool_result`, and `session_start`                                                                    | `extensions` in `dot_pi/agent/modify_settings.json`                  |
+| omp         | [`omp.ts`](omp.ts): the `track` of `pi.ts` with the omp tools, which adds a git snapshot around `eval` and a write to `xd://resolve` | `extensions` in `dot_omp/private_agent/private_config.yml`           |
+| Codex       | [`command.ts`](command.ts): a command hook, `node command.ts codex`                                                                  | `dot_codex/modify_hooks.json`                                        |
 
 ## What it records
 

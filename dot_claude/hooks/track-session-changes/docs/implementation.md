@@ -176,7 +176,7 @@ The after blob is the file on disk at the end event. Another writer can change t
 
 The mod must hash the file after the formatter mods write it. The first folder of `CLAUDE_CODE_PLUGIN_DIRS` is the outermost hook, so its code after `next` runs last. A probe on 2026-11-01 (Claude Code 2.1.316) with two `session.start` mods showed this order for `--plugin-dir` and for the variable, in list order and not in name order.
 
-`dot_claude/settings.json.tmpl` puts the mod second, after `enforce-cli-tools`, which only denies. Before, it came after `format-oxfmt`, so the log kept the text before oxfmt. When oxfmt changed the lines of a single Edit, such as by padding a Markdown table again, agent-changed-files found no session line on disk and showed the file under "Other changes".
+`dot_claude/private_settings.json.tmpl` puts the mod second, after `enforce-cli-tools`, which only denies. Before, it came after `format-oxfmt`, so the log kept the text before oxfmt. When oxfmt changed the lines of a single Edit, such as by padding a Markdown table again, agent-changed-files found no session line on disk and showed the file under "Other changes".
 
 For a NotebookEdit, the file on disk is the after blob and not `updated_file`, because `updated_file` can format the JSON in another way. Then the after blob of a call is equal to the before blob of the next call by another tool, which the package needs to join calls into a run.
 

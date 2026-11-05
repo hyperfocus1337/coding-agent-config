@@ -6,7 +6,7 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
 | Agent       | Adapter                                                                                                                                                                 | Loaded by                                                                            |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash aligns after `next`                                                               | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                    |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash aligns after `next`                                                               | `CLAUDE_CODE_PLUGIN_DIRS` in `private_settings.json.tmpl`                            |
 | pi          | [`pi.ts`](pi.ts): `tool_result` on write, edit, and bash                                                                                                                | `extensions` in `dot_pi/agent/modify_settings.json`                                  |
 | omp         | [`pi.ts`](pi.ts) as in pi, and [`omp.ts`](omp.ts): `tool_result` on an omp edit of more than one file, an `ast_edit` that a write to `xd://resolve` applies, and `eval` | `extensions` in `dot_omp/private_agent/private_config.yml`                           |
 | Codex       | [`command.ts`](command.ts): the amend hint as `hookSpecificOutput` JSON on stdout                                                                                       | `PostToolUse` on Bash, and on `apply_patch` through `dot_codex/hooks/apply-patch.ts` |
@@ -133,12 +133,12 @@ To turn the hook off in one repository, across sessions, run `/toggle-hook --rep
 
 To turn the hook off for good, remove it from the agent config:
 
-| Agent       | Remove                                                                      |
-| ----------- | --------------------------------------------------------------------------- |
-| Claude Code | `format-org-tables` from `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`  |
-| pi          | The `format-org-tables/pi.ts` line in `dot_pi/agent/modify_settings.json`   |
-| omp         | The `format-org-tables` lines in `dot_omp/private_agent/private_config.yml` |
-| Codex       | The two `format-org-tables` entries in `dot_codex/modify_hooks.json`        |
+| Agent       | Remove                                                                             |
+| ----------- | ---------------------------------------------------------------------------------- |
+| Claude Code | `format-org-tables` from `CLAUDE_CODE_PLUGIN_DIRS` in `private_settings.json.tmpl` |
+| pi          | The `format-org-tables/pi.ts` line in `dot_pi/agent/modify_settings.json`          |
+| omp         | The `format-org-tables` lines in `dot_omp/private_agent/private_config.yml`        |
+| Codex       | The two `format-org-tables` entries in `dot_codex/modify_hooks.json`               |
 
 The hook reads `TMPDIR` to find the scratch files that it skips. It has no config file.
 

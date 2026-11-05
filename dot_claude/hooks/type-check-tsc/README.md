@@ -4,11 +4,11 @@ Runs `tsc --noEmit` on the whole project once, when the agent stops, and gives t
 
 One core, [`core.ts`](core.ts), serves four agents through three adapters. An adapter is the small file that connects the core to the hook API of one agent.
 
-| Agent                 | Adapter                                                                                                                      | Loaded by                                                                   |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| pi                    | [`pi.ts`](pi.ts): `agent_before_settle` appends findings and requests one shared correction run                              | `extensions` in `dot_pi/agent/modify_settings.json`                         |
-| omp                   | [`omp.ts`](omp.ts): `session_stop` returns `{ continue: true, additionalContext }` with the errors, which runs one more turn | `extensions` in `dot_omp/private_agent/private_config.yml`                  |
-| Claude Code and Codex | [`command.ts`](command.ts): exit code 2 with the errors on stderr                                                            | `Stop` in `dot_claude/settings.json.tmpl` and `dot_codex/modify_hooks.json` |
+| Agent                 | Adapter                                                                                                                      | Loaded by                                                                           |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| pi                    | [`pi.ts`](pi.ts): `agent_before_settle` appends findings and requests one shared correction run                              | `extensions` in `dot_pi/agent/modify_settings.json`                                 |
+| omp                   | [`omp.ts`](omp.ts): `session_stop` returns `{ continue: true, additionalContext }` with the errors, which runs one more turn | `extensions` in `dot_omp/private_agent/private_config.yml`                          |
+| Claude Code and Codex | [`command.ts`](command.ts): exit code 2 with the errors on stderr                                                            | `Stop` in `dot_claude/private_settings.json.tmpl` and `dot_codex/modify_hooks.json` |
 
 ## What it checks
 
@@ -98,7 +98,7 @@ To turn the hook off in one repository, across sessions, run `/toggle-hook --rep
 
 To turn the hook off for good, remove its entry:
 
-- **Claude Code:** the `type-check-tsc` entry under `Stop` in `dot_claude/settings.json.tmpl`.
+- **Claude Code:** the `type-check-tsc` entry under `Stop` in `dot_claude/private_settings.json.tmpl`.
 - **Codex:** the `type-check-tsc` entry under `Stop` in `dot_codex/modify_hooks.json`.
 - **pi:** the `type-check-tsc/pi.ts` line in `extensions` in `dot_pi/agent/modify_settings.json`.
 - **omp:** the `type-check-tsc/omp.ts` line in `extensions` in `dot_omp/private_agent/private_config.yml`.

@@ -6,7 +6,7 @@ One matcher, [`core.ts`](core.ts), serves four agents through three adapters:
 
 | Agent       | Adapter                                                                                 | Loaded by                                                                                          |
 | ----------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Bash returns `{ deny }` | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Bash returns `{ deny }` | `CLAUDE_CODE_PLUGIN_DIRS` in `private_settings.json.tmpl`                                          |
 | pi and omp  | [`pi.ts`](pi.ts): `tool_call` on bash returns `{ block, reason }`                       | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
 | Codex       | [`command.ts`](command.ts): exit code 2 with the message on stderr                      | `PreToolUse` in `dot_codex/modify_hooks.json`                                                      |
 

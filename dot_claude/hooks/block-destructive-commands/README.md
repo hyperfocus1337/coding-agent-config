@@ -4,7 +4,7 @@ Blocks a shell command that [dcg](https://github.com/Dicklesworthstone/destructi
 
 | Agent       | Adapter                                                                                    | Loaded by                                                                                          |
 | ----------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Claude Code | [`guard.sh --ask`](guard.sh), `PreToolUse` on `Bash\|PowerShell\|Monitor`, the first entry | `hooks` in `dot_claude/settings.json.tmpl`                                                         |
+| Claude Code | [`guard.sh --ask`](guard.sh), `PreToolUse` on `Bash\|PowerShell\|Monitor`, the first entry | `hooks` in `dot_claude/private_settings.json.tmpl`                                                 |
 | Codex       | [`guard.sh`](guard.sh), the first `PreToolUse` handler on `Bash`                           | `dot_codex/modify_hooks.json`                                                                      |
 | pi and omp  | [`pi.ts`](pi.ts): `tool_call` on bash returns `{ block, reason }`                          | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
 

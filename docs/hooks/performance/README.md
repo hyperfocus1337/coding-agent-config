@@ -91,13 +91,13 @@ More documents:
 
 An agent runs only one path of a hook, so a ranking or a sum must keep only the rows of one agent. If it does not, it counts each hook twice, and the `command.ts` rows of a hook that Claude Code runs in process come out on top. The script reads `agents` from the files that load the hooks when it writes the CSV files:
 
-| Agent       | Path       | Loaded by                                                                       |
-| ----------- | ---------- | ------------------------------------------------------------------------------- |
-| Claude Code | in process | `CLAUDE_CODE_PLUGIN_DIRS` in `dot_claude/settings.json.tmpl`                    |
-| Claude Code | command.ts | The command hooks in `dot_claude/settings.json.tmpl`, also through `guard.sh`   |
-| pi          | in process | `extensions` in `dot_pi/agent/modify_settings.json`                             |
-| omp         | in process | `extensions` in `dot_omp/private_agent/private_config.yml`, `pi.ts` or `omp.ts` |
-| Codex       | command.ts | `dot_codex/modify_hooks.json`                                                   |
+| Agent       | Path       | Loaded by                                                                             |
+| ----------- | ---------- | ------------------------------------------------------------------------------------- |
+| Claude Code | in process | `CLAUDE_CODE_PLUGIN_DIRS` in `dot_claude/private_settings.json.tmpl`                  |
+| Claude Code | command.ts | The command hooks in `dot_claude/private_settings.json.tmpl`, also through `guard.sh` |
+| pi          | in process | `extensions` in `dot_pi/agent/modify_settings.json`                                   |
+| omp         | in process | `extensions` in `dot_omp/private_agent/private_config.yml`, `pi.ts` or `omp.ts`       |
+| Codex       | command.ts | `dot_codex/modify_hooks.json`                                                         |
 
 ## Findings
 

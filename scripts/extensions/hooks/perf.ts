@@ -1093,7 +1093,7 @@ interface Results {
  */
 function loaders() {
   const read = (file: string) => readFileSync(join(REPO, file), "utf8");
-  const claude = read("dot_claude/settings.json.tmpl");
+  const claude = read("dot_claude/private_settings.json.tmpl");
   const mods = claude.match(/"CLAUDE_CODE_PLUGIN_DIRS".*/)?.[0] ?? "";
   const pi = read("dot_pi/agent/modify_settings.json");
   const omp = read("dot_omp/private_agent/private_config.yml");

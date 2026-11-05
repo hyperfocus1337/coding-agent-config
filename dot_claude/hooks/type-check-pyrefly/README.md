@@ -4,11 +4,11 @@ Runs [pyrefly](https://pyrefly.org/) on the whole project once, when the agent s
 
 One core, [`core.ts`](core.ts), serves four agents through three adapters. An adapter is the file that connects the core to the hook API of one agent.
 
-| Agent                 | Adapter                                                                                                                      | Loaded by                                                                   |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| pi                    | [`pi.ts`](pi.ts): `agent_before_settle` appends findings and requests one shared correction run                              | `extensions` in `dot_pi/agent/modify_settings.json`                         |
-| omp                   | [`omp.ts`](omp.ts): `session_stop` returns `{ continue: true, additionalContext }` with the errors, which runs one more turn | `extensions` in `dot_omp/private_agent/private_config.yml`                  |
-| Claude Code and Codex | [`command.ts`](command.ts): exit code 2 with the errors on stderr                                                            | `Stop` in `dot_claude/settings.json.tmpl` and `dot_codex/modify_hooks.json` |
+| Agent                 | Adapter                                                                                                                      | Loaded by                                                                           |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| pi                    | [`pi.ts`](pi.ts): `agent_before_settle` appends findings and requests one shared correction run                              | `extensions` in `dot_pi/agent/modify_settings.json`                                 |
+| omp                   | [`omp.ts`](omp.ts): `session_stop` returns `{ continue: true, additionalContext }` with the errors, which runs one more turn | `extensions` in `dot_omp/private_agent/private_config.yml`                          |
+| Claude Code and Codex | [`command.ts`](command.ts): exit code 2 with the errors on stderr                                                            | `Stop` in `dot_claude/private_settings.json.tmpl` and `dot_codex/modify_hooks.json` |
 
 ## What it checks
 

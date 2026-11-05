@@ -34,7 +34,7 @@ The official marketplace has no Prettier, pyrefly, ruff, oxlint, shellcheck, yam
 | 11 other `*-lsp` plugins                                                                                         | Anthropic  | C, C#, Go, Java, Kotlin, Lua, PHP, Ruby, Rust, Swift. Liquid is from Shopify                              |
 | [`terraform`](https://github.com/anthropics/claude-plugins-official/tree/main/external_plugins/terraform)        | HashiCorp  | MCP server `hashicorp/terraform-mcp-server:0.4.0` in Docker. Registry and HCP tools, no local fmt or lint |
 
-Both LSP plugins are already on in [`settings.json.tmpl`](../../../dot_claude/settings.json.tmpl) (`enabledPlugins`, and `ENABLE_LSP_TOOL=1`). The [community marketplace](https://github.com/anthropics/claude-plugins-community) has third-party LSP plugins, such as `ty-python-lsp` and `terraform-lsp`, but no pyrefly, Prettier, ruff, or oxlint plugin.
+Both LSP plugins are already on in [`private_settings.json.tmpl`](../../../dot_claude/private_settings.json.tmpl) (`enabledPlugins`, and `ENABLE_LSP_TOOL=1`). The [community marketplace](https://github.com/anthropics/claude-plugins-community) has third-party LSP plugins, such as `ty-python-lsp` and `terraform-lsp`, but no pyrefly, Prettier, ruff, or oxlint plugin.
 
 ### What an LSP plugin does
 

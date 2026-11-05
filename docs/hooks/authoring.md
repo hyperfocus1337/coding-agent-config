@@ -42,7 +42,7 @@ The core takes values or an `Io` object. It never takes `$` and never reads an e
 - **The `$` call-site rule.** In `register.ts`, spell each `$` call where it is used. To give the core an `Io`, write an object literal whose methods spell `$.fs.stat(...)` and `$.process.run(...)` inside them. `claude plugin validate` refuses `$.fs` passed as a value.
 - **Empty means unset.** Use `||`, not `??`, for an environment fallback. Bash `${VAR:-default}` also falls back on an empty value.
 - **Timeouts.** `$.process.run` stops a program after 30 s. Pass `timeoutMs` where the hook needs more or less.
-- **No `classic.*` events.** For a Team organization, Claude Code skips a user mod on a `classic.*` event. Use a command hook in `settings.json.tmpl` for such an event.
+- **No `classic.*` events.** For a Team organization, Claude Code skips a user mod on a `classic.*` event. Use a command hook in `private_settings.json.tmpl` for such an event.
 - **pi and omp tool results differ.** For example, a pi edit names its file in `path`, and an omp edit of more than one file names them in `paths`. `pi.ts` reads the pi shape. The omp shape goes in `omp.ts`.
 
 ## omp code
@@ -70,8 +70,8 @@ A mod module that does not load has no `.catch`, so a mod cannot fail closed on 
 
 | Agent                     | Where                                      | Change                                                                                                               |
 | ------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| Claude Code, mod          | `dot_claude/settings.json.tmpl`            | Add the hook name to the `list` in `CLAUDE_CODE_PLUGIN_DIRS`                                                         |
-| Claude Code, command hook | `dot_claude/settings.json.tmpl`            | `command -v node >/dev/null \|\| exit 0; NODE_COMPILE_CACHE=... node "$HOME/.claude/hooks/<hook>/command.ts"`        |
+| Claude Code, mod          | `dot_claude/private_settings.json.tmpl`    | Add the hook name to the `list` in `CLAUDE_CODE_PLUGIN_DIRS`                                                         |
+| Claude Code, command hook | `dot_claude/private_settings.json.tmpl`    | `command -v node >/dev/null \|\| exit 0; NODE_COMPILE_CACHE=... node "$HOME/.claude/hooks/<hook>/command.ts"`        |
 | pi                        | `dot_pi/agent/modify_settings.json`        | Add `~/.claude/hooks/<hook>/pi.ts` to `extensions`                                                                   |
 | omp                       | `dot_omp/private_agent/private_config.yml` | Add `pi.ts`, `omp.ts` after it, or only `omp.ts` to `extensions`, see [omp code](#omp-code)                          |
 | Codex                     | `dot_codex/modify_hooks.json`              | `command -v node >/dev/null \|\| exit 0; NODE_COMPILE_CACHE="$HOME/.cache/node-compile-cache" node ".../command.ts"` |

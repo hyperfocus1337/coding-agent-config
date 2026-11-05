@@ -2,11 +2,11 @@
 
 Checks changed and untracked source files when the agent is about to stop. Lint errors give the model one automatic correction opportunity. A final verification reports remaining failures without requesting another correction. Formatters still run after edits.
 
-| Agent                 | Adapter                                                                                    | Loaded by                                                         |
-| --------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| Pi                    | `pi.ts`: `agent_before_settle` for correction, `agent_settled` for final verification      | `dot_pi/agent/modify_settings.json`                               |
-| omp                   | `omp.ts`: `session_stop`, report-only when `stop_hook_active` is true                      | `dot_omp/private_agent/private_config.yml`                        |
-| Claude Code and Codex | `command.ts`: `Stop`, exit 2 for correction, exit 0 with `systemMessage` for final reports | `dot_claude/settings.json.tmpl` and `dot_codex/modify_hooks.json` |
+| Agent                 | Adapter                                                                                    | Loaded by                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| Pi                    | `pi.ts`: `agent_before_settle` for correction, `agent_settled` for final verification      | `dot_pi/agent/modify_settings.json`                                       |
+| omp                   | `omp.ts`: `session_stop`, report-only when `stop_hook_active` is true                      | `dot_omp/private_agent/private_config.yml`                                |
+| Claude Code and Codex | `command.ts`: `Stop`, exit 2 for correction, exit 0 with `systemMessage` for final reports | `dot_claude/private_settings.json.tmpl` and `dot_codex/modify_hooks.json` |
 
 ## What it checks
 

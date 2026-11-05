@@ -6,7 +6,7 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
 | Agent       | Adapter                                                                                                           | Loaded by                                                                                 |
 | ----------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash adds `context` after `next` | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`, first in the list                      |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash adds `context` after `next` | `CLAUDE_CODE_PLUGIN_DIRS` in `private_settings.json.tmpl`, first in the list              |
 | pi          | [`pi.ts`](pi.ts): `tool_result` on write, edit, and bash returns `{ content, isError: true }`                     | `extensions` in `dot_pi/agent/modify_settings.json`, after `track-session-changes`        |
 | omp         | [`omp.ts`](omp.ts): the code of `pi.ts`, with `bash` and `eval` as shell tools                                    | `extensions` in `dot_omp/private_agent/private_config.yml`, after `track-session-changes` |
 | Codex       | [`command.ts`](command.ts): exit code 2 with the alerts on stderr, exit code 1 with a message for you             | `PostToolUse` on `apply_patch` through `dot_codex/hooks/apply-patch.ts`, and on Bash      |

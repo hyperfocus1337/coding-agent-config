@@ -20,7 +20,7 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 ## Mods load through `CLAUDE_CODE_PLUGIN_DIRS`
 
-**Decision:** the `env` block of `settings.json.tmpl` sets `CLAUDE_CODE_PLUGIN_DIRS` to the list of mod folders. **Why:** it needs no marketplace and no install step. chezmoi deploys the folder, and the next session loads it. Each folder keeps the default `hooks/hooks.json` and `hooks/register.ts`, not a `"hooks"` field in `plugin.json`.
+**Decision:** the `env` block of `private_settings.json.tmpl` sets `CLAUDE_CODE_PLUGIN_DIRS` to the list of mod folders. **Why:** it needs no marketplace and no install step. chezmoi deploys the folder, and the next session loads it. Each folder keeps the default `hooks/hooks.json` and `hooks/register.ts`, not a `"hooks"` field in `plugin.json`.
 
 ## pi and omp load their files through the `extensions` setting
 
@@ -45,7 +45,7 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 ## type-check-tsc and type-check-pyrefly are command hooks in Claude Code
 
-**Decision:** the `Stop` entries in `settings.json.tmpl` run the `command.ts` of each hook. **Why:** a mod on `classic.Stop` loaded but did not run, because `cc-plugin-sec-default` skips user mods on `classic.*` events for a Team organization. In pi, `agent_end` sends the errors with `pi.sendMessage` and `triggerTurn`, and pi waits for `agent_end` to finish. omp does not wait for `agent_end`, so `omp.ts` returns the errors from `session_stop`, which omp waits for.
+**Decision:** the `Stop` entries in `private_settings.json.tmpl` run the `command.ts` of each hook. **Why:** a mod on `classic.Stop` loaded but did not run, because `cc-plugin-sec-default` skips user mods on `classic.*` events for a Team organization. In pi, `agent_end` sends the errors with `pi.sendMessage` and `triggerTurn`, and pi waits for `agent_end` to finish. omp does not wait for `agent_end`, so `omp.ts` returns the errors from `session_stop`, which omp waits for.
 
 ## One hook for each type checker
 

@@ -4,7 +4,7 @@ Adds the `/toggle-hook` command, which turns a supported hook off or on. Without
 
 | Agent       | Adapter                                                                                                                                                | Loaded by                                                                                          |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `$.command.register`, a `command.run` hook, and a `prompt.autocomplete` hook for completion           | `CLAUDE_CODE_PLUGIN_DIRS` in `settings.json.tmpl`                                                  |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `$.command.register`, a `command.run` hook, and a `prompt.autocomplete` hook for completion           | `CLAUDE_CODE_PLUGIN_DIRS` in `private_settings.json.tmpl`                                          |
 | pi and omp  | [`pi.ts`](pi.ts): `registerCommand`, with completion of `--repo`, `--global`, and the hook names                                                       | `extensions` in `dot_pi/agent/modify_settings.json` and `dot_omp/private_agent/private_config.yml` |
 | Codex       | None. Codex has no extension commands, so set the variable at launch, `AGENT_HOOKS_DISABLE=lint-prose codex`, or run `git config` in your own terminal | Not applicable                                                                                     |
 

@@ -148,4 +148,4 @@ With `minimal`, also report:
 - `templates/web/bootstrap.sh` cannot move or be renamed. Its path is part of the URL in every repository already bootstrapped, and `raw.githubusercontent.com` does not redirect.
 - Step 2 needs this config applied with chezmoi: it reads `~/.claude/settings-minimal.json` and the skill's own files from `~/.claude`.
 - Do not change the hook object in `assets/settings.json`. The merge matches it by value, so a changed object adds a second hook next to the old one in each repository where the skill runs again, and the installer then runs twice per session. Put the change in `bootstrap.sh` instead.
-- The `attribution` values copy `dot_claude/settings.json.tmpl`, which sets them for local sessions. Change both together.
+- The `attribution` values copy `dot_claude/private_settings.json.tmpl`, which sets them for local sessions. Change both together.
