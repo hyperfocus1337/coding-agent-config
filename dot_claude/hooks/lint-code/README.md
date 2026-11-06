@@ -28,7 +28,7 @@ The nearest project `.yamllint`, `.yamllint.yaml`, or `.yamllint.yml` wins. Ansi
 
 YAML tools run from the selected configuration directory, or the repository root for a fallback, with a relative target path. This makes project-relative exclusions apply. Source-tree commands also support chezmoi's `dot_` configuration filenames.
 
-The bundled yamllint configuration checks syntax, duplicate keys, undeclared aliases, and ambiguous boolean values. It allows empty values and octal numbers and leaves style to oxfmt. Truthy keys are allowed because GitHub Actions uses `on:`. A project configuration can choose stricter or different rules.
+The bundled yamllint configuration checks syntax, duplicate keys, undeclared aliases, ambiguous boolean values, and lines longer than 100 characters. It allows empty values and octal numbers and leaves other style to oxfmt. Truthy keys are allowed because GitHub Actions uses `on:`. A project configuration can choose stricter or different rules.
 
 Ansible detection uses directories (`roles/`, `tasks/`, `handlers/`, `playbooks/`, `group_vars/`, `host_vars/`, and `molecule/`) or content markers (`hosts:`, `tasks:`, `roles:`, and `ansible.builtin.<module>:`). Generic names such as `main.yaml`, `requirements.yaml`, and `site.yaml` alone are not evidence. Content detection is a heuristic, not a YAML schema check.
 

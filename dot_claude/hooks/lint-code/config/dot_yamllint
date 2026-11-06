@@ -1,8 +1,10 @@
-# Correctness only. oxfmt owns formatting; project configs override this fallback.
+# Correctness and line length (100). oxfmt owns other formatting; project configs override.
 rules:
   anchors:
     forbid-undeclared-aliases: true
   key-duplicates: enable
+  line-length:
+    max: 100
   truthy:
     allowed-values: ['true', 'false']
     # GitHub Actions uses on: as a key.

@@ -400,6 +400,10 @@ try {
     const findings = await lint([yaml], nodeIo(repo), yamlSettings);
     assert.match(findings!, /truthy/);
     assert.match(findings!, /key-duplicates/);
+    write(yaml, `a: ${"x".repeat(97)}\n`);
+    assert.equal(await lint([yaml], nodeIo(repo), yamlSettings), undefined);
+    write(yaml, `a: ${"x".repeat(98)}\n`);
+    assert.match((await lint([yaml], nodeIo(repo), yamlSettings))!, /line-length/);
     write(`${repo}/.yamllint`, "extends: default\nignore: |\n  /nested/policy.yaml\n");
     assert.equal(await lint([yaml], nodeIo(repo), yamlSettings), undefined);
   }
