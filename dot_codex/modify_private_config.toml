@@ -39,6 +39,11 @@ text = envrc.read_text() if envrc.exists() else ""
 if match := re.search(r"^export CONTEXT7_API_KEY=[\"']?([^\"'\s]+)", text, re.M):
     OURS["mcp_servers"]["context7"]["env"] = {"CONTEXT7_API_KEY": match[1]}
 
+# ── Standalone chat folder ────────────────────────────────────────────────────
+# The ChatGPT desktop app gives each Codex chat outside a project a work folder,
+# by default in ~/Documents/Codex. This keeps them in the XDG data directory.
+data_home = os.environ.get("XDG_DATA_HOME") or f"{os.environ['HOME']}/.local/share"
+OURS["desktop"] = {"projectlessWorkspaceRoot": f"{data_home}/codex/chats"}
 # ── Merge over the current file ───────────────────────────────────────────────
 def merge(current, ours):
     for key, value in ours.items():

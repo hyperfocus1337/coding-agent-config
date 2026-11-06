@@ -6,7 +6,10 @@ set -u
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SCRIPT="$REPO/dot_codex/modify_private_config.toml"
-command -v uv >/dev/null 2>&1 || { echo "SKIP no uv on PATH"; exit 0; }
+command -v uv >/dev/null 2>&1 || {
+  echo "SKIP no uv on PATH"
+  exit 0
+}
 
 in=$(mktemp)
 out=$(mktemp)
@@ -14,9 +17,12 @@ src=$(mktemp -d) # stands in for the chezmoi source dir that holds .envrc
 trap 'rm -rf "$in" "$out" "$src"' EXIT
 fail=0
 
-run() { CHEZMOI_SOURCE_DIR="$src" uv run --quiet --script "$SCRIPT"; }
+run() { env -u XDG_DATA_HOME CHEZMOI_SOURCE_DIR="$src" uv run --quiet --script "$SCRIPT"; }
 check() { # name, command that must succeed
-  if eval "$2" >/dev/null; then echo "ok   $1"; else echo "FAIL $1"; fail=1; fi
+  if eval "$2" >/dev/null; then echo "ok   $1"; else
+    echo "FAIL $1"
+    fail=1
+  fi
 }
 
 # A current file as Codex and cmux write it on the host: a /model change, a
@@ -40,6 +46,9 @@ hooks = true
 # cmux-codex-hooks-feature-1 end
 js_repl = false
 
+[desktop]
+followUpQueueMode = "queue"
+
 [hooks.state]
 
 [hooks.state."/a:stop:0:0"]
@@ -58,7 +67,8 @@ check "repo model wins" 'rg -qx "model = \"gpt-6.1-sol\"" "$out" && rg -qx "mode
 check "repo array replaces current" 'rg -qxF "args = [\"-y\", \"@upstash/context7-mcp\"]" "$out" && rg -qx "command = \"npx\"" "$out"'
 check "adds key at end of table" 'rg -A1 -x "js_repl = false" "$out" | rg -qx "memories = true"'
 check "live web search stays at root" 'python3 -c '\''import sys, tomllib; assert tomllib.load(open(sys.argv[1], "rb"))["web_search"] == "live"'\'' "$out"'
-check "changes only repo keys" '[ "$(diff "$in" "$out" | rg -c "^[<>]")" = 10 ]'
+check "chat folder in XDG data dir" 'rg -A2 -x "\[desktop\]" "$out" | rg -qxF "projectlessWorkspaceRoot = \"$HOME/.local/share/codex/chats\"" && rg -qx "followUpQueueMode = \"queue\"" "$out"'
+check "changes only repo keys" '[ "$(diff "$in" "$out" | rg -c "^[<>]")" = 11 ]'
 check "keeps cmux markers" 'rg -qx "# cmux-codex-hook-trust-1 end" "$out" && rg -qx "# cmux-codex-hooks-feature-1 end" "$out"'
 check "keeps literal string" 'rg -qxF "SERVICES = '"'"'{\"browser\":\"x\"}'"'"'" "$out"'
 check "keeps table order" '[ "$(rg -n -x "\[tui\]" "$out" | cut -d: -f1)" -lt "$(rg -n -F "[hooks.state.\"/a:stop:1:0\"]" "$out" | cut -d: -f1)" ]'
