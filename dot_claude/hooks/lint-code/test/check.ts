@@ -425,6 +425,39 @@ try {
     assert.equal(await lint([yaml], nodeIo(repo), yamlSettings), undefined);
     write(`${repo}/.yamllint`, "extends: default\nignore: |\n  /nested/policy.yaml\n");
     assert.equal(await lint([yaml], nodeIo(repo), yamlSettings), undefined);
+    fs.rmSync(`${repo}/.yamllint`);
+    // Contract with format-oxfmt: what oxfmt writes passes the YAML linters, also with a user
+    // yamllint config that extends the default rules and a project .ansible-lint with no
+    // skip_list. oxfmt writes one space before a comment and inside braces, and no `---`.
+    const tools = ["oxfmt", "ansible-lint"].filter(
+      (tool) => spawnSync(tool, ["--version"]).status === 0,
+    );
+    if (tools.includes("oxfmt")) {
+      const url = `https://example.com/${"y".repeat(100)}`;
+      const plain = `${repo}/nested/format.yaml`;
+      const play = `${repo}/playbooks/site.yml`;
+      write(plain, `a: 1  # comment\nopts: {a: 1}\nurl: ${url}\n`);
+      write(
+        play,
+        `- name: Sample  # comment\n  hosts: all\n  vars:\n    opts: {a: 1}\n    url: ${url}\n` +
+          "  tasks:\n    - name: Ping the hosts\n      ansible.builtin.ping:\n",
+      );
+      const formatted = spawnSync("oxfmt", [plain, play], { cwd: repo, encoding: "utf8" });
+      assert.equal(formatted.status, 0, formatted.stderr);
+      assert.match(fs.readFileSync(play, "utf8"), /Sample # comment\n[^]*\{ a: 1 \}/);
+      write(`${tmp}/user-yamllint`, "extends: default\n");
+      write(`${repo}/.ansible-lint`, "exclude_paths:\n  - .cache/\n");
+      const userConfig = process.env.YAMLLINT_CONFIG_FILE;
+      process.env.YAMLLINT_CONFIG_FILE = `${tmp}/user-yamllint`;
+      try {
+        const targets = tools.includes("ansible-lint") ? [plain, play] : [plain];
+        assert.equal(await lint(targets, nodeIo(repo), yamlSettings), undefined);
+      } finally {
+        if (userConfig === undefined) delete process.env.YAMLLINT_CONFIG_FILE;
+        else process.env.YAMLLINT_CONFIG_FILE = userConfig;
+        fs.rmSync(`${repo}/.ansible-lint`);
+      }
+    }
   }
   for (const stopReason of ["aborted", "error"]) {
     assert.equal(
