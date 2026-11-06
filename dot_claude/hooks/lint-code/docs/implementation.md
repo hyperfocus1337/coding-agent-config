@@ -18,7 +18,7 @@ The diff includes pre-existing uncommitted work. A `shortcut:` comment names tha
 
 Configuration discovery walks from the target file's directory to the Git root, nearest first. The selected configuration is passed with `-c`; YAML tools run from its directory with a relative filename. Without a project config, tools use their bundled fallback and run from the repository root. This avoids differences between path-based exclusions in nested and root-level checks.
 
-The standalone fallback enables correctness rules only and uses `--strict` to make warnings actionable. Ansible-lint retains its own YAML policy. Helm chart templates are excluded only when the corresponding chart has a `Chart.yaml`.
+The standalone fallback enables correctness rules only and uses `--strict` to make warnings actionable. ansible-lint gets the yamllint config with `--yamllint-file`, which comes first in its own search, and merges it over its embedded policy. Helm chart templates are excluded only when the corresponding chart has a `Chart.yaml`.
 
 Ansible detection uses directory names or content markers, not generic entry-point names. The module marker accepts `ansible.builtin.copy:` and other builtin module names. It remains a heuristic; no YAML parser or schema dependency is added.
 

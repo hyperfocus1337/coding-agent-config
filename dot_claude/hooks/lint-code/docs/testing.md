@@ -7,7 +7,7 @@ Fixtures live under `$HOME` because lint-code skips scratch directories. Fixture
 ## Coverage
 
 - YAML configuration discovery checks each supported filename, nearest-first selection, and the repository boundary. Ansible configuration, builtin module detection, generic basenames, and Helm exclusions are covered.
-- The fallback policy limits lines to 100 characters, allows a key with one long word such as a URL, and leaves other formatting to oxfmt. Missing tools and timeouts emit one coverage notice per tool and reason; a full check treats unavailable coverage as failure.
+- The fallback policy limits lines to 100 characters, allows a key with one long word such as a URL, and leaves other formatting to oxfmt. ansible-lint gets the nearest project `.yamllint`, else the bundled one, with `--yamllint-file`. Missing tools and timeouts emit one coverage notice per tool and reason; a full check treats unavailable coverage as failure.
 - Terraform module configuration and per-linter disable keys remain covered.
 - Temporary paths are skipped, including macOS `/private/tmp` and custom `$TMPDIR` paths.
 - Real git selection includes staged, unstaged, untracked, old-mtime, space-containing, newline-containing, and non-ASCII filenames. Deleted and ignored files are excluded.

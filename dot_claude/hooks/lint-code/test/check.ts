@@ -65,7 +65,15 @@ assert.deepEqual(routed.ran, [
   ["oxlint", "--deny-warnings", "c.cts"],
   ["shellcheck", "-S", "warning", "d.bash"],
   ["yamllint", "--strict", "-c", "/cfg/.yamllint", "e.yml"],
-  ["ansible-lint", "-c", "/cfg/.ansible-lint", "-q", "/r/roles/f.yaml"],
+  [
+    "ansible-lint",
+    "-c",
+    "/cfg/.ansible-lint",
+    "--yamllint-file",
+    "/cfg/.yamllint",
+    "-q",
+    "/r/roles/f.yaml",
+  ],
   ["tflint", "--config=/cfg/.tflint.hcl", "--filter=main.tf", "--format=compact", "--no-color"],
 ]);
 assert.equal(routed.dirs.at(-1), "/m");
@@ -106,15 +114,24 @@ for (const name of [".yamllint", ".yamllint.yaml", ".yamllint.yml"]) {
 const outside = stub(["/.yamllint"]);
 await lint(["/r/a.yaml"], outside.io, { ...settings, root: "/r" });
 assert.deepEqual(outside.ran[0], ["yamllint", "--strict", "-c", "/cfg/.yamllint", "a.yaml"]);
+// A project .ansible-lint does not stop the pinned yamllint fallback; a project .yamllint wins.
 const ansibleOwn = stub(["/r/.ansible-lint"]);
 await lint(["/r/roles/a.yaml"], ansibleOwn.io, { ...settings, root: "/r" });
 assert.deepEqual(ansibleOwn.ran[0], [
   "ansible-lint",
   "-c",
   "/r/.ansible-lint",
+  "--yamllint-file",
+  "/cfg/.yamllint",
   "-q",
   "roles/a.yaml",
 ]);
+const ansibleYamllint = stub(["/r/.ansible-lint", "/r/roles/.yamllint.yml", "/.yamllint"]);
+await lint(["/r/roles/a.yaml"], ansibleYamllint.io, { ...settings, root: "/r" });
+assert.equal(ansibleYamllint.ran[0]?.[4], "/r/roles/.yamllint.yml");
+const ansibleOutside = stub(["/.yamllint"]);
+await lint(["/r/roles/a.yaml"], ansibleOutside.io, { ...settings, root: "/r" });
+assert.equal(ansibleOutside.ran[0]?.[4], "/cfg/.yamllint");
 const helm = stub(["/r/chart/Chart.yaml"]);
 await lint(["/r/chart/templates/a.yaml", "/r/templates/a.yaml"], helm.io, settings);
 assert.equal(helm.ran.length, 1);

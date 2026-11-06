@@ -2,10 +2,10 @@
 # The hook uses this fallback only when no project configuration exists.
 # Edit here to change the fallback policy.
 #
-# Note: ansible-lint discovers its embedded yamllint config by directory
-# search and will NOT read the sibling .yamllint in this folder, so the noisy
-# indentation / line-length findings are tuned here instead: skip_list
-# silences them entirely (no output, non-blocking).
+# The hook passes the sibling .yamllint, or the project .yamllint, with
+# --yamllint-file, so ~/.config/yamllint/config cannot change the result.
+# skip_list silences the indentation and line-length findings of that
+# yamllint config entirely (no output, non-blocking).
 
 # To downgrade from fatal (blocks the edit) to warnings (printed, non-blocking)
 # instead of silencing, use warn_list:

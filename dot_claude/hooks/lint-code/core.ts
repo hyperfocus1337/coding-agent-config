@@ -106,6 +106,8 @@ async function isAnsible(file: string, io: Io): Promise<boolean> {
   );
 }
 
+const YAMLLINT_NAMES = [".yamllint", ".yamllint.yaml", ".yamllint.yml"];
+
 /** Nearest project config, bounded by the repository root. */
 async function projectConfig(file: string, names: string[], io: Io, root?: string) {
   let dir = file.includes("/") ? file.slice(0, file.lastIndexOf("/")) || "/" : ".";
@@ -177,7 +179,7 @@ async function linter(
               ".config/ansible-lint.yml",
               ".config/ansible-lint.yaml",
             ]
-          : [".yamllint", ".yamllint.yaml", ".yamllint.yml"],
+          : YAMLLINT_NAMES,
         io,
         settings.root,
       );
@@ -185,10 +187,24 @@ async function linter(
       const fallback = await bundledConfig(fallbackName, io, settings);
       const cwd = own?.dir ?? settings.root;
       const target = cwd && file.startsWith(`${cwd}/`) ? file.slice(cwd.length + 1) : file;
+      if (!ansible)
+        return { argv: ["yamllint", "--strict", "-c", own?.config ?? fallback, target], cwd };
+      // ansible-lint looks for a yamllint config itself, down to ~/.config/yamllint/config.
+      // --yamllint-file comes first in that search, so no file outside the repository changes
+      // the result.
+      const yamllint =
+        (await projectConfig(file, YAMLLINT_NAMES, io, settings.root))?.config ??
+        (await bundledConfig(".yamllint", io, settings));
       return {
-        argv: ansible
-          ? ["ansible-lint", "-c", own?.config ?? fallback, "-q", target]
-          : ["yamllint", "--strict", "-c", own?.config ?? fallback, target],
+        argv: [
+          "ansible-lint",
+          "-c",
+          own?.config ?? fallback,
+          "--yamllint-file",
+          yamllint,
+          "-q",
+          target,
+        ],
         cwd,
       };
     }

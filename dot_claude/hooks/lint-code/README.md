@@ -34,7 +34,7 @@ Ansible detection uses directories (`roles/`, `tasks/`, `handlers/`, `playbooks/
 
 Files below a Helm chart's `templates/` directory are skipped when that chart has a `Chart.yaml`. Those files contain Go templates, not plain YAML. Other directories called `templates/` remain eligible. Project exclusions can skip other generated or templated files.
 
-Ansible-lint has its own embedded yamllint policy. The standalone yamllint fallback is not injected into ansible-lint.
+ansible-lint looks for a yamllint config by itself, also in `~/.config/yamllint/config` and `YAMLLINT_CONFIG_FILE`. The hook passes `--yamllint-file` with the nearest project `.yamllint`, `.yamllint.yaml` or `.yamllint.yml`, else the bundled `.yamllint`, so a file outside the repository cannot change the result. ansible-lint merges that file over its own embedded policy, which already accepts the format of oxfmt: one space before a comment and inside braces, and no `---`. The bundled `.ansible-lint` still skips `yaml[line-length]` and `yaml[indentation]`. A project `.ansible-lint` replaces it, and then the 100-character limit of the bundled `.yamllint` applies.
 
 ### Terraform
 
