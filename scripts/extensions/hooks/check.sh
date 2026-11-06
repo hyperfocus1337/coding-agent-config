@@ -25,12 +25,21 @@ HOOKS="${REPO}/dot_claude/hooks"
 CODEX_HOOKS="${REPO}/dot_codex/hooks"
 GIT_HOOKS="${REPO}/dot_config/git/hooks"
 
-for tool in claude node tsc; do
+for tool in claude node pnpm tsc; do
   command -v "${tool}" >/dev/null || {
     echo "missing: ${tool}" >&2
     exit 1
   }
 done
+
+# The Node types come from the @types/node of the package.json beside this script. A global pi
+# install does not bring them on every machine: the pnpm global virtual store links no
+# dependencies of pi beside it. Install when node_modules is missing or older than the lockfile.
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ ! -f ${HERE}/node_modules/.modules.yaml || ${HERE}/pnpm-lock.yaml -nt ${HERE}/node_modules/.modules.yaml ]]; then
+  (cd "${HERE}" && pnpm install --frozen-lockfile)
+fi
+NODE_TYPES="${HERE}/node_modules/@types"
 
 # An interactive Claude Code session writes its types beside each mod it loads
 # from a CLAUDE_CODE_PLUGIN_DIRS folder, as .claude-plugin/types/, at every
@@ -78,7 +87,6 @@ cat >"${WORK}/mod.tsconfig.json" <<JSON
 }
 JSON
 
-# The Node types come in through the pi declarations, which reference them.
 cat >"${WORK}/node.tsconfig.json" <<JSON
 {
   "compilerOptions": {
@@ -90,7 +98,8 @@ cat >"${WORK}/node.tsconfig.json" <<JSON
     "noEmit": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
-    "types": [],
+    "typeRoots": ["${NODE_TYPES}"],
+    "types": ["node"],
     "paths": { "@earendil-works/pi-coding-agent": ["${PI_PACKAGE}/dist/index.d.ts"] }
   },
   "include": ["${HOOKS}/*/pi.ts", "${HOOKS}/*/omp.ts", "${HOOKS}/*/command.ts", "${HOOKS}/*/repository.ts", "${CODEX_HOOKS}/*.ts", "${CODEX_HOOKS}/test/*.ts", "${GIT_HOOKS}/*/main.ts", "${GIT_HOOKS}/*/test/*.ts"]
@@ -102,8 +111,8 @@ cat >"${WORK}/test.tsconfig.json" <<JSON
 {
   "extends": "${WORK}/node.tsconfig.json",
   "compilerOptions": {
-    "typeRoots": ["${CLAUDE_CODE_TYPES}"],
-    "types": ["claude-code", "claude-code-tools", "claude-code-mcp"]
+    "typeRoots": ["${CLAUDE_CODE_TYPES}", "${NODE_TYPES}"],
+    "types": ["claude-code", "claude-code-tools", "claude-code-mcp", "node"]
   },
   "include": ["${HOOKS}/*/test/*.ts"]
 }

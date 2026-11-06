@@ -6,3 +6,4 @@ assets
 .envrc
 __pycache__/
 .claude/worktrees/
+node_modules/
