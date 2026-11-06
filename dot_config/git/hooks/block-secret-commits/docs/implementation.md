@@ -62,7 +62,7 @@ betterleaks has no XDG config lookup ([verified](research.md#where-betterleaks-l
 
 ### Precedence
 
-The hook asks `betterleaks config path` rather than reproducing betterleaks' config precedence. It passes the shipped config only when the answer is `default`. Environment and repository configs keep priority. Those configs lose the shipped name rules unless they extend this file, see [Per-repo configs](../README.md#per-repo-configs).
+The hook asks `betterleaks config path` whether `--config` or an environment variable selects a config. When the answer is `default`, it passes the `.betterleaks.toml` or `.gitleaks.toml` of the repo root, else the shipped config. The betterleaks installed before 2026-11-06 loaded a config from the target path by itself. 1.10.0 does that only with `--unsafe-auto-load-config`, and the binary scan has a temporary folder as its target, so the hook looks for the repo config itself and both scans use it. Environment and repository configs lose the shipped name rules unless they extend this file, see [Per-repo configs](../README.md#per-repo-configs).
 
 ### Rule dialect
 

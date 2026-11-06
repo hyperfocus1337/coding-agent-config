@@ -6,7 +6,7 @@
  */
 
 import { spawn } from "node:child_process";
-import { mkdtemp, open, readFile, rm } from "node:fs/promises";
+import { mkdtemp, open, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
@@ -54,9 +54,21 @@ async function prepare() {
     ...(process.env.AGENT_ALLOW_SECRETS ?? "").split(/[\s:]+/).filter(Boolean),
   ];
   const picked = await run(["betterleaks", "config", "path"]);
+  // betterleaks 1.10 reads a repo config only with --unsafe-auto-load-config, and the binary scan
+  // has a temporary folder as its target, so the hook passes the repo config itself.
+  const own = (
+    await Promise.all(
+      [".betterleaks.toml", ".gitleaks.toml"].map((name) =>
+        stat(`${root}/${name}`).then(
+          (found) => (found.isFile() ? `${root}/${name}` : undefined),
+          () => undefined,
+        ),
+      ),
+    )
+  ).find(Boolean);
   const config =
     picked?.stdout.trim() === "default"
-      ? ["--config", fileURLToPath(new URL("./conf/betterleaks.toml", import.meta.url))]
+      ? ["--config", own ?? fileURLToPath(new URL("./conf/betterleaks.toml", import.meta.url))]
       : [];
   return { list, betterleaks: picked !== undefined, config };
 }

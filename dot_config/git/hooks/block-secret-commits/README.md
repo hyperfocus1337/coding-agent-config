@@ -75,7 +75,7 @@ The version is in both the tag and the file name. Check the [releases page](http
 
 1. Git runs `main.ts` at the root of the worktree, which is the repo root of the hook.
 2. It reads the allowlist from `.agent-allow-secrets` and `AGENT_ALLOW_SECRETS`, see [Overrides](#overrides).
-3. It asks `betterleaks config path` which config betterleaks would use. It passes `conf/betterleaks.toml` only when no other config applies, see [Per-repo configs](#per-repo-configs).
+3. It asks `betterleaks config path` which config betterleaks would use. When the answer is `default`, it passes the `.betterleaks.toml` or `.gitleaks.toml` of the repo root, else `conf/betterleaks.toml`, see [Per-repo configs](#per-repo-configs).
 4. It runs the binary scan. When a binary blocks, the hook stops here.
 5. It runs `betterleaks git --staged`, which scans the index against `HEAD`.
 6. It removes the findings in allowlisted files and blocks on each finding that is left. To block, it writes the block message to stderr and exits 1, and git stops the commit.
@@ -115,7 +115,7 @@ Read [Rule dialect](docs/implementation.md#rule-dialect) before you edit the pat
 
 ### Per-repo configs
 
-The hook passes `--config` only when `betterleaks config path` answers `default`, which means that nothing else selected a config. A repo with its own `.betterleaks.toml` or `.gitleaks.toml` keeps its config. Such a repo keeps the content rules and loses the name rules. Its config can extend this file to get them back:
+The hook passes `--config` only when `betterleaks config path` answers `default`, which means that no `--config` or environment variable selected a config. betterleaks 1.10 loads a repo config by itself only with `--unsafe-auto-load-config`, so the hook passes the `.betterleaks.toml` or `.gitleaks.toml` of the repo root, in that order, and both scans use it. A config in a cloned repo therefore applies to your own commits in that repo. Such a repo keeps the content rules and loses the name rules. Its config can extend this file to get them back:
 
 ```toml
 [extend]

@@ -52,7 +52,7 @@ The fixtures hold a NUL byte. git then reports the blob as binary, which is the 
 
 - One repo stages a file for each of the 39 secret names. The commit must block, and each name must appear in the message, so a rule that stops to match cannot pass on the exit code alone. Add a name to the `names` list when you change the `path` pattern in `conf/betterleaks.toml`.
 - The templates (`.env.example` and the others), ordinary files, `id_rsa.pub`, `server.crt`, and `notes.gpg` must allow.
-- A repo with its own `.betterleaks.toml` keeps it, so the shipped name rule does not apply.
+- A repo with its own `.betterleaks.toml` or `.gitleaks.toml` keeps it, so the shipped name rule does not apply. betterleaks 1.10 loads neither file by itself, so this checks that the hook passes it.
 
 ## Content scan
 

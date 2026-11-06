@@ -363,14 +363,17 @@ if (haveBetterleaks) {
     ),
   );
   // A repo with its own config keeps it, so the name rule stops applying.
-  await check("repo .betterleaks.toml wins over the shipped config", () =>
-    allows(
-      mkrepo("ownconfig", {
-        ".betterleaks.toml": "[extend]\nuseDefault = true\n",
-        ".env": "placeholder\n",
-      }),
-    ),
-  );
+  // betterleaks 1.10 loads neither file by itself; the hook passes it with --config.
+  for (const name of [".betterleaks.toml", ".gitleaks.toml"]) {
+    await check(`repo ${name} wins over the shipped config`, () =>
+      allows(
+        mkrepo(`ownconfig${name}`, {
+          [name]: "[extend]\nuseDefault = true\n",
+          ".env": "placeholder\n",
+        }),
+      ),
+    );
+  }
 
   // --- Content scan ---
 
