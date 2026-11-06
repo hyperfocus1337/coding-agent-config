@@ -5,6 +5,8 @@ rules:
   key-duplicates: enable
   line-length:
     max: 100
+    # A key with one long word as its value, such as a URL, cannot wrap.
+    allow-non-breakable-inline-mappings: true
   truthy:
     allowed-values: ['true', 'false']
     # GitHub Actions uses on: as a key.
