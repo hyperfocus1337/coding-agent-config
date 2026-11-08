@@ -8,6 +8,11 @@ node test/check.ts
 
 It prints `all pass`, or one `FAIL` line for each failed case and exits 1.
 
+`test/check.ts` first imports the unit tests of the formatter modules that have logic of their own. They need no formatter on `PATH`, and a failed assert stops the run:
+
+- [`test/shfmt.ts`](../test/shfmt.ts): an `.editorconfig` in a folder above gives no printer flags. No `.editorconfig`, or a folder with that name, gives `-i 2 -ci`.
+- [`test/ruff.ts`](../test/ruff.ts): only a summary with `reformatted` counts as a change, and the command has `--force-exclude`.
+
 ## What the test needs
 
 - **Node 23.6 or later**, which runs a `.ts` file.

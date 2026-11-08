@@ -6,9 +6,13 @@
  * Run: node test/check.ts, from the hook directory. Fixtures live under $HOME,
  * because the hook skips /tmp and $TMPDIR. Without git, terraform, shfmt, or
  * ruff the hook does nothing, so the check skips with a message instead of
- * passing.
+ * passing. The unit cases of a formatter module with logic of its own are in
+ * test/<module>.ts. They need no formatter and run first, through the imports
+ * below.
  */
 
+import "./ruff.ts";
+import "./shfmt.ts";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
