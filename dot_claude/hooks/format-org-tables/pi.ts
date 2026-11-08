@@ -16,18 +16,13 @@ import { nodeIo, nodeSettings } from "./io.ts";
 
 export default function (pi: ExtensionAPI) {
   const start = starts(pi, ["bash"]);
-  pi.on("tool_result", (event, ctx) => {
-    if (!["write", "edit", "bash"].includes(event.toolName)) return;
-    const { path, command } = event.input;
-    const calls: Call[] =
-      event.toolName === "bash"
-        ? typeof command === "string"
-          ? [{ command, since: start(event.toolCallId), cwd: ctx.cwd }]
-          : []
-        : typeof path === "string"
-          ? [{ filePath: absolute(path, ctx.cwd), cwd: ctx.cwd }]
-          : [];
-    return alignCalls(calls, event.content);
+  pi.on("tool_result", (event, { cwd }) => {
+    const { command, path } = event.input;
+    const since = start(event.toolCallId);
+    if (event.toolName === "bash" && typeof command === "string")
+      return alignCalls([{ command, since, cwd }], event.content);
+    if (["write", "edit"].includes(event.toolName) && typeof path === "string")
+      return alignCalls([{ filePath: absolute(path, cwd), cwd }], event.content);
   });
 }
 
@@ -62,9 +57,10 @@ export async function alignCalls(
   content: ToolResultEvent["content"],
 ): Promise<ToolResultEventResult | undefined> {
   try {
+    const settings = nodeSettings();
     const hints: string[] = [];
     for (const call of calls) {
-      const hint = await align(call, nodeIo(), nodeSettings());
+      const hint = await align(call, nodeIo, settings);
       if (hint) hints.push(hint);
     }
     if (!hints.length) return;
