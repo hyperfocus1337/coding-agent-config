@@ -4,11 +4,14 @@ Run `node test/check.ts` from `dot_claude/hooks/lint-code`, or `just hooks-check
 
 Fixtures live under `$HOME` because lint-code skips scratch directories. Fixture commits disable git hooks for that command only. A `finally` block removes the fixtures. The test clears `AGENT_HOOKS_DISABLE` so it can check a hook disabled in the parent session.
 
+`test/check.ts` imports the unit tests for each linter module that has its own logic: `test/yaml.ts` and `test/tflint.ts`. They call the `command` of the module with the stub `Io` of `test/stub.ts` and run first. The routing case in `check.ts` covers the one-line commands of ruff, oxlint, and shellcheck.
+
 ## Coverage
 
 - YAML configuration discovery checks each supported filename, nearest-first selection, and the repository boundary. Ansible configuration, builtin module detection, generic basenames, and Helm exclusions are covered.
 - The fallback policy limits lines to 100 characters, allows a key with one long word such as a URL, and leaves other formatting to oxfmt. ansible-lint gets the nearest project `.yamllint`, else the bundled one, with `--yamllint-file`. With oxfmt installed, a contract check formats a plain YAML file and a playbook with oxfmt and requires no findings from yamllint and ansible-lint, with a user yamllint config that extends the default rules and a project `.ansible-lint` with no `skip_list`. Missing tools and timeouts emit one coverage notice per tool and reason; a full check treats unavailable coverage as failure.
 - Terraform module configuration and per-linter disable keys remain covered.
+- The repo key of a tool skips that tool in the stop hook and in the full check, and a value that is not a boolean keeps it on. With `ansible-lint` off, Ansible YAML goes to yamllint.
 - Temporary paths are skipped, including macOS `/private/tmp` and custom `$TMPDIR` paths.
 - Real git selection includes staged, unstaged, untracked, old-mtime, space-containing, newline-containing, and non-ASCII filenames. Deleted and ignored files are excluded.
 - A clean repository starts no linter. A nested session directory still runs linters at the root. Outside git, nothing runs. Before the first commit, staged and untracked files count. The explicit full-repository command includes clean tracked files.

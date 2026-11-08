@@ -1,4 +1,10 @@
-/** Run: node test/check.ts. Needs git; linters are stand-ins, not dependencies. */
+/**
+ * Run: node test/check.ts. Needs git; linters are stand-ins, not dependencies. The unit cases of
+ * a linter module with logic of its own are in test/<module>.ts, and run first through the
+ * imports below.
+ */
+import "./tflint.ts";
+import "./yaml.ts";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
@@ -10,6 +16,7 @@ import extension from "../pi.ts";
 import ompExtension from "../omp.ts";
 import tscExtension from "../../type-check-tsc/pi.ts";
 import pyreflyExtension from "../../type-check-pyrefly/pi.ts";
+import { settings, stub } from "./stub.ts";
 
 const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
 const codex = spawnSync("sh", [path.resolve(hook, "../../../dot_codex/modify_hooks.json")], {
@@ -26,21 +33,6 @@ assert.equal(
 );
 assert.ok(!JSON.stringify(configured.PostToolUse).includes("lint-code"));
 delete process.env.AGENT_HOOKS_DISABLE;
-const settings = { configDir: "/cfg" };
-function stub(files: string[] = [], texts: Record<string, string> = {}) {
-  const ran: string[][] = [];
-  const dirs: (string | undefined)[] = [];
-  const io: Io = {
-    stat: async (file) => (files.includes(file) ? { isFile: true } : undefined),
-    read: async (file) => texts[file] ?? "",
-    run: async (argv, options) => {
-      ran.push(argv);
-      dirs.push(options?.cwd);
-      return { exitCode: 1, output: `${argv[0]} says no\n` };
-    },
-  };
-  return { io, ran, dirs };
-}
 
 const files = [
   "a.py",
@@ -77,11 +69,6 @@ assert.deepEqual(routed.ran, [
   ["tflint", "--config=/cfg/.tflint.hcl", "--filter=main.tf", "--format=compact", "--no-color"],
 ]);
 assert.equal(routed.dirs.at(-1), "/m");
-for (const own of ["/m/.tflint.hcl", "/m/.tflint.json"]) {
-  const { io, ran } = stub([own]);
-  await lint(["/m/main.tf"], io, settings);
-  assert.equal(ran[0]?.[1], "--filter=main.tf");
-}
 for (const output of [
   'Plugin missing. Did you run "tflint --init"?\n',
   "mise ERROR No version is set for shim: tflint\n",
@@ -98,40 +85,6 @@ for (const output of [
     undefined,
   );
 }
-const ansible = stub([], { "x/deploy.yml": "- hosts: all\n" });
-await lint(["x/site.yaml", "x/deploy.yml", "x/other.yml"], ansible.io, settings);
-assert.deepEqual(
-  ansible.ran.map((argv) => argv[0]),
-  ["yamllint", "ansible-lint", "yamllint"],
-);
-// Project policy wins, nearest first, and discovery stops at the Git root.
-for (const name of [".yamllint", ".yamllint.yaml", ".yamllint.yml"]) {
-  const own = stub([`/r/nested/${name}`, "/r/.yamllint"]);
-  await lint(["/r/nested/a.yaml"], own.io, { ...settings, root: "/r" });
-  assert.deepEqual(own.ran[0], ["yamllint", "--strict", "-c", `/r/nested/${name}`, "a.yaml"]);
-  assert.equal(own.dirs[0], "/r/nested");
-}
-const outside = stub(["/.yamllint"]);
-await lint(["/r/a.yaml"], outside.io, { ...settings, root: "/r" });
-assert.deepEqual(outside.ran[0], ["yamllint", "--strict", "-c", "/cfg/.yamllint", "a.yaml"]);
-// A project .ansible-lint does not stop the pinned yamllint fallback; a project .yamllint wins.
-const ansibleOwn = stub(["/r/.ansible-lint"]);
-await lint(["/r/roles/a.yaml"], ansibleOwn.io, { ...settings, root: "/r" });
-assert.deepEqual(ansibleOwn.ran[0], [
-  "ansible-lint",
-  "-c",
-  "/r/.ansible-lint",
-  "--yamllint-file",
-  "/cfg/.yamllint",
-  "-q",
-  "roles/a.yaml",
-]);
-const ansibleYamllint = stub(["/r/.ansible-lint", "/r/roles/.yamllint.yml", "/.yamllint"]);
-await lint(["/r/roles/a.yaml"], ansibleYamllint.io, { ...settings, root: "/r" });
-assert.equal(ansibleYamllint.ran[0]?.[4], "/r/roles/.yamllint.yml");
-const ansibleOutside = stub(["/.yamllint"]);
-await lint(["/r/roles/a.yaml"], ansibleOutside.io, { ...settings, root: "/r" });
-assert.equal(ansibleOutside.ran[0]?.[4], "/cfg/.yamllint");
 // Repo keys: ansible-lint off gives Ansible YAML the yamllint checks; both off skip it.
 const noAnsible = stub();
 await lint(["/r/roles/a.yaml", "a.py"], noAnsible.io, {
@@ -146,19 +99,6 @@ await lint(["/r/roles/a.yaml", "/r/b.yaml"], noYaml.io, {
   repoOff: new Set(["yamllint", "ansible-lint"]),
 });
 assert.deepEqual(noYaml.ran, []);
-const helm = stub(["/r/chart/Chart.yaml"]);
-await lint(["/r/chart/templates/a.yaml", "/r/templates/a.yaml"], helm.io, settings);
-assert.equal(helm.ran.length, 1);
-assert.equal(helm.ran[0]?.at(-1), "/r/templates/a.yaml");
-const modules = stub([], {
-  "/r/main.yaml": "plain: yaml\n",
-  "/r/task.yaml": "- ansible.builtin.copy:\n    src: a\n",
-});
-await lint(["/r/main.yaml", "/r/requirements.yml", "/r/task.yaml"], modules.io, settings);
-assert.deepEqual(
-  modules.ran.map((argv) => argv[0]),
-  ["yamllint", "yamllint", "ansible-lint"],
-);
 const notices: string[] = [];
 await lint(
   ["a.py", "b.py"],
