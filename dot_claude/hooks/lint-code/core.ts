@@ -99,14 +99,38 @@ export async function check(cwd: string, io: Io, settings: Settings): Promise<st
   const run: Io["run"] = (argv, options) => io.run(argv, { cwd: options?.cwd ?? root });
   const off = await run(["git", "config", "--type=bool", "--get", "agent-hook.lint-code.enabled"]);
   if (!settings.all && off?.output.trim() === "false") return;
+  const notices: string[] = [];
+  const output = await lint(
+    await select(root, { ...io, run }, settings),
+    { ...io, run },
+    {
+      ...settings,
+      root,
+      notice: (message) => {
+        notices.push(message);
+        settings.notice?.(message);
+      },
+    },
+  );
+  if (output === undefined && (!settings.all || notices.length === 0)) return;
+  const report = `${output ?? ""}${settings.all ? notices.join("\n") : ""}`;
+  return `${settings.verify ? "Final lint verification" : "Lint errors"}:\n${report}\n${settings.verify || settings.all ? "" : "Fix the lint errors, rerun the relevant checks, then stop. Report any remaining failures.\n"}`;
+}
+
+/**
+ * The files to lint in the repository at root: changed and untracked files, or with
+ * settings.all every tracked and untracked file. Only regular files that a linter takes, and
+ * outside the temp folders unless settings.all. `io.run` runs in root.
+ */
+async function select(root: string, io: Io, settings: Settings): Promise<string[]> {
   const git = async (...args: string[]) => {
-    const ran = await run(["git", ...args]);
+    const ran = await io.run(["git", ...args]);
     if (ran?.exitCode === 0) return ran.output.split("\0").filter(Boolean);
     throw new Error(`Cannot select lint targets: git ${args[0]} failed`);
   };
   // shortcut: git includes edits from before this session. Track transcript
   // paths instead if checks must exclude pre-existing uncommitted work.
-  const head = await run(["git", "rev-parse", "--verify", "HEAD"]);
+  const head = await io.run(["git", "rev-parse", "--verify", "HEAD"]);
   const changed = new Set(
     settings.all || head?.exitCode !== 0
       ? await git("ls-files", "-z", "--cached", "--others", "--exclude-standard")
@@ -128,22 +152,7 @@ export async function check(cwd: string, io: Io, settings: Settings): Promise<st
       continue;
     if ((await io.stat(file))?.isFile) files.push(file);
   }
-  const notices: string[] = [];
-  const output = await lint(
-    files,
-    { ...io, run },
-    {
-      ...settings,
-      root,
-      notice: (message) => {
-        notices.push(message);
-        settings.notice?.(message);
-      },
-    },
-  );
-  if (output === undefined && (!settings.all || notices.length === 0)) return;
-  const report = `${output ?? ""}${settings.all ? notices.join("\n") : ""}`;
-  return `${settings.verify ? "Final lint verification" : "Lint errors"}:\n${report}\n${settings.verify || settings.all ? "" : "Fix the lint errors, rerun the relevant checks, then stop. Report any remaining failures.\n"}`;
+  return files;
 }
 
 /** Output of a mise shim of any linter that has no version set. */
