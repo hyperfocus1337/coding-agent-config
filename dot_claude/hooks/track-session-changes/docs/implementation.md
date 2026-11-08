@@ -76,8 +76,6 @@ The folders of a Bash command come from `commandDirs`, see the [Settings](../REA
 
 `GIT_OBJECT_DIRECTORY` points at the session `objects/`, and `GIT_ALTERNATE_OBJECT_DIRECTORIES` at the repo objects, so git reads the repo objects and writes new objects only to the session. git does not find a repo when the folder in `GIT_OBJECT_DIRECTORY` does not exist, so the core makes it first.
 
-`objects/` in the state directory is a second alternate, because some session states hold blobs there. git only warns when it is missing. The prune deletes the last of these directories by 2026-11-14, and then the second alternate can go.
-
 The first snapshot starts from a copy of the repo index. Each later one starts from the session index, so git rehashes only the files whose stat changed since the last call. Parallel calls share the index, so each snapshot works on a copy and renames it back.
 
 git writes an index to a new file and renames it, so the link keeps the index of the call while a parallel call replaces the session index. The link also keeps the mtime of the index, so its name holds the time it was made, which the prune reads. Before the mod, the prune read the `ctime` of the link, which `$.fs.stat` does not give.

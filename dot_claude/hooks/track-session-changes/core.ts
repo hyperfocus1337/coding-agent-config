@@ -237,14 +237,10 @@ async function cachedRepos(
 /**
  * The environment that points git at the session object directory. The repo
  * objects stay readable as an alternate, and new objects go to the session.
- * shortcut: `objects/` in the state directory is a second alternate, because
- * some session states hold blobs there. git only warns when it is missing.
- * The prune deletes the last of these directories by 2026-11-14; then remove
- * the second alternate.
  */
-const objectEnv = (objects: string, state: string, repo: Repo) => ({
+const objectEnv = (objects: string, repo: Repo) => ({
   GIT_OBJECT_DIRECTORY: objects,
-  GIT_ALTERNATE_OBJECT_DIRECTORIES: `${repo.objects}:${state}/objects`,
+  GIT_ALTERNATE_OBJECT_DIRECTORIES: repo.objects,
 });
 
 // ── Blobs ─────────────────────────────────────────────────────────────────────
@@ -272,7 +268,7 @@ async function storeBlobs(
   let env: Record<string, string>;
   if (repo) {
     argv = ["git", "-C", repo.top, "hash-object", "-w", `--path=${file}`];
-    env = objectEnv(objects, state, repo);
+    env = objectEnv(objects, repo);
   } else {
     const bare = `${state}/blobs.git`;
     if (!(await io.exists(bare)))
@@ -302,7 +298,7 @@ async function storeFiles(
   files: string[],
 ): Promise<Map<string, string>> {
   const objects = objectsDir(where);
-  const env = objectEnv(objects, stateDir(where), repo);
+  const env = objectEnv(objects, repo);
   await ensureDir(io, objects);
   const ids = new Map<string, string>();
   let rest = files.filter((file) => !file.includes("\n"));
@@ -365,7 +361,7 @@ async function snapshot(io: Io, where: Where, repo: Repo, link: string): Promise
   try {
     const from = (await io.exists(index)) ? index : repo.index;
     if ((await io.exists(from)) && !(await io.copy(from, tmp))) return false;
-    const env = { ...objectEnv(objects, state, repo), GIT_INDEX_FILE: tmp };
+    const env = { ...objectEnv(objects, repo), GIT_INDEX_FILE: tmp };
     if (!(await git(io, repo.top, ["add", "-A"], env))) return false;
     // A repo with no file has no index, and git reads a missing link as empty.
     if (!(await io.exists(tmp))) return true;
@@ -428,7 +424,7 @@ export function hunkLine(header: string): number | undefined {
 async function diffCall(io: Io, where: Where, repo: Repo, link: string): Promise<Change[]> {
   const { top } = repo;
   const env = {
-    ...objectEnv(objectsDir(where), stateDir(where), repo),
+    ...objectEnv(objectsDir(where), repo),
     GIT_INDEX_FILE: link,
   };
   const status = await git(
