@@ -38,6 +38,8 @@ export interface Settings {
   verify?: boolean;
   /** Repository boundary for configuration discovery. Set by check. */
   root?: string;
+  /** The tools that agent-hook.lint-code.<tool> false turns off in the repository. Set by check. */
+  repoOff?: Set<string>;
   /** Non-blocking coverage notices, deduplicated by lint. */
   notice?: (message: string) => void;
 }
@@ -48,6 +50,11 @@ export interface Linter {
   key: string;
   /** File extensions without the dot. */
   extensions: string[];
+  /**
+   * The programs that the command runs, each also a repo key: agent-hook.lint-code.<tool>. lint
+   * skips a command whose program the repository turns off. toggle-hook PARTS holds the keys.
+   */
+  tools: string[];
   /** The command and the folder to run it in, else the repository root; undefined skips. */
   command(
     file: string,
@@ -58,7 +65,7 @@ export interface Linter {
   unavailable?: RegExp;
 }
 
-const LINTERS: Linter[] = [ruff, oxlint, shellcheck, yaml, tflint];
+export const LINTERS: Linter[] = [ruff, oxlint, shellcheck, yaml, tflint];
 
 const linterOf = (file: string) => {
   const extension = /\.([^./]+)$/.exec(file)?.[1];
@@ -97,8 +104,15 @@ export async function check(cwd: string, io: Io, settings: Settings): Promise<st
     return settings.all ? "Lint check failed: not in a Git repository.\n" : undefined;
   const root = top.output.replace(/\n$/, "");
   const run: Io["run"] = (argv, options) => io.run(argv, { cwd: options?.cwd ?? root });
-  const off = await run(["git", "config", "--type=bool", "--get", "agent-hook.lint-code.enabled"]);
-  if (!settings.all && off?.output.trim() === "false") return;
+  // A value that is not a boolean makes git exit 128 and keeps the hook or tool on.
+  const repoKeyOff = async (key: string) =>
+    (
+      await run(["git", "config", "--type=bool", "--get", `agent-hook.lint-code.${key}`])
+    )?.output.trim() === "false";
+  // An explicit full check ignores the hook toggle, but not the tool keys.
+  if (!settings.all && (await repoKeyOff("enabled"))) return;
+  const tools = LINTERS.flatMap((linter) => linter.tools);
+  const toolsOff = await Promise.all(tools.map(repoKeyOff));
   const notices: string[] = [];
   const output = await lint(
     await select(root, { ...io, run }, settings),
@@ -106,6 +120,7 @@ export async function check(cwd: string, io: Io, settings: Settings): Promise<st
     {
       ...settings,
       root,
+      repoOff: new Set(tools.filter((_, i) => toolsOff[i])),
       notice: (message) => {
         notices.push(message);
         settings.notice?.(message);
@@ -180,7 +195,7 @@ export async function lint(
     const linter = linterOf(file);
     if (!linter || off.includes("all") || off.includes(linter.key)) continue;
     const found = await linter.command(file, io, settings);
-    if (!found) continue;
+    if (!found || settings.repoOff?.has(found.argv[0] ?? "")) continue;
     const program = found.argv[0];
     const ran = await io.run(found.argv, { cwd: found.cwd });
     if (

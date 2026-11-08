@@ -13,6 +13,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { FORMATTERS } from "../../format-code/core.ts";
+import { LINTERS } from "../../lint-code/core.ts";
 import {
   command,
   globalFile,
@@ -172,6 +173,12 @@ await check("PARTS holds the keys of FORMATTERS in format-code", () => {
   assert.deepEqual(
     FORMATTERS.map(({ key }) => key),
     PARTS.get("format-code"),
+  );
+});
+await check("PARTS holds the tools of LINTERS in lint-code", () => {
+  assert.deepEqual(
+    LINTERS.flatMap(({ tools }) => tools),
+    PARTS.get("lint-code"),
   );
 });
 await check("status names only the hooks that are off", () => {

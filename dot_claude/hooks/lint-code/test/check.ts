@@ -132,6 +132,20 @@ assert.equal(ansibleYamllint.ran[0]?.[4], "/r/roles/.yamllint.yml");
 const ansibleOutside = stub(["/.yamllint"]);
 await lint(["/r/roles/a.yaml"], ansibleOutside.io, { ...settings, root: "/r" });
 assert.equal(ansibleOutside.ran[0]?.[4], "/cfg/.yamllint");
+// Repo keys: ansible-lint off gives Ansible YAML the yamllint checks; both off skip it.
+const noAnsible = stub();
+await lint(["/r/roles/a.yaml", "a.py"], noAnsible.io, {
+  ...settings,
+  root: "/r",
+  repoOff: new Set(["ansible-lint", "ruff"]),
+});
+assert.deepEqual(noAnsible.ran, [["yamllint", "--strict", "-c", "/cfg/.yamllint", "roles/a.yaml"]]);
+const noYaml = stub();
+await lint(["/r/roles/a.yaml", "/r/b.yaml"], noYaml.io, {
+  ...settings,
+  repoOff: new Set(["yamllint", "ansible-lint"]),
+});
+assert.deepEqual(noYaml.ran, []);
 const helm = stub(["/r/chart/Chart.yaml"]);
 await lint(["/r/chart/templates/a.yaml", "/r/templates/a.yaml"], helm.io, settings);
 assert.equal(helm.ran.length, 1);
@@ -341,6 +355,19 @@ try {
   git("config", "agent-hook.lint-code.enabled", "false");
   assert.equal(command().status, 0);
   git("config", "--unset", "agent-hook.lint-code.enabled");
+  // A tool key turns off one linter, also in the explicit full check.
+  git("config", "agent-hook.lint-code.ruff", "false");
+  clear();
+  assert.equal(command().status, 0);
+  const fullOff = spawnSync(process.execPath, [`${hook}/repository.ts`, repo], {
+    encoding: "utf8",
+    env,
+  });
+  assert.equal(fullOff.status, 0, fullOff.stderr);
+  assert.deepEqual(starts(), []);
+  git("config", "agent-hook.lint-code.ruff", "banana"); // Not a boolean: ruff stays on.
+  assert.equal(command().status, 2);
+  git("config", "--unset", "agent-hook.lint-code.ruff");
   assert.equal(command({ cwd: tmp }).status, 0); // Outside git.
   const first = `${tmp}/first`;
   write(`${first}/first.py`, "x = 1\n");

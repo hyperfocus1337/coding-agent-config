@@ -56,7 +56,7 @@ node ~/.claude/hooks/lint-code/repository.ts /path/to/repository
 
 From this source repository, `just lint-code /path/to/repository` uses the same implementation. The full check includes clean tracked files and untracked files that Git does not ignore. It allows repositories in temporary directories. It does not modify files or request model work, so it can also run in CI.
 
-The exit status is 0 only when selected checks pass. Lint errors, missing tools, timeouts, missing plugins, and selection failures return a nonzero status. Session and repository hook toggles do not disable an explicit full check; `CLAUDE_LINT_DISABLE` still selects which language checks are enabled. Only supported extensions are covered, not every file or language in the repository.
+The exit status is 0 only when selected checks pass. Lint errors, missing tools, timeouts, missing plugins, and selection failures return a nonzero status. The session toggle and the `enabled` repo key do not disable an explicit full check. The repo keys for single tools and `CLAUDE_LINT_DISABLE` still apply, so a repository can leave out a linter that it does not use. Only supported extensions are covered, not every file or language in the repository.
 
 ## Correction and verification
 
@@ -91,6 +91,7 @@ After a Codex hook entry changes, trust it again in the Codex TUI on each machin
 
 - **Session:** `/toggle-hook lint-code`, or `AGENT_HOOKS_DISABLE=lint-code` at launch.
 - **Repository:** `/toggle-hook --repo lint-code`, or set Git config `agent-hook.lint-code.enabled` to `false`.
+- **Tool in a repository:** `/toggle-hook --repo lint-code.<tool>`, or set Git config `agent-hook.lint-code.<tool>` to `false`. The tools are `ruff`, `oxlint`, `shellcheck`, `yamllint`, `ansible-lint`, and `tflint`. With `ansible-lint` off, Ansible YAML gets the yamllint checks. A value that is not a boolean keeps the tool on.
 - **Language:** `CLAUDE_LINT_DISABLE` accepts `py`, `js`, `sh`, `yaml`, `tf`, or `all`, separated by spaces or commas.
 - **Removal:** remove the adapter entry from the corresponding agent configuration.
 

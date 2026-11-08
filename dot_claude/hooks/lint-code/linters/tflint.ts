@@ -4,6 +4,7 @@ import { bundledConfig } from "./find-config.ts";
 export const tflint: Linter = {
   key: "tf",
   extensions: ["tf"],
+  tools: ["tflint"],
   // tflint lints a whole module, so it runs in the folder of the file, and --filter keeps the
   // issues of this file. With --chdir, --filter matches nothing (tflint 0.64.0). A .tflint.hcl
   // or .tflint.json of the module wins over the bundled config.

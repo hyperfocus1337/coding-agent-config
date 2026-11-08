@@ -12,23 +12,23 @@ Adds the `/toggle-hook` command, which turns a supported hook off or on. Without
 
 The hook checks nothing. It runs when you type `/toggle-hook`, and the argument selects the result:
 
-| Argument                          | Result                                                                                       |
-| --------------------------------- | -------------------------------------------------------------------------------------------- |
-| None, or a flag alone             | Lists the state of each hook and formatter, and the scope that moves it off its default      |
-| A hook name                       | Flips that hook until you quit, and prints its new state                                     |
-| `all`                             | Turns all 8 hooks off until you quit, or turns all of them on again when one or more are off |
-| `--repo` and a hook name          | Flips that hook in the session repository                                                    |
-| `--repo` and `<hook>.<formatter>` | Flips one formatter in the session repository, for example `--repo format-code.shfmt`        |
-| `--repo all`                      | Turns all 8 hooks off in the session repository, or on again when one or more are off        |
-| `--global` and a name, or `all`   | As `--repo`, in the global git config                                                        |
-| A guard name                      | Changes nothing, and names the escape hatch of that guard                                    |
-| Any other text                    | Changes nothing, and lists the hook names                                                    |
+| Argument                        | Result                                                                                       |
+| ------------------------------- | -------------------------------------------------------------------------------------------- |
+| None, or a flag alone           | Lists the state of each hook and tool, and the scope that moves it off its default           |
+| A hook name                     | Flips that hook until you quit, and prints its new state                                     |
+| `all`                           | Turns all 8 hooks off until you quit, or turns all of them on again when one or more are off |
+| `--repo` and a hook name        | Flips that hook in the session repository                                                    |
+| `--repo` and `<hook>.<tool>`    | Flips one formatter or linter in the session repository, for example `--repo lint-code.ruff` |
+| `--repo all`                    | Turns all 8 hooks off in the session repository, or on again when one or more are off        |
+| `--global` and a name, or `all` | As `--repo`, in the global git config                                                        |
+| A guard name                    | Changes nothing, and names the escape hatch of that guard                                    |
+| Any other text                  | Changes nothing, and lists the hook names                                                    |
 
 Completion matches any part of a hook name, without case sensitivity. For example, `--repo destructive` suggests `block-destructive-commands`, and `--repo shfmt` suggests `format-code.shfmt`. Selecting a suggestion preserves the scope flag.
 
-The first word suggests the flags, the hook names, and `all`. After `--repo` or `--global`, it suggests the formatter names too. In Claude Code, the list shows only after you type one letter of the word, because the engine sends no completion request for an empty word.
+The first word suggests the flags, the hook names, and `all`. After `--repo` or `--global`, it suggests the tool names too. In Claude Code, the list shows only after you type one letter of the word, because the engine sends no completion request for an empty word.
 
-The session can only turn a hook off. A hook that git config turns off stays off when you flip it with no flag: the command then changes nothing and names the flag to use. A formatter name, such as `format-code.shfmt`, works only with `--repo` or `--global`.
+The session can only turn a hook off. A hook that git config turns off stays off when you flip it with no flag: the command then changes nothing and names the flag to use. A tool name, such as `format-code.shfmt` or `lint-code.ansible-lint`, works only with `--repo` or `--global`.
 
 ### Which hooks have a toggle
 
@@ -41,7 +41,7 @@ The 7 advisory hooks and `block-destructive-commands` have a toggle. An advisory
 
 Turning off `block-destructive-commands` skips all dcg checks, including the pack that blocks agent writes to hook toggle keys, and the pack that blocks `git commit --no-verify`. An agent can then skip the git guards `block-secret-commits` and `block-commit-attribution`. This also happens with `all`. Prefer `dcg allow-once <code>` when you only need to approve one command.
 
-`PARTS` in [`core.ts`](core.ts) lists the formatters that have their own key: `terraform`, `shfmt`, and `ruff` of `format-code`.
+`PARTS` in [`core.ts`](core.ts) lists the tools that have their own key: `terraform`, `shfmt`, and `ruff` of `format-code`, and `ruff`, `oxlint`, `shellcheck`, `yamllint`, `ansible-lint`, and `tflint` of `lint-code`.
 
 The other guards (`enforce-cli-tools`, `block-commit-attribution`, `block-secret-commits`) keep their own escape hatches and have no toggle. `track-session-changes` only writes a log.
 

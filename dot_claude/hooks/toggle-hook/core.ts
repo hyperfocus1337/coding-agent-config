@@ -26,11 +26,15 @@ export const HOOKS = [
 ];
 
 /**
- * The formatters of a hook that have their own git config key, so that
+ * The tools of a hook that have their own git config key, so that
  * `--repo format-code.shfmt` turns off one formatter. The same keys are in
- * FORMATTERS in format-code/core.ts, and test/check.ts keeps them the same.
+ * FORMATTERS in format-code/core.ts and LINTERS in lint-code/core.ts, and
+ * test/check.ts keeps them the same.
  */
-export const PARTS = new Map([["format-code", ["terraform", "shfmt", "ruff"]]]);
+export const PARTS = new Map([
+  ["format-code", ["terraform", "shfmt", "ruff"]],
+  ["lint-code", ["ruff", "oxlint", "shellcheck", "yamllint", "ansible-lint", "tflint"]],
+]);
 
 /** The names that `--repo` and `--global` take: each hook, then its formatters. */
 export const NAMES = HOOKS.flatMap((hook) => [

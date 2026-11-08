@@ -4,5 +4,6 @@ import type { Linter } from "../core.ts";
 export const oxlint: Linter = {
   key: "js",
   extensions: ["js", "jsx", "ts", "tsx", "mjs", "cjs", "mts", "cts"],
+  tools: ["oxlint"],
   command: async (file) => ({ argv: ["oxlint", "--deny-warnings", file] }),
 };

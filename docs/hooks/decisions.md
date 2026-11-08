@@ -71,6 +71,10 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 **Decision:** on 2026-11-08, each linter of `lint-code` and each formatter of `format-code` moved to its own module in `linters/` or `formatters/`, not to its own hook, and yamllint and ansible-lint share `linters/yaml.ts`. **Why:** the tools differ in how they build a command and read its output, not in when they run, how they select files, or what the model sees. 8 hooks would copy that shared flow (4 agent adapters, the correction flow, file selection, and the amend hint), and the copies can drift. yamllint and ansible-lint share a module because each YAML file goes to exactly one of them, and ansible-lint reads the yamllint config. **Cost:** a tool has no session toggle of its own, and a tool that needs a different event or output to the model must move to its own hook.
 
+## Each lint-code tool has a repo key
+
+**Decision:** on 2026-11-08, `agent-hook.lint-code.<tool>` turns off one linter in one repository, for `ruff`, `oxlint`, `shellcheck`, `yamllint`, `ansible-lint`, and `tflint`. With `ansible-lint` off, Ansible YAML gets the yamllint checks. **Why:** a repository can have a linter that it cannot run, such as ansible-lint without its collections, and the keys also apply in the explicit full check, so CI does not fail on that linter. `CLAUDE_LINT_DISABLE` keeps its language keys, so values that are in use now still work. **Cost:** each stop runs 6 more `git config` reads, in parallel.
+
 ## track-session-changes runs as a mod
 
 **Decision:** the core is async over an `Io` object, so that Claude Code runs it as a mod. The other option was to keep `node hook.ts` as a command hook. **Why:** the mod took 9 to 30 ms for each side of a Bash call, against 27 to 57 ms for the command hook. **Cost:** the mod runs `git hash-object`, `ln`, `cp -p`, `mv`, `rm -rf`, and `sh -c 'cat >>'` for what `$.fs` cannot do. See [`track-session-changes/docs/implementation.md`](../../dot_claude/hooks/track-session-changes/docs/implementation.md).

@@ -4,5 +4,6 @@ import type { Linter } from "../core.ts";
 export const shellcheck: Linter = {
   key: "sh",
   extensions: ["sh", "bash"],
+  tools: ["shellcheck"],
   command: async (file) => ({ argv: ["shellcheck", "-S", "warning", file] }),
 };

@@ -4,5 +4,6 @@ import type { Linter } from "../core.ts";
 export const ruff: Linter = {
   key: "py",
   extensions: ["py"],
+  tools: ["ruff"],
   command: async (file) => ({ argv: ["ruff", "check", "--quiet", file] }),
 };
