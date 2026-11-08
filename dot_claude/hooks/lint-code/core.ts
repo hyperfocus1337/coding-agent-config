@@ -1,4 +1,13 @@
-/** Lints changed and untracked source files once at the stop boundary. */
+/**
+ * Lints changed and untracked source files once at the stop boundary. Each linter is a module in
+ * linters/; this file selects the files, runs the linters, and collects the output.
+ */
+
+import { oxlint } from "./linters/oxlint.ts";
+import { ruff } from "./linters/ruff.ts";
+import { shellcheck } from "./linters/shellcheck.ts";
+import { tflint } from "./linters/tflint.ts";
+import { yaml } from "./linters/yaml.ts";
 
 export interface Io {
   /** Whether the path is a regular file; undefined if missing. */
@@ -32,6 +41,29 @@ export interface Settings {
   /** Non-blocking coverage notices, deduplicated by lint. */
   notice?: (message: string) => void;
 }
+
+/** A linter: the files it takes and its command for one file. */
+export interface Linter {
+  /** The CLAUDE_LINT_DISABLE key. */
+  key: string;
+  /** File extensions without the dot. */
+  extensions: string[];
+  /** The command and the folder to run it in, else the repository root; undefined skips. */
+  command(
+    file: string,
+    io: Io,
+    settings: Settings,
+  ): Promise<{ argv: string[]; cwd?: string } | undefined>;
+  /** Output that tells the linter could not check the file, not a lint finding. */
+  unavailable?: RegExp;
+}
+
+const LINTERS: Linter[] = [ruff, oxlint, shellcheck, yaml, tflint];
+
+const linterOf = (file: string) => {
+  const extension = /\.([^./]+)$/.exec(file)?.[1];
+  return LINTERS.find(({ extensions }) => extension && extensions.includes(extension));
+};
 
 /** Checks the repository that holds cwd; returns all lint failures together. */
 export async function check(cwd: string, io: Io, settings: Settings): Promise<string | undefined> {
@@ -67,7 +99,7 @@ export async function check(cwd: string, io: Io, settings: Settings): Promise<st
   const tmpdir = settings.tmpdir?.replace(/^\/private/, "").replace(/\/$/, "");
   const files: string[] = [];
   for (const name of changed) {
-    if (!/\.(?:py|jsx?|tsx?|mjs|cjs|mts|cts|sh|bash|ya?ml|tf)$/.test(name)) continue;
+    if (!linterOf(name)) continue;
     const file = `${root}/${name}`;
     const plain = file.replace(/^\/private/, "");
     if (
@@ -95,146 +127,6 @@ export async function check(cwd: string, io: Io, settings: Settings): Promise<st
   return `${settings.verify ? "Final lint verification" : "Lint errors"}:\n${report}\n${settings.verify || settings.all ? "" : "Fix the lint errors, rerun the relevant checks, then stop. Report any remaining failures.\n"}`;
 }
 
-/**
- * Ansible YAML, by directory or content. Generic basenames alone are not evidence. ansible-lint
- * only runs on these; other YAML goes to yamllint.
- */
-async function isAnsible(file: string, io: Io): Promise<boolean> {
-  return (
-    /\/(roles|tasks|handlers|playbooks|group_vars|host_vars|molecule)\//.test(file) ||
-    /^\s*(?:-\s+)?(?:hosts|tasks|roles|ansible\.builtin\.[\w]+):/m.test(await io.read(file))
-  );
-}
-
-const YAMLLINT_NAMES = [".yamllint", ".yamllint.yaml", ".yamllint.yml"];
-
-/** Nearest project config, bounded by the repository root. */
-async function projectConfig(file: string, names: string[], io: Io, root?: string) {
-  let dir = file.includes("/") ? file.slice(0, file.lastIndexOf("/")) || "/" : ".";
-  while (true) {
-    for (const name of names) {
-      const config = `${dir === "/" ? "" : dir}/${name}`;
-      if ((await io.stat(config))?.isFile) return { config, dir };
-    }
-    if (dir === root || dir === "/" || dir === "." || !dir.includes("/")) return;
-    dir = dir.slice(0, dir.lastIndexOf("/")) || "/";
-  }
-}
-
-/** Accept both deployed names and chezmoi source names. */
-async function bundledConfig(name: string, io: Io, settings: Settings): Promise<string> {
-  const deployed = `${settings.configDir}/${name}`;
-  if ((await io.stat(deployed))?.isFile) return deployed;
-  const source = `${settings.configDir}/dot_${name.slice(1)}`;
-  return (await io.stat(source))?.isFile ? source : deployed;
-}
-
-/** Helm templates contain Go templates, not plain YAML. */
-async function helmTemplate(file: string, io: Io): Promise<boolean> {
-  const parts = file.split("/templates/");
-  for (let i = 0; i < parts.length - 1; i++) {
-    if ((await io.stat(`${parts.slice(0, i + 1).join("/templates/")}/Chart.yaml`))?.isFile)
-      return true;
-  }
-  return false;
-}
-
-/**
- * The linter for a file and the folder to run it in, or undefined when its
- * key is disabled.
- */
-async function linter(
-  file: string,
-  io: Io,
-  settings: Settings,
-): Promise<{ argv: string[]; cwd?: string } | undefined> {
-  const off = (settings.disable ?? "").split(/[ ,]+/);
-  const disabled = (key: string) => off.includes("all") || off.includes(key);
-  switch (file.split(".").pop()) {
-    case "py":
-      return disabled("py") ? undefined : { argv: ["ruff", "check", "--quiet", file] };
-    case "js":
-    case "jsx":
-    case "ts":
-    case "tsx":
-    case "mjs":
-    case "cjs":
-    case "mts":
-    case "cts":
-      return disabled("js") ? undefined : { argv: ["oxlint", "--deny-warnings", file] };
-    case "sh":
-    case "bash":
-      return disabled("sh") ? undefined : { argv: ["shellcheck", "-S", "warning", file] };
-    case "yml":
-    case "yaml": {
-      if (disabled("yaml") || (await helmTemplate(file, io))) return undefined;
-      const ansible = await isAnsible(file, io);
-      const own = await projectConfig(
-        file,
-        ansible
-          ? [
-              ".ansible-lint",
-              ".ansible-lint.yml",
-              ".ansible-lint.yaml",
-              ".config/ansible-lint.yml",
-              ".config/ansible-lint.yaml",
-            ]
-          : YAMLLINT_NAMES,
-        io,
-        settings.root,
-      );
-      const fallbackName = ansible ? ".ansible-lint" : ".yamllint";
-      const fallback = await bundledConfig(fallbackName, io, settings);
-      const cwd = own?.dir ?? settings.root;
-      const target = cwd && file.startsWith(`${cwd}/`) ? file.slice(cwd.length + 1) : file;
-      if (!ansible)
-        return { argv: ["yamllint", "--strict", "-c", own?.config ?? fallback, target], cwd };
-      // ansible-lint looks for a yamllint config itself, down to ~/.config/yamllint/config.
-      // --yamllint-file comes first in that search, so no file outside the repository changes
-      // the result.
-      const yamllint =
-        (await projectConfig(file, YAMLLINT_NAMES, io, settings.root))?.config ??
-        (await bundledConfig(".yamllint", io, settings));
-      return {
-        argv: [
-          "ansible-lint",
-          "-c",
-          own?.config ?? fallback,
-          "--yamllint-file",
-          yamllint,
-          "-q",
-          target,
-        ],
-        cwd,
-      };
-    }
-    case "tf": {
-      if (disabled("tf")) return undefined;
-      // tflint lints a whole module, so it runs in the folder of the file,
-      // and --filter keeps the issues of this file. With --chdir, --filter
-      // matches nothing (tflint 0.64.0). A .tflint.hcl or .tflint.json of
-      // the module wins over the bundled config.
-      const slash = file.lastIndexOf("/");
-      const dir = file.slice(0, slash) || "/";
-      const own = (await io.stat(`${dir}/.tflint.hcl`)) ?? (await io.stat(`${dir}/.tflint.json`));
-      const fallback = own ? undefined : await bundledConfig(".tflint.hcl", io, settings);
-      return {
-        argv: [
-          "tflint",
-          ...(own ? [] : [`--config=${fallback}`]),
-          `--filter=${file.slice(slash + 1)}`,
-          "--format=compact",
-          "--no-color",
-        ],
-        cwd: dir,
-      };
-    }
-  }
-  return undefined;
-}
-
-/** tflint output for a plugin that `tflint --init` did not install. */
-const TFLINT_PLUGIN_MISSING = /Did you run "tflint --init"\?/;
 /** Output of a mise shim of any linter that has no version set. */
 const MISE_SHIM_VERSION_MISSING = /No version is set for shim/;
 
@@ -248,6 +140,7 @@ export async function lint(
   io: Io,
   settings: Settings,
 ): Promise<string | undefined> {
+  const off = (settings.disable ?? "").split(/[ ,]+/);
   let failed = false;
   let output = "";
   const notices = new Set<string>();
@@ -256,14 +149,16 @@ export async function lint(
     notices.add(message);
   };
   for (const file of files) {
-    const found = await linter(file, io, settings);
+    const linter = linterOf(file);
+    if (!linter || off.includes("all") || off.includes(linter.key)) continue;
+    const found = await linter.command(file, io, settings);
     if (!found) continue;
     const program = found.argv[0];
     const ran = await io.run(found.argv, { cwd: found.cwd });
     if (
       !ran ||
       ran.exitCode < 0 ||
-      TFLINT_PLUGIN_MISSING.test(ran.output) ||
+      linter.unavailable?.test(ran.output) ||
       MISE_SHIM_VERSION_MISSING.test(ran.output)
     ) {
       notice(

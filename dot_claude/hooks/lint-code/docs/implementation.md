@@ -2,7 +2,9 @@
 
 ## Files and boundaries
 
-`core.ts` selects files, discovers configurations, routes linters, and collects coverage notices. `io.ts` supplies file reads and process execution. `command.ts`, `pi.ts`, and `omp.ts` handle agent boundaries. `repository.ts` is the noninteractive full-repository entry point. The core has no Node imports.
+`core.ts` selects files, routes each file to a linter by its extension, runs the linter, and collects coverage notices. `io.ts` supplies file reads and process execution. `command.ts`, `pi.ts`, and `omp.ts` handle agent boundaries. `repository.ts` is the noninteractive full-repository entry point. The core has no Node imports.
+
+Each module in `linters/` holds one linter: its `CLAUDE_LINT_DISABLE` key, its extensions, how it builds its command and finds its configuration, and the output that means it could not check the file. `linters/yaml.ts` holds both yamllint and ansible-lint, because each YAML file goes to exactly one of them. `linters/find-config.ts` holds the configuration search that the YAML and Terraform modules share. The modules import only types from `core.ts`, so the imports have no cycle at run time. To add a linter, add a module and add it to `LINTERS` in `core.ts`.
 
 The configuration files deploy under `~/.claude/hooks/lint-code/config/`, with chezmoi's `dot_` prefix changed to a leading dot. Source-tree execution also accepts the `dot_` names. README files, docs, and tests stay in the repository.
 
