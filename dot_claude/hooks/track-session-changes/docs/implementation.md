@@ -229,13 +229,15 @@ The write line reads the file after the result, not the `content` input, because
 
 ## Files
 
-| File                                                | Deployed to `~/.claude/hooks/track-session-changes/` | Role                                                                    |
-| --------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
-| `core.ts`                                           | Yes                                                  | Snapshots, blobs, the log, and the prune, over an `Io` from the adapter |
-| `hooks/register.ts`                                 | Yes                                                  | Claude Code mod, with the `Io` over `$`                                 |
-| `hooks/hooks.json`, `dot_claude-plugin/plugin.json` | Yes, the second as `.claude-plugin/plugin.json`      | Module list and plugin manifest                                         |
-| `pi.ts`                                             | Yes                                                  | The pi extension, and the `track` that `omp.ts` runs                    |
-| `omp.ts`                                            | Yes                                                  | The omp extension, in place of `pi.ts`                                  |
-| `command.ts`                                        | Yes                                                  | Codex command hook                                                      |
-| `io.ts`                                             | Yes                                                  | The `Io` under Node, for `pi.ts` and `command.ts`                       |
-| `README.md`, `docs/`, `test/`                       | No                                                   | Kept in the repo by `.chezmoiignore`                                    |
+| File                                                | Deployed to `~/.claude/hooks/track-session-changes/` | Role                                                                                                                                        |
+| --------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `core.ts`                                           | Yes                                                  | Snapshots, blobs, the log, and the prune, over an `Io` from the adapter. It knows no agent                                                  |
+| `claude.ts`                                         | Yes                                                  | The changes of a Claude Code Edit, Write, or NotebookEdit result, with the rebuild of the text before an Edit, for the mod and `command.ts` |
+| `codex.ts`                                          | Yes                                                  | The files of a Codex `apply_patch` call, for `command.ts`                                                                                   |
+| `hooks/register.ts`                                 | Yes                                                  | Claude Code mod, with the `Io` over `$`                                                                                                     |
+| `hooks/hooks.json`, `dot_claude-plugin/plugin.json` | Yes, the second as `.claude-plugin/plugin.json`      | Module list and plugin manifest                                                                                                             |
+| `pi.ts`                                             | Yes                                                  | The pi extension, and the `track` that `omp.ts` runs                                                                                        |
+| `omp.ts`                                            | Yes                                                  | The omp extension, in place of `pi.ts`                                                                                                      |
+| `command.ts`                                        | Yes                                                  | Codex command hook                                                                                                                          |
+| `io.ts`                                             | Yes                                                  | The `Io` under Node, for `pi.ts` and `command.ts`                                                                                           |
+| `README.md`, `docs/`, `test/`                       | No                                                   | Kept in the repo by `.chezmoiignore`                                                                                                        |

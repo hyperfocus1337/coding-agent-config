@@ -13,19 +13,9 @@ import { execFileSync, spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import {
-  BASH_PATHS,
-  changedLine,
-  commandDirs,
-  headerPath,
-  hunkLine,
-  lineEndings,
-  patchFiles,
-  patchLine,
-  prune,
-  rebuildOriginal,
-  type Hunk,
-} from "../core.ts";
+import { lineEndings, patchLine, rebuildOriginal, type Hunk } from "../claude.ts";
+import { patchFiles } from "../codex.ts";
+import { BASH_PATHS, changedLine, commandDirs, headerPath, hunkLine, prune } from "../core.ts";
 import { register } from "../hooks/register.ts";
 import { nodeIo } from "../io.ts";
 import ompExtension, { editFiles } from "../omp.ts";

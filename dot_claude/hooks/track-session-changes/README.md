@@ -11,6 +11,8 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters:
 | omp         | [`omp.ts`](omp.ts): the `track` of `pi.ts` with the omp tools, which adds a git snapshot around `eval` and a write to `xd://resolve` | `extensions` in `dot_omp/private_agent/private_config.yml`           |
 | Codex       | [`command.ts`](command.ts): a command hook, `node command.ts codex`                                                                  | `dot_codex/modify_hooks.json`                                        |
 
+`core.ts` knows no agent. The file of each agent turns its tool payloads into changes for the core: [`claude.ts`](claude.ts) for the Edit, Write, and NotebookEdit results of Claude Code, [`codex.ts`](codex.ts) for `apply_patch`, and `pi.ts` and `omp.ts` for pi and omp.
+
 ## What it records
 
 ### Tools and events

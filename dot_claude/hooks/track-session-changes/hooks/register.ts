@@ -7,16 +7,8 @@
  */
 
 import type { EngineInterface, Register } from "claude-code";
-import {
-  beginCall,
-  commandDirs,
-  dropCall,
-  endCall,
-  prune,
-  recordTool,
-  type Io,
-  type ToolResult,
-} from "../core.ts";
+import { beginCall, commandDirs, dropCall, endCall, prune, type Io } from "../core.ts";
+import { recordTool, type ToolResult } from "../claude.ts";
 
 const ok = (done: Promise<{ exitCode: number }>) =>
   done.then(

@@ -14,14 +14,13 @@ import {
   beginCall,
   commandDirs,
   endCall,
-  patchFiles,
   pendingFile,
   prune,
-  recordTool,
   type Pending,
-  type ToolResult,
   type Where,
 } from "./core.ts";
+import { recordTool, type ToolResult } from "./claude.ts";
+import { patchFiles } from "./codex.ts";
 import { nodeIo } from "./io.ts";
 
 interface Payload {
