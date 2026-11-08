@@ -15,18 +15,36 @@ import { format, type Call } from "./core.ts";
 import { nodeIo, nodeSettings } from "./io.ts";
 
 export default function (pi: ExtensionAPI) {
+  const start = starts(pi, ["bash"]);
   pi.on("tool_result", (event, ctx) => {
     if (!["write", "edit", "bash"].includes(event.toolName)) return;
     const { input } = event;
     const command = typeof input.command === "string" ? input.command : undefined;
     const calls: Call[] =
       event.toolName === "bash"
-        ? [{ command, cwd: ctx.cwd }]
+        ? [{ command, since: start(event.toolCallId), cwd: ctx.cwd }]
         : typeof input.path === "string"
           ? [{ filePath: absolute(input.path, ctx.cwd), cwd: ctx.cwd }]
           : [];
     return formatCalls(calls, event.content);
   });
+}
+
+/**
+ * Records the time before each call of `tools`. Returns the function that
+ * takes the time of a call by its id, once: the sweep of a shell call keeps
+ * only the files changed after it. ./omp.ts calls it too.
+ */
+export function starts(pi: ExtensionAPI, tools: string[]): (id: string) => number | undefined {
+  const since = new Map<string, number>();
+  pi.on("tool_call", (event) => {
+    if (tools.includes(event.toolName)) since.set(event.toolCallId, Date.now());
+  });
+  return (id) => {
+    const time = since.get(id);
+    since.delete(id);
+    return time;
+  };
 }
 
 /** A tool path against the session folder. */

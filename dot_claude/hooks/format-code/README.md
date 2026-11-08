@@ -26,7 +26,7 @@ The git pre-commit hook [`format-staged-files`](../../../dot_config/git/hooks/fo
 The hook runs after each Write, Edit, and Bash call. It runs also after a call that failed, because a failed Bash command can still write a file. It formats these files:
 
 - **Write and Edit:** the file that the call names.
-- **Bash:** each path with an extension from the table that the command text names, absolute or relative to the session cwd. A path counts only when its mtime is at most 120 s old, so a file that the command only read stays as it is. `format-org-tables` uses the same rule, and its README gives the reasons.
+- **Bash:** each file with an extension from the table that changed during the call, through the same sweep as `format-oxfmt`, in [`sweep.ts`](sweep.ts): the paths that the command text names, and the changed and untracked files that git reports in the repository of the session cwd and of each absolute path in the command. A file counts only if it changed after the call started, so a file that the command only read stays as it is. In Codex, a file counts if it changed in the last 120 s. See [Only the files of the call](../format-oxfmt/README.md#only-the-files-of-the-call).
 
 The hook skips these paths, with no output:
 
@@ -35,7 +35,7 @@ The hook skips these paths, with no output:
 - A file in a repository whose git config turns off the hook or the formatter of the file, see [Settings](#settings).
 - A Python file that the `exclude` list of the ruff config holds, see [ruff format](#ruff-format).
 
-The hook misses a Bash command that writes a file but does not name it, for example a script, `terraform init`, or a `find -exec`. It also misses a shell script with no extension, such as a file with only a `#!/bin/sh` line. A relative path resolves against the session cwd only, not against a folder that a `cd` in the command moves to.
+The hook misses a file that git ignores and the command does not name, for example one that a script writes. It also misses a shell script with no extension, such as a file with only a `#!/bin/sh` line, and a file in another repository that the command reaches only by a relative path.
 
 ## Requirements
 
@@ -166,6 +166,7 @@ ruff format does not sort imports. That is the lint rule `I` of `ruff check --fi
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | [`core.ts`](core.ts)                                             | Finds the files and runs the formatters. No Node imports.                 |
 | [`formatters/`](formatters)                                      | One module for each formatter: its extensions, key, and command           |
+| [`sweep.ts`](sweep.ts)                                           | The files of a Bash call. The same copy is in the other two format hooks. |
 | [`io.ts`](io.ts)                                                 | The file and process functions of the core under Node                     |
 | [`command.ts`](command.ts)                                       | The command hook for Codex and `format-staged-files`                      |
 | [`pi.ts`](pi.ts)                                                 | The pi extension, which omp also loads                                    |

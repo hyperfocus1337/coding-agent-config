@@ -12,6 +12,7 @@ export const nodeIo: Io = {
     stat(path).then(
       (found) => ({
         kind: found.isFile() ? "file" : found.isDirectory() ? "dir" : "other",
+        mtimeMs: found.mtimeMs,
       }),
       () => undefined,
     ),

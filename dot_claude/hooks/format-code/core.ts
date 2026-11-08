@@ -15,6 +15,7 @@
 import { ruff } from "./formatters/ruff.ts";
 import { shfmt } from "./formatters/shfmt.ts";
 import { terraform } from "./formatters/terraform.ts";
+import { COMMIT, LAST_COMMIT, shellFiles } from "./sweep.ts";
 
 export interface Io {
   /** The kind of a path and its mtime; undefined if missing. */
@@ -34,14 +35,16 @@ export interface Settings {
 }
 
 /**
- * The tool call: a Write or Edit names a file, a Bash call a command. The
- * format-staged-files pre-commit hook names all staged files in filePaths, so
- * one run takes them all.
+ * The tool call: a Write or Edit names a file, a Bash call a command and the
+ * time in ms before it ran, when the adapter saw it. The format-staged-files
+ * pre-commit hook names all staged files in filePaths, so one run takes them
+ * all.
  */
 export interface Call {
   filePath?: string;
   filePaths?: string[];
   command?: string;
+  since?: number;
   cwd: string;
 }
 
@@ -63,18 +66,6 @@ export interface Formatter {
 
 /** One module each in formatters/. toggle-hook PARTS holds the same keys. */
 export const FORMATTERS: Formatter[] = [terraform, shfmt, ruff];
-
-/**
- * A command that commits: `git`, then global options such as `-C <dir>`, then
- * `commit` as a word, in one simple command. `git commit-tree` does not match.
- */
-const COMMIT = /\bgit[ \t](?:[^;&|\n]*[ \t])?commit(?![\w-])/;
-
-/** A path that a command names, with an extension of FORMATTERS. */
-const NAMED = new RegExp(
-  `${/[^\s:;|&"'`()<>=]+\./.source}(?:${FORMATTERS.flatMap((f) => f.extensions).join("|")})\\b`,
-  "g",
-);
 
 const plain = (path: string) => path.replace(/^\/private/, "");
 const parent = (path: string) => path.slice(0, path.lastIndexOf("/")) || "/";
@@ -109,19 +100,17 @@ async function repoOff(dir: string, key: string, io: Io): Promise<boolean> {
 
 /**
  * The files to format, each once. A Write or Edit: the file it names. A Bash
- * call: the paths its command names that it just wrote, by an mtime of at
- * most 120 s, so a file the command only read stays as it is. A file whose
- * repository turns off the hook or its formatter stays as it is.
- * shortcut: a command that writes early and then runs for minutes falls
- * outside the window. The upgrade is a start time stamped before the call.
+ * call: the files it changed, from sweep.ts, so a file the command only read
+ * stays as it is. A file whose repository turns off the hook or its formatter
+ * stays as it is.
  */
 async function targets(call: Call, io: Io, settings: Settings): Promise<string[]> {
-  const given = call.filePaths ?? (call.filePath ? [call.filePath] : undefined);
+  const { command, cwd, since } = call;
+  const extensions = FORMATTERS.flatMap((formatter) => formatter.extensions);
   const paths =
-    given ??
-    [...(call.command ?? "").matchAll(NAMED)].map(([named]) =>
-      named.startsWith("/") ? named : `${call.cwd}/${named}`,
-    );
+    call.filePaths ??
+    (call.filePath ? [call.filePath] : undefined) ??
+    (command === undefined ? [] : await shellFiles({ command, cwd, since }, extensions, io));
   const kept: string[] = [];
   // One git run for each folder and key: a commit can name many files.
   const asked = new Map<string, Promise<boolean>>();
@@ -133,8 +122,7 @@ async function targets(call: Call, io: Io, settings: Settings): Promise<string[]
   for (const file of new Set(paths)) {
     const formatter = formatterOf(file);
     if (!formatter || throwaway(file, settings)) continue;
-    const stat = await io.stat(file);
-    if (stat?.kind !== "file" || (!given && Date.now() - stat.mtimeMs > 120_000)) continue;
+    if ((await io.stat(file))?.kind !== "file") continue;
     const dir = parent(file);
     if ((await off(dir, "enabled")) || (await off(dir, formatter.key))) continue;
     kept.push(file);
@@ -164,12 +152,8 @@ export async function format(call: Call, io: Io, settings: Settings): Promise<st
     });
     const changed = formatter.changed ?? ((stdout) => stdout.trim() !== "");
     if (!commits || ran?.exitCode !== 0 || !changed(ran.stdout)) continue;
-    // Only a file that the last commit holds needs an amend. diff-tree --root
-    // also answers for the first commit of a repository.
-    const held = await io.run(
-      ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", "HEAD", "--", file],
-      { cwd: dir },
-    );
+    // Only a file that the last commit holds needs an amend.
+    const held = await io.run(["git", ...LAST_COMMIT, "HEAD", "--", file], { cwd: dir });
     if (!held?.stdout.trim()) continue;
     dirty.push(file);
     names.add(formatter.name);

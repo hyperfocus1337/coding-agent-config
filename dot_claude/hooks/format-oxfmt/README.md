@@ -20,7 +20,7 @@ The git pre-commit hook [`format-staged-files`](../../../dot_config/git/hooks/fo
 The hook runs after each Write, Edit, and Bash call, also after a call that failed. It tells the calls apart by the file path: a Write or an Edit names one file in `file_path`, and a Bash call names none.
 
 - **A Write or an Edit:** the hook formats the one file that the call names, if oxfmt supports its extension.
-- **A Bash call:** the hook formats only Markdown files: the files that the command names, and the files that git reports as changed or untracked. See [Bash (markdown sweep)](#bash-markdown-sweep).
+- **A Bash call:** the hook formats only Markdown files that changed during the call: the files that the command names, and the files that git reports as changed or untracked. See [Bash (markdown sweep)](#bash-markdown-sweep).
 - **omp:** `omp.ts` also formats each file of an edit of more than one file, and each file of an applied `ast_edit`. It treats the code of an `eval` call as a Bash command.
 - **Codex `apply_patch`:** `apply-patch.ts` runs `command.ts` once for each file in the patch, as a Write.
 
@@ -77,6 +77,9 @@ A Bash call has no `file_path`, but a shell command (`sed`, `perl`, `echo`, a re
 3. In each root, it lists the Markdown files that changed against `HEAD` (`git diff --name-only --diff-filter=d HEAD`) and the untracked files (`git ls-files --others --exclude-standard`).
 4. If the command commits, it also lists the files of the last commit. See [Write and commit in one command](#write-and-commit-in-one-command).
 5. A folder entry in a list is a repository inside the root, and becomes a root of its own. See [Nested repos and submodules](#nested-repos-and-submodules).
+6. It keeps a file only if the file changed after the call started. See [Only the files of the call](#only-the-files-of-the-call).
+
+The code is in [`sweep.ts`](sweep.ts). `format-org-tables` and `format-code` hold the same copy, with their own extensions, and `just hooks-check` fails when the copies differ.
 
 The sweep is Markdown only. A Write or an Edit formats each supported extension, because the edit is the reason to format. A Bash call does not, because a format of each changed `.ts`, `.css`, or `.json` file after each shell command would interfere with edits that are not complete.
 
@@ -90,7 +93,7 @@ So before the hook asks git, it takes each `.md` or `.markdown` path in the comm
 
 - A named path that is not a file drops out at the file check.
 - A named file is formatted also when the session folder is in no repository.
-- A `cd` in the command does not change the session folder, so a relative path after a `cd` can resolve to the wrong file. The file check then skips it, or the hook formats a file with the same name that is already formatted.
+- A `cd` in the command does not change the session folder, so a relative path after a `cd` can resolve to the wrong file. The file check or the start time then skips it. The sweep of the root still finds the right file if git reports it.
 
 ### Cross-repo Bash edits
 
@@ -104,9 +107,9 @@ So the sweep has more than one root: the session folder, and each absolute path 
 
 The hook follows only absolute paths. A relative path is ambiguous after a `cd`, and a wrong guess sweeps the wrong repository. So the hook misses an edit in a different repository after a relative `cd ../other-repo`: use an absolute path, or make the edit with a Write or an Edit.
 
-A `shortcut:` comment in `core.ts` marks this limit.
+A `shortcut:` comment in `sweep.ts` marks this limit.
 
-One side effect: the hook formats the changed and untracked Markdown of each repository whose absolute path is in a command, also when the command only reads from it. That repository gets the same pass as the session repository, and the hook changes only files that git reports as changed or untracked.
+The hook also sweeps a repository whose absolute path a command only reads from. It formats only the Markdown files there that changed during the call.
 
 ### Nested repos and submodules
 
@@ -119,6 +122,14 @@ A git repository inside a repository is opaque to the parent repository, so the 
 The roots are a queue. The sweep lists the files of one root and adds each folder entry to the queue as a new root, with its own git top level. For a worktree, `git rev-parse --show-toplevel` gives the worktree path, so the hook sweeps the worktree as a root of its own.
 
 The sweep continues until the queue is empty, so it covers each nesting depth. The roots are a set, so a symlink that points back to a root does not add that root a second time and cannot cause a loop.
+
+### Only the files of the call
+
+The sweep lists each changed and untracked Markdown file of a root, also a file that changed hours before the call. So the hook keeps a file only if its mtime is at or after the start of the call, rounded down to the second, so that a file system with 1 s mtimes does not miss a write. The Claude Code mod takes the start time before the call runs. pi and omp take it in `tool_call`.
+
+A Codex hook runs only after the call, so it has no start time. There, a file counts if it changed in the last 120 s. A command that writes a file and then runs for more than 120 s misses that file in Codex.
+
+A file that another program changed during the call also counts, for example a file that an editor saved. `track-session-changes` finds the files of a call with a snapshot before and after the call, but its log must hold the text after the format hooks ran. So the format hooks cannot wait for that log, see [the decision](../../../docs/hooks/decisions.md#the-format-hooks-find-the-files-of-a-shell-call-themselves).
 
 ### Write and commit in one command
 

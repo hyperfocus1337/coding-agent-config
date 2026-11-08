@@ -21,11 +21,14 @@ The fixtures are in a temporary folder under `$HOME`, because the hook skips `/t
 
 ## Cases
 
+`test/check.ts` first imports [`test/sweep.ts`](../test/sweep.ts), the unit cases of `sweep.ts` with a stub `Io`: the start time rounded down to the second, the 120 s window without a start time, a named file that git does not list, the roots of absolute paths only, an untracked repository and a submodule as roots, and the last commit for a command that commits. `format-org-tables` and `format-code` run the same file.
+
 - **The sweep:** the roots that it reaches (a plain subfolder, an embedded repository at depth 1 and 2, a dirty submodule, a worktree, a repository with no `HEAD`, a second repository by absolute path) and what it does not change (`.ts` and `.json` on Bash, ignored Markdown, a symlink back to a root).
 - **Named paths:** a named file outside any repository, an ignored file, a relative path, a path that does not exist, and a file in `.prettierignore`.
 - **Prose wrap:** a wide table stays padded, and sentence lines stay separate.
 - **The amend hint:** after a commit, with a text that names oxfmt, after `git -C <dir> commit`, on `PostToolUseFailure` with that event name, and on the first commit of a repository. No hint without a commit, for an uncommitted file, or when oxfmt changed nothing.
 - **A Write or Edit:** the hook formats `.ts`, `.mts`, `.cts`, `.toml`, and `.jsonc`. It does not format `.org`, `.py`, or a temp file, and a file that does not exist gives no output.
+- **The start time:** `pi.ts`, an omp `eval` call, and the mod leave a Markdown file that changed 10 s before the call. The amend hint cases of the adapters write and commit the file during the call.
 - **Config:** a file with no oxfmt config gets the default width of 100. A file below an `.oxfmtrc.json` gets that config.
 - **`AGENT_HOOKS_DISABLE`:** a value that names the hook stops the core before its first file or process call.
 - **`agent-hook.format-oxfmt.enabled`:** with stub I/O, a `git config` that prints `false` stops the hook before oxfmt, and a `git config` that prints nothing or `true` lets oxfmt run.

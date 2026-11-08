@@ -9,9 +9,11 @@
  * Design notes: README.md.
  */
 
+import { COMMIT, LAST_COMMIT, shellFiles } from "./sweep.ts";
+
 export interface Io {
-  /** The kind of a path; undefined if missing. */
-  stat(path: string): Promise<{ kind: "file" | "dir" | "other" } | undefined>;
+  /** The kind of a path and its mtime; undefined if missing. */
+  stat(path: string): Promise<{ kind: "file" | "dir" | "other"; mtimeMs: number } | undefined>;
   /** The text of a file; undefined if it cannot be read. */
   read(path: string): Promise<string | undefined>;
   /** The exit code and stdout; undefined when the program cannot start. */
@@ -29,38 +31,25 @@ export interface Settings {
 }
 
 /**
- * The tool call: a Write or Edit names a file, a Bash call a command. The
- * format-staged-files pre-commit hook names all staged files in filePaths, so
- * one run takes them all.
+ * The tool call: a Write or Edit names a file, a Bash call a command and the
+ * time in ms before it ran, when the adapter saw it. The format-staged-files
+ * pre-commit hook names all staged files in filePaths, so one run takes them
+ * all.
  */
 export interface Call {
   filePath?: string;
   filePaths?: string[];
   command?: string;
+  since?: number;
   cwd: string;
 }
 
 /** The extensions oxfmt formats after a Write or an Edit. README "Supported extensions". */
 const EDITED =
   /\.(md|markdown|js|jsx|ts|tsx|mts|cts|mjs|cjs|json|jsonc|json5|css|scss|less|html|yml|yaml|toml)$/;
-/** The Bash sweep takes Markdown only. README "Bash (markdown sweep)". */
-const MARKDOWN = /\.(md|markdown)$/;
-/** A Markdown path that a command names. */
-const NAMED = /[^\s:;|&"'`()<>=]+\.(?:md|markdown)\b/g;
-/**
- * An absolute path in a command: a root for the sweep. The `/` starts a word,
- * so the end of a relative path such as `docs/a.md` does not match.
- */
-const ABSOLUTE = /(?<![^\s"'`=(;|&<>])\/[^\s:;|&"'`()<>]+/g;
-/**
- * A command that commits: `git`, then global options such as `-C <dir>`, then
- * `commit` as a word, in one simple command. `git commit-tree` does not match.
- */
-const COMMIT = /\bgit[ \t](?:[^;&|\n]*[ \t])?commit(?![\w-])/;
-/** The files of the last commit; --root also answers for the first commit. */
-const LAST_COMMIT = ["diff-tree", "--no-commit-id", "--name-only", "-r", "--root"];
-
-/** Whether a command commits: the sweep then also covers the last commit. */
+/** A Bash call takes Markdown only. README "Bash (markdown sweep)". */
+const MARKDOWN = ["md", "markdown"];
+/** Whether a command commits: the hint then checks the last commit. */
 const commits = (call: Call) => !call.filePath && COMMIT.test(call.command ?? "");
 
 /** Whether AGENT_HOOKS_DISABLE names the hook. */
@@ -91,13 +80,6 @@ function normalize(path: string): string {
 
 const parent = (path: string) => path.slice(0, path.lastIndexOf("/")) || "/";
 
-async function toplevel(dir: string, io: Io): Promise<string | undefined> {
-  const ran = await io.run(["git", "rev-parse", "--show-toplevel"], {
-    cwd: dir,
-  });
-  return ran?.exitCode === 0 ? ran.stdout.trim() : undefined;
-}
-
 /**
  * A boolean git config key as the repository that holds `dir` reads it, with
  * the global config: "true", "false", or "" when the key is unset, the value
@@ -111,61 +93,8 @@ async function gitBool(dir: string, key: string, io: Io): Promise<string> {
 }
 
 /**
- * The Markdown files a Bash call may have changed: the paths the command
- * names, and the files that git reports as changed or untracked in each
- * repository the command touches. README "Bash (markdown sweep)".
- */
-async function sweep(call: Call, io: Io): Promise<string[]> {
-  const command = call.command ?? "";
-  // Named paths come first: git hides an ignored file from the sweep, and a
-  // commit in the same call hides a tracked one.
-  const found = [...command.matchAll(NAMED)].map(([path]) =>
-    path.startsWith("/") ? path : `${call.cwd}/${path}`,
-  );
-  // The roots: the cwd and each absolute path in the command, because a `cd`
-  // in the command never moves the cwd of the hook. shortcut: absolute paths
-  // only, because a relative one is ambiguous after a cd.
-  const roots = new Set<string>();
-  const paths = new Set([call.cwd, ...[...command.matchAll(ABSOLUTE)].map(([path]) => path)]);
-  for (const path of paths) {
-    const dir = (await io.stat(path))?.kind === "dir" ? path : parent(path);
-    const root = await toplevel(dir, io);
-    if (root) roots.add(root);
-  }
-  // A repository inside a repository lists as one folder entry, so each such
-  // entry joins the roots as a root of its own. for...of over a Set visits the
-  // roots that join while it runs.
-  const lists = [
-    ["diff", "--name-only", "-z", "--diff-filter=d", "HEAD"],
-    ["ls-files", "--others", "--exclude-standard", "-z"],
-  ];
-  // A command that writes and commits leaves a clean tree, so the sweep also
-  // takes the files of the last commit. README "Write and commit in one command".
-  if (commits(call)) lists.push([...LAST_COMMIT, "-z", "--diff-filter=d", "HEAD"]);
-  for (const root of roots) {
-    const changed = new Set<string>();
-    for (const args of lists) {
-      // A repository with no commits has no HEAD, so the diff fails and the
-      // untracked files still count.
-      const ran = await io.run(["git", ...args], { cwd: root });
-      if (ran?.exitCode === 0)
-        for (const path of ran.stdout.split("\0")) if (path) changed.add(path);
-    }
-    for (const path of changed) {
-      const full = `${root}/${path}`;
-      if ((await io.stat(full))?.kind !== "dir") found.push(full);
-      else {
-        const nested = await toplevel(full, io);
-        if (nested) roots.add(nested);
-      }
-    }
-  }
-  return found;
-}
-
-/**
  * The files to format, each once. A Write or Edit: the file it names, by
- * EDITED. A Bash call: the Markdown files of the sweep. A file whose
+ * EDITED. A Bash call: the Markdown files it changed, from sweep.ts. A file whose
  * repository sets agent-hook.format-oxfmt.enabled to false, as /toggle-hook
  * --repo does, stays as it is.
  */
@@ -173,16 +102,16 @@ async function targets(call: Call, io: Io, settings: Settings): Promise<string[]
   const named = call.filePaths ?? (call.filePath ? [call.filePath] : undefined);
   // oxfmt rejects any path containing `..`, even an absolute one. Normalize
   // before deduplication and filtering so all adapters and the sweep agree.
-  const candidates = (named ?? (await sweep(call, io))).map((file) =>
-    normalize(file.startsWith("/") ? file : `${call.cwd}/${file}`),
-  );
-  const extensions = named ? EDITED : MARKDOWN;
+  const { command, cwd, since } = call;
+  const files =
+    named ?? (command === undefined ? [] : await shellFiles({ command, cwd, since }, MARKDOWN, io));
+  const candidates = files.map((file) => normalize(file.startsWith("/") ? file : `${cwd}/${file}`));
   const kept: string[] = [];
   // One git run for each folder: a commit can name many files.
   const asked = new Map<string, Promise<string>>();
   for (const file of new Set(candidates)) {
     if (
-      !extensions.test(file) ||
+      (named && !EDITED.test(file)) ||
       throwaway(file, settings) ||
       (await io.stat(file))?.kind !== "file"
     )

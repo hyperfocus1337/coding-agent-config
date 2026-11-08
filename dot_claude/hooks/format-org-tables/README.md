@@ -23,15 +23,18 @@ The call names one file in `file_path`. The hook aligns that file.
 
 ### Bash
 
-A Bash call names no file, but a shell command (a heredoc, `sed`, a redirect) often writes `.org` files. The hook takes each `.org` path that the command text names, absolute or relative to the session cwd (the working folder of the session before the command). A relative path also resolves against each folder that a `cd` in the command moves to, in order: `cd pkg && cd sub && sed -i … notes.org` tries `notes.org` in the session cwd, in `pkg`, and in `pkg/sub`.
+A Bash call names no file, but a shell command (a heredoc, `sed`, a redirect, a script) often writes `.org` files. The hook takes the `.org` files that changed during the call, through the same sweep as `format-oxfmt`, in [`sweep.ts`](sweep.ts):
 
-A named path counts only when its mtime is at most 120 s old. Thus a file that the command only read stays as it is, and so does a file of the same name in another folder. [`lint-code`](../lint-code/README.md) uses the same 120 s window.
+- each `.org` path that the command text names, absolute or relative to the session cwd (the working folder of the session before the command),
+- each changed or untracked `.org` file that git reports in the repository of the session cwd and of each absolute path in the command.
+
+A file counts only if it changed after the call started, so a file that the command only read stays as it is. In Codex, the hook runs only after the call, so a file counts if it changed in the last 120 s. See [Only the files of the call](../format-oxfmt/README.md#only-the-files-of-the-call).
 
 The hook misses these Bash writes, and the file stays without alignment until the next Edit:
 
-- A command that writes a `.org` file without its name, for example a script that it calls or a `find -exec`.
-- A relative path after a `cd` to `~`, to `-`, or to a folder with a variable. The hook does not follow such a `cd`.
-- A command that writes the file and then runs for more than 120 s.
+- A file that git ignores and the command does not name, for example one that a script writes.
+- A file in another repository that the command reaches only by a relative path, for example after `cd ../other`.
+- In Codex, a command that writes the file and then runs for more than 120 s.
 
 ### Skipped files
 

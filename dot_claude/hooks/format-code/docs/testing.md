@@ -12,6 +12,7 @@ It prints `all pass`, or one `FAIL` line for each failed case and exits 1.
 
 - [`test/shfmt.ts`](../test/shfmt.ts): an `.editorconfig` in a folder above gives no printer flags. No `.editorconfig`, or a folder with that name, gives `-i 2 -ci`.
 - [`test/ruff.ts`](../test/ruff.ts): only a summary with `reformatted` counts as a change, and the command has `--force-exclude`.
+- [`test/sweep.ts`](../test/sweep.ts): the files of a Bash call, the same cases as in `format-oxfmt` and `format-org-tables`. See the [`format-oxfmt` testing notes](../../format-oxfmt/docs/testing.md#cases).
 
 ## What the test needs
 
@@ -25,7 +26,7 @@ The fixture goes in a folder under `$HOME`, because the hook skips `/tmp` and `$
 The cases run `command.ts` with the real `terraform`, shfmt, ruff, and git:
 
 - **A Write or Edit:** a `.tf` and a `.tfvars` file, a file that is not Terraform, a path that does not exist, a file that does not parse, and a file in a temp folder.
-- **A Bash call:** a relative and two absolute paths in a command, a command that names no Terraform file, a path that does not exist, and a path the command only read.
+- **A Bash call:** a relative and two absolute paths in a command, a command that names no Terraform file, a changed file that the command does not name, a path that does not exist, and a path the command only read.
 - **The amend hint:** after a commit and after `git -C <dir> commit`, and none for a file that the run left alone or without a commit.
 - **shfmt:** a 2-space indent and an indented `case` branch when no `.editorconfig` is above the fixture, the indent of an `.editorconfig` in the repo, a `.bash` path in a command, a file that does not parse, and the amend hint that names shfmt. An `.editorconfig` above `$HOME` changes the first case, so the check prints `SKIP` for it.
 - **ruff format:** a `.py` file that a Write names, a `.pyi` path in a command, a file that does not parse, a file that the `exclude` list of a `ruff.toml` holds, the amend hint that names ruff format, and no hint when ruff prints `1 file left unchanged`.
@@ -34,6 +35,6 @@ The cases run `command.ts` with the real `terraform`, shfmt, ruff, and git:
 
 Then the cases run the adapters with stubs over the real files:
 
-- **`pi.ts`:** formats the file of an edit, and appends the amend hint to the result.
-- **`omp.ts`:** formats each file of an edit of more than one file and of an applied `ast_edit`, and leaves the calls of `pi.ts` alone.
-- **`hooks/register.ts`:** formats the file and passes the result, adds the amend hint as context, and passes a deny through.
+- **`pi.ts`:** formats the file of an edit, appends the amend hint to the result, and leaves a file that changed before the bash call.
+- **`omp.ts`:** formats each file of an edit of more than one file and of an applied `ast_edit`, leaves the calls of `pi.ts` alone, and leaves a file that changed before an `eval` call.
+- **`hooks/register.ts`:** formats the file and passes the result, adds the amend hint as context, leaves a file that changed before the Bash call, and passes a deny through.

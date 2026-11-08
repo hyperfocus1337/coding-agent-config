@@ -10,6 +10,8 @@
  * Design notes: docs/implementation.md.
  */
 
+import { COMMIT, LAST_COMMIT, shellFiles } from "./sweep.ts";
+
 export interface Io {
   /** The kind of a path and its mtime; undefined if missing. */
   stat(path: string): Promise<{ kind: "file" | "dir" | "other"; mtimeMs: number } | undefined>;
@@ -30,46 +32,17 @@ export interface Settings {
 }
 
 /**
- * The tool call: a Write or Edit names a file, a Bash call a command. The
- * format-staged-files pre-commit hook names all staged files in filePaths, so
- * one run takes them all.
+ * The tool call: a Write or Edit names a file, a Bash call a command and the
+ * time in ms before it ran, when the adapter saw it. The format-staged-files
+ * pre-commit hook names all staged files in filePaths, so one run takes them
+ * all.
  */
 export interface Call {
   filePath?: string;
   filePaths?: string[];
   command?: string;
+  since?: number;
   cwd: string;
-}
-
-/** An Org path that a command names. */
-const NAMED = /[^\s:;|&"'`()<>=]+\.org\b/g;
-
-/**
- * A command that commits: `git`, then global options such as `-C <dir>`, then
- * `commit` as a word, in one simple command. `git commit-tree` does not match.
- */
-const COMMIT = /\bgit[ \t](?:[^;&|\n]*[ \t])?commit(?![\w-])/;
-
-/** The folder of a `cd` in a command. */
-const CD = /(?:^|[\s;&|(])cd\s+["']?([^\s;&|()"']+)/g;
-
-/**
- * The folders a relative path of a command can be relative to: the session
- * cwd, and each folder that a `cd` in the command moves to, in order. The
- * session cwd is the one from before the command, so without the `cd`
- * folders a `cd docs && sed -i … notes.org` is a silent miss. shortcut: a
- * `cd` to `~`, `-` or a folder with a variable is not followed. The upgrade
- * is the cwd of the shell after the command, which the adapters do not get.
- */
-function bases(command: string, cwd: string): string[] {
-  const found = [cwd];
-  let at = cwd;
-  for (const [, dir = ""] of command.matchAll(CD)) {
-    if (/^[~-]|\$/.test(dir)) continue;
-    at = dir.startsWith("/") ? dir : `${at}/${dir}`;
-    found.push(at.replace(/\/+$/, ""));
-  }
-  return found;
 }
 
 /**
@@ -119,32 +92,23 @@ async function repoOff(dir: string, io: Io): Promise<boolean> {
 
 /**
  * The files to align, each once. A Write or Edit: the file it names. A Bash
- * call: the .org paths its command names that it just wrote, by an mtime of
- * at most 120 s, so a file the command only read stays as it is. A relative
- * path is tried against each folder of `bases`. shortcut: a
- * command that writes early and then runs for minutes falls outside the
- * window. The upgrade is a start time stamped before the call. Only a file
- * with a line that starts with `|` counts, which keeps Emacs out of the
- * common case. README "Files without tables". A file whose repository turns
- * off the hook stays as it is.
+ * call: the .org files it changed, from sweep.ts, so a file the command only
+ * read stays as it is. Only a file with a line that starts with `|` counts,
+ * which keeps Emacs out of the common case. README "Files without tables". A
+ * file whose repository turns off the hook stays as it is.
  */
 async function targets(call: Call, io: Io, settings: Settings): Promise<string[]> {
-  const command = call.command ?? "";
-  const folders = bases(command, call.cwd);
-  const given = call.filePaths ?? (call.filePath ? [call.filePath] : undefined);
+  const { command, cwd, since } = call;
   const named =
-    given ??
-    [...command.matchAll(NAMED)].flatMap(([path]) =>
-      path.startsWith("/") ? [path] : folders.map((dir) => `${dir}/${path}`),
-    );
+    call.filePaths ??
+    (call.filePath ? [call.filePath] : undefined) ??
+    (command === undefined ? [] : await shellFiles({ command, cwd, since }, ["org"], io));
   const kept: string[] = [];
   // One git run for each folder: a commit can name many files.
   const asked = new Map<string, Promise<boolean>>();
   for (const file of new Set(named)) {
     if (!file.endsWith(".org") || throwaway(file, settings)) continue;
-    const stat = await io.stat(file);
-    if (stat?.kind !== "file") continue;
-    if (!given && Date.now() - stat.mtimeMs > 120_000) continue;
+    if ((await io.stat(file))?.kind !== "file") continue;
     if (!/^[ \t]*\|/m.test((await io.read(file)) ?? "")) continue;
     const dir = file.slice(0, file.lastIndexOf("/")) || "/";
     if (!asked.has(dir)) asked.set(dir, repoOff(dir, io));
@@ -177,12 +141,10 @@ export async function align(call: Call, io: Io, settings: Settings): Promise<str
   const dirty: string[] = [];
   for (const [i, file] of watched.entries()) {
     if ((await io.read(file)) === before[i]) continue;
-    // Only a file that the last commit holds needs an amend. diff-tree --root
-    // also answers for the first commit of a repository.
-    const held = await io.run(
-      ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", "HEAD", "--", file],
-      { cwd: file.slice(0, file.lastIndexOf("/")) || "/" },
-    );
+    // Only a file that the last commit holds needs an amend.
+    const held = await io.run(["git", ...LAST_COMMIT, "HEAD", "--", file], {
+      cwd: file.slice(0, file.lastIndexOf("/")) || "/",
+    });
     if (held?.stdout.trim()) dirty.push(file);
   }
   if (!dirty.length) return undefined;

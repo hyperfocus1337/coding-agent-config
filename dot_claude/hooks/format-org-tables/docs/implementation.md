@@ -19,25 +19,17 @@ This is valid Org, but it is hard to read as plain text. Emacs aligns the table 
 
 [`format-oxfmt`](../../format-oxfmt/README.md) formats the oxfmt languages in its extension list. oxfmt has no Org parser, so `.org` is not in that list. Org table alignment is `org-table-align`, an Emacs function, so the tool, the command, and the failure modes are different from the oxfmt hook.
 
-As a separate hook, it needs none of the parts of `format-oxfmt`: no git sweep, no split between Markdown and code, and no config lookup. You can also turn it off alone.
+As a separate hook, it needs few of the parts of `format-oxfmt`: no split between Markdown and code, and no config lookup. It shares only the sweep of a Bash call, as a copy of `sweep.ts`. You can also turn it off alone.
 
 ## Bash calls
 
-### Why the hook reads the command text
+### Why the hook sweeps the repository
 
 A Bash call carries no `file_path`. An earlier version of the hook skipped all Bash calls. A literate Emacs config that the model wrote through heredocs then kept two tables without alignment, until someone found them by hand.
 
-The hook asks git nothing, unlike the Markdown sweep in [`format-oxfmt`](../../format-oxfmt/README.md). A command that writes an Org file usually names the file, so the name is sufficient.
+The hook then read only the paths in the command text. It followed each `cd` in the command, because the session cwd in the payload is the one from before the command, and it took a named path only when its mtime was at most 120 s old. It missed a file that a script wrote, a `cd` to `~` or to a folder with a variable, and a command that ran for more than 120 s after its write.
 
-### The `cd` folders
-
-The session cwd in the payload is the one from before the command. Without the folders of each `cd`, a relative path after `cd docs && sed -i … notes.org` is a silent miss. The hook does not follow a `cd` to `~`, to `-`, or to a folder with a variable. The upgrade is the cwd of the shell after the command, which the adapters do not get.
-
-### The 120 s mtime window
-
-A command names a file that it only reads as often as a file that it writes. Alignment of a file that the command only read is an edit that nobody asked for: `sed -n '1,20p' config.org > copy.org` names the live config and writes a copy. Thus a named path counts only when its mtime is at most 120 s old.
-
-A command that writes early and then runs for minutes falls outside the window. The upgrade is a `PreToolUse` hook that records the start time of the call.
+On 2026-11-08 the hook moved to the sweep of `format-oxfmt`, in `sweep.ts`. The repository listing finds a file after any `cd` in the same repository, and a file that a script wrote. The start time of the call replaces the 120 s window, except in Codex. A file that the command only read still stays as it is: `sed -n '1,20p' config.org > copy.org` names the live config, but the config did not change during the call.
 
 ### A Bash command that writes a file and then fails
 
@@ -108,6 +100,7 @@ macOS resolves `/tmp` to `/private/tmp`, and `$TMPDIR` to `/private/var/folders/
 | File                                                                | Role                                                                      |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | [`core.ts`](../core.ts)                                             | Finds the files and runs Emacs. No Node imports.                          |
+| [`sweep.ts`](../sweep.ts)                                           | The files of a Bash call. The same copy is in the other two format hooks. |
 | [`io.ts`](../io.ts)                                                 | The file and process functions of the core under Node                     |
 | [`command.ts`](../command.ts)                                       | The command hook for Codex and `format-staged-files`                      |
 | [`pi.ts`](../pi.ts)                                                 | The pi extension, which omp also loads                                    |

@@ -6,13 +6,14 @@
  * Run: node test/check.ts, from the hook directory. Fixtures live under $HOME,
  * because the hook skips /tmp and $TMPDIR. Without git, terraform, shfmt, or
  * ruff the hook does nothing, so the check skips with a message instead of
- * passing. The unit cases of a formatter module with logic of its own are in
- * test/<module>.ts. They need no formatter and run first, through the imports
- * below.
+ * passing. The unit cases of a formatter module with logic of its own, and of
+ * sweep.ts, are in test/<module>.ts. They need no formatter and run first,
+ * through the imports below.
  */
 
 import "./ruff.ts";
 import "./shfmt.ts";
+import "./sweep.ts";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
@@ -142,6 +143,12 @@ await formatted("the second of two files in one command", `${repo}/two.tfvars`);
 unformatted(`${repo}/notes.md`);
 bash(repo, `printf x > ${repo}/notes.md`);
 await untouched("a command that names no Terraform path", `${repo}/notes.md`);
+
+// The sweep also takes a file that the call changed without a name for it,
+// such as one that a script wrote.
+unformatted(`${repo}/generated.tf`);
+bash(repo, "./generate.sh");
+await formatted("a changed file that the command does not name", `${repo}/generated.tf`);
 
 await quiet("a named path that does not exist", bash(repo, `rm ${repo}/gone.tf`));
 
@@ -328,10 +335,20 @@ git(repo, "config", "--remove-section", "agent-hook.format-code");
 // --- pi.ts and hooks/register.ts, with stubs over the real files ---
 
 type Handler = (event: unknown, ctx: unknown) => Promise<unknown>;
-let piHandler: Handler | undefined;
-extension({
-  on: (_name: string, handler: Handler) => (piHandler = handler),
-} as never);
+/** The handlers that an extension registers, by event name. */
+const handlers = (load: (api: never) => void) => {
+  const found: Record<string, Handler> = {};
+  load({ on: (name: string, handler: Handler) => (found[name] = handler) } as never);
+  return found;
+};
+/** A Terraform file that changed 10 s ago: before the call that comes next. */
+const stale = (file: string) => {
+  unformatted(file);
+  const before = new Date(Date.now() - 10_000);
+  fs.utimesSync(file, before, before);
+};
+const pi = handlers(extension);
+const piHandler = pi.tool_result;
 unformatted(`${repo}/pi.tf`);
 await check("pi.ts: formats the file of an edit", async () => {
   const result = await piHandler?.(
@@ -341,27 +358,31 @@ await check("pi.ts: formats the file of an edit", async () => {
   assert.equal(result, undefined);
   assert.equal(read(`${repo}/pi.tf`), FORMATTED);
 });
-unformatted(`${repo}/pi-commit.tf`);
-git(repo, "add", "-A");
-git(repo, "commit", "-qm", "pi");
 await check("pi.ts: appends the amend hint to the result", async () => {
   const content = [{ type: "text", text: "committed" }];
+  const input = { command: `touch pi-commit.tf && git commit -am pi` };
+  await pi.tool_call?.({ toolName: "bash", toolCallId: "pi-1", input }, { cwd: repo });
+  // The call itself writes and commits the file.
+  unformatted(`${repo}/pi-commit.tf`);
+  git(repo, "add", "-A");
+  git(repo, "commit", "-qm", "pi");
   const result = (await piHandler?.(
-    {
-      toolName: "bash",
-      input: { command: `touch pi-commit.tf && git commit -am pi` },
-      content,
-    },
+    { toolName: "bash", toolCallId: "pi-1", input, content },
     { cwd: repo },
   )) as { content: { text: string }[] };
   assert.equal(result.content[0]?.text, "committed");
   assert.match(result.content[1]?.text ?? "", /pi-commit\.tf/);
 });
+await check("pi.ts: leaves a file that changed before the bash call", async () => {
+  stale(`${repo}/pi-stale.tf`);
+  const event = { toolName: "bash", toolCallId: "pi-2", input: { command: "echo x" }, content: [] };
+  await pi.tool_call?.(event, { cwd: repo });
+  await piHandler?.(event, { cwd: repo });
+  assert.equal(read(`${repo}/pi-stale.tf`), RAW);
+});
 
-let ompHandler: Handler | undefined;
-ompExtension({
-  on: (_name: string, handler: Handler) => (ompHandler = handler),
-} as never);
+const ompHandlers = handlers(ompExtension);
+const ompHandler = ompHandlers.tool_result;
 const omp = (toolName: string, input: object, details?: object) =>
   ompHandler?.({ toolName, input, details, content: [] }, { cwd: repo });
 await check("omp.ts: formats each file of a multi-file edit", async () => {
@@ -388,6 +409,13 @@ await check("omp.ts: formats the files of an applied ast_edit", async () => {
     },
   );
   assert.equal(read(`${repo}/omp-ast.tf`), FORMATTED);
+});
+await check("omp.ts: an eval call leaves a file that changed before it", async () => {
+  stale(`${repo}/omp-stale.tf`);
+  const event = { toolName: "eval", toolCallId: "omp-1", input: { code: "1" }, content: [] };
+  await ompHandlers.tool_call?.(event, { cwd: repo });
+  await ompHandler?.(event, { cwd: repo });
+  assert.equal(read(`${repo}/omp-stale.tf`), RAW);
 });
 await check("omp.ts: leaves the calls of pi.ts alone", async () => {
   unformatted(`${repo}/omp-pi.tf`);
@@ -438,17 +466,25 @@ await check("register.ts: formats the file and passes the result", async () => {
   );
   assert.equal(read(`${repo}/mod.tf`), FORMATTED);
 });
-unformatted(`${repo}/mod-commit.tf`);
-git(repo, "add", "-A");
-git(repo, "commit", "-qm", "mod");
 await check("register.ts: adds the amend hint as context", async () => {
   const done = (await modHook?.(
     stub$,
     { tool: "Bash", command: `touch mod-commit.tf && git commit -am mod` },
-    async () => result,
+    // The call itself writes and commits the file.
+    async () => {
+      unformatted(`${repo}/mod-commit.tf`);
+      git(repo, "add", "-A");
+      git(repo, "commit", "-qm", "mod");
+      return result;
+    },
   )) as { text: string; context: string[] };
   assert.equal(done.text, "written");
   assert.match(done.context[0] ?? "", /mod-commit\.tf/);
+});
+await check("register.ts: leaves a file that changed before the Bash call", async () => {
+  stale(`${repo}/mod-stale.tf`);
+  await modHook?.(stub$, { tool: "Bash", command: "echo x" }, async () => result);
+  assert.equal(read(`${repo}/mod-stale.tf`), RAW);
 });
 await check("register.ts: passes a deny through", async () => {
   const denied = { deny: "no" };

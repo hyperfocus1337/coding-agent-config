@@ -15,11 +15,15 @@
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import type { Call } from "./core.ts";
-import { absolute, formatCalls } from "./pi.ts";
+import { absolute, formatCalls, starts } from "./pi.ts";
 
 export default function (omp: ExtensionAPI) {
+  const start = starts(omp, ["eval"]);
   omp.on("tool_result", (event, ctx) =>
-    formatCalls(ompCalls(event.toolName, event.input, event.details, ctx.cwd), event.content),
+    formatCalls(
+      ompCalls(event.toolName, event.input, event.details, ctx.cwd, start(event.toolCallId)),
+      event.content,
+    ),
   );
 }
 
@@ -44,9 +48,11 @@ function ompCalls(
   input: Record<string, unknown>,
   details: unknown,
   cwd: string,
+  since: number | undefined,
 ): Call[] {
   const file = (path: string): Call => ({ filePath: absolute(path, cwd), cwd });
-  if (tool === "eval") return typeof input.code === "string" ? [{ command: input.code, cwd }] : [];
+  if (tool === "eval")
+    return typeof input.code === "string" ? [{ command: input.code, since, cwd }] : [];
   if (tool === "edit")
     return strings(input.paths)
       .filter((path) => path !== input.path)

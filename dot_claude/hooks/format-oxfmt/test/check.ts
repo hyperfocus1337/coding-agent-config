@@ -17,6 +17,8 @@ import { format } from "../core.ts";
 import { register } from "../hooks/register.ts";
 import ompExtension from "../omp.ts";
 import extension from "../pi.ts";
+// The unit cases of sweep.ts run first; a failed assert stops the run.
+import "./sweep.ts";
 
 const hook = path.dirname(import.meta.dirname);
 // A hook that /toggle-hook turned off in the agent that runs this check
@@ -181,24 +183,6 @@ git(other, "commit", "-q", "--allow-empty", "-m", "seed");
 unaligned(`${other}/OTHER.md`);
 await quiet("cross-repo sweep", bash(outer, `cat > ${other}/OTHER.md <<EOF\nx\nEOF`));
 await formatted("cross-repo absolute path", `${other}/OTHER.md`);
-
-// Only an absolute path is a root: the end of a relative path is not.
-await check("sweep: no git start for a relative path", async () => {
-  const dirs: string[] = [];
-  await format(
-    { command: "cat docs/a.md /abs/b.md > out/c.md", cwd: "/repo" },
-    {
-      stat: async (path) => (path === "/repo" ? { kind: "dir" } : undefined),
-      read: async () => undefined,
-      run: async (argv, { cwd }) => {
-        if (argv[1] === "rev-parse") dirs.push(cwd);
-        return { exitCode: 1, stdout: "" };
-      },
-    },
-    {},
-  );
-  assert.deepEqual(dirs, ["/repo", "/abs"]);
-});
 
 // A named file is formatted even when git cannot see it: a file written and
 // ignored in the same call is already ignored when the hook runs.
@@ -408,10 +392,20 @@ await check("paths: normalize before the scratch-file filter", async () => {
 // --- pi.ts, omp.ts, and hooks/register.ts, with stubs over the real files ---
 
 type Handler = (event: unknown, ctx: unknown) => Promise<unknown>;
-let piHandler: Handler | undefined;
-extension({
-  on: (_name: string, handler: Handler) => (piHandler = handler),
-} as never);
+/** The handlers that an extension registers, by event name. */
+const handlers = (load: (api: never) => void) => {
+  const found: Record<string, Handler> = {};
+  load({ on: (name: string, handler: Handler) => (found[name] = handler) } as never);
+  return found;
+};
+/** A Markdown file that changed 10 s ago: before the call that comes next. */
+const stale = (file: string) => {
+  unaligned(file);
+  const before = new Date(Date.now() - 10_000);
+  fs.utimesSync(file, before, before);
+};
+const pi = handlers(extension);
+const piHandler = pi.tool_result;
 unaligned(`${outer}/pi.md`);
 await check("pi.ts: formats the file of an edit", async () => {
   const result = await piHandler?.(
@@ -429,17 +423,27 @@ await check("pi.ts: formats a parent-relative edit path", async () => {
   );
   aligned(`${outer}/pi-parent.md`);
 });
-unaligned(`${committed}/PI.md`);
-git(committed, "add", "-A");
-git(committed, "commit", "-qm", "pi");
 await check("pi.ts: appends the amend hint to the result", async () => {
   const content = [{ type: "text", text: "committed" }];
+  const input = { command: "git commit -am pi" };
+  await pi.tool_call?.({ toolName: "bash", toolCallId: "pi-1", input }, { cwd: committed });
+  // The call itself writes and commits the file.
+  unaligned(`${committed}/PI.md`);
+  git(committed, "add", "-A");
+  git(committed, "commit", "-qm", "pi");
   const result = (await piHandler?.(
-    { toolName: "bash", input: { command: "git commit -am pi" }, content },
+    { toolName: "bash", toolCallId: "pi-1", input, content },
     { cwd: committed },
   )) as { content: { text: string }[] };
   assert.equal(result.content[0]?.text, "committed");
   assert.match(result.content[1]?.text ?? "", /amend[\s\S]*PI\.md|PI\.md[\s\S]*amend/);
+});
+await check("pi.ts: leaves a file that changed before the bash call", async () => {
+  stale(`${outer}/pi-stale.md`);
+  const event = { toolName: "bash", toolCallId: "pi-2", input: { command: "echo x" }, content: [] };
+  await pi.tool_call?.(event, { cwd: outer });
+  await piHandler?.(event, { cwd: outer });
+  assert.equal(read(`${outer}/pi-stale.md`), RAW);
 });
 await check("pi.ts: leaves other tools alone", async () => {
   unaligned(`${outer}/read.md`);
@@ -447,10 +451,8 @@ await check("pi.ts: leaves other tools alone", async () => {
   assert.equal(read(`${outer}/read.md`), RAW);
 });
 
-let ompHandler: Handler | undefined;
-ompExtension({
-  on: (_name: string, handler: Handler) => (ompHandler = handler),
-} as never);
+const ompHandlers = handlers(ompExtension);
+const ompHandler = ompHandlers.tool_result;
 const omp = (toolName: string, input: object, details?: object) =>
   ompHandler?.({ toolName, input, details, content: [] }, { cwd: outer });
 await check("omp.ts: formats each file of a multi-file edit", async () => {
@@ -478,6 +480,13 @@ await check("omp.ts: formats the files of an applied ast_edit", async () => {
   );
   aligned(`${outer}/omp-ast.md`);
 });
+await check("omp.ts: an eval call leaves a file that changed before it", async () => {
+  stale(`${outer}/omp-stale.md`);
+  const event = { toolName: "eval", toolCallId: "omp-1", input: { code: "1" }, content: [] };
+  await ompHandlers.tool_call?.(event, { cwd: outer });
+  await ompHandler?.(event, { cwd: outer });
+  assert.equal(read(`${outer}/omp-stale.md`), RAW);
+});
 await check("omp.ts: leaves the calls of pi.ts alone", async () => {
   unaligned(`${outer}/omp-pi.md`);
   await omp("write", { path: "omp-pi.md" });
@@ -499,6 +508,7 @@ const stub$ = (cwd: string) => ({
       const found = fs.statSync(file);
       return {
         kind: found.isFile() ? "file" : found.isDirectory() ? "dir" : "other",
+        mtimeMs: found.mtimeMs,
       };
     },
     read: async (file: string) => fs.readFileSync(file, "utf8"),
@@ -527,17 +537,25 @@ await check("register.ts: formats the file of a Write", async () => {
   );
   wrapped(`${outer}/mod.ts`);
 });
-unaligned(`${committed}/MOD.md`);
-git(committed, "add", "-A");
-git(committed, "commit", "-qm", "mod");
 await check("register.ts: adds the amend hint as context", async () => {
   const done = (await modHook?.(
     stub$(committed),
     { tool: "Bash", command: "git commit -am mod" },
-    async () => result,
+    // The call itself writes and commits the file.
+    async () => {
+      unaligned(`${committed}/MOD.md`);
+      git(committed, "add", "-A");
+      git(committed, "commit", "-qm", "mod");
+      return result;
+    },
   )) as { text: string; context: string[] };
   assert.equal(done.text, "written");
   assert.match(done.context[0] ?? "", /MOD\.md/);
+});
+await check("register.ts: leaves a file that changed before the Bash call", async () => {
+  stale(`${outer}/mod-stale.md`);
+  await modHook?.(stub$(outer), { tool: "Bash", command: "echo x" }, async () => result);
+  assert.equal(read(`${outer}/mod-stale.md`), RAW);
 });
 await check("register.ts: passes a deny through", async () => {
   const denied = { deny: "no" };

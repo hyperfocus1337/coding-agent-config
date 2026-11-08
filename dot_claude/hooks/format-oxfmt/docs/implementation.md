@@ -60,11 +60,11 @@ The first sweep covered only the git top level of the session folder. A command 
 
 The file filter then dropped the folder entries of an embedded repository and of a submodule, so their Markdown stayed unformatted. The queue of roots fixed that, see [Nested repos and submodules](../README.md#nested-repos-and-submodules).
 
+The sweep then formatted each changed Markdown file of a root, also one that changed before the call. On 2026-11-08 the sweep moved to `sweep.ts`, which `format-org-tables` and `format-code` copy, and it keeps only the files that changed after the call started, see [Only the files of the call](../README.md#only-the-files-of-the-call).
+
 ## Why named paths skip git
 
 A file that the command names and git ignores is the same failure as [Write and commit in one command](../README.md#write-and-commit-in-one-command), from the other side. There, git already has the file as clean. Here, git has an instruction to ignore the file, and the hook formats a named path without a question to git.
-
-[`format-org-tables`](../../format-org-tables/README.md) reads the command text in the same way, for `.org` paths, and stops there: it has no git sweep. A command that writes an Org file names that file, so a sweep gives that hook nothing more than the name.
 
 ## Why not `proseWrap` never
 
@@ -76,12 +76,13 @@ macOS resolves `/tmp` to `/private/tmp` and `$TMPDIR` to `/private/var/folders/.
 
 ## Files
 
-| File                                                                | Role                                                                           |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| [`core.ts`](../core.ts)                                             | The extensions, the sweep, the oxfmt run, and the amend hint. No Node imports. |
-| [`io.ts`](../io.ts)                                                 | The file and process functions of the core under Node                          |
-| [`command.ts`](../command.ts)                                       | The command hook for Codex and `format-staged-files`                           |
-| [`pi.ts`](../pi.ts)                                                 | The pi extension, which omp also loads                                         |
-| [`omp.ts`](../omp.ts)                                               | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see      |
-| [`hooks/register.ts`](../hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                                            |
-| [`dot_claude-plugin/plugin.json`](../dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json`                  |
+| File                                                                | Role                                                                      |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [`core.ts`](../core.ts)                                             | The extensions, the oxfmt run, and the amend hint. No Node imports.       |
+| [`sweep.ts`](../sweep.ts)                                           | The files of a Bash call. The same copy is in the other two format hooks. |
+| [`io.ts`](../io.ts)                                                 | The file and process functions of the core under Node                     |
+| [`command.ts`](../command.ts)                                       | The command hook for Codex and `format-staged-files`                      |
+| [`pi.ts`](../pi.ts)                                                 | The pi extension, which omp also loads                                    |
+| [`omp.ts`](../omp.ts)                                               | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see |
+| [`hooks/register.ts`](../hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                                       |
+| [`dot_claude-plugin/plugin.json`](../dot_claude-plugin/plugin.json) | The plugin manifest, deployed as `.claude-plugin/plugin.json`             |

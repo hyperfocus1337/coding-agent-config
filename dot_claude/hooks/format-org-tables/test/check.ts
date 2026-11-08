@@ -17,6 +17,9 @@ import { align } from "../core.ts";
 import { register } from "../hooks/register.ts";
 import ompExtension from "../omp.ts";
 import extension from "../pi.ts";
+// The unit cases of sweep.ts run first, also with no Emacs; a failed assert
+// stops the run.
+import "./sweep.ts";
 
 const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
 // A hook that /toggle-hook turned off in the agent that runs this check
@@ -188,7 +191,8 @@ bash(repo, "cat > docs/heredoc.org <<'EOF'\n| a | b |\nEOF");
 await aligned("a relative path, against the payload cwd", `${repo}/docs/heredoc.org`);
 
 // The payload cwd is the one from before the command, so a relative path
-// after a cd resolves against the folder of the cd.
+// after a cd does not resolve against it. The sweep of the repository finds
+// the file.
 fs.mkdirSync(`${repo}/pkg/sub`, { recursive: true });
 unaligned(`${repo}/pkg/after-cd.org`);
 bash(`${repo}/docs`, `cd ${repo}/pkg && python3 - <<'EOF'\np='after-cd.org'\nEOF`);
@@ -197,6 +201,12 @@ await aligned("a relative path after an absolute cd", `${repo}/pkg/after-cd.org`
 unaligned(`${repo}/pkg/sub/two-cds.org`);
 bash(repo, `cd "pkg" && cd sub/ && sed -i '' s/x/y/ two-cds.org`);
 await aligned("a relative path after two relative cds", `${repo}/pkg/sub/two-cds.org`);
+
+// The sweep also takes a file that the call changed without a name for it,
+// such as one that a script wrote.
+unaligned(`${repo}/generated.org`);
+bash(repo, "./generate.sh");
+await aligned("a changed file that the command does not name", `${repo}/generated.org`);
 
 unaligned(`${repo}/one.org`);
 unaligned(`${repo}/two.org`);
@@ -270,10 +280,20 @@ await check("AGENT_HOOKS_DISABLE that names the hook: nothing runs", async () =>
 // --- pi.ts and hooks/register.ts, with stubs over the real files ---
 
 type Handler = (event: unknown, ctx: unknown) => Promise<unknown>;
-let piHandler: Handler | undefined;
-extension({
-  on: (_name: string, handler: Handler) => (piHandler = handler),
-} as never);
+/** The handlers that an extension registers, by event name. */
+const handlers = (load: (api: never) => void) => {
+  const found: Record<string, Handler> = {};
+  load({ on: (name: string, handler: Handler) => (found[name] = handler) } as never);
+  return found;
+};
+/** An Org file that changed 10 s ago: before the call that comes next. */
+const stale = (file: string) => {
+  unaligned(file);
+  const before = new Date(Date.now() - 10_000);
+  fs.utimesSync(file, before, before);
+};
+const pi = handlers(extension);
+const piHandler = pi.tool_result;
 unaligned(`${repo}/pi.org`);
 await check("pi.ts: aligns the file of an edit", async () => {
   const result = await piHandler?.(
@@ -283,27 +303,31 @@ await check("pi.ts: aligns the file of an edit", async () => {
   assert.equal(result, undefined);
   isAligned(`${repo}/pi.org`);
 });
-unaligned(`${repo}/pi-commit.org`);
-git(repo, "add", "-A");
-git(repo, "commit", "-qm", "pi");
 await check("pi.ts: appends the amend hint to the result", async () => {
   const content = [{ type: "text", text: "committed" }];
+  const input = { command: `touch pi-commit.org && git commit -am pi` };
+  await pi.tool_call?.({ toolName: "bash", toolCallId: "pi-1", input }, { cwd: repo });
+  // The call itself writes and commits the file.
+  unaligned(`${repo}/pi-commit.org`);
+  git(repo, "add", "-A");
+  git(repo, "commit", "-qm", "pi");
   const result = (await piHandler?.(
-    {
-      toolName: "bash",
-      input: { command: `touch pi-commit.org && git commit -am pi` },
-      content,
-    },
+    { toolName: "bash", toolCallId: "pi-1", input, content },
     { cwd: repo },
   )) as { content: { text: string }[] };
   assert.equal(result.content[0]?.text, "committed");
   assert.match(result.content[1]?.text ?? "", /pi-commit\.org/);
 });
+await check("pi.ts: leaves a file that changed before the bash call", async () => {
+  stale(`${repo}/pi-stale.org`);
+  const event = { toolName: "bash", toolCallId: "pi-2", input: { command: "echo x" }, content: [] };
+  await pi.tool_call?.(event, { cwd: repo });
+  await piHandler?.(event, { cwd: repo });
+  assert.equal(read(`${repo}/pi-stale.org`), RAW);
+});
 
-let ompHandler: Handler | undefined;
-ompExtension({
-  on: (_name: string, handler: Handler) => (ompHandler = handler),
-} as never);
+const ompHandlers = handlers(ompExtension);
+const ompHandler = ompHandlers.tool_result;
 const omp = (toolName: string, input: object, details?: object) =>
   ompHandler?.({ toolName, input, details, content: [] }, { cwd: repo });
 await check("omp.ts: aligns each file of a multi-file edit", async () => {
@@ -330,6 +354,13 @@ await check("omp.ts: aligns the files of an applied ast_edit", async () => {
     },
   );
   isAligned(`${repo}/omp-ast.org`);
+});
+await check("omp.ts: an eval call leaves a file that changed before it", async () => {
+  stale(`${repo}/omp-stale.org`);
+  const event = { toolName: "eval", toolCallId: "omp-1", input: { code: "1" }, content: [] };
+  await ompHandlers.tool_call?.(event, { cwd: repo });
+  await ompHandler?.(event, { cwd: repo });
+  assert.equal(read(`${repo}/omp-stale.org`), RAW);
 });
 await check("omp.ts: leaves the calls of pi.ts alone", async () => {
   unaligned(`${repo}/omp-pi.org`);
@@ -377,17 +408,25 @@ await check("register.ts: aligns the file and passes the result", async () => {
   );
   isAligned(`${repo}/mod.org`);
 });
-unaligned(`${repo}/mod-commit.org`);
-git(repo, "add", "-A");
-git(repo, "commit", "-qm", "mod");
 await check("register.ts: adds the amend hint as context", async () => {
   const done = (await modHook?.(
     stub$,
     { tool: "Bash", command: `touch mod-commit.org && git commit -am mod` },
-    async () => result,
+    // The call itself writes and commits the file.
+    async () => {
+      unaligned(`${repo}/mod-commit.org`);
+      git(repo, "add", "-A");
+      git(repo, "commit", "-qm", "mod");
+      return result;
+    },
   )) as { text: string; context: string[] };
   assert.equal(done.text, "written");
   assert.match(done.context[0] ?? "", /mod-commit\.org/);
+});
+await check("register.ts: leaves a file that changed before the Bash call", async () => {
+  stale(`${repo}/mod-stale.org`);
+  await modHook?.(stub$, { tool: "Bash", command: "echo x" }, async () => result);
+  assert.equal(read(`${repo}/mod-stale.org`), RAW);
 });
 await check("register.ts: passes a deny through", async () => {
   const denied = { deny: "no" };

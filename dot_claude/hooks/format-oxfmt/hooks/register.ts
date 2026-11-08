@@ -11,6 +11,8 @@ import { format, type Io } from "../core.ts";
 
 export const register: Register = (on) => {
   on("tool.call", { tool: ["Write", "Edit", "Bash"] }, async ($, e, next) => {
+    // The sweep of a Bash call keeps only the files changed after this time.
+    const since = Date.now();
     const ran = await next(e);
     if (ran.deny !== undefined) return ran;
     const cwd = await $.session.cwd();
@@ -22,7 +24,8 @@ export const register: Register = (on) => {
       // Rejects when the program is not installed, or timed out.
       run: (argv, options) => $.process.run(argv, options).catch(() => undefined),
     };
-    const call = e.tool === "Bash" ? { command: e.command, cwd } : { filePath: e.file_path, cwd };
+    const call =
+      e.tool === "Bash" ? { command: e.command, since, cwd } : { filePath: e.file_path, cwd };
     const hint = await format(call, io, {
       tmpdir: await $.env.get("TMPDIR"),
       hooksOff: await $.env.get("AGENT_HOOKS_DISABLE"),

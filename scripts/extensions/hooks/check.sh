@@ -11,7 +11,9 @@
 #   5. node over each test/check.ts of both hook folders and over
 #      dot_codex/hooks/test/apply-patch.ts,
 #   6. type-check-diff.sh against type-check.diff, so that type-check-tsc and
-#      type-check-pyrefly stay the same where they must.
+#      type-check-pyrefly stay the same where they must,
+#   7. sweep.ts and test/sweep.ts of format-oxfmt, format-org-tables, and
+#      format-code, which must be the same in all three.
 #
 # A failed step does not stop the later steps. The script lists the failed
 # steps at the end and exits 1.
@@ -154,6 +156,20 @@ same_type_checks() {
   }
 }
 step "type-check-tsc and type-check-pyrefly in step" same_type_checks
+
+same_sweeps() {
+  local file hook status=0
+  for file in sweep.ts test/sweep.ts; do
+    for hook in format-org-tables format-code; do
+      cmp -s "${HOOKS}/format-oxfmt/${file}" "${HOOKS}/${hook}/${file}" || {
+        echo "${hook}/${file} differs from format-oxfmt/${file}. Make the same change in all three format hooks." >&2
+        status=1
+      }
+    done
+  done
+  return "${status}"
+}
+step "format hooks share one sweep.ts" same_sweeps
 
 if ((${#FAILED[@]})); then
   printf 'FAILED: %s\n' "${FAILED[@]}" >&2

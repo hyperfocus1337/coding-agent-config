@@ -75,6 +75,16 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 **Decision:** on 2026-11-08, the Claude Code result code (`recordTool`, `rebuildOriginal`, and its helpers) moved from `core.ts` to `claude.ts`, and `patchFiles` moved to `codex.ts`, as pi and omp already keep theirs in `pi.ts` and `omp.ts`. **Why:** `core.ts` now knows no agent, so a fix or new parsing for one agent goes in the file of that agent. The code does not go in `command.ts` or `hooks/register.ts`, because both adapters use `claude.ts`, and `command.ts` runs when the test imports it. **Cost:** `codex.ts` holds only about 25 lines, and `changedLine` stays in `core.ts` because Claude Code NotebookEdit and pi writes both use it.
 
+## The format hooks find the files of a shell call themselves
+
+**Decision:** on 2026-11-08, `format-oxfmt`, `format-org-tables`, and `format-code` find the files of a Bash call with one rule, in a copy of `sweep.ts` in each folder. The rule takes the paths that the command names and the changed and untracked files of each repository that the call touched, and keeps a file only if it changed after the call started. In Codex the hook runs only after the call, so a file counts if it changed in the last 120 s. `just hooks-check` fails when the 3 copies of `sweep.ts` or of `test/sweep.ts` differ.
+
+**Why:** before, each hook had its own rule. `format-code` and `format-org-tables` took only the named paths with an mtime of at most 120 s, and `format-org-tables` also followed each `cd`. `format-oxfmt` formatted each changed Markdown file of the repository, also one that changed before the call. The one rule finds a file that a script wrote, works after any `cd` in the same repository, and leaves a file that changed before the call.
+
+**Rejected:** the log of `track-session-changes`, which `lint-prose` reads. It is exact, but a hook can read it only after `track-session-changes` wrote it. That hook must write its log after the formatters ran, so that the log holds the formatted text, see [`track-session-changes/docs/implementation.md`](../../dot_claude/hooks/track-session-changes/docs/implementation.md). A `PreToolUse` entry in Codex that stores the start time of each call: one more process and a state file for each Bash call.
+
+**Cost:** `format-code` and `format-org-tables` now start 1 `git rev-parse` for each root and 2 git listings for each repository on each Bash call, as `format-oxfmt` did before. A file that another program changed during the call also counts. The 3 copies are an exception to [No shared library between hooks](#no-shared-library-between-hooks), with a check in place of the import.
+
 ## Each lint-code tool has a repo key
 
 **Decision:** on 2026-11-08, `agent-hook.lint-code.<tool>` turns off one linter in one repository, for `ruff`, `oxlint`, `shellcheck`, `yamllint`, `ansible-lint`, and `tflint`. With `ansible-lint` off, Ansible YAML gets the yamllint checks. **Why:** a repository can have a linter that it cannot run, such as ansible-lint without its collections, and the keys also apply in the explicit full check, so CI does not fail on that linter. `CLAUDE_LINT_DISABLE` keeps its language keys, so values that are in use now still work. **Cost:** each stop runs 6 more `git config` reads, in parallel.
