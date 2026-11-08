@@ -1,7 +1,7 @@
 /**
  * Command hook for Claude Code and Codex (Stop): reads the hook payload on
- * stdin and runs pyrefly on the project. Exits 2 with the errors on stderr,
- * so the stop is blocked and the model gets them. Exits 0 and prints nothing
+ * stdin and runs the type checkers on the project. Exits 2 with the errors on
+ * stderr, so the stop is blocked and the model gets them. Exits 0 and prints nothing
  * otherwise, and when `stop_hook_active` is true: the hook already blocked
  * one stop, and a check that still fails must not block every stop after it.
  *

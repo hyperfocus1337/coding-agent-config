@@ -7,7 +7,7 @@ Run repository type checks in check mode. Arguments: $ARGUMENTS
 
 Read and follow `~/.claude/commands/code/tools/shared.txt`. Accept no arguments; if arguments are supplied, show usage and stop.
 
-Use the tools and configuration of the installed `type-check-tsc` and `type-check-pyrefly` hooks, but check every project, not only projects with changed files.
+Use the tools and configuration of the installed `type-check-code` hook (`tsc` and `pyrefly`), but check every project, not only projects with changed files.
 
 1. Find TypeScript and Python projects from the eligible files, workspace definitions, and type-check configuration, including configured nested projects. Use each project's existing environment.
 2. Run `tsc --noEmit` once in each TypeScript project that has a tsconfig. For project references, use the project's no-emit workflow, not an emitting build. Keep incremental build metadata out of the repository with flags or an external temporary path.

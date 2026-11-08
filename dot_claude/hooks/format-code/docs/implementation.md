@@ -83,7 +83,7 @@ An earlier version of `format-org-tables` used `git diff --quiet` on the working
 
 ## Why after each call, and not Stop
 
-[`type-check-tsc`](../../type-check-tsc/README.md) and `type-check-pyrefly` run on `Stop` because they are loud and project-wide: on each edit they reran the whole project and printed the same unrelated errors again. That argument does not carry over to this hook, for two reasons.
+[`type-check-code`](../../type-check-code/README.md) runs on `Stop` because they are loud and project-wide: on each edit they reran the whole project and printed the same unrelated errors again. That argument does not carry over to this hook, for two reasons.
 
 **It costs almost no context.** The hook writes nothing for the model, except the amend hint. That hint comes only when one Bash call both writes and commits a file. 40 calls in one turn cost 40 formatter runs and close to zero context.
 

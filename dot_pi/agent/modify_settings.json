@@ -34,8 +34,7 @@ ours=$(
     "~/.claude/hooks/enforce-cli-tools/pi.ts",
     "~/.claude/hooks/lint-code/pi.ts",
     "~/.claude/hooks/format-code/pi.ts",
-    "~/.claude/hooks/type-check-tsc/pi.ts",
-    "~/.claude/hooks/type-check-pyrefly/pi.ts",
+    "~/.claude/hooks/type-check-code/pi.ts",
     "~/.claude/hooks/track-session-changes/pi.ts",
     "~/.claude/hooks/lint-prose/pi.ts",
     "~/.claude/hooks/toggle-hook/pi.ts"

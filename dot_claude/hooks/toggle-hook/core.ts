@@ -19,8 +19,7 @@ export const HOOKS = [
   "format-code",
   "lint-code",
   "lint-prose",
-  "type-check-tsc",
-  "type-check-pyrefly",
+  "type-check-code",
   "block-destructive-commands",
 ];
 

@@ -16,7 +16,7 @@ Fixtures live under `$HOME` because lint-code skips scratch directories. Fixture
 - Real git selection includes staged, unstaged, untracked, old-mtime, space-containing, newline-containing, and non-ASCII filenames. Deleted and ignored files are excluded.
 - A clean repository starts no linter. A nested session directory still runs linters at the root. Outside git, nothing runs. Before the first commit, staged and untracked files count. The explicit full-repository command includes clean tracked files.
 - Stop payloads return exit 2 with initial findings. Guarded stops rerun checks and report remaining errors through `systemMessage` with exit 0. Disabled hooks, disabled linters, and repository disable keys still skip automatic checks.
-- Pi registers only `agent_before_settle` and `agent_settled`, not per-tool events. Lint, tsc, and Pyrefly handlers compose their findings into one boundary result. The correction boundary does not repeat checks, including a check that passed initially. Settlement runs final verification without requesting continuation, then resets the guards.
+- Pi registers only `agent_before_settle` and `agent_settled`, not per-tool events. The lint and type-check handlers compose their findings into one boundary result. The correction boundary does not repeat checks, including a check that passed initially. Settlement runs final verification without requesting continuation, then resets the guards.
 - Pi and omp skip aborted and failed runs. Omp registers only `session_stop` and uses `stop_hook_active` for report-only final verification.
 
-The type-check hooks also have their own adapter and command tests. `just hooks-check` type-checks the adapters against the installed Pi declarations and verifies that the two type-check implementations stay aligned.
+`type-check-code` also has its own adapter and command tests. `just hooks-check` type-checks the adapters against the installed Pi declarations.

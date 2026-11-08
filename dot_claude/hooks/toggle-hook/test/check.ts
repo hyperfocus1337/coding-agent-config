@@ -83,7 +83,7 @@ await check("no argument lists each hook, its formatters, and the scope", () => 
     cfg(
       ["lint-prose", false, "repo"],
       ["format-code.shfmt", false, "repo"],
-      ["type-check-tsc", false, "global"],
+      ["type-check-code", false, "global"],
     ),
   );
   assert.equal(value, "lint-code");
@@ -91,8 +91,7 @@ await check("no argument lists each hook, its formatters, and the scope", () => 
   assert.ok(text.includes("\noff  session  lint-code\n"));
   assert.ok(text.includes("\noff  repo     lint-prose\n"));
   assert.ok(text.includes("\n  off  repo     shfmt\n"));
-  assert.ok(text.includes("\noff  global   type-check-tsc\n"));
-  assert.ok(text.includes("\non            type-check-pyrefly"));
+  assert.ok(text.includes("\noff  global   type-check-code\n"));
   assert.ok(text.startsWith("on            format-code\n"));
 });
 await check("all turns every hook off, then on, and keeps other names", () => {
@@ -387,7 +386,7 @@ await check("mod: completes the word at the cursor, after the command", async ()
     assert.equal(result.suggestions[0], engine);
     return result.suggestions.slice(1).map((row) => row.text);
   };
-  assert.deepEqual(await complete("/toggle-hook type"), ["type-check-tsc", "type-check-pyrefly"]);
+  assert.deepEqual(await complete("/toggle-hook type"), ["type-check-code"]);
   assert.deepEqual(await complete("/toggle-hook --r"), ["--repo"]);
   assert.deepEqual(await complete("/toggle-hook --repo SHFMT"), ["format-code.shfmt"]);
   assert.deepEqual(await complete("/toggle-hook  --global   destructive"), [
@@ -432,11 +431,11 @@ process.env.GIT_CONFIG_NOSYSTEM = "1";
 await check("pi.ts: the command sets process.env and the status", async () => {
   await start?.({}, ctx);
   assert.equal(piStatus.at(-1), undefined);
-  await command_?.handler("type-check-tsc", ctx);
-  assert.equal(process.env.AGENT_HOOKS_DISABLE, "type-check-tsc");
-  assert.equal(notes.at(-1), "type-check-tsc is off until you quit the agent.");
-  assert.equal(piStatus.at(-1), "hooks off: type-check-tsc");
-  await command_?.handler("type-check-tsc", ctx);
+  await command_?.handler("type-check-code", ctx);
+  assert.equal(process.env.AGENT_HOOKS_DISABLE, "type-check-code");
+  assert.equal(notes.at(-1), "type-check-code is off until you quit the agent.");
+  assert.equal(piStatus.at(-1), "hooks off: type-check-code");
+  await command_?.handler("type-check-code", ctx);
   assert.equal("AGENT_HOOKS_DISABLE" in process.env, false);
 });
 await check("pi.ts: --repo writes git config and the status", async () => {
@@ -451,7 +450,7 @@ await check("pi.ts: --repo writes git config and the status", async () => {
 await check("pi.ts: completes --repo, the hook names, and all", () => {
   const complete = (prefix: string) =>
     command_?.getArgumentCompletions(prefix).map((item) => item.value);
-  assert.deepEqual(complete("type"), ["type-check-tsc", "type-check-pyrefly"]);
+  assert.deepEqual(complete("type"), ["type-check-code"]);
   assert.ok(complete(" a")?.includes("all"));
   assert.deepEqual(complete(""), ["--repo", "--global", ...NAMES, "all"]);
   assert.deepEqual(complete("--global format-code.ox"), ["--global format-code.oxfmt"]);

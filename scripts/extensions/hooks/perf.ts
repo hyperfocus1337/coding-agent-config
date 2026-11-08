@@ -619,21 +619,6 @@ const formatter = (name: string, fn: string, tools: string[]): Hook => ({
   },
 });
 
-const typeCheck = (name: string, tool: string): Hook => ({
-  name,
-  on: { Stop: ["post"] },
-  tools: [tool],
-  state: true,
-  args: [],
-  work: "blocked the stop with errors",
-  core: async (c, _phase, m) => {
-    const io = watch(m.io.nodeIo(), c.trace);
-    return {
-      acted: (await m.core.check(c.cwd, io, m.io.nodeSettings())) !== undefined,
-    };
-  },
-});
-
 const HOOK_LIST: Hook[] = [
   formatter("format-code", "format", ["oxfmt", "emacs", "terraform", "shfmt", "ruff"]),
   {
@@ -719,8 +704,18 @@ const HOOK_LIST: Hook[] = [
       return {};
     },
   },
-  typeCheck("type-check-tsc", "tsc"),
-  typeCheck("type-check-pyrefly", "pyrefly"),
+  {
+    name: "type-check-code",
+    on: { Stop: ["post"] },
+    tools: ["tsc", "pyrefly"],
+    state: true,
+    args: [],
+    work: "blocked the stop with errors",
+    core: async (c, _phase, m) => {
+      const io = watch(m.io.nodeIo(), c.trace);
+      return { acted: (await m.core.check(c.cwd, io, m.io.nodeSettings())) !== undefined };
+    },
+  },
   {
     name: "toggle-hook",
     on: {},

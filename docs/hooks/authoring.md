@@ -19,7 +19,7 @@ Each hook is one folder in `dot_claude/hooks/<hook>/` and imports nothing from o
 | Data files                      | `rules`, `config/`, `conf/`: read at run time, never imported                                                         | Yes                                  |
 | `README.md`, `docs/`, `test/`   | Kept in the repo by `.chezmoiignore`                                                                                  | No                                   |
 
-A hook that has no Claude Code mod, such as `type-check-tsc`, has no `hooks/` folder and no `dot_claude-plugin/`.
+A hook that has no Claude Code mod, such as `type-check-code`, has no `hooks/` folder and no `dot_claude-plugin/`.
 
 ## The core
 

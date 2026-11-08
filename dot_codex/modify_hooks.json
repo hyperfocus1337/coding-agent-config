@@ -88,7 +88,7 @@ ours=$(cat <<'EOF'
       {
         "hooks": [
           {
-            "command": "case $(node -p process.features.typescript 2>/dev/null) in strip | transform) ;; *) echo '{\"systemMessage\": \"Node 23.6 or later is not on the PATH of Codex, so enforce-cli-tools, lint-code, lint-prose, type-check-tsc, type-check-pyrefly, format-code, and track-session-changes are off, git blocks each commit, and git does not format staged files. Put node 23.6 or later on the PATH, then start a new session.\"}' ;; esac",
+            "command": "case $(node -p process.features.typescript 2>/dev/null) in strip | transform) ;; *) echo '{\"systemMessage\": \"Node 23.6 or later is not on the PATH of Codex, so enforce-cli-tools, lint-code, lint-prose, type-check-code, format-code, and track-session-changes are off, git blocks each commit, and git does not format staged files. Put node 23.6 or later on the PATH, then start a new session.\"}' ;; esac",
             "timeout": 10,
             "type": "command"
           },
@@ -109,12 +109,7 @@ ours=$(cat <<'EOF'
             "type": "command"
           },
           {
-            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/type-check-tsc/command.ts\"",
-            "timeout": 60,
-            "type": "command"
-          },
-          {
-            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/type-check-pyrefly/command.ts\"",
+            "command": "command -v node >/dev/null || exit 0; NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\" node \"$HOME/.claude/hooks/type-check-code/command.ts\"",
             "timeout": 60,
             "type": "command"
           }

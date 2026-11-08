@@ -9,7 +9,7 @@ Each hook in [`dot_claude/hooks/`](../../dot_claude/hooks/README.md) has one Typ
 | omp         | `pi.ts`, `omp.ts`   | An extension, in process       | `extensions` in `dot_omp/private_agent/private_config.yml`           |
 | Codex       | `command.ts`        | A command hook, one Node start | `dot_codex/modify_hooks.json`                                        |
 
-Three hooks also run `command.ts` in Claude Code, as a command hook in `private_settings.json.tmpl`: `lint-code`, `type-check-tsc`, and `type-check-pyrefly`. The mod API cannot do what they need, see [`decisions.md`](decisions.md). Three hooks are not agent hooks, but git hooks in [`dot_config/git/hooks/`](../../dot_config/git/hooks/), set in `~/.config/git/config`: `format-staged-files` runs the `command.ts` of the formatter hooks, and `block-secret-commits` and `block-commit-attribution` block a commit.
+Two hooks also run `command.ts` in Claude Code, as a command hook in `private_settings.json.tmpl`: `lint-code` and `type-check-code`. The mod API cannot do what they need, see [`decisions.md`](decisions.md). Three hooks are not agent hooks, but git hooks in [`dot_config/git/hooks/`](../../dot_config/git/hooks/), set in `~/.config/git/config`: `format-staged-files` runs the `command.ts` of the formatter hooks, and `block-secret-commits` and `block-commit-attribution` block a commit.
 
 | File                                    | Read it when                                          |
 | --------------------------------------- | ----------------------------------------------------- |

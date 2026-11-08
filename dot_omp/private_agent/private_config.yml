@@ -21,8 +21,7 @@ extensions:
   - ~/.claude/hooks/lint-code/omp.ts
   - ~/.claude/hooks/format-code/pi.ts
   - ~/.claude/hooks/format-code/omp.ts
-  - ~/.claude/hooks/type-check-tsc/omp.ts
-  - ~/.claude/hooks/type-check-pyrefly/omp.ts
+  - ~/.claude/hooks/type-check-code/omp.ts
   - ~/.claude/hooks/track-session-changes/omp.ts
   - ~/.claude/hooks/lint-prose/omp.ts
   - ~/.claude/hooks/toggle-hook/pi.ts

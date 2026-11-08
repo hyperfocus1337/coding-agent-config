@@ -1,8 +1,8 @@
 /**
- * omp extension: runs pyrefly on the project when the main agent is about
- * to stop. On errors it asks omp for one more turn with the errors as
- * context, so the model fixes them. Loaded through `extensions` in the omp
- * config, in place of ./pi.ts.
+ * omp extension: runs the type checkers on the project when the main agent is
+ * about to stop. On errors it asks omp for one more turn with the errors as context,
+ * so the model fixes them. Loaded through `extensions` in the omp config, in
+ * place of ./pi.ts.
  *
  * omp does not have Pi's `agent_before_settle` boundary. It awaits
  * `session_stop`, sends it in the main agent only, and sets

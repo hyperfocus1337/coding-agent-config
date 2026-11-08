@@ -32,11 +32,11 @@ The session can only turn a hook off. A hook or tool that git config turns off s
 
 ### Which hooks have a toggle
 
-The 5 advisory hooks and `block-destructive-commands` have a toggle. An advisory hook formats, lints, or type-checks. The 6 supported hooks are in `HOOKS` in [`core.ts`](core.ts):
+The 4 advisory hooks and `block-destructive-commands` have a toggle. An advisory hook formats, lints, or type-checks. The 5 supported hooks are in `HOOKS` in [`core.ts`](core.ts):
 
 - `format-code`
 - `lint-code` and `lint-prose`
-- `type-check-tsc` and `type-check-pyrefly`
+- `type-check-code`
 - `block-destructive-commands`
 
 Turning off `block-destructive-commands` skips all dcg checks, including the pack that blocks agent writes to hook toggle keys, and the pack that blocks `git commit --no-verify`. An agent can then skip the git guards `block-secret-commits` and `block-commit-attribution`. This also happens with `all`. Prefer `dcg allow-once <code>` when you only need to approve one command.
@@ -67,7 +67,7 @@ A repository key wins over a global key. A hook does nothing when a scope turns 
 
 `block-destructive-commands` reads it in the hook process directory for Claude Code and Codex, and in the session directory for pi and omp. A value that is not a boolean, such as `banana`, keeps the hook on.
 
-The session scope changes the variable in the process of the agent itself. Nothing goes to disk, so the change does not reach another session, and chezmoi sees no drift. In Claude Code, `type-check-tsc` and `type-check-pyrefly` are command hooks, which Claude Code starts as a new process: each one gets the variable as Claude Code has it when Claude Code starts the hook.
+The session scope changes the variable in the process of the agent itself. Nothing goes to disk, so the change does not reach another session, and chezmoi sees no drift. In Claude Code, `lint-code` and `type-check-code` are command hooks, which Claude Code starts as a new process: each one gets the variable as Claude Code has it when Claude Code starts the hook.
 
 The repository scope runs `git config --local` in the session folder. To move a key off its default, it writes the value. To move a key back to its default, it removes the key. When a file outside the repository, such as `~/.config/git/config`, still decides, the command writes the value in the repository, which wins.
 
@@ -101,8 +101,7 @@ on            format-code
   on            ruff
 on            lint-code
 off  session  lint-prose
-on            type-check-tsc
-on            type-check-pyrefly
+on            type-check-code
 
 > /toggle-hook format-code.oxfmt
 format-code.oxfmt is off until you quit the agent.

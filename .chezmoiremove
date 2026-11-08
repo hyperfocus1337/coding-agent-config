@@ -14,6 +14,8 @@
 .claude/hooks/lint-prose/hook.sh
 .codex/hooks/apply-patch.sh
 .claude/hooks/type-check-all-languages
+.claude/hooks/type-check-tsc
+.claude/hooks/type-check-pyrefly
 .claude/hooks/track-session-changes/hook.ts
 .pi/agent/extensions/track-session-changes
 .omp/agent/extensions/track-session-changes

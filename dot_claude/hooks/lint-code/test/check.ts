@@ -14,8 +14,7 @@ import { check as checkLint, lint, report, type Io } from "../core.ts";
 import { nodeIo } from "../io.ts";
 import extension from "../pi.ts";
 import ompExtension from "../omp.ts";
-import tscExtension from "../../type-check-tsc/pi.ts";
-import pyreflyExtension from "../../type-check-pyrefly/pi.ts";
+import typeCheckExtension from "../../type-check-code/pi.ts";
 import { settings, stub } from "./stub.ts";
 
 const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
@@ -329,8 +328,7 @@ try {
     sendMessage: (message: { content: string }) => finalReports.push(message.content),
   };
   extension(api as never);
-  tscExtension(api as never);
-  pyreflyExtension(api as never);
+  typeCheckExtension(api as never);
   assert.deepEqual([...handlers.keys()].sort(), ["agent_before_settle", "agent_settled"]);
   const settle = async (outcome = "completed") => {
     let state = {
@@ -352,7 +350,7 @@ try {
   assert.equal(initial.continue, true);
   assert.deepEqual(
     initial.entries.map((entry) => entry.customType),
-    ["lint-code", "type-check-pyrefly"],
+    ["lint-code", "type-check-code"],
   );
   assert.ok(initial.entries.every((entry) => entry.content.includes("error")));
   // A check that passed initially must not start a second correction run.
@@ -365,8 +363,9 @@ try {
   const next = await settle();
   assert.deepEqual(
     next.entries.map((entry) => entry.customType),
-    ["lint-code", "type-check-tsc", "type-check-pyrefly"],
+    ["lint-code", "type-check-code"],
   );
+  assert.ok(next.entries[1]?.content.includes("tsc error in"));
   await settled();
   clear();
   assert.equal((await settle("aborted")).continue, false);

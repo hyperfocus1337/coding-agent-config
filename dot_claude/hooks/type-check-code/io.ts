@@ -7,8 +7,11 @@ import { spawn } from "node:child_process";
 import { stat } from "node:fs/promises";
 import type { Io, Settings } from "./core.ts";
 
-/** How long one program may run: a type checker can take long. */
-const TIMEOUT_MS = 60_000;
+/**
+ * How long one program may run: a type checker can take long. Below the 60 s timeout of the
+ * Claude Code and Codex Stop entry, so a slow checker does not take the result of the other with it.
+ */
+const TIMEOUT_MS = 50_000;
 
 export function nodeIo(): Io {
   return {

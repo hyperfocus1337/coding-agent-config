@@ -43,13 +43,29 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 **Cost:** an agent can still skip the hooks in ways that the dcg pack does not catch, such as `git config hook.<name>.enabled false`. A git client without `node` on its `PATH` blocks each of your commits.
 
-## type-check-tsc and type-check-pyrefly are command hooks in Claude Code
+## type-check-code is a command hook in Claude Code
 
-**Decision:** the `Stop` entries in `private_settings.json.tmpl` run the `command.ts` of each hook. **Why:** a mod on `classic.Stop` loaded but did not run, because `cc-plugin-sec-default` skips user mods on `classic.*` events for a Team organization. In pi, `agent_end` sends the errors with `pi.sendMessage` and `triggerTurn`, and pi waits for `agent_end` to finish. omp does not wait for `agent_end`, so `omp.ts` returns the errors from `session_stop`, which omp waits for.
+**Decision:** the `Stop` entry in `private_settings.json.tmpl` runs the `command.ts` of the hook. **Why:** a mod on `classic.Stop` loaded but did not run, because `cc-plugin-sec-default` skips user mods on `classic.*` events for a Team organization. In pi, `agent_end` sends the errors with `pi.sendMessage` and `triggerTurn`, and pi waits for `agent_end` to finish. omp does not wait for `agent_end`, so `omp.ts` returns the errors from `session_stop`, which omp waits for.
 
 ## One hook for each type checker
 
-**Decision:** `type-check-tsc` and `type-check-pyrefly` replace `type-check-all-languages`. Each hook has its own copy of the git lookup, `io.ts`, and the adapters. **Why:** the name tells which checker runs, you turn off one checker by removing one entry, and each checker gets its own 60 s limit. The two checkers shared only the changed-file lookup, about 15 lines. **Cost:** about 100 lines that are the same in both hooks. `just hooks-check` keeps them the same: it fails when the code files of the two hooks differ in a way that [`type-check.diff`](../../scripts/extensions/hooks/type-check.diff) does not record. A shared module was rejected because no hook imports from another hook. **Why not Python for pyrefly:** a Python hook can only be a command hook, so pi and omp would lose the check, and the hooks would need a second runtime. [`hook-alternatives.md`](../research/hooks/hook-alternatives.md) found no official hook that replaces either one.
+Replaced on 2026-11-08 by [type-check-code holds all type checkers](#type-check-code-holds-all-type-checkers).
+
+**Decision:** `type-check-tsc` and `type-check-pyrefly` replace `type-check-all-languages`. Each hook has its own copy of the git lookup, `io.ts`, and the adapters. **Why:** the name tells which checker runs, you turn off one checker by removing one entry, and each checker gets its own 60 s limit. The two checkers shared only the changed-file lookup, about 15 lines.
+
+**Cost:** about 100 lines that are the same in both hooks. `just hooks-check` keeps them the same: it fails when the code files of the two hooks differ in a way that `type-check.diff` does not record. A shared module was rejected because no hook imports from another hook.
+
+**Why not Python for pyrefly:** a Python hook can only be a command hook, so pi and omp would lose the check, and the hooks would need a second runtime. [`hook-alternatives.md`](../research/hooks/hook-alternatives.md) found no official hook that replaces either one.
+
+## type-check-code holds all type checkers
+
+**Decision:** on 2026-11-08, `type-check-tsc` and `type-check-pyrefly` became `checkers/tsc.ts` and `checkers/pyrefly.ts` of `type-check-code`, with the keys `tsc` and `pyrefly`. The checkers run in parallel, and `io.ts` stops each program after 50 s, below the 60 s `timeout` of the one `Stop` entry. The old keys `agent-hook.type-check-tsc.enabled` and `agent-hook.type-check-pyrefly.enabled` no longer apply, and the code reads no alias. No repository under `~/Repositories` and no global config set them on that day.
+
+**Why:** the [entry above](#one-hook-for-each-type-checker) gave 4 reasons for 2 hooks, and 3 no longer held. `format-code` and `lint-code` name the tools in their modules, not in the hook name. [`/toggle-hook type-check-code.tsc`](#a-tool-also-turns-off-for-one-session) and `agent-hook.type-check-code.tsc` turn off one checker without an edit of the agent config. A merge also needs no import from another hook.
+
+The 2 cores were the same except for the command, one file filter, and the advice line. The merge removes about 550 lines: 1 set of adapters, 1 test setup, 1 README, and the `type-check.diff` check with `hook-diff.sh`. Each stop starts 1 Node process and runs the git lookup once, not twice.
+
+**Cost:** the 2 checkers share 1 limit of 60 s, not 60 s each. In parallel, the hook takes as long as the slower checker, and a checker that runs past 50 s drops only its own result. In a repository with TypeScript and Python changes, the 2 checkers compete for the CPU. The Codex hook entries change, so you trust them again in the Codex TUI.
 
 ## Each hook name says what it covers
 

@@ -21,7 +21,7 @@ export default function (pi: ExtensionAPI) {
           ...event.entries,
           {
             type: "custom_message" as const,
-            customType: "type-check-tsc",
+            customType: "type-check-code",
             content: errors,
             display: true,
           },

@@ -9,9 +9,7 @@
 #   4. `claude plugin validate` over each mod, which catches what tsc cannot,
 #      such as `$` passed as a value,
 #   5. node over each test/check.ts of both hook folders and over
-#      dot_codex/hooks/test/apply-patch.ts,
-#   6. hook-diff.sh against type-check.diff, so that type-check-tsc and
-#      type-check-pyrefly stay the same where they must.
+#      dot_codex/hooks/test/apply-patch.ts.
 #
 # A failed step does not stop the later steps. The script lists the failed
 # steps at the end and exits 1.
@@ -145,15 +143,6 @@ for check in "${HOOKS}"/*/test/check.ts "${GIT_HOOKS}"/*/test/check.ts; do
   step "${check#"${REPO}"/}" test_hook "${check%/test/check.ts}"
 done
 step "dot_codex/hooks/test/apply-patch.ts" node "${CODEX_HOOKS}/test/apply-patch.ts"
-
-same_copies() {
-  local set="$1" here="scripts/extensions/hooks"
-  diff "${REPO}/${here}/${set}.diff" <("${REPO}/${here}/hook-diff.sh" "${set}") || {
-    echo "The ${set} hooks differ in a new way. Make the same change in each, or, if the change is meant to differ, run: ${here}/hook-diff.sh ${set} >${here}/${set}.diff" >&2
-    return 1
-  }
-}
-step "type-check-tsc and type-check-pyrefly in step" same_copies type-check
 
 if ((${#FAILED[@]})); then
   printf 'FAILED: %s\n' "${FAILED[@]}" >&2
