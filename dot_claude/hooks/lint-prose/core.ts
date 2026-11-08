@@ -53,7 +53,9 @@ const dirname = (path: string) => path.slice(0, path.lastIndexOf("/")) || "/";
  */
 function throwaway(file: string, tmpdir: string | undefined): boolean {
   const plain = (path: string) => path.replace(/^\/private/, "");
-  return ["/tmp/", "/var/tmp/", tmpdir].some((dir) => dir && plain(file).startsWith(plain(dir)));
+  // The slash keeps a sibling such as $TMPDIR-project out.
+  const dirs = ["/tmp/", "/var/tmp/", ...(tmpdir ? [`${plain(tmpdir).replace(/\/$/, "")}/`] : [])];
+  return dirs.some((dir) => plain(file).startsWith(dir));
 }
 
 /**

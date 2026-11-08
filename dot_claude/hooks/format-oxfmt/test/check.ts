@@ -321,6 +321,13 @@ unaligned(scratch);
 edit(scratch);
 await unchanged("edit leaves a temp file", scratch, RAW);
 fs.rmSync(scratch);
+// A TMPDIR that is only a name prefix of the folder, not a parent, does not skip it.
+unaligned(`${outer}/sibling.md`);
+spawnSync(process.execPath, [path.join(hook, "command.ts")], {
+  input: JSON.stringify({ cwd: outer, tool_input: { file_path: `${outer}/sibling.md` } }),
+  env: { ...process.env, TMPDIR: `${outer}/sib` },
+});
+await formatted("a file next to TMPDIR with the same name prefix", `${outer}/sibling.md`);
 await quiet("edit: a file that does not exist", edit(`${outer}/gone.md`));
 
 // --- Config ---

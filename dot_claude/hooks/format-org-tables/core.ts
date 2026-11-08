@@ -96,9 +96,12 @@ const ELISP = `
  * prose. macOS resolves /tmp to /private/tmp, so both sides drop that prefix.
  */
 function throwaway(file: string, settings: Settings): boolean {
-  const tmpdir = (settings.tmpdir || "/nonexistent").replace(/^\/private/, "");
+  // The slash keeps a sibling such as $TMPDIR-project out.
+  const tmpdir = (settings.tmpdir || "/nonexistent").replace(/^\/private/, "").replace(/\/$/, "");
   const plain = file.replace(/^\/private/, "");
-  return plain.startsWith("/tmp/") || plain.startsWith("/var/tmp/") || plain.startsWith(tmpdir);
+  return (
+    plain.startsWith("/tmp/") || plain.startsWith("/var/tmp/") || plain.startsWith(`${tmpdir}/`)
+  );
 }
 
 /**

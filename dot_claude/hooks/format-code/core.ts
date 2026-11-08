@@ -88,7 +88,8 @@ const formatterOf = (file: string) => {
  * code. macOS resolves /tmp to /private/tmp, so both sides drop that prefix.
  */
 function throwaway(file: string, { tmpdir }: Settings): boolean {
-  const dirs = ["/tmp/", "/var/tmp/", ...(tmpdir ? [plain(tmpdir)] : [])];
+  // The slash keeps a sibling such as $TMPDIR-project out.
+  const dirs = ["/tmp/", "/var/tmp/", ...(tmpdir ? [`${plain(tmpdir).replace(/\/$/, "")}/`] : [])];
   return dirs.some((dir) => plain(file).startsWith(dir));
 }
 

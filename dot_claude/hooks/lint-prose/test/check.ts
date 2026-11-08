@@ -399,6 +399,12 @@ await expect(
 const throwaway = write("/tmp/lint-prose-test-throwaway.md", `${long}\n`);
 await expect("a throwaway file under /tmp is skipped", run(edit(throwaway)), 0);
 fs.rmSync(throwaway);
+await expect(
+  "a file next to TMPDIR with the same name prefix is checked",
+  run(edit(longMd), { TMPDIR: `${tmp}/lo` }),
+  2,
+  "long.md:3:",
+);
 await expect("a file that does not exist is skipped", run(edit(`${tmp}/gone.md`)), 0);
 
 // --- pi.ts and hooks/register.ts, with stubs over the real files ---

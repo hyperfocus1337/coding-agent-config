@@ -139,6 +139,14 @@ unaligned(scratch);
 edit(scratch);
 await untouched("a file in a temp folder", scratch);
 fs.rmSync(scratch);
+// A TMPDIR that is only a name prefix of the folder, not a parent, does not skip it.
+unaligned(`${tmp}/sibling.org`);
+spawnSync(process.execPath, [path.join(hook, "command.ts")], {
+  input: JSON.stringify({ tool_input: { file_path: `${tmp}/sibling.org` } }),
+  env: { ...env, TMPDIR: `${tmp}/sib` },
+  timeout: 60_000,
+});
+await aligned("a file next to TMPDIR with the same name prefix", `${tmp}/sibling.org`);
 
 // A | line inside a block is not a table: org-at-table-p decides.
 fs.writeFileSync(

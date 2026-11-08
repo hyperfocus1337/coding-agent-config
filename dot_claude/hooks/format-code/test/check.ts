@@ -112,6 +112,13 @@ unformatted(scratch);
 edit(scratch);
 await untouched("a file in a temp folder", scratch);
 fs.rmSync(scratch);
+// A TMPDIR that is only a name prefix of the folder, not a parent, does not skip it.
+unformatted(`${tmp}/sibling.tf`);
+spawnSync(process.execPath, [path.join(hook, "command.ts")], {
+  input: JSON.stringify({ tool_input: { file_path: `${tmp}/sibling.tf` } }),
+  env: { ...env, TMPDIR: `${tmp}/sib` },
+});
+await formatted("a file next to TMPDIR with the same name prefix", `${tmp}/sibling.tf`);
 
 // --- A Bash call ---
 
