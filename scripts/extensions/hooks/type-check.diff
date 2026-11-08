@@ -1,9 +1,9 @@
-=== command.ts
+=== type-check-pyrefly/command.ts
 - * stdin and runs tsc on the project. Exits 2 with the errors on stderr, so
 - * the stop is blocked and the model gets them. Exits 0 and prints nothing
 + * stdin and runs pyrefly on the project. Exits 2 with the errors on stderr,
 + * so the stop is blocked and the model gets them. Exits 0 and prints nothing
-=== core.ts
+=== type-check-pyrefly/core.ts
 - * The type-check-tsc logic: runs `tsc --noEmit` on the whole project once,
 - * when the agent stops, if git reports a changed TypeScript file. The
 - * adapters pass in the process functions, and each adapter keeps its own
@@ -34,7 +34,7 @@
 -  return `${output}\nType check failed. Fix the errors above, rerun the relevant checks, then stop. Report any remaining failures.\n`;
 +  if (output.includes("No Python files matched")) return undefined;
 +  return `${output}\nType check failed. For missing imports, first verify the project configuration, import roots, and Python environment used by Pyrefly before changing imports. Use the project's existing dependency and environment setup. Do not suppress diagnostics or weaken checking to obtain a pass. Fix the cause, rerun the check, then stop. Report any remaining failures.\n`;
-=== io.ts
+=== type-check-pyrefly/io.ts
 - * The file and process functions of ./core.ts under Node, for command.ts,
 - * pi.ts, and omp.ts.
 + * The process function of ./core.ts under Node, for the 3 adapters.
@@ -44,7 +44,7 @@
 -        (found) => found.isFile(),
 -        () => false,
 -      ),
-=== omp.ts
+=== type-check-pyrefly/omp.ts
 - * omp extension: runs tsc on the project when the main agent is about to
 - * stop. On errors it asks omp for one more turn with the errors as context,
 - * so the model fixes them. Loaded through `extensions` in the omp config, in
@@ -53,6 +53,6 @@
 + * to stop. On errors it asks omp for one more turn with the errors as
 + * context, so the model fixes them. Loaded through `extensions` in the omp
 + * config, in place of ./pi.ts.
-=== pi.ts
+=== type-check-pyrefly/pi.ts
 -            customType: "type-check-tsc",
 +            customType: "type-check-pyrefly",
