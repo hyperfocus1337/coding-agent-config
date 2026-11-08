@@ -15,7 +15,7 @@ node test/check.ts
   - A value set at launch can use commas and hold names that are not hooks, and the command keeps those names.
   - A guard name or an unknown name changes nothing. A hook that git config turns off stays off without a flag, and the text names `--repo` or `--global`. A formatter name needs a flag.
   - `--repo` and `--global` flip one name, and `--repo all` flips the hooks and leaves the formatter keys.
-  - `PARTS` holds the same keys as `FORMATTERS` in `format-code/core.ts` and the tools of `LINTERS` in `lint-code/core.ts`. The status text names the hooks that are off, with `(repo)` or `(global)` for git config.
+  - `PARTS` holds the same keys as `FORMATTERS` in `format-code/core.ts` and the tools of `LINTERS` in `lint-code/core.ts`, and the keys of `CHECKERS` in `type-check-code/core.ts`. The status text names the hooks that are off, with `(repo)` or `(global)` for git config.
   - `globalFile` gives `GIT_CONFIG_GLOBAL`, else `~/.gitconfig`.
 - **`command`, with the real git:** in a temporary repository, with `GIT_CONFIG_GLOBAL` set to a temporary file and `GIT_CONFIG_NOSYSTEM=1`, so your own git config stays out.
   - `--repo` writes `false` and then removes the key. `--repo all` turns all hooks off and on.

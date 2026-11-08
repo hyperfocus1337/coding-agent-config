@@ -4,8 +4,8 @@
  * and `/toggle-hook --repo <hook>` or `--global <hook>` turns it off or on in
  * git config, across sessions. The session state is AGENT_HOOKS_DISABLE, a
  * list of hook and tool names in the agent's own environment. The git config
- * state is agent-hook.<hook>.enabled, and agent-hook.<hook>.<formatter> for
- * one formatter of a hook, in the repository or in the global config. Each
+ * state is agent-hook.<hook>.enabled, and agent-hook.<hook>.<tool> for
+ * one tool of a hook, in the repository or in the global config. Each
  * hook in HOOKS reads both on each run. The adapters read and write the
  * variable, and pass in a git function.
  *
@@ -26,12 +26,13 @@ export const HOOKS = [
 /**
  * The tools of a hook that have their own toggle, so that
  * `format-code.shfmt` turns off one formatter. The same keys are in
- * FORMATTERS in format-code/core.ts and LINTERS in lint-code/core.ts, and
- * test/check.ts keeps them the same.
+ * FORMATTERS in format-code/core.ts, LINTERS in lint-code/core.ts, and
+ * CHECKERS in type-check-code/core.ts, and test/check.ts keeps them the same.
  */
 export const PARTS = new Map([
   ["format-code", ["oxfmt", "org-tables", "terraform", "shfmt", "ruff"]],
   ["lint-code", ["ruff", "oxlint", "shellcheck", "yamllint", "ansible-lint", "tflint"]],
+  ["type-check-code", ["tsc", "pyrefly"]],
 ]);
 
 /** The names that a toggle takes: each hook, then its tools. */

@@ -14,6 +14,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { FORMATTERS } from "../../format-code/core.ts";
 import { LINTERS } from "../../lint-code/core.ts";
+import { CHECKERS } from "../../type-check-code/core.ts";
 import {
   command,
   globalFile,
@@ -190,6 +191,12 @@ await check("PARTS holds the tools of LINTERS in lint-code", () => {
   assert.deepEqual(
     LINTERS.flatMap(({ tools }) => tools),
     PARTS.get("lint-code"),
+  );
+});
+await check("PARTS holds the keys of CHECKERS in type-check-code", () => {
+  assert.deepEqual(
+    CHECKERS.map(({ key }) => key),
+    PARTS.get("type-check-code"),
   );
 });
 await check("status names only the hooks that are off", () => {
@@ -386,7 +393,12 @@ await check("mod: completes the word at the cursor, after the command", async ()
     assert.equal(result.suggestions[0], engine);
     return result.suggestions.slice(1).map((row) => row.text);
   };
-  assert.deepEqual(await complete("/toggle-hook type"), ["type-check-code"]);
+  assert.deepEqual(await complete("/toggle-hook type"), [
+    "type-check-code",
+    "type-check-code.tsc",
+    "type-check-code.pyrefly",
+  ]);
+  assert.deepEqual(await complete("/toggle-hook --repo pyre"), ["type-check-code.pyrefly"]);
   assert.deepEqual(await complete("/toggle-hook --r"), ["--repo"]);
   assert.deepEqual(await complete("/toggle-hook --repo SHFMT"), ["format-code.shfmt"]);
   assert.deepEqual(await complete("/toggle-hook  --global   destructive"), [
@@ -450,7 +462,11 @@ await check("pi.ts: --repo writes git config and the status", async () => {
 await check("pi.ts: completes --repo, the hook names, and all", () => {
   const complete = (prefix: string) =>
     command_?.getArgumentCompletions(prefix).map((item) => item.value);
-  assert.deepEqual(complete("type"), ["type-check-code"]);
+  assert.deepEqual(complete("type"), [
+    "type-check-code",
+    "type-check-code.tsc",
+    "type-check-code.pyrefly",
+  ]);
   assert.ok(complete(" a")?.includes("all"));
   assert.deepEqual(complete(""), ["--repo", "--global", ...NAMES, "all"]);
   assert.deepEqual(complete("--global format-code.ox"), ["--global format-code.oxfmt"]);

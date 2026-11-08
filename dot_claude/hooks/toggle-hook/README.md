@@ -41,7 +41,7 @@ The 4 advisory hooks and `block-destructive-commands` have a toggle. An advisory
 
 Turning off `block-destructive-commands` skips all dcg checks, including the pack that blocks agent writes to hook toggle keys, and the pack that blocks `git commit --no-verify`. An agent can then skip the git guards `block-secret-commits` and `block-commit-attribution`. This also happens with `all`. Prefer `dcg allow-once <code>` when you only need to approve one command.
 
-`PARTS` in [`core.ts`](core.ts) lists the tools that have their own toggle: `oxfmt`, `org-tables`, `terraform`, `shfmt`, and `ruff` of `format-code`, and `ruff`, `oxlint`, `shellcheck`, `yamllint`, `ansible-lint`, and `tflint` of `lint-code`.
+`PARTS` in [`core.ts`](core.ts) lists the tools that have their own toggle: `oxfmt`, `org-tables`, `terraform`, `shfmt`, and `ruff` of `format-code`, `ruff`, `oxlint`, `shellcheck`, `yamllint`, `ansible-lint`, and `tflint` of `lint-code`, and `tsc` and `pyrefly` of `type-check-code`.
 
 The other guards (`enforce-cli-tools`, `block-commit-attribution`, `block-secret-commits`) keep their own escape hatches and have no toggle. `track-session-changes` only writes a log.
 
@@ -102,6 +102,8 @@ on            format-code
 on            lint-code
 off  session  lint-prose
 on            type-check-code
+  on            tsc
+  on            pyrefly
 
 > /toggle-hook format-code.oxfmt
 format-code.oxfmt is off until you quit the agent.
