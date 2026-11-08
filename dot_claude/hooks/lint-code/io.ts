@@ -9,7 +9,7 @@ export function nodeIo(cwd: string): Io {
   return {
     stat: (path) =>
       stat(path).then(
-        (found) => ({ isFile: found.isFile(), mtimeMs: found.mtimeMs }),
+        (found) => ({ isFile: found.isFile() }),
         () => undefined,
       ),
     read: (path) => readFile(path, "utf8"),
