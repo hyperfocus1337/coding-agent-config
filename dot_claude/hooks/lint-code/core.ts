@@ -30,7 +30,7 @@ export interface Settings {
   disable?: string;
   /** TMPDIR: files under it are throwaway and not linted. */
   tmpdir?: string;
-  /** AGENT_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
+  /** AGENT_HOOKS_DISABLE: the hooks /toggle-hook turned off, and the tools as lint-code.<tool>. */
   hooksOff?: string;
   /** Explicit repository check, including clean tracked files; skips are failures. */
   all?: boolean;
@@ -38,8 +38,11 @@ export interface Settings {
   verify?: boolean;
   /** Repository boundary for configuration discovery. Set by check. */
   root?: string;
-  /** The tools that agent-hook.lint-code.<tool> false turns off in the repository. Set by check. */
-  repoOff?: Set<string>;
+  /**
+   * The tools that agent-hook.lint-code.<tool> false turns off in the repository, or
+   * lint-code.<tool> in AGENT_HOOKS_DISABLE for the session. Set by check.
+   */
+  toolsOff?: Set<string>;
   /** Non-blocking coverage notices, deduplicated by lint. */
   notice?: (message: string) => void;
 }
@@ -93,7 +96,8 @@ export async function report(
 
 /** Checks the repository that holds cwd; returns all lint failures together. */
 export async function check(cwd: string, io: Io, settings: Settings): Promise<string | undefined> {
-  if (!settings.all && (settings.hooksOff ?? "").split(/[\s,]+/).includes("lint-code")) return;
+  const sessionOff = new Set((settings.hooksOff ?? "").split(/[\s,]+/));
+  if (!settings.all && sessionOff.has("lint-code")) return;
   const top = await io.run(["git", "rev-parse", "--show-toplevel"], { cwd });
   if (!top || top.exitCode < 0) {
     const message = `Lint coverage incomplete: git: ${top?.output || "could not start"}`;
@@ -109,10 +113,10 @@ export async function check(cwd: string, io: Io, settings: Settings): Promise<st
     (
       await run(["git", "config", "--type=bool", "--get", `agent-hook.lint-code.${key}`])
     )?.output.trim() === "false";
-  // An explicit full check ignores the hook toggle, but not the tool keys.
+  // An explicit full check ignores the hook toggle and the session, but not the tool keys.
   if (!settings.all && (await repoKeyOff("enabled"))) return;
   const tools = LINTERS.flatMap((linter) => linter.tools);
-  const toolsOff = await Promise.all(tools.map(repoKeyOff));
+  const repoToolsOff = await Promise.all(tools.map(repoKeyOff));
   const notices: string[] = [];
   const output = await lint(
     await select(root, { ...io, run }, settings),
@@ -120,7 +124,11 @@ export async function check(cwd: string, io: Io, settings: Settings): Promise<st
     {
       ...settings,
       root,
-      repoOff: new Set(tools.filter((_, i) => toolsOff[i])),
+      toolsOff: new Set(
+        tools.filter(
+          (tool, i) => repoToolsOff[i] || (!settings.all && sessionOff.has(`lint-code.${tool}`)),
+        ),
+      ),
       notice: (message) => {
         notices.push(message);
         settings.notice?.(message);
@@ -195,7 +203,7 @@ export async function lint(
     const linter = linterOf(file);
     if (!linter || off.includes("all") || off.includes(linter.key)) continue;
     const found = await linter.command(file, io, settings);
-    if (!found || settings.repoOff?.has(found.argv[0] ?? "")) continue;
+    if (!found || settings.toolsOff?.has(found.argv[0] ?? "")) continue;
     const program = found.argv[0];
     const ran = await io.run(found.argv, { cwd: found.cwd });
     if (

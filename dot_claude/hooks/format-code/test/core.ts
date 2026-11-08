@@ -35,8 +35,11 @@ const programs = async (...args: Parameters<typeof formatters>) =>
 const files = { filePaths: ["/x/a.md", "/x/a.org", "/x/a.tf"], cwd: "/x" };
 assert.deepEqual(await programs(files), ["oxfmt", "emacs", "terraform"]);
 
-// AGENT_HOOKS_DISABLE that names the hook.
+// AGENT_HOOKS_DISABLE: the hook, or one formatter as format-code.<key>.
 assert.deepEqual(await programs(files, {}, "lint-code format-code"), []);
+assert.deepEqual(await programs(files, {}, "format-code.oxfmt,format-code.org-tables"), [
+  "terraform",
+]);
 
 // git config: the hook, or one formatter. A value other than false keeps it on.
 assert.deepEqual(await programs(files, { "agent-hook.format-code.enabled": "false" }), []);

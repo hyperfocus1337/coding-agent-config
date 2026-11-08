@@ -25,7 +25,7 @@ It prints `all pass`, or one `FAIL` line for each failed case and exits 1. `just
 
 `test/check.ts` first imports the unit cases. They need no formatter on `PATH`, and a failed assert stops the run:
 
-- [`test/core.ts`](../test/core.ts), the core with a stub `Io`: the formatter for each extension, `format-code` in `AGENT_HOOKS_DISABLE`, the `enabled` key and a formatter key in git config, an Org file with no table, the Markdown-only sweep of oxfmt, and the paths: one oxfmt run for all files, each path once with no dot segments, and the dot segments removed before the scratch-file filter.
+- [`test/core.ts`](../test/core.ts), the core with a stub `Io`: the formatter for each extension, `format-code` and `format-code.<key>` in `AGENT_HOOKS_DISABLE`, the `enabled` key and a formatter key in git config, an Org file with no table, the Markdown-only sweep of oxfmt, and the paths: one oxfmt run for all files, each path once with no dot segments, and the dot segments removed before the scratch-file filter.
 - [`test/shfmt.ts`](../test/shfmt.ts): an `.editorconfig` in a folder above gives no printer flags. No `.editorconfig`, or a folder with that name, gives `-i 2 -ci`.
 - [`test/ruff.ts`](../test/ruff.ts): one run for each file, in its folder, with `--force-exclude`.
 - [`test/sweep.ts`](../test/sweep.ts), `sweep.ts` with a stub `Io`: the start time rounded down to the second, the 120 s window without a start time, a named file that git does not list, the roots of absolute paths only, an untracked repository and a submodule as roots, and the last commit for a command that commits.

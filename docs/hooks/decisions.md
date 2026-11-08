@@ -73,7 +73,7 @@ Replaced on 2026-11-08 by [format-code holds all formatters](#format-code-holds-
 
 **Decision:** on 2026-11-08, each linter of `lint-code` and each formatter of `format-code` moved to its own module in `linters/` or `formatters/`, not to its own hook, and yamllint and ansible-lint share `linters/yaml.ts`. **Why:** the tools differ in how they build a command and read its output, not in when they run, how they select files, or what the model sees. 8 hooks would copy that shared flow (4 agent adapters, the correction flow, file selection, and the amend hint), and the copies can drift. yamllint and ansible-lint share a module because each YAML file goes to exactly one of them, and ansible-lint reads the yamllint config.
 
-**Cost:** a tool has no session toggle of its own, and a tool that needs a different event or output to the model must move to its own hook.
+**Cost:** a tool that needs a different event or output to the model must move to its own hook. A tool got a session toggle of its own on the same day, see [A tool also turns off for one session](#a-tool-also-turns-off-for-one-session).
 
 ## format-code holds all formatters
 
@@ -144,6 +144,14 @@ A formatter module returns its runs for the files of a call, so oxfmt and Emacs 
 **Cost:** each hook starts one git process for each folder of the files it keeps, about 1 ms, and only after its cheap checks. A model can still change `.git/config` with a tool that is not Bash.
 
 **Rejected:** a session toggle that turns on a hook that the repository turns off. It would need a second variable. The command tells you to use `--repo` instead.
+
+## A tool also turns off for one session
+
+**Decision:** on 2026-11-08, `/toggle-hook format-code.oxfmt` adds `format-code.oxfmt` to `AGENT_HOOKS_DISABLE`, for each tool in `PARTS`. `format-code` skips the files of a formatter that the variable names, and `lint-code` skips a linter that it names, except in the explicit full check. The list and the status line show a tool that is off for the session.
+
+**Why:** with oxfmt and the Org table alignment in `format-code`, the session toggle of `format-oxfmt` would otherwise be lost. A formatter that fights one file is a reason to stop it for an hour, not for the whole repository.
+
+**Cost:** each tool name is one more completion of `/toggle-hook`. `all` still flips only the hooks.
 
 ## block-destructive-commands uses the standard toggles
 

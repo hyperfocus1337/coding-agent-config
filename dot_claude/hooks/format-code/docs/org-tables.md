@@ -85,6 +85,7 @@ The hook drops the stderr of Emacs, so the locale warning of Emacs batch runs (`
 
 ## Settings
 
-| Setting                                              | Effect                                                      |
-| ---------------------------------------------------- | ----------------------------------------------------------- |
-| `git config agent-hook.format-code.org-tables false` | Turns the alignment off in one repository, across sessions. |
+| Setting                                              | Effect                                                                          |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `git config agent-hook.format-code.org-tables false` | Turns the alignment off in one repository, across sessions.                     |
+| `format-code.org-tables` in `AGENT_HOOKS_DISABLE`    | Turns the alignment off for the session. `/toggle-hook format-code.org-tables`. |

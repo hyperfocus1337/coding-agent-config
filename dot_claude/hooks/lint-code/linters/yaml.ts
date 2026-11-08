@@ -42,7 +42,7 @@ export const yaml: Linter = {
   async command(file, io, settings) {
     if (await helmTemplate(file, io)) return undefined;
     // With ansible-lint off in the repository, Ansible YAML gets the yamllint checks instead.
-    const ansible = !settings.repoOff?.has("ansible-lint") && (await isAnsible(file, io));
+    const ansible = !settings.toolsOff?.has("ansible-lint") && (await isAnsible(file, io));
     const own = await projectConfig(
       file,
       ansible ? ANSIBLE_LINT_NAMES : YAMLLINT_NAMES,

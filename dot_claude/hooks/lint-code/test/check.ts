@@ -90,13 +90,13 @@ const noAnsible = stub();
 await lint(["/r/roles/a.yaml", "a.py"], noAnsible.io, {
   ...settings,
   root: "/r",
-  repoOff: new Set(["ansible-lint", "ruff"]),
+  toolsOff: new Set(["ansible-lint", "ruff"]),
 });
 assert.deepEqual(noAnsible.ran, [["yamllint", "--strict", "-c", "/cfg/.yamllint", "roles/a.yaml"]]);
 const noYaml = stub();
 await lint(["/r/roles/a.yaml", "/r/b.yaml"], noYaml.io, {
   ...settings,
-  repoOff: new Set(["yamllint", "ansible-lint"]),
+  toolsOff: new Set(["yamllint", "ansible-lint"]),
 });
 assert.deepEqual(noYaml.ran, []);
 const notices: string[] = [];
@@ -292,6 +292,10 @@ try {
     assert.equal(command(extra, vars).status, 0);
     assert.deepEqual(starts(), []);
   }
+  // A session tool name turns off that linter only.
+  clear();
+  command({}, { AGENT_HOOKS_DISABLE: "lint-code.ruff" });
+  assert.deepEqual(starts(), []);
   git("config", "agent-hook.lint-code.enabled", "false");
   assert.equal(command().status, 0);
   git("config", "--unset", "agent-hook.lint-code.enabled");

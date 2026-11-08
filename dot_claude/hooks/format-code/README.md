@@ -38,7 +38,7 @@ The hook skips these paths, with no output:
 
 - A path that is not an existing file with an extension from the table.
 - A path under `/tmp`, `/var/tmp`, or `$TMPDIR`, because the scratchpad of the agent is there.
-- A file in a repository whose git config turns off the hook or the formatter of the file, see [Settings](#settings).
+- A file whose formatter the session or the repository turns off, see [Settings](#settings).
 - An Org file with no line that starts with `|`, see [Files without tables](docs/org-tables.md#files-without-tables).
 - A file that `.prettierignore` lists, for oxfmt, and a Python file that the `exclude` list of the ruff config holds, see [ruff format](#ruff-format).
 
@@ -69,10 +69,11 @@ pnpm add -g oxfmt@0.74.0
 
 1. The hook stops when `AGENT_HOOKS_DISABLE` names `format-code`.
 2. It finds the files to format, as "What it checks" tells. It resolves each path against the session folder and removes `.` and `..` segments, so each file counts once.
-3. For each file, it reads `agent-hook.format-code.enabled` and the key of the formatter with `git config --type=bool --get`, in the folder of the file. It skips the file when either key is `false`. It runs git once for each folder and key, and only for a file that passed the checks before.
-4. When the call is a Bash command that commits, it keeps the text of each file.
-5. It runs each formatter on its files. oxfmt and Emacs take all their files in one run. terraform fmt, shfmt, and ruff take one file for each run, in the folder of the file. Each run stops after 10 s, oxfmt after 20 s.
-6. When it kept the text in step 4, it sends the amend hint for each file that a formatter changed and that the last commit holds.
+3. It skips each file whose formatter `AGENT_HOOKS_DISABLE` names as `format-code.<key>`.
+4. For each file, it reads `agent-hook.format-code.enabled` and the key of the formatter with `git config --type=bool --get`, in the folder of the file. It skips the file when either key is `false`. It runs git once for each folder and key, and only for a file that passed the checks before.
+5. When the call is a Bash command that commits, it keeps the text of each file.
+6. It runs each formatter on its files. oxfmt and Emacs take all their files in one run. terraform fmt, shfmt, and ruff take one file for each run, in the folder of the file. Each run stops after 10 s, oxfmt after 20 s.
+7. When it kept the text in step 5, it sends the amend hint for each file that a formatter changed and that the last commit holds.
 
 ## What the model sees
 
@@ -106,19 +107,19 @@ The hook shows you no message when it formats a file. It drops the stderr of the
 
 ## Settings
 
-| Setting                                           | Effect                                                                                                               |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `AGENT_HOOKS_DISABLE`                             | A list of the hooks that are off, separated by spaces or commas. When it names `format-code`, the hook does nothing. |
-| `git config agent-hook.format-code.enabled false` | Turns the hook off in one repository, across sessions.                                                               |
-| `git config agent-hook.format-code.<key> false`   | Turns off one formatter in one repository, by the key in the table at the top. The other formatters still run.       |
-| `TMPDIR`                                          | The hook skips the files under this folder.                                                                          |
+| Setting                                           | Effect                                                                                                                                          |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AGENT_HOOKS_DISABLE`                             | A list of the hooks and tools that are off, separated by spaces or commas. `format-code` turns off the hook, `format-code.<key>` one formatter. |
+| `git config agent-hook.format-code.enabled false` | Turns the hook off in one repository, across sessions.                                                                                          |
+| `git config agent-hook.format-code.<key> false`   | Turns off one formatter in one repository, by the key in the table at the top. The other formatters still run.                                  |
+| `TMPDIR`                                          | The hook skips the files under this folder.                                                                                                     |
 
 [`docs/oxfmt.md`](docs/oxfmt.md#settings) gives the config files and ignore files of oxfmt.
 
-To turn the hook off until you quit, run [`/toggle-hook format-code`](../toggle-hook/README.md) in Claude Code, pi, or omp. Codex has no command, so set the variable when you start it:
+To turn the hook or one formatter off until you quit, run [`/toggle-hook format-code`](../toggle-hook/README.md) or `/toggle-hook format-code.oxfmt` in Claude Code, pi, or omp. Codex has no command, so set the variable when you start it:
 
 ```sh
-AGENT_HOOKS_DISABLE=format-code codex
+AGENT_HOOKS_DISABLE=format-code.oxfmt codex
 ```
 
 To turn off the hook or one formatter in one repository, run `/toggle-hook --repo format-code` or `/toggle-hook --repo format-code.shfmt`. In Codex, run the `git config` command of the table in your own terminal. A value that is not a boolean, such as `banana`, keeps the formatter on. The dcg pack `local.agent_hook` blocks an agent command that writes the key.

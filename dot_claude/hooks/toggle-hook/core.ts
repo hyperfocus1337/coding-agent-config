@@ -1,12 +1,13 @@
 /**
- * The toggle-hook logic: `/toggle-hook <hook>` turns a supported hook off or
- * on until you quit the agent, and `/toggle-hook --repo <hook>` or
- * `--global <hook>` turns it off or on in git config, across sessions. The
- * session state is AGENT_HOOKS_DISABLE, a list of hook names in the agent's
- * own environment. The git config state is agent-hook.<hook>.enabled, and
- * agent-hook.<hook>.<formatter> for one formatter of a hook, in the
- * repository or in the global config. Each hook in HOOKS reads both on each
- * run. The adapters read and write the variable, and pass in a git function.
+ * The toggle-hook logic: `/toggle-hook <hook>` turns a supported hook, or one
+ * tool of it such as `format-code.oxfmt`, off or on until you quit the agent,
+ * and `/toggle-hook --repo <hook>` or `--global <hook>` turns it off or on in
+ * git config, across sessions. The session state is AGENT_HOOKS_DISABLE, a
+ * list of hook and tool names in the agent's own environment. The git config
+ * state is agent-hook.<hook>.enabled, and agent-hook.<hook>.<formatter> for
+ * one formatter of a hook, in the repository or in the global config. Each
+ * hook in HOOKS reads both on each run. The adapters read and write the
+ * variable, and pass in a git function.
  *
  * Adapters: hooks/register.ts (Claude Code), pi.ts (pi and omp). Codex has no
  * extension commands, so set the variable when you start it, or run git
@@ -24,8 +25,8 @@ export const HOOKS = [
 ];
 
 /**
- * The tools of a hook that have their own git config key, so that
- * `--repo format-code.shfmt` turns off one formatter. The same keys are in
+ * The tools of a hook that have their own toggle, so that
+ * `format-code.shfmt` turns off one formatter. The same keys are in
  * FORMATTERS in format-code/core.ts and LINTERS in lint-code/core.ts, and
  * test/check.ts keeps them the same.
  */
@@ -34,7 +35,7 @@ export const PARTS = new Map([
   ["lint-code", ["ruff", "oxlint", "shellcheck", "yamllint", "ansible-lint", "tflint"]],
 ]);
 
-/** The names that `--repo` and `--global` take: each hook, then its formatters. */
+/** The names that a toggle takes: each hook, then its tools. */
 export const NAMES = HOOKS.flatMap((hook) => [
   hook,
   ...(PARTS.get(hook) ?? []).map((part) => `${hook}.${part}`),
@@ -42,11 +43,11 @@ export const NAMES = HOOKS.flatMap((hook) => [
 
 /**
  * The completions of one word of the argument: after a scope flag, the names
- * and `all`; else the flags, the hooks, and `all`. A choice matches when it
- * holds `query` anywhere, without case sensitivity.
+ * and `all`; else also the flags. A choice matches when it holds `query`
+ * anywhere, without case sensitivity.
  */
 export function choices(query: string, flag?: string): string[] {
-  const all = flag ? [...NAMES, "all"] : ["--repo", "--global", ...HOOKS, "all"];
+  const all = [...(flag ? [] : ["--repo", "--global"]), ...NAMES, "all"];
   return all.filter((choice) => choice.includes(query.toLowerCase()));
 }
 
@@ -96,7 +97,7 @@ const where = (scope: Scope) =>
 /** The flag of a scope. */
 const flag = (scope: Scope) => (scope === "repo" ? "--repo" : "--global");
 
-/** The hook names in a AGENT_HOOKS_DISABLE value: space or comma. */
+/** The names in a AGENT_HOOKS_DISABLE value: space or comma. */
 function names(value: string | undefined): string[] {
   return (value ?? "").split(/[\s,]+/).filter(Boolean);
 }
@@ -139,7 +140,7 @@ function unknown(name: string, known: string[]): string | undefined {
 function list(off: string[], config: Config): string {
   return NAMES.map((name) => {
     const [hook = "", part] = name.split(".");
-    const session = !part && off.includes(name) && gitOn(name, config);
+    const session = off.includes(name) && gitOn(name, config);
     const scope = session ? "session" : (moved(name, config) ?? "");
     const on = gitOn(name, config) && !session;
     const line = `${on ? "on " : "off"}  ${scope.padEnd(7)}  ${part ?? hook}`;
@@ -151,9 +152,9 @@ function list(off: string[], config: Config): string {
  * Runs `/toggle-hook <args>` with no `--repo` or `--global`, on the current
  * AGENT_HOOKS_DISABLE and the git config. Returns the new value (undefined:
  * unset the variable) and the text for the user. No argument lists the
- * state of each hook, a hook name flips it, and `all` turns every hook off,
- * or on again when one is off. A name that is not in HOOKS, for example one
- * set at launch, stays in the value. The session can only turn a hook off:
+ * state of each hook, a name of NAMES flips it, and `all` turns every hook
+ * off, or on again when one is off. A name that is not in NAMES, for example
+ * one set at launch, stays in the value. The session can only turn a hook off:
  * a hook that git config turns off stays off, and the text names the flag.
  */
 export function toggle(
@@ -181,11 +182,7 @@ export function toggle(
           text: "All hooks are off until you quit the agent.",
         };
   }
-  if (NAMES.includes(name) && !HOOKS.includes(name))
-    return same(
-      `${name} has a toggle in git config only. Use /toggle-hook --repo ${name} or --global ${name}.`,
-    );
-  const wrong = unknown(name, HOOKS);
+  const wrong = unknown(name, NAMES);
   if (wrong) return same(wrong);
   const scope = moved(name, config);
   if (scope)
@@ -318,7 +315,7 @@ export function status(value: string | undefined, config: Config = new Map()): s
   const off = NAMES.flatMap((name) => {
     const scope = moved(name, config);
     if (scope) return [`${name} (${scope})`];
-    return HOOKS.includes(name) && session.includes(name) ? [name] : [];
+    return session.includes(name) ? [name] : [];
   });
   return off.length ? `hooks off: ${off.join(", ")}` : undefined;
 }

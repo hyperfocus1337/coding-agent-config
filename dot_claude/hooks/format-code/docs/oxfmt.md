@@ -59,5 +59,6 @@ oxfmt runs in the session folder: `$.session.cwd()` in the mod, `ctx.cwd` in pi,
 | Setting                                         | Effect                                                              |
 | ----------------------------------------------- | ------------------------------------------------------------------- |
 | `git config agent-hook.format-code.oxfmt false` | Turns oxfmt off in one repository, across sessions.                 |
+| `format-code.oxfmt` in `AGENT_HOOKS_DISABLE`    | Turns oxfmt off for the session. `/toggle-hook format-code.oxfmt`.  |
 | `.oxfmtrc.json` and the other oxfmt configs     | The style of the project. A file with none gets the oxfmt defaults. |
 | `.prettierignore`                               | oxfmt skips the files that it lists.                                |

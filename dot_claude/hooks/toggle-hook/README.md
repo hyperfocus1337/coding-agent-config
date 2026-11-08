@@ -1,6 +1,6 @@
 # toggle-hook
 
-Adds the `/toggle-hook` command, which turns a supported hook off or on. Without a flag, the change lasts until you quit the agent. With `--repo`, the change goes in the git config of the session repository, and with `--global` in your global git config. Both last across sessions. Use it when a formatter fights the style of a repo, or when a linter reports on a file that you do not own, and you do not want to restart the agent.
+Adds the `/toggle-hook` command, which turns a supported hook, or one tool of a hook, off or on. Without a flag, the change lasts until you quit the agent. With `--repo`, the change goes in the git config of the session repository, and with `--global` in your global git config. Both last across sessions. Use it when a formatter fights the style of a repo, or when a linter reports on a file that you do not own, and you do not want to restart the agent.
 
 | Agent       | Adapter                                                                                                                                                | Loaded by                                                                                          |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
@@ -12,23 +12,23 @@ Adds the `/toggle-hook` command, which turns a supported hook off or on. Without
 
 The hook checks nothing. It runs when you type `/toggle-hook`, and the argument selects the result:
 
-| Argument                        | Result                                                                                       |
-| ------------------------------- | -------------------------------------------------------------------------------------------- |
-| None, or a flag alone           | Lists the state of each hook and tool, and the scope that moves it off its default           |
-| A hook name                     | Flips that hook until you quit, and prints its new state                                     |
-| `all`                           | Turns all 6 hooks off until you quit, or turns all of them on again when one or more are off |
-| `--repo` and a hook name        | Flips that hook in the session repository                                                    |
-| `--repo` and `<hook>.<tool>`    | Flips one formatter or linter in the session repository, for example `--repo lint-code.ruff` |
-| `--repo all`                    | Turns all 6 hooks off in the session repository, or on again when one or more are off        |
-| `--global` and a name, or `all` | As `--repo`, in the global git config                                                        |
-| A guard name                    | Changes nothing, and names the escape hatch of that guard                                    |
-| Any other text                  | Changes nothing, and lists the hook names                                                    |
+| Argument                        | Result                                                                                            |
+| ------------------------------- | ------------------------------------------------------------------------------------------------- |
+| None, or a flag alone           | Lists the state of each hook and tool, and the scope that moves it off its default                |
+| A hook name, or `<hook>.<tool>` | Flips that hook or tool until you quit, and prints its new state, for example `format-code.oxfmt` |
+| `all`                           | Turns all 6 hooks off until you quit, or turns all of them on again when one or more are off      |
+| `--repo` and a hook name        | Flips that hook in the session repository                                                         |
+| `--repo` and `<hook>.<tool>`    | Flips one formatter or linter in the session repository, for example `--repo lint-code.ruff`      |
+| `--repo all`                    | Turns all 6 hooks off in the session repository, or on again when one or more are off             |
+| `--global` and a name, or `all` | As `--repo`, in the global git config                                                             |
+| A guard name                    | Changes nothing, and names the escape hatch of that guard                                         |
+| Any other text                  | Changes nothing, and lists the hook names                                                         |
 
 Completion matches any part of a hook name, without case sensitivity. For example, `--repo destructive` suggests `block-destructive-commands`, and `--repo shfmt` suggests `format-code.shfmt`. Selecting a suggestion preserves the scope flag.
 
-The first word suggests the flags, the hook names, and `all`. After `--repo` or `--global`, it suggests the tool names too. In Claude Code, the list shows only after you type one letter of the word, because the engine sends no completion request for an empty word.
+The first word suggests the flags, the hook and tool names, and `all`. After `--repo` or `--global`, it suggests the names and `all`. In Claude Code, the list shows only after you type one letter of the word, because the engine sends no completion request for an empty word.
 
-The session can only turn a hook off. A hook that git config turns off stays off when you flip it with no flag: the command then changes nothing and names the flag to use. A tool name, such as `format-code.shfmt` or `lint-code.ansible-lint`, works only with `--repo` or `--global`.
+The session can only turn a hook off. A hook or tool that git config turns off stays off when you flip it with no flag: the command then changes nothing and names the flag to use.
 
 ### Which hooks have a toggle
 
@@ -41,7 +41,7 @@ The 5 advisory hooks and `block-destructive-commands` have a toggle. An advisory
 
 Turning off `block-destructive-commands` skips all dcg checks, including the pack that blocks agent writes to hook toggle keys, and the pack that blocks `git commit --no-verify`. An agent can then skip the git guards `block-secret-commits` and `block-commit-attribution`. This also happens with `all`. Prefer `dcg allow-once <code>` when you only need to approve one command.
 
-`PARTS` in [`core.ts`](core.ts) lists the tools that have their own key: `oxfmt`, `org-tables`, `terraform`, `shfmt`, and `ruff` of `format-code`, and `ruff`, `oxlint`, `shellcheck`, `yamllint`, `ansible-lint`, and `tflint` of `lint-code`.
+`PARTS` in [`core.ts`](core.ts) lists the tools that have their own toggle: `oxfmt`, `org-tables`, `terraform`, `shfmt`, and `ruff` of `format-code`, and `ruff`, `oxlint`, `shellcheck`, `yamllint`, `ansible-lint`, and `tflint` of `lint-code`.
 
 The other guards (`enforce-cli-tools`, `block-commit-attribution`, `block-secret-commits`) keep their own escape hatches and have no toggle. `track-session-changes` only writes a log.
 
@@ -57,11 +57,11 @@ The other guards (`enforce-cli-tools`, `block-commit-attribution`, `block-secret
 
 The command has three scopes:
 
-| Scope      | State                                                                                                        | Lasts                     |
-| ---------- | ------------------------------------------------------------------------------------------------------------ | ------------------------- |
-| Session    | `AGENT_HOOKS_DISABLE`, a list of hook names, separated by spaces or commas, in the process of the agent      | Until you quit the agent  |
-| Repository | `agent-hook.<hook>.enabled`, and `agent-hook.<hook>.<formatter>`, in `.git/config` of the session repository | Until you change it again |
-| Global     | The same keys in `~/.gitconfig`, or in the file that `GIT_CONFIG_GLOBAL` names                               | Until you change it again |
+| Scope      | State                                                                                                                       | Lasts                     |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| Session    | `AGENT_HOOKS_DISABLE`, a list of hook and `<hook>.<tool>` names, separated by spaces or commas, in the process of the agent | Until you quit the agent  |
+| Repository | `agent-hook.<hook>.enabled`, and `agent-hook.<hook>.<formatter>`, in `.git/config` of the session repository                | Until you change it again |
+| Global     | The same keys in `~/.gitconfig`, or in the file that `GIT_CONFIG_GLOBAL` names                                              | Until you change it again |
 
 A repository key wins over a global key. A hook does nothing when a scope turns it off. Each of the 6 hooks reads the variable and the git config on each run. File hooks read the git config in the repository of each file, with `git config --type=bool --get`, so a session can edit files in more than one repository.
 
@@ -94,7 +94,7 @@ The command prints the state of the hooks, or the new state of one hook:
 ```
 > /toggle-hook
 on            format-code
-  on            oxfmt
+  off  session  oxfmt
   on            org-tables
   on            terraform
   off  repo     shfmt
@@ -104,8 +104,8 @@ off  session  lint-prose
 on            type-check-tsc
 on            type-check-pyrefly
 
-> /toggle-hook lint-code
-lint-code is off until you quit the agent.
+> /toggle-hook format-code.oxfmt
+format-code.oxfmt is off until you quit the agent.
 
 > /toggle-hook --repo format-code.shfmt
 format-code.shfmt is on for this repository.
@@ -114,7 +114,7 @@ format-code.shfmt is on for this repository.
 lint-prose is off in the global git config.
 ```
 
-While a hook is off, the status line shows `hooks off: <names>`. A name that git config turns off has `(repo)` or `(global)` after it, for example `hooks off: format-code.shfmt (repo), lint-prose`. The status line reads the git config when the session starts and after each command, not when the session folder changes.
+While a hook is off, the status line shows `hooks off: <names>`. A name that git config turns off has `(repo)` or `(global)` after it, for example `hooks off: format-code.oxfmt, format-code.shfmt (repo), lint-prose`. The status line reads the git config when the session starts and after each command, not when the session folder changes.
 
 ## Settings
 

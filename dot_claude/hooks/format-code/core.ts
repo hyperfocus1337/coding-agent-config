@@ -34,7 +34,10 @@ export interface Io {
 export interface Settings {
   /** TMPDIR: files under it are throwaway and not formatted. */
   tmpdir?: string;
-  /** AGENT_HOOKS_DISABLE: the hooks /toggle-hook turned off. */
+  /**
+   * AGENT_HOOKS_DISABLE: the hooks /toggle-hook turned off, and the formatters
+   * as format-code.<key>.
+   */
   hooksOff?: string;
 }
 
@@ -63,7 +66,7 @@ export interface Run {
 /** A formatter: the files it takes, and its runs for them. */
 export interface Formatter {
   name: string;
-  /** The git config key that turns it off: agent-hook.format-code.<key>. */
+  /** The key that turns it off: agent-hook.format-code.<key>, or format-code.<key> for a session. */
   key: string;
   /** The file extensions without the dot, for a named file. */
   extensions: string[];
@@ -131,8 +134,8 @@ async function repoOff(dir: string, key: string, io: Io): Promise<boolean> {
 /**
  * The files to format, each once, with their formatter. A Write or Edit: the
  * files it names. A Bash call: the files it changed, from sweep.ts, so a file
- * the command only read stays as it is. A file whose repository turns off the
- * hook or its formatter stays as it is.
+ * the command only read stays as it is. A file whose formatter the session or
+ * the repository turns off stays as it is.
  */
 async function targets(call: Call, io: Io, settings: Settings): Promise<Map<Formatter, string[]>> {
   const { command, cwd, since } = call;
@@ -151,6 +154,7 @@ async function targets(call: Call, io: Io, settings: Settings): Promise<Map<Form
   for (const file of new Set(paths.map((path) => normalize(path, cwd)))) {
     const formatter = formatterOf(file, !named);
     if (!formatter || throwaway(file, settings)) continue;
+    if (sessionOff(settings, `format-code.${formatter.key}`)) continue;
     if ((await io.stat(file))?.kind !== "file") continue;
     if (formatter.wants && !formatter.wants((await io.read(file)) ?? "")) continue;
     const dir = parent(file);

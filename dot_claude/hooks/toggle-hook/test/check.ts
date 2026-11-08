@@ -118,12 +118,24 @@ await check("a hook that git config turns off stays off", () => {
     "lint-prose is off in the global git config. Use /toggle-hook --global lint-prose.",
   );
 });
-await check("a formatter name needs --repo or --global", () =>
-  assert.deepEqual(toggle(undefined, "format-code.shfmt"), {
+await check("a tool name flips the tool for the session", () => {
+  assert.deepEqual(toggle("lint-code", "format-code.shfmt"), {
+    value: "lint-code format-code.shfmt",
+    text: "format-code.shfmt is off until you quit the agent.",
+  });
+  assert.deepEqual(toggle("format-code.shfmt", "format-code.shfmt"), {
     value: undefined,
-    text: "format-code.shfmt has a toggle in git config only. Use /toggle-hook --repo format-code.shfmt or --global format-code.shfmt.",
-  }),
-);
+    text: "format-code.shfmt is on.",
+  });
+  assert.ok(
+    toggle("format-code.oxfmt", "").text.includes("\n  off  session  oxfmt\n"),
+    "the list shows the tool off for the session",
+  );
+  assert.equal(
+    toggle(undefined, "format-code.shfmt", cfg(["format-code.shfmt", false, "repo"])).text,
+    "format-code.shfmt is off for this repository. Use /toggle-hook --repo format-code.shfmt.",
+  );
+});
 await check("a guard has no toggle", () => {
   const { value, text } = toggle(undefined, "enforce-cli-tools");
   assert.equal(value, undefined);
@@ -184,7 +196,10 @@ await check("PARTS holds the tools of LINTERS in lint-code", () => {
 await check("status names only the hooks that are off", () => {
   assert.equal(status(undefined), undefined);
   assert.equal(status("typo"), undefined);
-  assert.equal(status("lint-prose typo format-code"), "hooks off: format-code, lint-prose");
+  assert.equal(
+    status("lint-prose typo format-code.oxfmt"),
+    "hooks off: format-code.oxfmt, lint-prose",
+  );
   assert.equal(
     status(
       "lint-prose lint-code",
@@ -378,7 +393,7 @@ await check("mod: completes the word at the cursor, after the command", async ()
   assert.deepEqual(await complete("/toggle-hook  --global   destructive"), [
     "block-destructive-commands",
   ]);
-  assert.deepEqual(await complete("/toggle-hook shfmt"), []);
+  assert.deepEqual(await complete("/toggle-hook shfmt"), ["format-code.shfmt"]);
   assert.deepEqual(await complete("/toggle-hook lint-code lint"), []);
   assert.deepEqual(await complete("/other type"), []);
   assert.deepEqual(await complete("/toggle-hook"), []);
@@ -438,8 +453,9 @@ await check("pi.ts: completes --repo, the hook names, and all", () => {
     command_?.getArgumentCompletions(prefix).map((item) => item.value);
   assert.deepEqual(complete("type"), ["type-check-tsc", "type-check-pyrefly"]);
   assert.ok(complete(" a")?.includes("all"));
-  assert.deepEqual(complete(""), ["--repo", "--global", ...HOOKS, "all"]);
+  assert.deepEqual(complete(""), ["--repo", "--global", ...NAMES, "all"]);
   assert.deepEqual(complete("--global format-code.ox"), ["--global format-code.oxfmt"]);
+  assert.deepEqual(complete("oxf"), ["format-code.oxfmt"]);
   assert.deepEqual(
     complete("--repo d"),
     NAMES.filter((name) => name.includes("d")).map((name) => `--repo ${name}`),

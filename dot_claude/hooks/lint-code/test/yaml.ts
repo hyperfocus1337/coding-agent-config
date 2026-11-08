@@ -61,7 +61,7 @@ assert.equal(
 
 // The repo key of ansible-lint gives Ansible YAML the yamllint checks.
 assert.deepEqual(
-  await command("/r/roles/a.yaml", stub().io, { root: "/r", repoOff: new Set(["ansible-lint"]) }),
+  await command("/r/roles/a.yaml", stub().io, { root: "/r", toolsOff: new Set(["ansible-lint"]) }),
   { argv: ["yamllint", "--strict", "-c", "/cfg/.yamllint", "roles/a.yaml"], cwd: "/r" },
 );
 
