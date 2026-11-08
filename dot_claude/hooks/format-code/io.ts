@@ -4,7 +4,7 @@
  */
 
 import { spawn } from "node:child_process";
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import type { Io, Settings } from "./core.ts";
 
 export const nodeIo: Io = {
@@ -16,11 +16,13 @@ export const nodeIo: Io = {
       }),
       () => undefined,
     ),
-  run: (argv, { cwd, timeoutMs = 30_000 }) =>
+  read: (path) => readFile(path, "utf8").catch(() => undefined),
+  run: (argv, { cwd, env, timeoutMs = 30_000 }) =>
     new Promise((resolve) => {
       const [program = "", ...args] = argv;
       const child = spawn(program, args, {
         cwd,
+        env: { ...process.env, ...env },
         stdio: ["ignore", "pipe", "ignore"],
         timeout: timeoutMs,
       });

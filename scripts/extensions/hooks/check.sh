@@ -10,10 +10,8 @@
 #      such as `$` passed as a value,
 #   5. node over each test/check.ts of both hook folders and over
 #      dot_codex/hooks/test/apply-patch.ts,
-#   6. hook-diff.sh against type-check.diff and format.diff, so that
-#      type-check-tsc and type-check-pyrefly, and the adapters and sweep.ts of
-#      format-oxfmt, format-org-tables, and format-code, stay the same where
-#      they must.
+#   6. hook-diff.sh against type-check.diff, so that type-check-tsc and
+#      type-check-pyrefly stay the same where they must.
 #
 # A failed step does not stop the later steps. The script lists the failed
 # steps at the end and exits 1.
@@ -156,7 +154,6 @@ same_copies() {
   }
 }
 step "type-check-tsc and type-check-pyrefly in step" same_copies type-check
-step "format hooks in step" same_copies format
 
 if ((${#FAILED[@]})); then
   printf 'FAILED: %s\n' "${FAILED[@]}" >&2

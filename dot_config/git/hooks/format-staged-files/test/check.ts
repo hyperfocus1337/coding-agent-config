@@ -33,8 +33,6 @@ const tmp = fs.mkdtempSync(path.join(os.homedir(), ".format-staged-test."));
 const home = `${tmp}/home`;
 for (const [link, target] of [
   [".config/git/hooks/format-staged-files", here],
-  [".claude/hooks/format-oxfmt", `${repo}/dot_claude/hooks/format-oxfmt`],
-  [".claude/hooks/format-org-tables", `${repo}/dot_claude/hooks/format-org-tables`],
   [".claude/hooks/format-code", `${repo}/dot_claude/hooks/format-code`],
 ]) {
   fs.mkdirSync(path.dirname(`${home}/${link}`), { recursive: true });
@@ -156,20 +154,20 @@ fs.rmSync(`${work}/c.md`);
 write("new.md", "*   toggled\n");
 git(["commit", "-q", "-a", "-m", "toggled"], {
   CLAUDECODE: "1",
-  AGENT_HOOKS_DISABLE: "format-oxfmt",
+  AGENT_HOOKS_DISABLE: "format-code",
 });
 check("AGENT_HOOKS_DISABLE does not turn off the commit-time format", () =>
   assert.equal(committed("new.md"), "- toggled\n"),
 );
 
 // /toggle-hook --repo turns off the commit-time format too.
-git(["config", "agent-hook.format-oxfmt.enabled", "false"]);
+git(["config", "agent-hook.format-code.oxfmt", "false"]);
 write("new.md", "*   repo off\n");
 git(["commit", "-q", "-a", "-m", "repo off"], { CLAUDECODE: "1" });
-check("agent-hook.format-oxfmt.enabled false keeps the file as staged", () =>
+check("agent-hook.format-code.oxfmt false keeps the file as staged", () =>
   assert.equal(committed("new.md"), "*   repo off\n"),
 );
-git(["config", "--unset", "agent-hook.format-oxfmt.enabled"]);
+git(["config", "--unset", "agent-hook.format-code.oxfmt"]);
 
 // A file with unstaged changes stays as staged, and the unstaged part stays out.
 write("new.md", "*   three\n");

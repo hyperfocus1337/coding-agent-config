@@ -1,6 +1,5 @@
 /**
- * Unit cases for sweep.ts, with a stub Io. format-oxfmt, format-org-tables, and
- * format-code each hold the same copy of this file. check.ts runs them.
+ * Unit cases for sweep.ts, with a stub Io. check.ts runs them.
  */
 import assert from "node:assert/strict";
 import { shellFiles, type SweepIo } from "../sweep.ts";

@@ -3,9 +3,7 @@
 # the set, with no line numbers, so that code that moves in all hooks gives the
 # same output. check.sh compares the output with <set>.diff, so that a change
 # to one hook that the others do not get fails the check. The sets:
-#   type-check: type-check-pyrefly against type-check-tsc,
-#   format:     format-code and format-org-tables against format-oxfmt, for
-#               the adapters and the shared sweep.ts, which must not differ.
+#   type-check: type-check-pyrefly against type-check-tsc.
 #
 # After a change that is meant to differ, write the new diff:
 #   scripts/extensions/hooks/hook-diff.sh <set> >scripts/extensions/hooks/<set>.diff
@@ -18,12 +16,8 @@ case "${1:-}" in
     base=type-check-tsc others=(type-check-pyrefly)
     files=(command.ts core.ts io.ts omp.ts pi.ts)
     ;;
-  format)
-    base=format-oxfmt others=(format-code format-org-tables)
-    files=(command.ts hooks/register.ts omp.ts pi.ts sweep.ts test/sweep.ts)
-    ;;
   *)
-    echo "usage: $0 type-check|format" >&2
+    echo "usage: $0 type-check" >&2
     exit 2
     ;;
 esac

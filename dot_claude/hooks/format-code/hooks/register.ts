@@ -20,6 +20,7 @@ export const register: Register = (on) => {
     // function of the core is written out here.
     const io: Io = {
       stat: (path) => $.fs.stat(path).catch(() => undefined),
+      read: (path) => $.fs.read(path).catch(() => undefined),
       // Rejects when the program is not installed or times out.
       run: (argv, options) => $.process.run(argv, options).catch(() => undefined),
     };

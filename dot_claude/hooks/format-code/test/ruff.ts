@@ -1,8 +1,10 @@
-/** Unit cases for formatters/ruff.ts: the change test of its summary. check.ts runs them. */
+/** Unit cases for formatters/ruff.ts. check.ts runs them. */
 import assert from "node:assert/strict";
 import { ruff } from "../formatters/ruff.ts";
 
-assert.equal(ruff.changed?.("1 file reformatted\n"), true);
-assert.equal(ruff.changed?.("1 file left unchanged\n"), false);
-// --force-exclude: the exclude list of the project config also applies to a named file.
-assert.ok((await ruff.argv("/a/x.py", {} as never)).includes("--force-exclude"));
+// --force-exclude: the exclude list of the project config also applies to a named file. One run
+// for each file, in its folder.
+assert.deepEqual(await ruff.runs(["/a/x.py", "/b/y.py"], "/", {} as never), [
+  { argv: ["ruff", "format", "--force-exclude", "/a/x.py"], cwd: "/a" },
+  { argv: ["ruff", "format", "--force-exclude", "/b/y.py"], cwd: "/b" },
+]);

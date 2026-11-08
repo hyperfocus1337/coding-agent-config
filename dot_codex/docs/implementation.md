@@ -18,7 +18,7 @@ The output is a plain file, not a link, so a rule edit reaches Codex only on the
 
 ### The problem
 
-The file hooks `format-oxfmt`, `format-org-tables`, `format-code`, `lint-code`, and `lint-prose` must know which file changed. Claude Code tells them. Codex does not.
+The file hooks `format-code`, `lint-code`, and `lint-prose` must know which file changed. Claude Code tells them. Codex does not.
 
 When Claude Code edits a file, it uses the Write or Edit tool. The hook gets the file path:
 
@@ -39,8 +39,7 @@ Codex has no Write or Edit tool. It edits every file through one tool, `apply_pa
 
 With no `file_path`, each hook takes its Bash branch, which guesses the files from a shell command:
 
-- `format-oxfmt` formats only the markdown files that git shows as changed. It skips `src/app.py`.
-- `format-org-tables` and `format-code` search the text for strings that look like file names. A patch is not a shell command, so they miss files or pick wrong ones.
+- `format-code` takes only the files that git shows as changed in the last 120 s, and for oxfmt only Markdown. It skips `src/app.py`, and also a file that git ignores and the patch does not name as a path.
 - `lint-prose` takes the files of a Bash call from the log of `track-session-changes`. An `apply_patch` payload is not a Bash call, so it checks nothing.
 
 Without the wrapper, most files that Codex edits are not formatted or prose-linted. Code linting uses a separate Stop hook and reads changed paths from git, so it does not need the wrapper.

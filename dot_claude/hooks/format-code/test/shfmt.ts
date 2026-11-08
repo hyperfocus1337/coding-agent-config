@@ -6,11 +6,14 @@ import { shfmt } from "../formatters/shfmt.ts";
 /** An Io where only `paths` exist, each with the kind that it maps to. */
 const io = (paths: Record<string, "file" | "dir"> = {}): Io => ({
   stat: async (path) => (paths[path] ? { kind: paths[path], mtimeMs: 0 } : undefined),
-  run: async () => assert.fail("argv runs no program"),
+  read: async () => assert.fail("runs reads no file"),
+  run: async () => assert.fail("runs runs no program"),
 });
+/** The argv of the run for one file. */
+const argv = async (file: string, io: Io) => (await shfmt.runs([file], "/", io))[0]?.argv;
 
 // An .editorconfig in a folder above sets the style, so shfmt gets no printer flag.
-assert.deepEqual(await shfmt.argv("/a/b/x.sh", io({ "/a/.editorconfig": "file" })), [
+assert.deepEqual(await argv("/a/b/x.sh", io({ "/a/.editorconfig": "file" })), [
   "shfmt",
   "-l",
   "-w",
@@ -18,7 +21,7 @@ assert.deepEqual(await shfmt.argv("/a/b/x.sh", io({ "/a/.editorconfig": "file" }
 ]);
 // With none, or only a folder of that name, the 2-space fallback of just fmt applies.
 for (const paths of [{}, { "/a/.editorconfig": "dir" }] as Record<string, "file" | "dir">[])
-  assert.deepEqual(await shfmt.argv("/a/b/x.sh", io(paths)), [
+  assert.deepEqual(await argv("/a/b/x.sh", io(paths)), [
     "shfmt",
     "-l",
     "-w",

@@ -609,14 +609,12 @@ const formatter = (name: string, fn: string, tools: string[]): Hook => ({
   on: { Write: ["post"], Edit: ["post"], Bash: ["post"] },
   tools,
   state: true,
-  mtime: !tools.includes("oxfmt"),
+  mtime: true,
   probe: "files",
   args: [],
   work: `${tools.join(" or ")} changed a file`,
   core: async (c, _phase, m) => {
-    // nodeIo is an object in some hooks and a function in others.
-    const io = typeof m.io.nodeIo === "function" ? m.io.nodeIo() : m.io.nodeIo;
-    await m.core[fn](toolCall(c), watch(io, c.trace), m.io.nodeSettings());
+    await m.core[fn](toolCall(c), watch(m.io.nodeIo, c.trace), m.io.nodeSettings());
     return {};
   },
 });
@@ -637,9 +635,7 @@ const typeCheck = (name: string, tool: string): Hook => ({
 });
 
 const HOOK_LIST: Hook[] = [
-  formatter("format-oxfmt", "format", ["oxfmt"]),
-  formatter("format-org-tables", "align", ["emacs"]),
-  formatter("format-code", "format", ["terraform", "shfmt", "ruff"]),
+  formatter("format-code", "format", ["oxfmt", "emacs", "terraform", "shfmt", "ruff"]),
   {
     name: "lint-code",
     on: { Stop: ["post"] },

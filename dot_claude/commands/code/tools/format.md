@@ -8,7 +8,7 @@ Run the repository formatting workflow. Mode: $ARGUMENTS
 
 Read and follow `~/.claude/commands/code/tools/shared.txt`. Accept only an empty argument, `check`, or `apply`; empty means `check`. For any other argument, show usage and stop.
 
-Use the formatters, file selection, and configuration of the installed `format-oxfmt`, `format-org-tables`, and `format-code` hooks. Find flags in the installed versions' help. Keep the hook's shfmt `.editorconfig` behavior and fallback style.
+Use the formatters, file selection, and configuration of the installed `format-code` hook and its modules in `formatters/`. Find flags in the installed versions' help. Keep the hook's shfmt `.editorconfig` behavior and fallback style.
 
 ## Check
 

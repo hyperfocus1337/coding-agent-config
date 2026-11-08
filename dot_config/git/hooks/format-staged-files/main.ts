@@ -1,11 +1,11 @@
 /**
  * Git pre-commit hook, not an agent hook: formats the staged files through
- * the command.ts of format-oxfmt, format-org-tables, and format-code, then
- * stages the result, so the commit holds the formatted text. A Bash command
- * that writes a file and commits it in one call gets past the PostToolUse
- * formatters, which run after the commit. ~/.config/git/config sets this hook
- * for every commit, and the gate below limits it to agent sessions. Never
- * stops a commit: always exits 0. Design notes: README.md.
+ * the command.ts of format-code, then stages the result, so the commit holds
+ * the formatted text. A Bash command that writes a file and commits it in one
+ * call gets past the PostToolUse formatters, which run after the commit.
+ * ~/.config/git/config sets this hook for every commit, and the gate below
+ * limits it to agent sessions. Never stops a commit: always exits 0. Design
+ * notes: README.md.
  *
  * Run: node main.ts, from git as a pre-commit hook, and
  * node main.ts post-commit, from git as a post-commit hook.
@@ -94,24 +94,22 @@ if (!blobs.size) process.exit(0);
 
 const files = [...blobs.keys()];
 const before = files.map((rel) => read(`${root}/${rel}`));
-// One run of each formatter for all files. file_paths is not in an agent
-// payload: the formatters take it from this hook only.
+// One run of format-code for all files. file_paths is not in an agent
+// payload: format-code takes it from this hook only.
 const payload = JSON.stringify({
   hook_event_name: "PostToolUse",
   cwd: root,
   tool_input: { file_paths: files.map((rel) => `${root}/${rel}`) },
 });
-const hooks = `${homedir()}/.claude/hooks`;
-for (const formatter of ["format-oxfmt", "format-org-tables", "format-code"])
-  spawnSync(process.execPath, [`${hooks}/${formatter}/command.ts`], {
-    cwd: root,
-    // The session toggle of /toggle-hook turns off the agent hooks only, not
-    // this commit-time format. Node leaves an undefined variable out. The
-    // git config of /toggle-hook --repo still applies: each formatter reads it.
-    env: { ...env, AGENT_HOOKS_DISABLE: undefined },
-    input: payload,
-    stdio: ["pipe", "ignore", "ignore"],
-  });
+spawnSync(process.execPath, [`${homedir()}/.claude/hooks/format-code/command.ts`], {
+  cwd: root,
+  // The session toggle of /toggle-hook turns off the agent hooks only, not
+  // this commit-time format. Node leaves an undefined variable out. The
+  // git config of /toggle-hook --repo still applies: format-code reads it.
+  env: { ...env, AGENT_HOOKS_DISABLE: undefined },
+  input: payload,
+  stdio: ["pipe", "ignore", "ignore"],
+});
 
 const changed = files.filter((rel, i) => read(`${root}/${rel}`) !== before[i]);
 if (!changed.length) process.exit(0);

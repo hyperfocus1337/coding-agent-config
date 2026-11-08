@@ -25,8 +25,8 @@ node test/check.ts
 - **Output:** one stderr line for each file that the hook staged again, and no line for an unchanged file.
 - **Skipped files:** a partly staged file is committed as staged, and its unstaged change stays in the tree. A symlink stays a symlink.
 - **Agent detection:** each agent variable turns the hook on, and a commit outside an agent is not formatted.
-- **`AGENT_HOOKS_DISABLE`:** a commit is still formatted when the variable names `format-oxfmt`.
-- **Repository key:** a commit is not formatted when `agent-hook.format-oxfmt.enabled` is `false` in the repository.
+- **`AGENT_HOOKS_DISABLE`:** a commit is still formatted when the variable names `format-code`.
+- **Repository key:** a Markdown file is not formatted when `agent-hook.format-code.oxfmt` is `false` in the repository.
 - **Other types:** oxfmt formats a staged `.toml` file.
 - **No `node`:** a commit with no `node` on `PATH` continues, with no output.
 

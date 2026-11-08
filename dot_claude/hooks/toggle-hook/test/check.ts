@@ -74,7 +74,7 @@ await check("a name flips the hook off, then on", () => {
   });
 });
 await check("a launch value with commas and other names", () =>
-  assert.equal(toggle("lint-code,typo", "format-oxfmt").value, "lint-code typo format-oxfmt"),
+  assert.equal(toggle("lint-code,typo", "format-code").value, "lint-code typo format-code"),
 );
 await check("no argument lists each hook, its formatters, and the scope", () => {
   const { value, text } = toggle(
@@ -93,7 +93,7 @@ await check("no argument lists each hook, its formatters, and the scope", () => 
   assert.ok(text.includes("\n  off  repo     shfmt\n"));
   assert.ok(text.includes("\noff  global   type-check-tsc\n"));
   assert.ok(text.includes("\non            type-check-pyrefly"));
-  assert.ok(text.startsWith("on            format-oxfmt\n"));
+  assert.ok(text.startsWith("on            format-code\n"));
 });
 await check("all turns every hook off, then on, and keeps other names", () => {
   const off = toggle("typo", "all");
@@ -164,9 +164,9 @@ await check("--repo: a name flips its key, all flips the hooks", () => {
   assert.ok(toggleConfig(undefined, "shfmt", none, "repo").text.startsWith("shfmt is not a hook."));
 });
 await check("--global: a name flips its key", () =>
-  assert.deepEqual(toggleConfig(undefined, "format-oxfmt", new Map(), "global"), {
-    writes: [{ name: "format-oxfmt", on: false }],
-    text: "format-oxfmt is off in the global git config.",
+  assert.deepEqual(toggleConfig(undefined, "format-code", new Map(), "global"), {
+    writes: [{ name: "format-code", on: false }],
+    text: "format-code is off in the global git config.",
   }),
 );
 await check("PARTS holds the keys of FORMATTERS in format-code", () => {
@@ -184,7 +184,7 @@ await check("PARTS holds the tools of LINTERS in lint-code", () => {
 await check("status names only the hooks that are off", () => {
   assert.equal(status(undefined), undefined);
   assert.equal(status("typo"), undefined);
-  assert.equal(status("lint-prose typo format-oxfmt"), "hooks off: format-oxfmt, lint-prose");
+  assert.equal(status("lint-prose typo format-code"), "hooks off: format-code, lint-prose");
   assert.equal(
     status(
       "lint-prose lint-code",
@@ -263,13 +263,13 @@ await check("command: a value that is not a boolean keeps the name on", async ()
   await inRepo(["config", "--unset", "agent-hook.lint-prose.enabled"]);
 });
 await check("command: --global writes false, then removes the key", async () => {
-  const key = "agent-hook.format-oxfmt.enabled";
-  const off = await command(undefined, "--global format-oxfmt", inRepo);
-  assert.equal(off.text, "format-oxfmt is off in the global git config.");
+  const key = "agent-hook.format-code.enabled";
+  const off = await command(undefined, "--global format-code", inRepo);
+  assert.equal(off.text, "format-code is off in the global git config.");
   assert.equal(await globalValue(key), "false");
-  assert.equal(status(undefined, off.config), "hooks off: format-oxfmt (global)");
-  const on = await command(undefined, "--global format-oxfmt", inRepo);
-  assert.equal(on.text, "format-oxfmt is on in the global git config.");
+  assert.equal(status(undefined, off.config), "hooks off: format-code (global)");
+  const on = await command(undefined, "--global format-code", inRepo);
+  assert.equal(on.text, "format-code is on in the global git config.");
   assert.equal(await globalValue(key), "");
 });
 await check("globalFile: GIT_CONFIG_GLOBAL, else ~/.gitconfig", () => {
@@ -281,11 +281,11 @@ await check("command: --global wins over a key in an included file", async () =>
   // The include stands in for ~/.config/git/config, which git reads
   // before ~/.gitconfig.
   const xdg = `${tmp}/xdg-config`;
-  fs.writeFileSync(xdg, '[agent-hook "format-oxfmt"]\n\tenabled = false\n');
+  fs.writeFileSync(xdg, '[agent-hook "format-code"]\n\tenabled = false\n');
   fs.writeFileSync(global, `[include]\n\tpath = ${xdg}\n`);
-  const on = await command(undefined, "--global format-oxfmt", inRepo, global);
-  assert.equal(on.text, "format-oxfmt is on in the global git config.");
-  assert.deepEqual(on.config, cfg(["format-oxfmt", true, "global"]));
+  const on = await command(undefined, "--global format-code", inRepo, global);
+  assert.equal(on.text, "format-code is on in the global git config.");
+  assert.deepEqual(on.config, cfg(["format-code", true, "global"]));
   assert.match(fs.readFileSync(global, "utf8"), /enabled = true/);
   assert.match(fs.readFileSync(xdg, "utf8"), /enabled = false/);
   fs.writeFileSync(global, "");
@@ -439,7 +439,7 @@ await check("pi.ts: completes --repo, the hook names, and all", () => {
   assert.deepEqual(complete("type"), ["type-check-tsc", "type-check-pyrefly"]);
   assert.ok(complete(" a")?.includes("all"));
   assert.deepEqual(complete(""), ["--repo", "--global", ...HOOKS, "all"]);
-  assert.deepEqual(complete("--global format-ox"), ["--global format-oxfmt"]);
+  assert.deepEqual(complete("--global format-code.ox"), ["--global format-code.oxfmt"]);
   assert.deepEqual(
     complete("--repo d"),
     NAMES.filter((name) => name.includes("d")).map((name) => `--repo ${name}`),
@@ -451,6 +451,8 @@ await check("pi.ts: completes --repo, the hook names, and all", () => {
   assert.deepEqual(complete("--repo no-such-hook"), []);
   assert.deepEqual(complete("--repository"), []);
   assert.deepEqual(complete("--repo format-code."), [
+    "--repo format-code.oxfmt",
+    "--repo format-code.org-tables",
     "--repo format-code.terraform",
     "--repo format-code.shfmt",
     "--repo format-code.ruff",

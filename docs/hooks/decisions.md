@@ -65,11 +65,25 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 ## format-code holds the formatters that are not Prettier
 
+Replaced on 2026-11-08 by [format-code holds all formatters](#format-code-holds-all-formatters).
+
 **Decision:** on 2026-10-21, `format-terraform` became `format-code`, with a table of formatters in `core.ts`: `terraform fmt` for `.tf` and `.tfvars`, and shfmt for `.sh` and `.bash`. **Why:** each formatter runs one command on one file and prints the name of a changed file, so a new formatter is one row and not a new folder with about 300 lines of adapters and test, as [`lint-code`](#each-hook-name-says-what-it-covers) does for linters. **Cost:** a formatter has no session toggle of its own, only a [repository key](#advisory-hooks-also-turn-off-per-repository-through-git-config). The rename changes the Codex hook entries, so you trust them again in the Codex TUI. `format-prettier` and `format-org-tables` stay apart, because each finds the files of a Bash call in its own way.
 
 ## One module for each tool in lint-code and format-code
 
-**Decision:** on 2026-11-08, each linter of `lint-code` and each formatter of `format-code` moved to its own module in `linters/` or `formatters/`, not to its own hook, and yamllint and ansible-lint share `linters/yaml.ts`. **Why:** the tools differ in how they build a command and read its output, not in when they run, how they select files, or what the model sees. 8 hooks would copy that shared flow (4 agent adapters, the correction flow, file selection, and the amend hint), and the copies can drift. yamllint and ansible-lint share a module because each YAML file goes to exactly one of them, and ansible-lint reads the yamllint config. **Cost:** a tool has no session toggle of its own, and a tool that needs a different event or output to the model must move to its own hook.
+**Decision:** on 2026-11-08, each linter of `lint-code` and each formatter of `format-code` moved to its own module in `linters/` or `formatters/`, not to its own hook, and yamllint and ansible-lint share `linters/yaml.ts`. **Why:** the tools differ in how they build a command and read its output, not in when they run, how they select files, or what the model sees. 8 hooks would copy that shared flow (4 agent adapters, the correction flow, file selection, and the amend hint), and the copies can drift. yamllint and ansible-lint share a module because each YAML file goes to exactly one of them, and ansible-lint reads the yamllint config.
+
+**Cost:** a tool has no session toggle of its own, and a tool that needs a different event or output to the model must move to its own hook.
+
+## format-code holds all formatters
+
+**Decision:** on 2026-11-08, `format-oxfmt` and `format-org-tables` became `formatters/oxfmt.ts` and `formatters/org-tables.ts` of `format-code`, with the keys `oxfmt` and `org-tables`. The old keys `agent-hook.format-oxfmt.enabled` and `agent-hook.format-org-tables.enabled` no longer apply, and the code reads no alias.
+
+A formatter module returns its runs for the files of a call, so oxfmt and Emacs take all their files in one run, and terraform fmt, shfmt, and ruff one file for each run. `swept` gives the extensions of a Bash call, which are Markdown only for oxfmt, and `wants` keeps Emacs away from an Org file with no table. The amend hint compares the text of each file before and after the run, for each formatter.
+
+**Why:** the [entry above](#format-code-holds-the-formatters-that-are-not-prettier) kept the two hooks apart because each found the files of a Bash call in its own way. Since [the shared sweep](#the-format-hooks-find-the-files-of-a-shell-call-themselves) they did not, and the 3 cores were the same except for the command and two file filters. The merge removes about 1,000 lines: 2 sets of adapters, 2 copies of `sweep.ts`, and the `format.diff` check. Each Bash call runs 1 sweep and not 3, and each Codex call starts 1 Node process and not 3.
+
+**Cost:** you set a repository key that you used again, as `/toggle-hook --repo format-code.oxfmt`. The Codex hook entries change, so you trust them again in the Codex TUI. The Codex entry has a limit of 30 s, not 20 s and 10 s for separate entries.
 
 ## track-session-changes keeps the payload code of each agent in the file of that agent
 
@@ -77,7 +91,7 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 ## The format hooks find the files of a shell call themselves
 
-**Decision:** on 2026-11-08, `format-oxfmt`, `format-org-tables`, and `format-code` find the files of a Bash call with one rule, in a copy of `sweep.ts` in each folder. The rule takes the paths that the command names and the changed and untracked files of each repository that the call touched, and keeps a file only if it changed after the call started. In Codex the hook runs only after the call, so a file counts if it changed in the last 120 s. `just hooks-check` fails when the 3 copies of `sweep.ts` or of `test/sweep.ts` differ, or when the adapters of the 3 hooks differ in a way that [`format.diff`](../../scripts/extensions/hooks/format.diff) does not record, as `type-check.diff` does for the type-check hooks.
+**Decision:** on 2026-11-08, `format-oxfmt`, `format-org-tables`, and `format-code` find the files of a Bash call with one rule, in a copy of `sweep.ts` in each folder. The rule takes the paths that the command names and the changed and untracked files of each repository that the call touched, and keeps a file only if it changed after the call started. In Codex the hook runs only after the call, so a file counts if it changed in the last 120 s. `just hooks-check` failed when the 3 copies of `sweep.ts` or of `test/sweep.ts` differed, or when the adapters of the 3 hooks differed in a way that `format.diff` did not record. The same day, the 3 hooks became [one](#format-code-holds-all-formatters), so one `sweep.ts` serves all formatters, and the copies and their check are gone.
 
 **Why:** before, each hook had its own rule. `format-code` and `format-org-tables` took only the named paths with an mtime of at most 120 s, and `format-org-tables` also followed each `cd`. `format-oxfmt` formatted each changed Markdown file of the repository, also one that changed before the call. The one rule finds a file that a script wrote, works after any `cd` in the same repository, and leaves a file that changed before the call.
 
@@ -143,7 +157,7 @@ Why the hooks are built as [`README.md`](README.md) and [`authoring.md`](authori
 
 Replaced on 2026-10-25 by [format-oxfmt replaces format-prettier](#format-oxfmt-replaces-format-prettier).
 
-**Decision:** on 2026-10-23, [`format-oxfmt`](../../dot_claude/hooks/format-oxfmt/README.md) formats the files of `format-prettier` with oxfmt, as a second hook:
+**Decision:** on 2026-10-23, `format-oxfmt`, now [oxfmt in `format-code`](../../dot_claude/hooks/format-code/docs/oxfmt.md), formats the files of `format-prettier` with oxfmt, as a second hook:
 
 - It is off until `agent-hook.format-oxfmt.enabled` is `true`, in the repository or globally. Then `format-prettier` formats nothing for the same call.
 - Both hooks read the key once for each call, in the session folder.
@@ -158,7 +172,7 @@ Replaced on 2026-10-25 by [format-oxfmt replaces format-prettier](#format-oxfmt-
 
 ## format-oxfmt replaces format-prettier
 
-**Decision:** on 2026-10-25, `format-prettier` is removed, and [`format-oxfmt`](../../dot_claude/hooks/format-oxfmt/README.md) formats by default:
+**Decision:** on 2026-10-25, `format-prettier` is removed, and `format-oxfmt`, now [oxfmt in `format-code`](../../dot_claude/hooks/format-code/docs/oxfmt.md), formats by default:
 
 - `agent-hook.format-oxfmt.enabled false` turns it off in a repository or globally, as for each other advisory hook. There is no switch to Prettier.
 - The sweep and the amend hint moved from `shared.ts` into `format-oxfmt/core.ts`. No hook folder holds a copy of another.

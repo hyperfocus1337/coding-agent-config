@@ -1,8 +1,5 @@
 /**
- * The files that a shell call changed, for a format hook. format-oxfmt,
- * format-org-tables, and format-code each hold the same copy of this file,
- * because no hook imports from another. `just hooks-check` fails when the
- * copies differ.
+ * The files that a shell call changed, for ./core.ts.
  *
  * The candidates are the paths that the command names, and the changed and
  * untracked files of each repository that the call touched. A candidate counts

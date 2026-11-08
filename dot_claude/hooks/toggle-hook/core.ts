@@ -15,8 +15,6 @@
 
 /** The hooks that read AGENT_HOOKS_DISABLE, in the order the list shows. */
 export const HOOKS = [
-  "format-oxfmt",
-  "format-org-tables",
   "format-code",
   "lint-code",
   "lint-prose",
@@ -32,7 +30,7 @@ export const HOOKS = [
  * test/check.ts keeps them the same.
  */
 export const PARTS = new Map([
-  ["format-code", ["terraform", "shfmt", "ruff"]],
+  ["format-code", ["oxfmt", "org-tables", "terraform", "shfmt", "ruff"]],
   ["lint-code", ["ruff", "oxlint", "shellcheck", "yamllint", "ansible-lint", "tflint"]],
 ]);
 

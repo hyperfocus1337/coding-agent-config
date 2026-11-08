@@ -1,93 +1,47 @@
 /**
- * Self-check for ../core.ts and its adapters: the cases through command.ts
- * with the real git, terraform, shfmt, and ruff, then the pi and mod adapters with
- * stubs over the real files.
+ * Self-check for ../core.ts and its adapters: the unit cases, the cases of each formatter through
+ * command.ts with the real programs, then the pi, omp, and mod adapters with stubs over the real
+ * files.
  *
- * Run: node test/check.ts, from the hook directory. Fixtures live under $HOME,
- * because the hook skips /tmp and $TMPDIR. Without git, terraform, shfmt, or
- * ruff the hook does nothing, so the check skips with a message instead of
- * passing. The unit cases of a formatter module with logic of its own, and of
- * sweep.ts, are in test/<module>.ts. They need no formatter and run first,
- * through the imports below.
+ * Run: node test/check.ts, from the hook directory. The unit cases of the core, of sweep.ts, and
+ * of a formatter module with logic of its own are in test/<module>.ts. They need no formatter and
+ * run first, through the imports below. test/oxfmt.ts and test/org-tables.ts hold the cases of
+ * those formatters. A formatter that is not on PATH does nothing, so its cases skip with a
+ * message instead of passing. The cases here need terraform, shfmt, and ruff.
  */
 
+import "./core.ts";
 import "./ruff.ts";
 import "./shfmt.ts";
 import "./sweep.ts";
+import "./oxfmt.ts";
+import "./org-tables.ts";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
-import * as os from "node:os";
 import * as path from "node:path";
-import { format } from "../core.ts";
 import { register } from "../hooks/register.ts";
 import ompExtension from "../omp.ts";
 import extension from "../pi.ts";
+import { bash, check, edit, finish, git, has, quiet, read, tmp } from "./harness.ts";
 
-const hook = path.dirname(path.dirname(new URL(import.meta.url).pathname));
-// A hook that /toggle-hook turned off in the agent that runs this check
-// still runs here.
-delete process.env.AGENT_HOOKS_DISABLE;
-
-let failures = 0;
-async function check(what: string, run: () => void | Promise<void>) {
-  try {
-    await run();
-  } catch (error) {
-    failures += 1;
-    console.error(`FAIL ${what}\n  ${(error as Error).message}`);
-  }
+const missing = ["terraform", "shfmt", "ruff"].filter((program) => !has(program));
+if (missing.length) {
+  console.log(
+    `SKIP terraform fmt, shfmt, ruff, and the adapters: no ${missing.join(", ")} on PATH`,
+  );
+  finish();
+  process.exit();
 }
-
-for (const program of ["git", "terraform", "shfmt", "ruff"])
-  if (spawnSync(program, ["--version"]).error) {
-    console.log(`SKIP no ${program} on PATH`);
-    process.exit(0);
-  }
-
-const tmp = fs.mkdtempSync(path.join(os.homedir(), ".format-code-test."));
-// Turn off the format-staged-files pre-commit hook: it formats the file
-// before the commit, and then nothing is left to amend.
-const env = {
-  ...process.env,
-  GIT_CONFIG_COUNT: "1",
-  GIT_CONFIG_KEY_0: "hook.format-staged-files.enabled",
-  GIT_CONFIG_VALUE_0: "false",
-  GIT_AUTHOR_NAME: "test",
-  GIT_AUTHOR_EMAIL: "test@example.com",
-  GIT_COMMITTER_NAME: "test",
-  GIT_COMMITTER_EMAIL: "test@example.com",
-};
-const git = (cwd: string, ...args: string[]) => {
-  const ran = spawnSync("git", args, { cwd, encoding: "utf8", env });
-  assert.equal(ran.status, 0, `git ${args.join(" ")}: ${ran.stderr}`);
-};
-
-/** Runs command.ts with a payload. */
-const hookRun = (payload: object) =>
-  spawnSync(process.execPath, [path.join(hook, "command.ts")], {
-    input: JSON.stringify(payload),
-    encoding: "utf8",
-    env,
-    timeout: 60_000,
-  });
-const bash = (cwd: string, command: string) => hookRun({ cwd, tool_input: { command } });
-const edit = (file: string) => hookRun({ tool_input: { file_path: file } });
 
 /** Terraform that terraform fmt changes: the `=` signs are not aligned. */
 const RAW = "a   = 1\nbb = 2\n";
 const FORMATTED = "a  = 1\nbb = 2\n";
 const unformatted = (file: string) => fs.writeFileSync(file, RAW);
-const read = (file: string) => fs.readFileSync(file, "utf8");
 const formatted = (what: string, file: string) =>
   check(`format ${what}`, () => assert.equal(read(file), FORMATTED));
 const untouched = (what: string, file: string) =>
   check(`skip ${what}`, () => assert.equal(read(file), RAW));
-const quiet = (what: string, ran: ReturnType<typeof hookRun>) =>
-  check(what, () => {
-    assert.equal(ran.status, 0, ran.stderr);
-    assert.equal(ran.stdout + ran.stderr, "");
-  });
 
 // --- A Write or Edit ---
 
@@ -99,9 +53,9 @@ unformatted(`${tmp}/edit.tfvars`);
 edit(`${tmp}/edit.tfvars`);
 await formatted("a .tfvars file", `${tmp}/edit.tfvars`);
 
-unformatted(`${tmp}/not-tf.md`);
-edit(`${tmp}/not-tf.md`);
-await untouched("a file that is not Terraform", `${tmp}/not-tf.md`);
+unformatted(`${tmp}/not-tf.txt`);
+edit(`${tmp}/not-tf.txt`);
+await untouched("a file that no formatter takes", `${tmp}/not-tf.txt`);
 
 await quiet("a file that does not exist", edit(`${tmp}/missing.tf`));
 
@@ -119,10 +73,7 @@ await untouched("a file in a temp folder", scratch);
 fs.rmSync(scratch);
 // A TMPDIR that is only a name prefix of the folder, not a parent, does not skip it.
 unformatted(`${tmp}/sibling.tf`);
-spawnSync(process.execPath, [path.join(hook, "command.ts")], {
-  input: JSON.stringify({ tool_input: { file_path: `${tmp}/sibling.tf` } }),
-  env: { ...env, TMPDIR: `${tmp}/sib` },
-});
+edit(`${tmp}/sibling.tf`, { TMPDIR: `${tmp}/sib` });
 await formatted("a file next to TMPDIR with the same name prefix", `${tmp}/sibling.tf`);
 
 // --- A Bash call ---
@@ -140,9 +91,9 @@ bash(repo, `sed -i '' s/x/y/ ${repo}/one.tf && sed -i '' s/x/y/ ${repo}/two.tfva
 await formatted("the first of two files in one command", `${repo}/one.tf`);
 await formatted("the second of two files in one command", `${repo}/two.tfvars`);
 
-unformatted(`${repo}/notes.md`);
-bash(repo, `printf x > ${repo}/notes.md`);
-await untouched("a command that names no Terraform path", `${repo}/notes.md`);
+unformatted(`${repo}/notes.txt`);
+bash(repo, `printf x > ${repo}/notes.txt`);
+await untouched("a command that names no path a formatter takes", `${repo}/notes.txt`);
 
 // The sweep also takes a file that the call changed without a name for it,
 // such as one that a script wrote.
@@ -300,18 +251,6 @@ await quiet(
   bash(repo, "touch committed.py && git commit -am settled"),
 );
 
-// --- AGENT_HOOKS_DISABLE ---
-
-const noIo = new Proxy({}, { get: () => () => assert.fail("the hook ran") });
-await check("AGENT_HOOKS_DISABLE that names the hook: nothing runs", async () =>
-  assert.equal(
-    await format({ filePath: "/x/a.tf", cwd: "/x" }, noIo as never, {
-      hooksOff: "lint-code format-code",
-    }),
-    undefined,
-  ),
-);
-
 // --- git config agent-hook.format-code.* ---
 
 git(repo, "config", "agent-hook.format-code.shfmt", "false");
@@ -357,6 +296,23 @@ await check("pi.ts: formats the file of an edit", async () => {
   );
   assert.equal(result, undefined);
   assert.equal(read(`${repo}/pi.tf`), FORMATTED);
+});
+await check("pi.ts: formats a parent-relative edit path", async () => {
+  fs.mkdirSync(`${repo}/sub`);
+  unformatted(`${repo}/pi-parent.tf`);
+  await piHandler?.(
+    { toolName: "edit", input: { path: "../pi-parent.tf" }, content: [] },
+    { cwd: `${repo}/sub` },
+  );
+  assert.equal(read(`${repo}/pi-parent.tf`), FORMATTED);
+});
+await check("pi.ts: leaves other tools alone", async () => {
+  unformatted(`${repo}/pi-read.tf`);
+  await piHandler?.(
+    { toolName: "read", input: { path: "pi-read.tf" }, content: [] },
+    { cwd: repo },
+  );
+  assert.equal(read(`${repo}/pi-read.tf`), RAW);
 });
 await check("pi.ts: appends the amend hint to the result", async () => {
   const content = [{ type: "text", text: "committed" }];
@@ -440,12 +396,13 @@ const stub$ = {
         mtimeMs: found.mtimeMs,
       };
     },
+    read: async (file: string) => fs.readFileSync(file, "utf8"),
   },
   process: {
-    run: async (argv: string[], init: { cwd: string }) => {
+    run: async (argv: string[], init: { cwd: string; env?: Record<string, string> }) => {
       const done = spawnSync(argv[0]!, argv.slice(1), {
         cwd: init.cwd,
-        env,
+        env: { ...process.env, ...init.env },
         encoding: "utf8",
       });
       if (done.error) throw done.error;
@@ -491,8 +448,4 @@ await check("register.ts: passes a deny through", async () => {
   assert.equal(await modHook?.(stub$, { tool: "Bash", command: "x" }, async () => denied), denied);
 });
 
-fs.rmSync(tmp, { recursive: true, force: true });
-if (failures) {
-  console.error(`${failures} failed`);
-  process.exitCode = 1;
-} else console.log("all pass");
+finish();

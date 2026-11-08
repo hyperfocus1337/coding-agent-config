@@ -407,7 +407,7 @@ try {
     write(`${repo}/.yamllint`, "extends: default\nignore: |\n  /nested/policy.yaml\n");
     assert.equal(await lint([yaml], nodeIo(repo), yamlSettings), undefined);
     fs.rmSync(`${repo}/.yamllint`);
-    // Contract with format-oxfmt: what oxfmt writes passes the YAML linters, also with a user
+    // Contract with format-code: what oxfmt writes passes the YAML linters, also with a user
     // yamllint config that extends the default rules and a project .ansible-lint with no
     // skip_list. oxfmt writes one space before a comment and inside braces, and no `---`.
     const tools = ["oxfmt", "ansible-lint"].filter(

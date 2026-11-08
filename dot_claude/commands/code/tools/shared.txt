@@ -2,7 +2,7 @@
 
 ## Prevent automatic writes
 
-A shell call can trigger automatic formatting of each file that the call changes. Before the first shell call, record the state of the `format-oxfmt`, `format-org-tables`, and `format-code` hooks, then suspend only these hooks through supported session controls. A variable set inside the shell does not disable hooks in the parent agent. Restore the recorded state at the end, also on failure. If no safe session control exists, stop and ask the user to suspend these hooks.
+A shell call can trigger automatic formatting of each file that the call changes. Before the first shell call, record the state of the `format-code` hook, then suspend only this hook through supported session controls. A variable set inside the shell does not disable hooks in the parent agent. Restore the recorded state at the end, also on failure. If no safe session control exists, stop and ask the user to suspend this hook.
 
 ## Preparation
 

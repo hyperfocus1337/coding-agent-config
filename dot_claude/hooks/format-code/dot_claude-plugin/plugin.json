@@ -1,5 +1,5 @@
 {
   "name": "format-code",
-  "version": "0.1.0",
-  "description": "Formats the .tf, .tfvars, .sh, .bash, .py, and .pyi files a Write, Edit, or Bash call changed, with terraform fmt, shfmt, and ruff format."
+  "version": "0.2.0",
+  "description": "Formats the files a Write, Edit, or Bash call changed: oxfmt for JavaScript, TypeScript, JSON, CSS, HTML, YAML, TOML, and Markdown, Emacs for Org tables, terraform fmt, shfmt, and ruff format."
 }

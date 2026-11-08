@@ -10,7 +10,6 @@
 .claude/hooks/block-secret-commits
 .config/git/hooks/block-secret-commits/core.ts
 .claude/hooks/format-all-languages
-.claude/hooks/format-org-tables/hook.sh
 .claude/hooks/format-staged-files
 .claude/hooks/lint-prose/hook.sh
 .codex/hooks/apply-patch.sh
@@ -23,6 +22,6 @@
 .claude/commands/restate/goal-gaps-assumptions.md
 .claude/hooks/format-terraform
 .claude/hooks/format-prettier
-.claude/hooks/format-oxfmt/shared.ts
-.claude/hooks/format-oxfmt/config
+.claude/hooks/format-oxfmt
+.claude/hooks/format-org-tables
 .claude/skills/install-bootstrap/scripts/merge-minimal.jq
