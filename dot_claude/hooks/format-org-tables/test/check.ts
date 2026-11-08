@@ -140,6 +140,8 @@ edit(scratch);
 await untouched("a file in a temp folder", scratch);
 fs.rmSync(scratch);
 // A TMPDIR that is only a name prefix of the folder, not a parent, does not skip it.
+// Emacs inherits TMPDIR, so it must be a folder that exists, as in a session.
+fs.mkdirSync(`${tmp}/sib`);
 unaligned(`${tmp}/sibling.org`);
 spawnSync(process.execPath, [path.join(hook, "command.ts")], {
   input: JSON.stringify({ tool_input: { file_path: `${tmp}/sibling.org` } }),
