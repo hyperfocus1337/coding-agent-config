@@ -8,7 +8,7 @@ Formats the files that a Write, an Edit, or a Bash call changed, with the format
 | `.sh` `.bash`   | [shfmt](https://github.com/mvdan/sh)                                        | `shfmt -l -w [-i 2 -ci] <file>`      | `shfmt`     |
 | `.py` `.pyi`    | [ruff format](https://docs.astral.sh/ruff/formatter/)                       | `ruff format --force-exclude <file>` | `ruff`      |
 
-The key turns off one formatter in one repository, see [Settings](#settings). To add a formatter, add a row to `FORMATTERS` in [`core.ts`](core.ts), its extensions to `NAMED`, and its key to `PARTS` in [`toggle-hook/core.ts`](../toggle-hook/core.ts). The toggle-hook test fails when the keys differ.
+The key turns off one formatter in one repository, see [Settings](#settings). To add a formatter, add a module to [`formatters/`](formatters), add it to `FORMATTERS` in [`core.ts`](core.ts), and add its key to `PARTS` in [`toggle-hook/core.ts`](../toggle-hook/core.ts). The core takes the extensions of a Bash command from the modules. The toggle-hook test fails when the keys differ.
 
 One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
@@ -134,7 +134,7 @@ With no `node`, the Codex entry exits 0 and the hook does not run. Then the `Ses
 
 ### One hook for the formatters that are not Prettier
 
-The hook started as `format-terraform`, a copy of the design of [`format-org-tables`](../format-org-tables/README.md). Each formatter of this hook runs one command on one file and prints the name of a changed file, so a new formatter is one row in `FORMATTERS`, not a new folder with its own adapters and test. [`docs/hooks/decisions.md`](../../../docs/hooks/decisions.md#format-code-holds-the-formatters-that-are-not-prettier) gives the decision. No official hook does this job, see [`docs/research.md`](docs/research.md#other-hooks).
+The hook started as `format-terraform`, a copy of the design of [`format-org-tables`](../format-org-tables/README.md). Each formatter of this hook runs one command on one file and prints the name of a changed file, so a new formatter is one module in `formatters/`, not a new folder with its own adapters and test. [`docs/hooks/decisions.md`](../../../docs/hooks/decisions.md#format-code-holds-the-formatters-that-are-not-prettier) gives the decision, and [one module for each tool](../../../docs/hooks/decisions.md#one-module-for-each-tool-in-lint-code-and-format-code) tells why each formatter has its own module. No official hook does this job, see [`docs/research.md`](docs/research.md#other-hooks).
 
 ### One run for each file
 
@@ -156,7 +156,7 @@ A `~/.editorconfig` does not replace the fallback, because the devcontainer repo
 ruff format was chosen over Black because `lint-code` already uses ruff, so it adds no tool. It reads the same config as `ruff check` (`[tool.ruff]` and `[tool.ruff.format]` in `pyproject.toml` or `ruff.toml`). Its default style is the Black style: a line length of 88 and double quotes.
 
 - **`--force-exclude`:** ruff formats a file that its command names, also when the `exclude` list of the project config holds it. With this flag, the list applies. ruff then prints `warning: No Python files found` and exits 0.
-- **The change test:** ruff prints `1 file reformatted` or `1 file left unchanged`, and it has no flag that prints only the changed files. `--quiet` prints nothing in both cases. So the ruff row of `FORMATTERS` has a `changed` function that looks for `reformatted`. The other rows have no `changed` function, and for them any stdout counts as a change.
+- **The change test:** ruff prints `1 file reformatted` or `1 file left unchanged`, and it has no flag that prints only the changed files. `--quiet` prints nothing in both cases. So the ruff module has a `changed` function that looks for `reformatted`. The other modules have no `changed` function, and for them any stdout counts as a change.
 
 ruff format does not sort imports. That is the lint rule `I` of `ruff check --fix`, and the hook does not run it.
 
@@ -165,6 +165,7 @@ ruff format does not sort imports. That is the lint rule `I` of `ruff check --fi
 | File                                                             | Role                                                                      |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | [`core.ts`](core.ts)                                             | Finds the files and runs the formatters. No Node imports.                 |
+| [`formatters/`](formatters)                                      | One module for each formatter: its extensions, key, and command           |
 | [`io.ts`](io.ts)                                                 | The file and process functions of the core under Node                     |
 | [`command.ts`](command.ts)                                       | The command hook for Codex and `format-staged-files`                      |
 | [`pi.ts`](pi.ts)                                                 | The pi extension, which omp also loads                                    |

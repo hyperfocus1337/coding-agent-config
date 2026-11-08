@@ -12,6 +12,7 @@ import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { FORMATTERS } from "../../format-code/core.ts";
 import {
   command,
   globalFile,
@@ -168,9 +169,8 @@ await check("--global: a name flips its key", () =>
   }),
 );
 await check("PARTS holds the keys of FORMATTERS in format-code", () => {
-  const source = fs.readFileSync(new URL("../../format-code/core.ts", import.meta.url), "utf8");
   assert.deepEqual(
-    [...source.matchAll(/^\s+key: "([\w-]+)",$/gm)].map(([, key]) => key),
+    FORMATTERS.map(({ key }) => key),
     PARTS.get("format-code"),
   );
 });

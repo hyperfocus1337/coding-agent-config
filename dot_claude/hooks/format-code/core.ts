@@ -1,7 +1,8 @@
 /**
  * The format-code logic: finds the files a tool call changed and formats
  * each one with the formatter for its extension, from FORMATTERS: terraform
- * fmt, shfmt, and ruff format. oxfmt has no parser for these languages, so
+ * fmt, shfmt, and ruff format, one module each in formatters/. oxfmt has no
+ * parser for these languages, so
  * format-oxfmt skips them. Never blocks: a missing formatter or a file
  * that does not parse stays as it is. The adapters pass in the file and
  * process functions, because a mod reaches them only through `$`.
@@ -10,6 +11,10 @@
  * (omp only), command.ts (Codex, and the format-staged-files pre-commit hook).
  * Design notes: README.md.
  */
+
+import { ruff } from "./formatters/ruff.ts";
+import { shfmt } from "./formatters/shfmt.ts";
+import { terraform } from "./formatters/terraform.ts";
 
 export interface Io {
   /** The kind of a path and its mtime; undefined if missing. */
@@ -45,49 +50,19 @@ export interface Call {
  * command writes the file in place and exits 0. A file that does not parse
  * exits other than 0.
  */
-interface Formatter {
+export interface Formatter {
   name: string;
   /** The git config key that turns it off: agent-hook.format-code.<key>. */
   key: string;
-  files: RegExp;
+  /** File extensions without the dot. */
+  extensions: string[];
   argv(file: string, io: Io): Promise<string[]>;
   /** Whether the stdout of a run tells of a change; default: not empty. */
   changed?(stdout: string): boolean;
 }
 
-const FORMATTERS: Formatter[] = [
-  {
-    name: "terraform fmt",
-    key: "terraform",
-    files: /\.(tf|tfvars)$/,
-    argv: async (file) => ["terraform", "fmt", "-no-color", file],
-  },
-  {
-    name: "shfmt",
-    key: "shfmt",
-    files: /\.(sh|bash)$/,
-    // Any printer flag makes shfmt ignore .editorconfig. So the flags only
-    // where no .editorconfig applies, else shfmt indents with tabs. README
-    // "shfmt and .editorconfig".
-    argv: async (file, io) => {
-      for (let dir = parent(file); ; dir = parent(dir)) {
-        if ((await io.stat(`${dir}/.editorconfig`))?.kind === "file")
-          return ["shfmt", "-l", "-w", file];
-        if (dir === "/") return ["shfmt", "-l", "-w", "-i", "2", "-ci", file];
-      }
-    },
-  },
-  {
-    name: "ruff format",
-    key: "ruff",
-    files: /\.pyi?$/,
-    // --force-exclude: the exclude list of the ruff config applies also to a
-    // file that the command names. Ruff prints a summary for each run, also
-    // "1 file left unchanged", so only "reformatted" tells of a change.
-    argv: async (file) => ["ruff", "format", "--force-exclude", file],
-    changed: (stdout) => stdout.includes("reformatted"),
-  },
-];
+/** One module each in formatters/. toggle-hook PARTS holds the same keys. */
+export const FORMATTERS: Formatter[] = [terraform, shfmt, ruff];
 
 /**
  * A command that commits: `git`, then global options such as `-C <dir>`, then
@@ -96,11 +71,17 @@ const FORMATTERS: Formatter[] = [
 const COMMIT = /\bgit[ \t](?:[^;&|\n]*[ \t])?commit(?![\w-])/;
 
 /** A path that a command names, with an extension of FORMATTERS. */
-const NAMED = /[^\s:;|&"'`()<>=]+\.(?:tfvars|tf|bash|sh|pyi|py)\b/g;
+const NAMED = new RegExp(
+  `${/[^\s:;|&"'`()<>=]+\./.source}(?:${FORMATTERS.flatMap((f) => f.extensions).join("|")})\\b`,
+  "g",
+);
 
 const plain = (path: string) => path.replace(/^\/private/, "");
 const parent = (path: string) => path.slice(0, path.lastIndexOf("/")) || "/";
-const formatterOf = (file: string) => FORMATTERS.find(({ files }) => files.test(file));
+const formatterOf = (file: string) => {
+  const extension = /\.([^./]+)$/.exec(file)?.[1];
+  return FORMATTERS.find(({ extensions }) => extension && extensions.includes(extension));
+};
 
 /**
  * A file under /tmp, /var/tmp, or TMPDIR is a scratch file, not project
