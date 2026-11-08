@@ -65,6 +65,25 @@ const linterOf = (file: string) => {
   return LINTERS.find(({ extensions }) => extension && extensions.includes(extension));
 };
 
+/**
+ * check for the agent adapters: the lint errors, and the coverage notices with an exception as
+ * one more notice. Each adapter then decides what its agent shows and whether it continues.
+ */
+export async function report(
+  cwd: string,
+  io: Io,
+  settings: Settings,
+): Promise<{ errors?: string; notices: string[] }> {
+  const notices: string[] = [];
+  try {
+    const errors = await check(cwd, io, { ...settings, notice: (m) => notices.push(m) });
+    return { errors, notices };
+  } catch (error) {
+    notices.push(`Lint coverage incomplete: ${String(error)}`);
+    return { notices };
+  }
+}
+
 /** Checks the repository that holds cwd; returns all lint failures together. */
 export async function check(cwd: string, io: Io, settings: Settings): Promise<string | undefined> {
   if (!settings.all && (settings.hooksOff ?? "").split(/[\s,]+/).includes("lint-code")) return;

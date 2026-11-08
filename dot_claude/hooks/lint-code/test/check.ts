@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { check as checkLint, lint, type Io } from "../core.ts";
+import { check as checkLint, lint, report, type Io } from "../core.ts";
 import { nodeIo } from "../io.ts";
 import extension from "../pi.ts";
 import ompExtension from "../omp.ts";
@@ -192,6 +192,20 @@ assert.equal(
     { ...settings, hooksOff: "lint-prose,lint-code" },
   ),
   undefined,
+);
+
+// report turns an exception into a coverage notice, not a lint error.
+assert.deepEqual(
+  await report(
+    "/r",
+    {
+      ...stub().io,
+      run: async (argv) =>
+        argv[1] === "rev-parse" ? { exitCode: 0, output: "/r\n" } : { exitCode: 1, output: "" },
+    },
+    settings,
+  ),
+  { notices: ["Lint coverage incomplete: Error: Cannot select lint targets: git diff failed"] },
 );
 
 // Paths come from NUL-separated git output, not shell text or file age.

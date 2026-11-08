@@ -1,7 +1,7 @@
 /** One correction before settlement, then report-only final verification. */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { check } from "./core.ts";
+import { report } from "./core.ts";
 import { nodeIo, nodeSettings } from "./io.ts";
 
 export default function (pi: ExtensionAPI) {
@@ -10,33 +10,18 @@ export default function (pi: ExtensionAPI) {
     const verify = checked && !event.aborted;
     checked = false;
     if (!verify) return;
-    const reports: string[] = [];
-    try {
-      const errors = await check(ctx.cwd, nodeIo(ctx.cwd), {
-        ...nodeSettings(),
-        verify: true,
-        notice: (message) => reports.push(message),
-      });
-      if (errors) reports.push(errors);
-    } catch (error) {
-      reports.push(`Lint coverage incomplete: ${String(error)}`);
-    }
+    const { errors, notices } = await report(ctx.cwd, nodeIo(ctx.cwd), {
+      ...nodeSettings(),
+      verify: true,
+    });
+    const reports = [...notices, ...(errors ? [errors] : [])];
     if (reports.length)
       pi.sendMessage({ customType: "lint-code", content: reports.join("\n"), display: true });
   });
   pi.on("agent_before_settle", async (event, ctx) => {
     if (checked || event.outcome !== "completed") return;
     checked = true;
-    const notices: string[] = [];
-    let errors: string | undefined;
-    try {
-      errors = await check(ctx.cwd, nodeIo(ctx.cwd), {
-        ...nodeSettings(),
-        notice: (message) => notices.push(message),
-      });
-    } catch (error) {
-      notices.push(`Lint coverage incomplete: ${String(error)}`);
-    }
+    const { errors, notices } = await report(ctx.cwd, nodeIo(ctx.cwd), nodeSettings());
     if (!errors && !notices.length) return;
     return {
       entries: [

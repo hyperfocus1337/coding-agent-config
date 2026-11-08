@@ -1,6 +1,6 @@
 /** omp Stop: one correction, then report-only verification. */
 
-import { check } from "./core.ts";
+import { report } from "./core.ts";
 import { nodeIo, nodeSettings } from "./io.ts";
 
 interface OmpApi {
@@ -18,17 +18,10 @@ export default function (omp: OmpApi) {
     const reason = event.last_assistant_message?.stopReason;
     if (reason === "aborted" || reason === "error") return;
     const final = event.stop_hook_active;
-    const notices: string[] = [];
-    let errors: string | undefined;
-    try {
-      errors = await check(ctx.cwd, nodeIo(ctx.cwd), {
-        ...nodeSettings(),
-        verify: final,
-        notice: (message) => notices.push(message),
-      });
-    } catch (error) {
-      notices.push(`Lint coverage incomplete: ${String(error)}`);
-    }
+    const { errors, notices } = await report(ctx.cwd, nodeIo(ctx.cwd), {
+      ...nodeSettings(),
+      verify: final,
+    });
     if (!errors && !notices.length) return;
     return {
       continue: !final && Boolean(errors),
