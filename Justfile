@@ -157,6 +157,25 @@ pi-diff:
 [group('pi')]
 pi: pi-apply pi-check
 
+# Update the pi packages that ~/.pi/agent/settings.json lists, then refresh the model catalogs. Leaves pi itself alone.
+[group('pi')]
+pi-update:
+    pi update --extensions
+    pi update --models
+
+# Run `just pi-update` inside the devcontainer.
+[group('pi')]
+pi-update-devcontainer:
+    docker exec -u {{ CONTAINER_USER }} -w {{ CONTAINER_REPO }} -i $([ -t 0 ] && echo -t) {{ CONTAINER }} just pi-update
+
+# Run `just pi-update` both locally and inside the devcontainer.
+[group('pi')]
+pi-update-all:
+    @echo "==> pi-update: local"
+    @just pi-update
+    @echo "==> pi-update: devcontainer"
+    @just pi-update-devcontainer
+
 # --- hooks ---
 
 # Type-check and validate the TypeScript hooks in dot_claude/hooks, then run each test/check.ts.
