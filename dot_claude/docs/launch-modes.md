@@ -32,14 +32,14 @@ All modes use `~/.claude`, so they share history, sessions, memory, and login. A
 
 The functions combine the switches below. Each row shows what a session loads when you add only that switch. `--safe-mode` is built into Claude Code, and no function uses it. The functions pass other flags through, so `claude --safe-mode` also gets the `settings-minimal.json` layer.
 
-| Switch                              | Kind         | `settings.json`            | Hooks | CLAUDE.md and rules | Plugins and skills | MCP servers          | Used by                                                      |
-| ----------------------------------- | ------------ | -------------------------- | ----- | ------------------- | ------------------ | -------------------- | ------------------------------------------------------------ |
-| `--safe-mode`                       | flag         | permissions and model only | no    | no                  | no                 | no                   | none                                                         |
-| `--setting-sources ''`              | flag         | no                         | no    | no                  | no                 | yes                  | `claude-vanilla`                                             |
-| `--strict-mcp-config`               | flag         | yes                        | yes   | yes                 | yes                | no                   | `claude-vanilla`                                             |
-| `"disableAllHooks": true`           | settings key | yes                        | no    | yes                 | yes                | yes                  | `claude-nohooks`, `claude-nohooks-norules`                   |
-| `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1`  | environment  | yes                        | yes   | no                  | yes                | yes                  | `claude-norules`, `claude-nohooks-norules`, `claude-vanilla` |
-| `ENABLE_CLAUDEAI_MCP_SERVERS=false` | environment  | yes                        | yes   | yes                 | yes                | no claude.ai servers | all functions except `claude-full`                           |
+| Switch                              | Kind         | `settings.json`            | Hooks     | CLAUDE.md and rules | Plugins and skills | MCP servers          | Used by                                                      |
+| ----------------------------------- | ------------ | -------------------------- | --------- | ------------------- | ------------------ | -------------------- | ------------------------------------------------------------ |
+| `--safe-mode`                       | flag         | permissions and model only | no        | no                  | no                 | no                   | none                                                         |
+| `--setting-sources ''`              | flag         | no                         | mods only | no                  | no                 | yes                  | `claude-vanilla`                                             |
+| `--strict-mcp-config`               | flag         | yes                        | yes       | yes                 | yes                | no                   | `claude-vanilla`                                             |
+| `"disableAllHooks": true`           | settings key | yes                        | no        | yes                 | yes                | yes                  | `claude-nohooks`, `claude-nohooks-norules`, `claude-vanilla` |
+| `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1`  | environment  | yes                        | yes       | no                  | yes                | yes                  | `claude-norules`, `claude-nohooks-norules`, `claude-vanilla` |
+| `ENABLE_CLAUDEAI_MCP_SERVERS=false` | environment  | yes                        | yes       | yes                 | yes                | no claude.ai servers | all functions except `claude-full`                           |
 
 ## Vanilla mode
 
@@ -47,7 +47,7 @@ The functions combine the switches below. Each row shows what a session loads wh
 
 - `--setting-sources ''` skips user, project, and local settings. Claude Code loads CLAUDE.md, rules, hooks, plugins, and user skills through these sources, so the flag skips them too. Bundled skills still load.
 - `--strict-mcp-config` skips MCP servers. Without it, servers from `~/.claude.json` still load.
-- `--settings ~/.claude/settings-vanilla.json` is the only settings layer. The file turns off commit and PR attribution, because in this mode no rule or hook stops Claude from adding a `Co-Authored-By` trailer. For the pure Claude Code defaults, remove the `attribution` key.
+- `--settings ~/.claude/settings-vanilla.json` is the only settings layer. The file turns off commit and PR attribution, because in this mode no rule or hook stops Claude from adding a `Co-Authored-By` trailer. For the pure Claude Code defaults, remove the `attribution` key. The file also sets `disableAllHooks`, because `--setting-sources ''` does not stop the hooks that run as mods (tested on 2026-11-11).
 
 Do not use `--bare` for this mode. It reads only `ANTHROPIC_API_KEY` or an `apiKeyHelper`, so an OAuth login fails.
 
