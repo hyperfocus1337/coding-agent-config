@@ -8,4 +8,5 @@ claude-nohooks() { ENABLE_CLAUDEAI_MCP_SERVERS=false command claude --settings "
 claude-norules() { CLAUDE_CODE_DISABLE_CLAUDE_MDS=1 claude "$@"; }
 claude-nohooks-norules() { CLAUDE_CODE_DISABLE_CLAUDE_MDS=1 claude-nohooks "$@"; }
 claude-vanilla() { ENABLE_CLAUDEAI_MCP_SERVERS=false CLAUDE_CODE_DISABLE_CLAUDE_MDS=1 command claude --setting-sources '' --strict-mcp-config --settings "$HOME/.claude/settings-vanilla.json" "$@"; }
+claude-vanilla-minimal() { ENABLE_CLAUDEAI_MCP_SERVERS=false CLAUDE_CODE_DISABLE_CLAUDE_MDS=1 command claude --setting-sources '' --strict-mcp-config --settings "$(jq -cs '.[0] * .[1]' "$HOME/.claude/settings-minimal.json" "$HOME/.claude/settings-vanilla.json")" "$@"; }
 claude-full() { env -u ENABLE_CLAUDEAI_MCP_SERVERS claude "$@"; }

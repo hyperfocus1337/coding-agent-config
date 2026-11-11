@@ -18,6 +18,7 @@ The table lists the functions from the most setup to the least.
 | `claude-norules`         | yes             | yes                     | yes   | no                  | yes                | yes         |
 | `claude-nohooks-norules` | yes             | yes                     | no    | no                  | yes                | yes         |
 | `claude-vanilla`         | no              | no                      | no    | no                  | no                 | no          |
+| `claude-vanilla-minimal` | no              | yes                     | no    | no                  | no                 | no          |
 
 - `claude` adds `settings-minimal.json` as a `--settings` layer on top of `settings.json`. The minimal file holds the denied tools and the `disable*` keys that [`docs/research/context/disabled-tools.md`](../../docs/research/context/disabled-tools.md) explains. Use it for daily work.
 - `claude-full` starts without the minimal layer, so all features are available.
@@ -25,6 +26,7 @@ The table lists the functions from the most setup to the least.
 - `claude-norules` is `claude` plus `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1`. The variable skips every CLAUDE.md file and every `.claude/rules/` directory, at user and project scope. Hooks still run.
 - `claude-nohooks-norules` is `claude-nohooks` plus `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1`.
 - `claude-vanilla` is stock Claude Code with OAuth login. Use it to find out if a problem comes from this setup or from Claude Code itself. See [Vanilla mode](#vanilla-mode).
+- `claude-vanilla-minimal` is `claude-vanilla` plus the `settings-minimal.json` layer. Compare it with `claude-vanilla` to find out if a problem comes from the minimal layer.
 
 All modes use `~/.claude`, so they share history, sessions, memory, and login. A deny rule cannot be removed by a later settings file, so the minimal file is a layer on top of the full file and not the other way round. See [`docs/research/context/alternative-settings.md`](../../docs/research/context/alternative-settings.md).
 
@@ -32,14 +34,14 @@ All modes use `~/.claude`, so they share history, sessions, memory, and login. A
 
 The functions combine the switches below. Each row shows what a session loads when you add only that switch. `--safe-mode` is built into Claude Code, and no function uses it. The functions pass other flags through, so `claude --safe-mode` also gets the `settings-minimal.json` layer.
 
-| Switch                              | Kind         | `settings.json`            | Hooks     | CLAUDE.md and rules | Plugins and skills | MCP servers          | Used by                                                      |
-| ----------------------------------- | ------------ | -------------------------- | --------- | ------------------- | ------------------ | -------------------- | ------------------------------------------------------------ |
-| `--safe-mode`                       | flag         | permissions and model only | no        | no                  | no                 | no                   | none                                                         |
-| `--setting-sources ''`              | flag         | no                         | mods only | no                  | no                 | yes                  | `claude-vanilla`                                             |
-| `--strict-mcp-config`               | flag         | yes                        | yes       | yes                 | yes                | no                   | `claude-vanilla`                                             |
-| `"disableAllHooks": true`           | settings key | yes                        | no        | yes                 | yes                | yes                  | `claude-nohooks`, `claude-nohooks-norules`, `claude-vanilla` |
-| `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1`  | environment  | yes                        | yes       | no                  | yes                | yes                  | `claude-norules`, `claude-nohooks-norules`, `claude-vanilla` |
-| `ENABLE_CLAUDEAI_MCP_SERVERS=false` | environment  | yes                        | yes       | yes                 | yes                | no claude.ai servers | all functions except `claude-full`                           |
+| Switch                              | Kind         | `settings.json`            | Hooks     | CLAUDE.md and rules | Plugins and skills | MCP servers          | Used by                                                                                |
+| ----------------------------------- | ------------ | -------------------------- | --------- | ------------------- | ------------------ | -------------------- | -------------------------------------------------------------------------------------- |
+| `--safe-mode`                       | flag         | permissions and model only | no        | no                  | no                 | no                   | none                                                                                   |
+| `--setting-sources ''`              | flag         | no                         | mods only | no                  | no                 | yes                  | `claude-vanilla`, `claude-vanilla-minimal`                                             |
+| `--strict-mcp-config`               | flag         | yes                        | yes       | yes                 | yes                | no                   | `claude-vanilla`, `claude-vanilla-minimal`                                             |
+| `"disableAllHooks": true`           | settings key | yes                        | no        | yes                 | yes                | yes                  | `claude-nohooks`, `claude-nohooks-norules`, `claude-vanilla`, `claude-vanilla-minimal` |
+| `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1`  | environment  | yes                        | yes       | no                  | yes                | yes                  | `claude-norules`, `claude-nohooks-norules`, `claude-vanilla`, `claude-vanilla-minimal` |
+| `ENABLE_CLAUDEAI_MCP_SERVERS=false` | environment  | yes                        | yes       | yes                 | yes                | no claude.ai servers | all functions except `claude-full`                                                     |
 
 ## Vanilla mode
 
@@ -49,6 +51,8 @@ The functions combine the switches below. Each row shows what a session loads wh
 - `--strict-mcp-config` skips MCP servers. Without it, servers from `~/.claude.json` still load.
 - `--settings ~/.claude/settings-vanilla.json` is the only settings layer. The file turns off commit and PR attribution, because in this mode no rule or hook stops Claude from adding a `Co-Authored-By` trailer. For the pure Claude Code defaults, remove the `attribution` key. The file also sets `disableAllHooks`, because `--setting-sources ''` does not stop the hooks that run as mods (tested on 2026-11-11).
 
+`claude-vanilla-minimal` uses the same switches, but `jq` merges `settings-vanilla.json` over `settings-minimal.json` into one settings layer. Claude Code keeps only the last `--settings` flag, so two flags would drop the attribution keys. The vanilla file wins on conflicts, so its `"disableAllHooks": true` replaces the `false` in the minimal file. The minimal layer also turns off bundled skills.
+
 Do not use `--bare` for this mode. It reads only `ANTHROPIC_API_KEY` or an `apiKeyHelper`, so an OAuth login fails.
 
 In the devcontainer, `claude-vanilla` does not get `bypassPermissions`, because that value comes from `settings.json`. Claude asks for permission before each action.
@@ -57,5 +61,5 @@ In the devcontainer, `claude-vanilla` does not get `bypassPermissions`, because 
 
 - Only shells that load these functions get these modes. The IDE extension, the desktop app, and scripts that start `claude` run in full mode.
 - Claude Code keeps only the last `--settings` flag, so `claude --settings X` replaces the minimal layer.
-- `claude-nohooks`, `claude-nohooks-norules`, and `claude-vanilla` also turn off the guardrail hooks, such as `block-destructive-commands` and `enforce-cli-tools`. This includes the hooks that run as mods (tested on 2026-10-19). The git guards `block-secret-commits` and `block-commit-attribution` still run, because git runs them on each commit. For full mode without hooks, run `claude-full --settings '{"disableAllHooks": true}'`.
+- `claude-nohooks`, `claude-nohooks-norules`, `claude-vanilla`, and `claude-vanilla-minimal` also turn off the guardrail hooks, such as `block-destructive-commands` and `enforce-cli-tools`. This includes the hooks that run as mods (tested on 2026-10-19). The git guards `block-secret-commits` and `block-commit-attribution` still run, because git runs them on each commit. For full mode without hooks, run `claude-full --settings '{"disableAllHooks": true}'`.
 - All modes except `claude-full` set `ENABLE_CLAUDEAI_MCP_SERVERS=false`, which turns off the claude.ai MCP servers. `claude-full` removes the variable, because a `claude-full` started from a `claude` session inherits it.
