@@ -12,8 +12,8 @@ The table lists the functions from the most setup to the least.
 
 | Command                  | `settings.json` | `settings-minimal.json` | Hooks | CLAUDE.md and rules | Plugins and skills | MCP servers |
 | ------------------------ | --------------- | ----------------------- | ----- | ------------------- | ------------------ | ----------- |
-| `claude-full`            | yes             | no                      | yes   | yes                 | yes                | yes         |
 | `claude`                 | yes             | yes                     | yes   | yes                 | yes                | yes         |
+| `claude-full`            | yes             | no                      | yes   | yes                 | yes                | yes         |
 | `claude-nohooks`         | yes             | yes                     | no    | yes                 | yes                | yes         |
 | `claude-norules`         | yes             | yes                     | yes   | no                  | yes                | yes         |
 | `claude-nohooks-norules` | yes             | yes                     | no    | no                  | yes                | yes         |
