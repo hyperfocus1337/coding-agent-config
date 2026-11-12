@@ -167,7 +167,7 @@ export default function codexUsage(pi: ExtensionAPI): void {
         ? ctx.modelRegistry.getAll().find((model) => model.provider === PROVIDER)
         : ctx.model;
       failure =
-        "Run /login, select OpenAI Codex (legacy), and use the same ChatGPT account/workspace as OpenAI. Keep your current model.";
+        "Run /login, select OpenAI Codex, and use the same ChatGPT account/workspace as OpenAI. Keep your current model.";
       needsLogin = true;
       if (!backend || !ctx.modelRegistry.isUsingOAuth(backend)) throw new Error();
       const auth = (await ctx.modelRegistry.getProviderAuth(PROVIDER))?.auth;
@@ -185,7 +185,7 @@ export default function codexUsage(pi: ExtensionAPI): void {
       if (app) {
         const apps = await readJson(`${URL}/chatpass/apps`, token, id, controller.signal);
         failure =
-          "OpenAI app not found in the quota account. Sign in to OpenAI and OpenAI Codex (legacy) with the same ChatGPT account/workspace.";
+          "OpenAI app not found in the quota account. Sign in to OpenAI and OpenAI Codex with the same ChatGPT account/workspace.";
         if (!matchesApp(apps, app)) throw new Error();
         failure = "Codex usage unavailable. Check /login or try again later.";
       }

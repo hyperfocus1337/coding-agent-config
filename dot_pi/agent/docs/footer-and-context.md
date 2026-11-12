@@ -8,7 +8,7 @@
 
 ## Codex quotas
 
-The local [`codex-usage`](../extensions/codex-usage/README.md) extension supplies ChatGPT plan session (5-hour) and weekly quota-used percentages through two `external-status` widgets beside the context bar for `openai` and `openai-codex` models. It uses Pi's companion **OpenAI Codex (legacy)** login for quota reads and verifies the active OpenAI app registration before displaying plan limits; `/codex-usage` refreshes the values. Keep the current OpenAI model and use the same account/workspace for both logins. Other providers hide these widgets.
+The local [`codex-usage`](../extensions/codex-usage/README.md) extension supplies ChatGPT plan session (5-hour) and weekly quota-used percentages through two `external-status` widgets beside the context bar for `openai` and `openai-codex` models. It uses Pi's companion **OpenAI Codex** login for quota reads and verifies the active OpenAI app registration before displaying plan limits; `/codex-usage` refreshes the values. Keep the current OpenAI model and use the same account/workspace for both logins. Other providers hide these widgets.
 
 ## Save footer changes
 

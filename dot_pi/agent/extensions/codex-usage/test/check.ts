@@ -154,7 +154,7 @@ try {
   await flush();
   assert.equal(statuses.get("codex-session"), "Session: login required");
   await commands.get("codex-usage").handler("", ctx);
-  assert.match(notifications.at(-1), /OpenAI Codex \(legacy\).*same ChatGPT/);
+  assert.match(notifications.at(-1), /select OpenAI Codex, and use the same ChatGPT/);
 
   ctx.modelRegistry.getProviderAuth = async (provider) => ({
     auth: { apiKey: provider === "openai" ? appToken : token },

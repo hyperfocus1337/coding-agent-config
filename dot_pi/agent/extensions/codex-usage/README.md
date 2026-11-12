@@ -4,7 +4,7 @@ Publishes ChatGPT plan quota usage for the active `openai` or `openai-codex` pro
 
 ## Setup
 
-Keep your current OpenAI model. Run `/login`, select **OpenAI Codex (legacy)**, and sign in with the same ChatGPT account/workspace as your **OpenAI** login. The legacy login is required only to read quota data; you do not need to switch to a legacy model. Run `/reload`, then `/codex-usage`. If the companion login is missing, the footer shows `Session: login required` and `Weekly --`; `/codex-usage` explains how to sign in.
+Keep your current OpenAI model. Run `/login`, select **OpenAI Codex**, and sign in with the same ChatGPT account/workspace as your **OpenAI** login. This login is required only to read quota data; you do not need to switch to an OpenAI Codex model. Run `/reload`, then `/codex-usage`. If the companion login is missing, the footer shows `Session: login required` and `Weekly --`; `/codex-usage` explains how to sign in.
 
 The new OpenAI app token targets `api.openai.com`, while the quota endpoint requires Codex backend authentication. For an active `openai` model, the extension decodes its application ID locally, then reads `https://chatgpt.com/backend-api/wham/usage/chatpass/apps` using only the companion Codex credential. It requires exactly one matching application registration before reading plan quotas from `https://chatgpt.com/backend-api/wham/usage`. This checks that the active registration exists in the quota account; it is not an independent cryptographic identity check. A missing or duplicate match prevents quota display.
 
