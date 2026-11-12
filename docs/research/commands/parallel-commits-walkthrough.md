@@ -2,7 +2,9 @@
 
 This page follows one run of [`/git:commit:parallel`](../../../dot_claude/commands/git/commit/parallel.md) step by step, while a second session commits on the same branch. For why the command uses these git methods, see [parallel commits](parallel-commits.md).
 
-The output comes from a scratch repository with git 2.55.0 on 2026-10-02. The page shortens SHAs to 7 characters. The command uses the full SHA that git prints. Both forms work in git commands.
+The file changes, object IDs, and Git output come from the original scratch run with git 2.55.0 on 2026-10-02. The steps now explain the current Python publish helper, not the original model-driven retry loop. Internal Git calls below are an explanatory trace, not a new captured helper run.
+
+The page shortens SHAs to 7 characters. The command uses the full SHA that git prints. Both forms work in git commands.
 
 ## Setup
 
@@ -30,21 +32,21 @@ In the state tables, `base` is the content in `7e26956`, `A` and `B` are the cha
 
 ## Timeline
 
-| Step | Session A                                                      | Session B         | `main`    |
-| ---- | -------------------------------------------------------------- | ----------------- | --------- |
-| 1    | Reads the context, builds its lists                            |                   | `7e26956` |
-| 2    | `mktemp -d`                                                    |                   | `7e26956` |
-| 3    | Base `7e26956`                                                 |                   | `7e26956` |
-| 4    | Builds the private index                                       |                   | `7e26956` |
-| 5    | Checks the private index                                       |                   | `7e26956` |
-| 6    |                                                                | Commits `test.sh` | `8fb2b41` |
-| 7    | Writes commit `d638761` on base `7e26956`                      |                   | `8fb2b41` |
-| 8    | `update-ref` fails: `main` moved                               |                   | `8fb2b41` |
-| 9    | Builds again on base `8fb2b41`, commit `a323dfe`, `update-ref` |                   | `a323dfe` |
-| 10   | Shared index is stale                                          |                   | `a323dfe` |
-| 11   | Refresh fails on `index.lock`, then succeeds                   |                   | `a323dfe` |
-| 12   | Verifies with `git status`                                     |                   | `a323dfe` |
-| 13   | Prints the result                                              |                   | `a323dfe` |
+| Step | Session A                                                       | Session B         | `main`    |
+| ---- | --------------------------------------------------------------- | ----------------- | --------- |
+| 1    | Reads the context, builds its lists                             |                   | `7e26956` |
+| 2    | `mktemp -d`                                                     |                   | `7e26956` |
+| 3    | Base `7e26956`                                                  |                   | `7e26956` |
+| 4    | Builds the private index                                        |                   | `7e26956` |
+| 5    | Checks the private index, saves the snapshot, starts the helper |                   | `7e26956` |
+| 6    |                                                                 | Commits `test.sh` | `8fb2b41` |
+| 7    | Writes commit `d638761` on base `7e26956`                       |                   | `8fb2b41` |
+| 8    | `update-ref` fails: `main` moved                                |                   | `8fb2b41` |
+| 9    | Reapplies the saved snapshot on `8fb2b41`, publishes `a323dfe`  |                   | `a323dfe` |
+| 10   | Shared index is stale                                           |                   | `a323dfe` |
+| 11   | Refresh fails on `index.lock`, then succeeds                    |                   | `a323dfe` |
+| 12   | Verifies with `git status`                                      |                   | `a323dfe` |
+| 13   | Prints the result                                               |                   | `a323dfe` |
 
 ## Steps
 
@@ -148,7 +150,7 @@ $ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git apply --cached /tmp/tmp.HBASKNyFc
 | Private index | A           | A        | none        |
 | `HEAD`        | base        | base     | none        |
 
-### 5. Check (step 3.3)
+### 5. Check, snapshot, and start publication (steps 3.3 to 3.5)
 
 ```console
 $ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git diff --cached --name-only 7e26956
@@ -171,9 +173,25 @@ $ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git diff --cached 7e26956 -- lib.sh
 
 The private index holds only the hunks of session A. The shared index has not changed: `git diff --cached --stat` without `GIT_INDEX_FILE` prints nothing.
 
+Session A saves the reviewed unit as an immutable binary patch with full object IDs and no rename detection:
+
+```console
+$ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git diff --cached --binary --full-index --no-renames 7e26956 > /tmp/tmp.HBASKNyFcc/unit-1.patch
+```
+
+After reading the check, session A starts publication in a new tool call:
+
+```sh
+python3 "$HOME/.claude/cli/commit-parallel.py" /tmp/tmp.HBASKNyFcc/index 7e26956a433ded3e22a330ee2348a37aed513842 /tmp/tmp.HBASKNyFcc/unit-1.patch "feat: greet takes a name"
+```
+
+The helper rejects the shared Git index and checks that the snapshot is nonempty and matches the private-index diff against the supplied base. It saves the unit's path list for the later shared-index refresh. It then reads `HEAD`; in this example, it still sees `7e26956`.
+
+Steps 6 through 11 show an interleaving inside that one helper call. There are no model turns between its Git operations. The helper never runs `git add`, generates a new diff from working files, or reads working-file content.
+
 ### 6. Session B commits
 
-While session A checks its stage, session B runs the same steps with its own scratch directory, `/tmp/tmp.IoeuNfjMzv`, and the same base:
+After the helper reads `HEAD`, session B publishes `test.sh` from its own scratch directory, `/tmp/tmp.IoeuNfjMzv`, using the same base. These are the underlying Git operations; session B also uses the publish helper:
 
 ```console
 $ GIT_INDEX_FILE=/tmp/tmp.IoeuNfjMzv/index git read-tree 7e26956
@@ -194,7 +212,7 @@ $ git reset -q -- test.sh
 | Private index (A)  | A           | A        | none      |
 | `HEAD` (`8fb2b41`) | base        | base     | B         |
 
-### 7. Write the commit (step 3.4)
+### 7. The helper writes a candidate commit (inside step 3.5)
 
 ```console
 $ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git write-tree
@@ -205,7 +223,7 @@ d638761f65f0423e488f276c524a903b606821f4
 
 `write-tree` stores the private index as a tree object. `commit-tree` stores a commit object with that tree and the parent `7e26956`. No branch points to `d638761` yet, so the repository looks the same as before.
 
-### 8. Move the branch: fails (step 3.5)
+### 8. The helper tries to move the branch (inside step 3.5)
 
 ```console
 $ git update-ref -m "commit: feat: greet takes a name" HEAD d638761 7e26956
@@ -214,20 +232,15 @@ fatal: update_ref failed for ref 'HEAD': cannot lock ref 'HEAD': is at 8fb2b4152
 
 The last argument tells `update-ref` that `main` must still point to `7e26956`. Session B moved it, so `update-ref` refuses. This failure protects the work of session B: the tree of `d638761` has no `test.sh`. If `main` had moved to `d638761`, whose parent is `7e26956`, the commit `8fb2b41` of session B would no longer be on the branch, and `test.sh` would disappear from it.
 
-The output contains `but expected`, so session A returns to step 3.1. `d638761` stays in the object database with no reference to it, and `git gc` deletes it later.
+The output contains `but expected`, and the helper confirms that `HEAD` differs from its base. It waits for a random interval from 0.05 to 0.2 seconds, then retries inside the same process. Other Git errors stop publication instead of triggering a rebuild. `d638761` stays in the object database with no reference to it until Git garbage collection removes it.
 
-### 9. Build again on the new base (steps 3.1 to 3.5)
+### 9. The helper reapplies the saved snapshot (inside step 3.5)
 
 ```console
 $ git rev-parse HEAD
 8fb2b4152e16436828197756104bcf06c84873c6
 $ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git read-tree 8fb2b41
-$ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git add -- README.md
-$ git diff -U3 8fb2b41 -- lib.sh > /tmp/tmp.HBASKNyFcc/lib.patch
-$ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git apply --cached /tmp/tmp.HBASKNyFcc/lib-greet-2.patch
-$ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git diff --cached --name-only 8fb2b41
-README.md
-lib.sh
+$ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git apply --cached --whitespace=nowarn - < /tmp/tmp.HBASKNyFcc/unit-1.patch
 $ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git write-tree
 38e22ebbdf75dada8bf37e29ce019b057f8f36a2
 $ git commit-tree 38e22eb -p 8fb2b41 -m "feat: greet takes a name"
@@ -235,7 +248,11 @@ a323dfe97102b59a684ea2e330d7aa8b9c73dec6
 $ git update-ref -m "commit: feat: greet takes a name" HEAD a323dfe 8fb2b41
 ```
 
-`read-tree` replaces the whole private index, so nothing from the first attempt stays. Session A copies the `greet` hunk from the new patch to `lib-greet-2.patch`. It does not reuse `lib-greet.patch` from the first attempt: if the copy fails, the new name does not exist and `git apply` stops with an error instead of applying the old patch. This time `main` still points to the base, so `update-ref` moves it to `a323dfe` and prints nothing. The new tree holds `test.sh` from session B, because it starts from `8fb2b41`.
+`read-tree` replaces the private index with the new base. The helper then applies the same reviewed bytes for both `README.md` and the `greet` hunk of `lib.sh`. The shell redirection above illustrates the patch input; the helper reads the snapshot once and passes those saved bytes to `git apply` through standard input.
+
+No file is staged again, so a later working-tree edit cannot enter the retry. This time `main` still points to the base, so `update-ref` moves it to `a323dfe` and prints nothing. The new tree holds `test.sh` from session B because it starts from `8fb2b41`.
+
+If the patch no longer applies cleanly, the helper stops and requires a new ownership review. It does not resolve overlapping edits automatically. Publication is limited to 10 attempts within a 30-second retry window; that window does not interrupt a Git process already running.
 
 ### 10. The shared index is stale
 
@@ -258,9 +275,15 @@ A `git commit` from the shared index in this state would commit the `base` conte
 | Shared index       | base        | base     | B         |
 | `HEAD` (`a323dfe`) | A           | A        | B         |
 
-### 11. Refresh the shared index (step 3.6)
+### 11. The helper refreshes the shared index (inside step 3.5)
 
-In this run, another git process holds the lock on the shared index at the first attempt:
+After publication, the helper prints the commit result before it attempts the refresh:
+
+```text
+a323dfe feat: greet takes a name
+```
+
+In this example, another Git process holds the lock on the shared index at the first attempt:
 
 ```console
 $ git reset -q -- README.md lib.sh
@@ -269,13 +292,15 @@ fatal: Unable to create '/tmp/tmp.v7UAAgvMon/demo/.git/index.lock': File exists.
 Another git process seems to be running in this repository, or the lock file may be stale
 ```
 
-The output contains `index.lock`, so session A runs the command again. The second attempt succeeds and prints nothing:
+The output contains `index.lock`, so the helper waits 0.2 seconds and retries. It allows at most 3 refresh attempts and never removes the lock file. The second attempt succeeds and prints nothing:
 
 ```console
 $ git reset -q -- README.md lib.sh
 ```
 
-`git reset -- <paths>` sets only the named paths in the shared index to their content in `HEAD`. It does not change the working tree or other paths.
+`git reset -- <paths>` sets only the named paths in the shared index to their content in `HEAD`. It does not change the working tree or other paths. The helper uses the path list saved before publication.
+
+If refresh fails, the commit already exists. The helper reports its SHA and the affected paths; session A must not publish the unit again. A non-lock refresh error stops immediately.
 
 | Place              | `README.md` | `lib.sh` | `test.sh` |
 | ------------------ | ----------- | -------- | --------- |
@@ -323,10 +348,24 @@ Session A prints one line per commit and the count of paths that stay uncommitte
 left: 1 paths
 ```
 
+## Failure reporting
+
+- If `HEAD` updates exhaust retries, report `Not committed: <reason>. Reviewed changes remain pending.` and the remaining path count. Do not report that there is nothing to commit.
+- If the saved patch no longer applies, stop and review ownership before building a new unit. Do not reread and stage working files as an automatic retry.
+- If publication succeeds but shared-index refresh fails, report the commit line, `Index refresh failed: <paths>`, and the remaining path count. Do not repeat the publish call blindly.
+
+## Checks
+
+[`test-parallel-commit.py`](../../../scripts/inspect/test-parallel-commit.py) checks the current helper in disposable repositories, including retries, snapshot validation, preservation of working files and foreign staged content, and failures after publication. It does not reproduce the historical object IDs on this page.
+
+```sh
+python3 -B scripts/inspect/test-parallel-commit.py
+```
+
 ## What stays after the run
 
-| Item                                     | Where           | Effect                                                |
-| ---------------------------------------- | --------------- | ----------------------------------------------------- |
-| Scratch directory of each run            | `/tmp/tmp.*`    | Holds the private index and the patches. Not deleted. |
-| Commit `d638761` from the failed attempt | Object database | No reference points to it. `git gc` deletes it later. |
-| The `shout` hunk                         | Working tree    | Session B commits it in its own run.                  |
+| Item                                     | Where           | Effect                                                                                |
+| ---------------------------------------- | --------------- | ------------------------------------------------------------------------------------- |
+| Scratch directory of each run            | `/tmp/tmp.*`    | Holds the private index, selection patches, and immutable unit snapshot. Not deleted. |
+| Commit `d638761` from the failed attempt | Object database | No reference points to it. `git gc` deletes it later.                                 |
+| The `shout` hunk                         | Working tree    | Session B commits it in its own run.                                                  |
