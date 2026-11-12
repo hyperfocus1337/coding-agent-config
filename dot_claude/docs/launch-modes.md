@@ -1,6 +1,6 @@
 # Launch modes
 
-`claude.sh` and `dot_config/fish/conf.d/claude.fish` define shell functions that start Claude Code with different settings. Fish loads the functions from `~/.config/fish/conf.d/claude.fish` with no further step. For bash or zsh, add this line to `~/.bashrc` or `~/.zshrc`:
+`claude.sh` and `dot_config/fish/conf.d/claude.fish` define shell functions that start Claude Code through the shared Bash launcher, `~/.claude/launch.sh`. Fish loads the functions from `~/.config/fish/conf.d/claude.fish` with no further step. For bash or zsh, add this line to `~/.bashrc` or `~/.zshrc`:
 
 ```sh
 . ~/.claude/claude.sh
@@ -29,6 +29,38 @@ The table lists the functions from the most setup to the least.
 - `claude-vanilla-minimal` is `claude-vanilla` plus the `settings-minimal.json` layer. Compare it with `claude-vanilla` to find out if a problem comes from the minimal layer.
 
 All modes use `~/.claude`, so they share history, sessions, memory, and login. A deny rule cannot be removed by a later settings file, so the minimal file is a layer on top of the full file and not the other way round. See [`docs/research/context/alternative-settings.md`](../../docs/research/context/alternative-settings.md).
+
+## Select user rules
+
+Fish, Bash, and Zsh provide `claude-rules` to select a launch mode and user rules:
+
+```fish
+claude-rules --include code,writing
+claude-rules --mode claude-nohooks --exclude tools -- --model sonnet
+claude-rules --mode claude-full --include code,tools --exclude tools
+```
+
+| Argument          | Meaning                                    | Default            |
+| ----------------- | ------------------------------------------ | ------------------ |
+| `--mode NAME`     | Any command from the modes table           | `claude`           |
+| `--include NAMES` | Load only these user rules                 | All user rules     |
+| `--exclude NAMES` | Remove these user rules from the selection | None               |
+| `--`              | Pass the remaining arguments to Claude     | No extra arguments |
+
+Rule lists are comma-separated. Names are relative to `~/.claude/rules/`, with an optional `.md` suffix; use `nested/security` for a nested rule. Unknown names and empty lists stop the launch. If both filters are given, exclude wins. Filters affect only user rules, not project rules or CLAUDE.md files.
+
+The selected mode keeps its settings, hooks, environment variables, and other switches. For example, full mode adds no minimal settings, and no-hooks mode keeps `disableAllHooks`. Modes that disable rules reject filters: `claude-norules`, `claude-nohooks-norules`, `claude-vanilla`, and `claude-vanilla-minimal`. Those modes work without filters.
+
+The two shortcuts still use the default `claude` mode and take normal Claude arguments directly after the list:
+
+```fish
+claude-include-rules code,writing --model sonnet
+claude-exclude-rules tools
+```
+
+The launcher merges `claudeMdExcludes` into the mode's settings for this launch without changing files. Existing exclusions still apply, including exclusions from other settings layers, so an include selection cannot restore a rule excluded elsewhere. `--settings` is rejected when filters are active, because it would replace the selection. An inherited `CLAUDE_CODE_DISABLE_CLAUDE_MDS` is not cleared.
+
+Run the mode and filter tests with `python3 scripts/inspect/test-claude-rules.py`. Tests for shells that are not installed are skipped.
 
 ## Switches
 
@@ -60,6 +92,6 @@ In the devcontainer, `claude-vanilla` does not get `bypassPermissions`, because 
 ## Limits
 
 - Only shells that load these functions get these modes. The IDE extension, the desktop app, and scripts that start `claude` run in full mode.
-- Claude Code keeps only the last `--settings` flag, so `claude --settings X` replaces the minimal layer.
+- Without rule filters, a supplied `--settings` replaces the mode's settings layer. If repeated, the last value wins. The launcher passes one `--settings` flag to Claude.
 - `claude-nohooks`, `claude-nohooks-norules`, `claude-vanilla`, and `claude-vanilla-minimal` also turn off the guardrail hooks, such as `block-destructive-commands` and `enforce-cli-tools`. This includes the hooks that run as mods (tested on 2026-10-19). The git guards `block-secret-commits` and `block-commit-attribution` still run, because git runs them on each commit. For full mode without hooks, run `claude-full --settings '{"disableAllHooks": true}'`.
 - All modes except `claude-full` set `ENABLE_CLAUDEAI_MCP_SERVERS=false`, which turns off the claude.ai MCP servers. `claude-full` removes the variable, because a `claude-full` started from a `claude` session inherits it.
