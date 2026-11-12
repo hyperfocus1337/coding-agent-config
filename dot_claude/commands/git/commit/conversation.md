@@ -20,9 +20,12 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
 1. **Repositories.** Run `git -C <dir> rev-parse --show-toplevel` for `.` and for the nearest existing directory of each file you edited.
    - Each top level other than the one for `.` is a candidate.
    - `not a git repository` is an expected result, not a failure: the file is in no repository and stays out.
-   - A candidate is an external repository, and the next steps run in it as in this repository. Leave out a candidate that is a disposable fixture, such as a test or pilot repository made to try something, or that holds only generated output, unless the user asks for it.
+   - A candidate is an external repository. Leave out a candidate that is a disposable fixture, such as a test or pilot repository made to try something, or that holds only generated output, unless the user asks for it.
    - Run the next steps in this repository first, then in each external repository, with `-C <repo>` after `git` in every git command.
-2. **Lists.** Build the include list: every path you changed in this conversation, each tied to the action that changed it. Exclude every path that was already changed when the conversation started, or that you cannot tie to anything you did. A file can appear in both lists at hunk level. If you cannot decide whether a hunk is yours, leave it out. Keep the lists in your reasoning, do not print them.
+2. **Lists.** Build the include list: every path you changed in this conversation, each tied to the action that changed it.
+   - Exclude every other path.
+   - A file can appear in both lists at hunk level. If you cannot decide whether a hunk is yours, leave it out.
+   - Keep the lists in your reasoning, do not print them.
 3. **Group.** Group the include list into units by concern, not by file: one task vs. another, feature vs. fix vs. refactor vs. docs vs. test vs. chore. A fix you made on your own initiative is its own unit unless it only exists to make a requested change work. Hook reformatting belongs to the unit that changed the file. Order foundational changes first.
 4. **Commit.** Per unit:
    1. Stage the unit. Never `git add -A`, `git add .`, `git add -u`, `git commit -a`, or `git apply --unidiff-zero`.
@@ -35,8 +38,8 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
 
 ## Rules
 
-- Run git commands one at a time, each in its own Bash call or chained with `&&`, so that a failure stops the commands after it.
-- If a git command fails, stop and report the error. Do not run the next step.
+- Run each git command in its own Bash call, or chain commands with `&&`, so that a failure stops the commands after it.
+- If a git command fails, stop and report the error.
 - The one exception is a staging command that fails with `Unable to create '<lock>': File exists`: another process holds the index lock.
   - Run `sleep 10 && git diff --cached --name-only`.
   - If the stage holds only your changes, run the failed command once more.
@@ -48,15 +51,13 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
 - Print one line per commit as inline code: `<short sha> <subject>`.
 - When anything stayed uncommitted, add `left: <count> paths`.
 - When you commit in more than one repository:
-  - Print each top level on its own line before its lines, this repository first, with `~` for the home directory.
+  - Print each top level on its own line before its commit lines, this repository first, with `~` for the home directory.
   - Put `left: <count> paths` under the repository that holds those paths.
-- Put a blank line before each top level after the first, and before each `left:` line.
-- Add only the left-out groups below, no other text.
 - When you changed a path in this conversation that is in no git repository, or in a candidate that step 1 left out, list it after the other lines:
   - Print `Left out, <reason>:` and one path per line under it, with `~` for the home directory.
   - The reason is `not in a git repository` or `fixture repository <top level>`.
-  - Put a blank line before each group.
 - When you make no commit:
   - If every repository that you checked is clean, print `Nothing to commit. Clean: <top level>, <top level>`, this repository first.
   - Otherwise print `Nothing to commit from this conversation`, then the top level and `left:` lines as above.
-  - In both cases, add the left-out groups.
+- Put a blank line before each top level after the first, each `left:` line, and each left-out group.
+- Print no other text.
