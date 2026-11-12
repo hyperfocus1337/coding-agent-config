@@ -14,7 +14,7 @@ During execution, the header shows tool names, the call count, the completed cou
 
 - In fullscreen mode, click a header to expand or collapse that batch.
 - Press `Ctrl+O`, or your configured tool-expansion key, to expand or collapse all batches. This also resets local click choices.
-- Expanded batches use the existing tool renderers, including the `compact-bash` extension. Tool execution, validation, arguments, results, and model context do not change.
+- Expanded batches use the native tool renderers through [`tools-collapse`](../tools-collapse/README.md), which loads after this extension. Tool execution, validation, arguments, results, and model context do not change.
 
 Only top-level calls count toward the header. Calls inside Codemode remain inside the parent's native display. Images stay visible because Pi renders them outside the tool-renderer slots. The extension does not hide assistant text or thinking blocks.
 

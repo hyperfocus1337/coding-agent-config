@@ -18,6 +18,7 @@
 .claude/hooks/type-check-pyrefly
 .claude/hooks/track-session-changes/hook.ts
 .pi/agent/extensions/track-session-changes
+.pi/agent/extensions/compact-bash
 .omp/agent/extensions/track-session-changes
 .claude/commands/restate/core.md
 .claude/commands/restate/full.md
