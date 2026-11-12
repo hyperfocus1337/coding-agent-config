@@ -33,7 +33,7 @@ assert.ok(JSON.parse(huge).omittedCalls >= 36);
 
 const pkg = process.env.PI_PACKAGE!;
 const require = createRequire(path.join(pkg, "package.json"));
-const { Text, visibleWidth } = await import(
+const { Text, visibleWidth, colorToHex } = await import(
   pathToFileURL(require.resolve("@earendil-works/pi-tui")).href
 );
 const { loadExtensions } = await import(
@@ -91,7 +91,15 @@ const ctx: any = {
     },
   },
 };
-const theme = { fg: (_color: string, text: string) => text };
+const headerColors: string[] = [];
+const theme = {
+  appearance: "light",
+  fg: (_color: string, text: string) => text,
+  style: (text: string, options: any) => {
+    headerColors.push(colorToHex(options.fg));
+    return text;
+  },
+};
 let renders = 0;
 const makeRow = (id: string, name: string, args: any) => {
   const native = {
@@ -176,6 +184,13 @@ await emit("message_end", { message: assistant(["a", "b"]) });
 const a = makeRow("a", "read", { path: "README.md" });
 const b = makeRow("b", "bash", { command: "pnpm test" });
 assert.match(a.lines().join("\n"), /2 calls/);
+assert.equal(headerColors.at(-1)?.toLowerCase(), "#006b70");
+theme.appearance = "dark";
+a.draw();
+assert.equal(headerColors.at(-1)?.toLowerCase(), "#65c7c0");
+theme.appearance = "light";
+a.draw();
+assert.equal(headerColors.at(-1)?.toLowerCase(), "#006b70");
 assert.deepEqual(b.lines(), [], "Collapsed sibling rows occupy no space");
 for (const [id, toolName] of [
   ["a", "read"],

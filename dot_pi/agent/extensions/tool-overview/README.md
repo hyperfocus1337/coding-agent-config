@@ -6,6 +6,8 @@ Shows one collapsible overview for each assistant tool batch in Pi 1.5 or later.
 › Read README.md and ran the test suite.  2 calls · 47ms · ctrl+o
 ```
 
+The overview sentence and arrow use dark teal (`#006B70`) in light themes and light teal (`#65C7C0`) in dark themes. Counts, timing, and shortcuts keep the theme's gray colors; failures stay red. Expanded tool output keeps its existing colors.
+
 During execution, the header shows tool names, the call count, the completed count, and live elapsed time. After the batch finishes, one additional request to the current model produces a past-tense summary of at most 16 words. Each assistant response with tools is a separate batch, not the whole user request.
 
 ## Controls

@@ -15,6 +15,7 @@ import {
   Text,
   replaceControlCharacters,
   stripTerminalSequences,
+  parseColor,
 } from "@earendil-works/pi-tui";
 import { acceptSummary, type Call, duration, evidence, fallback, instructions } from "./summary.ts";
 
@@ -36,6 +37,7 @@ interface Receipt {
   usage?: unknown;
 }
 const receiptType = "tool-overview";
+const overviewColors = { light: parseColor("#006B70"), dark: parseColor("#65C7C0") };
 const clean = (text: string) => replaceControlCharacters(stripTerminalSequences(text));
 
 export default function toolOverview(pi: ExtensionAPI): void {
@@ -273,7 +275,9 @@ export default function toolOverview(pi: ExtensionAPI): void {
             batch.summary ??
             `Tools: ${[...new Set(batch.calls.map((call) => call.name))].join(", ")}`;
           const header = new Text(
-            theme.fg("accent", `${open ? "⌄" : "›"} ${clean(label)}`) +
+            theme.style(`${open ? "⌄" : "›"} ${clean(label)}`, {
+              fg: overviewColors[theme.appearance],
+            }) +
               theme.fg("muted", `  ${counts}${time}${batch.summary ? "" : ` · ${done} done`}`) +
               (failed ? theme.fg("error", ` · ${failed} failed`) : "") +
               theme.fg(
