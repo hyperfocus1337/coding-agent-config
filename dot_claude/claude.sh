@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # shellcheck shell=bash
 # Source from ~/.bashrc or ~/.zshrc: `. ~/.claude/claude.sh`. Fish loads the
 # same functions from ~/.config/fish/conf.d/claude.fish. What each mode loads,
