@@ -182,7 +182,7 @@ $ GIT_INDEX_FILE=/tmp/tmp.HBASKNyFcc/index git diff --cached --binary --full-ind
 After reading the check, session A starts publication in a new tool call:
 
 ```sh
-python3 "$HOME/.claude/cli/commit-parallel.py" /tmp/tmp.HBASKNyFcc/index 7e26956a433ded3e22a330ee2348a37aed513842 /tmp/tmp.HBASKNyFcc/unit-1.patch "feat: greet takes a name"
+python3 "$HOME/.claude/commands/git/commit/scripts/parallel/commit-parallel.py" /tmp/tmp.HBASKNyFcc/index 7e26956a433ded3e22a330ee2348a37aed513842 /tmp/tmp.HBASKNyFcc/unit-1.patch "feat: greet takes a name"
 ```
 
 The helper rejects the shared Git index and checks that the snapshot is nonempty and matches the private-index diff against the supplied base. It saves the unit's path list for the later shared-index refresh. It then reads `HEAD`; in this example, it still sees `7e26956`.

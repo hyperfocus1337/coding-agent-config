@@ -30,3 +30,5 @@
 .claude/skills/install-bootstrap/scripts/merge-minimal.jq
 .claude/claude.sh
 .claude/launch.sh
+.claude/cli/commit-parallel.py
+.claude/commands/git/scripts/commit-parallel.py

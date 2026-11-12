@@ -72,10 +72,10 @@ The command runs commands such as `GIT_INDEX_FILE=<dir>/index git apply --cached
 
 The page does not list the known-safe variables. It shows `*` at the start, in the middle, and at the end of a rule, but no rule that starts with a variable assignment. The page also says that a rule must match each subcommand of `&&`, `||`, `;`, and `|` separately. It does not say how `export` and `$(...)` are matched.
 
-For this reason, the command:
+For this reason, the original command used these rules:
 
 - Names the assignment in each rule, for example `Bash(GIT_INDEX_FILE=* git apply *)`.
-- Runs each git command as a separate call with literal SHAs. It uses no shell variables, no `export`, and no `$(...)`.
+- Ran each Git command as a separate call with literal SHAs, without shell variables, `export`, or `$(...)`. The current command keeps literal SHAs during preparation but uses a Python helper for publication and retries.
 
 This is not tested outside bypass mode. If a rule does not match, the result is a permission prompt, not a wrong commit.
 
@@ -83,4 +83,15 @@ This is not tested outside bypass mode. If a rule does not match, the result is 
 
 - Do the `GIT_INDEX_FILE=* git <subcommand> *` rules match in default permission mode?
 - Is a hook gap a problem in repositories with a `commit-msg` hook, for example commitlint? Method E with a check after the commit keeps the hooks.
-- How often does `update-ref` fail in real use? Each failure costs one rebuild of the unit.
+
+## Retry implementation
+
+One real run stopped after three concurrent `HEAD` changes, as the original command required. The safety check prevented stale commits from becoming the branch tip, but the model-driven rebuilds left a long interval for each new collision.
+
+The current command saves the reviewed private-index diff once, with `--binary --full-index --no-renames`. [`commit-parallel.py`](../../../dot_claude/commands/git/commit/scripts/parallel/commit-parallel.py) checks that snapshot and runs publication in one process, with at most 10 attempts within a 30-second retry window. Each new base receives only the saved patch; no working files are reread. A patch application failure requires ownership review, and other Git errors stop the run.
+
+[`test-parallel-commit.py`](../../../scripts/inspect/test-parallel-commit.py) uses disposable repositories to check successful publication, four consecutive collisions, preservation of later working edits and foreign staged content, overlapping edits, retry exhaustion, snapshot validation, and a shared-index refresh failure after successful publication.
+
+```sh
+python3 -B scripts/inspect/test-parallel-commit.py
+```

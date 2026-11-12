@@ -12,3 +12,5 @@ Shell entry points for launch modes and user rule filters:
 - [Fish functions](../../dot_config/fish/conf.d/claude.fish): loaded automatically from `~/.config/fish/conf.d/claude.fish`.
 
 See [launch modes](../docs/launch-modes.md) for commands, filters, and limits.
+
+The Git command publish helper is in [`commands/git/commit/scripts/parallel/`](../commands/git/commit/scripts/parallel/README.md).
