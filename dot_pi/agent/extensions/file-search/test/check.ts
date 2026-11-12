@@ -12,7 +12,8 @@ assert.ok(piPackage, "Set PI_PACKAGE or run just pi-check");
 const { CombinedAutocompleteProvider } = await import(
   pathToFileURL(path.join(path.dirname(piPackage), "pi-tui/dist/autocomplete.js")).href
 );
-const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "pi-file-search-"));
+// index.ts resolves the session cwd; macOS links the temporary folder from /var to /private/var.
+const temporary = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "pi-file-search-")));
 let checks = 0;
 async function check(name: string, run: () => unknown): Promise<void> {
   try {
