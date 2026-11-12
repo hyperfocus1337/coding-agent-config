@@ -19,7 +19,10 @@ The conversation is the boundary: every task the user asked for, fixes you made 
 
 If `/git:commit:plan` made a plan for this command or for `conversation` in this conversation, use its units and order, with every change the user asked for since. Still run each step below to check it.
 
-1. **Lists.** Build the include list: every path you changed in this conversation, each tied to the action that changed it. Exclude every path that was already changed when the conversation started, or that you cannot tie to anything you did. A file can appear in both lists at hunk level. If you cannot decide whether a hunk is yours, leave it out. Keep the lists in your reasoning, do not print them.
+1. **Lists.** Build the include list: every path you changed in this conversation, each tied to the action that changed it.
+   - Exclude every other path.
+   - A file can appear in both lists at hunk level. If you cannot decide whether a hunk is yours, leave it out.
+   - Keep the lists in your reasoning, do not print them.
 2. **Group.** Group the include list into units by concern, not by file: one task vs. another, feature vs. fix vs. refactor vs. docs vs. test vs. chore. A fix you made on your own initiative is its own unit unless it only exists to make a requested change work. Hook reformatting belongs to the unit that changed the file. Order foundational changes first.
 3. **Commit.** Run `mktemp -d` once and write every patch, file version, and the private index in that directory. Then per unit, with `<base>` and every SHA as the literal value that git printed:
    1. Base. Run `git rev-parse HEAD`. The output is `<base>`.
@@ -35,7 +38,7 @@ If `/git:commit:plan` made a plan for this command or for `conversation` in this
 
 ## Rules
 
-- If a git command fails, stop and report the error. Do not run the next step. The only exceptions are steps 3.5 and 3.6.
+- If a git command fails, stop and report the error, except in steps 3.5 and 3.6.
 - Never run `git commit`, `git stash`, `git checkout`, or `git restore`, and never write the working tree. They change the shared index or the files of other sessions.
 
 ## Output

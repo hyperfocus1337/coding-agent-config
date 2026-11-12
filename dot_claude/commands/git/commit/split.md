@@ -37,7 +37,7 @@ Split `HEAD` into one commit per logical unit. The text inside `<arguments>` giv
 
 ## Rules
 
-If a git command fails, stop and report the error. Do not run the next step.
+If a git command fails, stop and report the error.
 
 ## Output
 

@@ -18,7 +18,7 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
 1. **Repositories.** Run `git -C <dir> rev-parse --show-toplevel` for `.` and for the nearest existing directory of each file you edited.
    - Each top level other than the one for `.` is a candidate.
    - `not a git repository` is an expected result, not a failure: the file is in no repository and stays out.
-   - A candidate is an external repository, and the next steps run in it as in this repository. Leave out a candidate that is a disposable fixture, such as a test or pilot repository made to try something, or that holds only generated output, unless the user asks for it.
+   - A candidate is an external repository. Leave out a candidate that is a disposable fixture, such as a test or pilot repository made to try something, or that holds only generated output, unless the user asks for it.
    - Run the next steps in this repository first, then in each external repository, with `-C <repo>` after `git` in every git command.
    - In an external repository, commit every change in its working directory, not only the edits of this conversation.
 2. **Group.** Group by concern, not by file: feature vs. fix vs. refactor vs. docs vs. test vs. chore. One file can hold two units. One unit can span several files.
@@ -34,8 +34,8 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
 
 ## Rules
 
-- Run git commands one at a time, each in its own Bash call or chained with `&&`, so that a failure stops the commands after it.
-- If a git command fails, stop and report the error. Do not run the next step.
+- Run each git command in its own Bash call, or chain commands with `&&`, so that a failure stops the commands after it.
+- If a git command fails, stop and report the error.
 - The one exception is a staging command that fails with `Unable to create '<lock>': File exists`: another process holds the index lock.
   - Run `sleep 10 && git diff --cached --name-only`.
   - If the stage holds only your changes, run the failed command once more.
@@ -45,7 +45,7 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
 
 - Print one line per commit as inline code: `<short sha> <subject>`.
 - When you commit in more than one repository:
-  - Print each top level on its own line before its lines, this repository first, with `~` for the home directory.
+  - Print each top level on its own line before its commit lines, this repository first, with `~` for the home directory.
   - Put a blank line before each top level after the first.
 - No other text.
 - When every repository is clean, commit nothing and print `Nothing to commit. Clean: <top level>, <top level>`, with each repository that you checked, this repository first.

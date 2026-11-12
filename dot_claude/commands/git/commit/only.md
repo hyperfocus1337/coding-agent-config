@@ -30,7 +30,7 @@ Read the text inside `<arguments>` as paths. Commit the changes under those path
 
 Never run `git add` without `-N`, `git add -A`, or `git commit -a`.
 
-If a git command fails, stop and report the error. Do not run the next step.
+If a git command fails, stop and report the error.
 
 ## Output
 
