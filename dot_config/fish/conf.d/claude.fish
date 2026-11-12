@@ -1,5 +1,5 @@
 # Fish sources this file at startup. The bash and zsh version is
-# ~/.claude/claude.sh. What each mode loads, and its limits:
+# ~/.claude/cli/claude.sh. What each mode loads, and its limits:
 # dot_claude/docs/launch-modes.md in the chezmoi source.
 
 function claude --description 'Claude Code with settings-minimal.json'
@@ -39,5 +39,5 @@ function claude-exclude-rules --description 'Claude Code without the named user 
 end
 
 function claude-rules --description 'Claude Code with a launch mode and optional user rule filters'
-    command bash $HOME/.claude/launch.sh $argv
+    command bash $HOME/.claude/cli/launch.sh $argv
 end

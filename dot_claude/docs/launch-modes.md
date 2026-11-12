@@ -1,9 +1,9 @@
 # Launch modes
 
-`claude.sh` and `dot_config/fish/conf.d/claude.fish` define shell functions that start Claude Code through the shared Bash launcher, `~/.claude/launch.sh`. Fish loads the functions from `~/.config/fish/conf.d/claude.fish` with no further step. For bash or zsh, add this line to `~/.bashrc` or `~/.zshrc`:
+`cli/claude.sh` and `dot_config/fish/conf.d/claude.fish` define shell functions that start Claude Code through the shared Bash launcher, `~/.claude/cli/launch.sh`. Fish loads the functions from `~/.config/fish/conf.d/claude.fish` with no further step. For bash or zsh, add this line to `~/.bashrc` or `~/.zshrc`:
 
 ```sh
-. ~/.claude/claude.sh
+. ~/.claude/cli/claude.sh
 ```
 
 ## Modes

@@ -10,6 +10,7 @@ Justfile
 apm.yml
 README.md
 .claude/README.md
+.claude/cli/README.md
 .claude/rules/README.md
 .claude/hooks/README.md
 .claude/hooks/**/README.md

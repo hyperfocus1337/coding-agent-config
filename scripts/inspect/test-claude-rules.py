@@ -54,8 +54,9 @@ class RuleSelectionTest(unittest.TestCase):
                 }
             )
         )
+        (self.home / ".claude/cli").mkdir()
         shutil.copyfile(
-            ROOT / "dot_claude/launch.sh", self.home / ".claude/launch.sh"
+            ROOT / "dot_claude/cli/launch.sh", self.home / ".claude/cli/launch.sh"
         )
         binary = self.home / "bin/claude"
         binary.parent.mkdir()
@@ -311,7 +312,7 @@ class RuleSelectionTest(unittest.TestCase):
 
 class BashRuleSelectionTest(RuleSelectionTest):
     shell = "bash"
-    source = ROOT / "dot_claude/claude.sh"
+    source = ROOT / "dot_claude/cli/claude.sh"
 
 
 class ZshRuleSelectionTest(BashRuleSelectionTest):

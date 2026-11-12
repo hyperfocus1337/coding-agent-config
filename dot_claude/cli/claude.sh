@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
-# Source from ~/.bashrc or ~/.zshrc: `. ~/.claude/claude.sh`. Fish loads the
+# Source from ~/.bashrc or ~/.zshrc: `. ~/.claude/cli/claude.sh`. Fish loads the
 # same functions from ~/.config/fish/conf.d/claude.fish. What each mode loads,
 # and its limits: dot_claude/docs/launch-modes.md in the chezmoi source.
 
@@ -14,4 +14,4 @@ claude-full() { claude-rules --mode claude-full -- "$@"; }
 claude-include-rules() { claude-rules --include "${1-}" -- "${@:2}"; }
 claude-exclude-rules() { claude-rules --exclude "${1-}" -- "${@:2}"; }
 
-claude-rules() { command bash "$HOME/.claude/launch.sh" "$@"; }
+claude-rules() { command bash "$HOME/.claude/cli/launch.sh" "$@"; }

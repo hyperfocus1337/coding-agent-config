@@ -15,7 +15,7 @@ Clone this repo and run `chezmoi apply` (or `just chezmoi` from the repo root) t
 | [`private_settings.json.tmpl`](docs/settings.md) | Model, permission mode, hook wiring and timeouts, enabled plugins, marketplaces, status line.      |
 | [`settings-minimal.json`](docs/launch-modes.md)  | Denied tools and `disable*` keys, added by the `claude` shell function.                            |
 | [`settings-vanilla.json`](docs/launch-modes.md)  | The only settings layer of `claude-vanilla`: attribution off.                                      |
-| [`claude.sh`](docs/launch-modes.md)              | The `claude*` launch mode functions for bash and zsh. Fish: `dot_config/fish/conf.d/claude.fish`.  |
+| [`cli/`](cli/README.md)                          | Shell launch functions and the shared launcher for modes and user rule filters.                    |
 | [`docs/`](#docs)                                 | Reference pages for the files in this directory that have no README of their own.                  |
 
 Each README above documents its own directory. This file says what is where.
