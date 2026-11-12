@@ -224,9 +224,7 @@ try {
       pathToFileURL(path.join(piPackage, "dist/core/extensions/loader.js")).href
     );
     const savedDir = process.env.PI_CODING_AGENT_DIR;
-    const savedSwitch = process.env.PI_FILE_SEARCH;
     process.env.PI_CODING_AGENT_DIR = path.join(temporary, "agent");
-    delete process.env.PI_FILE_SEARCH;
     try {
       const extensionDir = path.join(temporary, "extension");
       fs.mkdirSync(extensionDir);
@@ -252,10 +250,6 @@ try {
       };
       await start({}, { ...context, mode: "print" });
       assert.equal(wrappers.length, 0);
-      process.env.PI_FILE_SEARCH = "0";
-      await start({}, context);
-      assert.equal(wrappers.length, 0);
-      delete process.env.PI_FILE_SEARCH;
       await start({}, context);
       assert.equal(wrappers.length, 1);
       assert.deepEqual(warnings, []);
@@ -315,65 +309,6 @@ try {
           );
         }
       });
-      const command = loaded.extensions[0].commands.get("file-search");
-      assert.ok(command);
-      const notices: string[] = [];
-      const commandContext = {
-        ...context,
-        ui: { ...context.ui, notify: (message) => notices.push(message) },
-      };
-      await check("live off switch restores native search and both display columns", async () => {
-        await command.handler("off", commandContext);
-        assert.match(notices.at(-1), /off \(native search and display\)/);
-        for (const text of ["@design", "@long", "@main", "@../design", "/hel", "main"]) {
-          assert.deepEqual(await get(text, live), await get(text, current), text);
-        }
-        await command.handler("off", commandContext);
-        await command.handler("status", commandContext);
-        assert.match(notices.at(-1), /off/);
-        assert.deepEqual(await get("@design", live), await get("@design", current));
-      });
-      await check(
-        "live toggle re-enables search and single-column paths without reload",
-        async () => {
-          await command.handler("", commandContext);
-          assert.match(notices.at(-1), /on \(repository search and single-column paths\)/);
-          assert.ok(
-            (await get("@design", live)).items.some((item) => item.label === "../design.md"),
-          );
-          await command.handler("on", commandContext);
-          await command.handler("status", commandContext);
-          assert.match(notices.at(-1), /on/);
-          await command.handler("", commandContext);
-          assert.deepEqual(await get("@design", live), await get("@design", current));
-          await command.handler(" ON ", commandContext);
-          assert.ok(
-            (await get("@design", live)).items.some((item) => item.label === "../design.md"),
-          );
-        },
-      );
-      await check("invalid toggle arguments do not change state", async () => {
-        await command.handler("invalid", commandContext);
-        assert.match(notices.at(-1), /Usage:/);
-        await command.handler("status", commandContext);
-        assert.match(notices.at(-1), /on/);
-      });
-      await check("switching off during a search discards extended results", async () => {
-        const pending = get("@design", live);
-        await command.handler("off", commandContext);
-        assert.deepEqual(await pending, await get("@design", current));
-        await command.handler("on", commandContext);
-      });
-      await check("startup off switch and non-TUI modes cannot be enabled by command", async () => {
-        process.env.PI_FILE_SEARCH = "0";
-        await command.handler("on", commandContext);
-        assert.match(notices.at(-1), /unavailable/);
-        delete process.env.PI_FILE_SEARCH;
-        await command.handler("off", { ...commandContext, mode: "print" });
-        assert.match(notices.at(-1), /unavailable/);
-        await command.handler("status", commandContext);
-        assert.match(notices.at(-1), /on/);
-      });
       fs.writeFileSync(configPath, '{"extraRoots":["relative"]}');
       await start({}, context);
       assert.equal(
@@ -382,75 +317,25 @@ try {
         "invalid extra folders must not disable Git-root completion",
       );
       assert.equal(warnings.length, 1);
-      await check(
-        "startup setting off keeps native completion but permits live enabling",
-        async () => {
-          fs.writeFileSync(
-            configPath,
-            JSON.stringify({ defaultEnabled: false, extraRoots: [extra] }),
-          );
-          await start({}, context);
-          const configured = wrappers.at(-1)(current);
-          await command.handler("status", commandContext);
-          assert.match(notices.at(-1), /off/);
-          assert.deepEqual(await get("@design", configured), await get("@design", current));
-          await command.handler("on", commandContext);
-          const result = await get("@design", configured);
-          assert.ok(result.items.some((item) => item.label === "../design.md"));
-          assert.ok(result.items.some((item) => item.label === path.join(extra, "design.md")));
-        },
-      );
-      await check("new sessions restore the configured startup setting", async () => {
+      await check("configured extra folders are searched", async () => {
+        fs.writeFileSync(configPath, JSON.stringify({ extraRoots: [extra] }));
         await start({}, context);
-        await command.handler("status", commandContext);
-        assert.match(notices.at(-1), /off/);
-        assert.deepEqual(
-          await get("@design", wrappers.at(-1)(current)),
-          await get("@design", current),
+        const result = await get("@design", wrappers.at(-1)(current));
+        assert.ok(result.items.some((item) => item.label === "../design.md"));
+        assert.ok(result.items.some((item) => item.label === path.join(extra, "design.md")));
+      });
+      await check("shipped adjacent configuration enables Git-root search", async () => {
+        fs.copyFileSync(path.resolve(import.meta.dirname, "../config.json"), configPath);
+        await start({}, context);
+        assert.ok(
+          (await get("@design", wrappers.at(-1)(current))).items.some(
+            (item) => item.label === "../design.md",
+          ),
         );
-      });
-      await check("true and omitted startup settings enable completion", async () => {
-        for (const config of [{ defaultEnabled: true }, {}]) {
-          fs.writeFileSync(configPath, JSON.stringify(config));
-          await start({}, context);
-          await command.handler("status", commandContext);
-          assert.match(notices.at(-1), /on/);
-          assert.ok(
-            (await get("@design", wrappers.at(-1)(current))).items.some(
-              (item) => item.label === "../design.md",
-            ),
-          );
-        }
-      });
-      await check(
-        "shipped adjacent configuration starts off without changing the source",
-        async () => {
-          fs.copyFileSync(path.resolve(import.meta.dirname, "../config.json"), configPath);
-          await start({}, context);
-          await command.handler("status", commandContext);
-          assert.match(notices.at(-1), /off/);
-          assert.deepEqual(
-            await get("@design", wrappers.at(-1)(current)),
-            await get("@design", current),
-          );
-        },
-      );
-      await check("invalid startup settings warn and retain the default", async () => {
-        for (const invalid of [null, "false", 0, [], {}]) {
-          const previousWarnings = warnings.length;
-          fs.writeFileSync(configPath, JSON.stringify({ defaultEnabled: invalid }));
-          await start({}, context);
-          assert.equal(warnings.length, previousWarnings + 1);
-          assert.match(warnings.at(-1), /defaultEnabled must be a boolean/);
-          await command.handler("status", commandContext);
-          assert.match(notices.at(-1), /on/);
-        }
       });
     } finally {
       if (savedDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
       else process.env.PI_CODING_AGENT_DIR = savedDir;
-      if (savedSwitch === undefined) delete process.env.PI_FILE_SEARCH;
-      else process.env.PI_FILE_SEARCH = savedSwitch;
     }
   });
   console.log(

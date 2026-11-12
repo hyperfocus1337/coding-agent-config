@@ -2,7 +2,7 @@
 
 ## Integration
 
-`index.ts` registers a `session_start` handler. In TUI mode it finds the Git root, reads the optional adjacent `config.json` through `import.meta.url`, validates directories, and resolves a managed or system `fd` executable. Non-interactive modes and `PI_FILE_SEARCH=0` return before filesystem discovery or subprocess work.
+`index.ts` registers a `session_start` handler. In TUI mode it finds the Git root, reads the optional adjacent `config.json` through `import.meta.url`, validates directories, and resolves a managed or system `fd` executable. Non-interactive modes return before filesystem discovery or subprocess work.
 
 `ctx.ui.addAutocompleteProvider()` wraps the existing provider. Each additional root has a native `CombinedAutocompleteProvider`, so Pi retains ownership of token parsing, filename/path matching, ignore rules, process cancellation, and per-search result limits. The existing provider still handles commands and applies every selected completion. No custom editor, prompt rewriting, model calls, index, watchers, or dependencies are added.
 
@@ -18,22 +18,16 @@ Repository matches become paths relative to the session working folder. Other ro
 
 Candidates rank by exact basename, basename prefix, then basename substring. Working-folder results win ties, followed by relative path depth and lexical path order. The merged list contains at most 20 entries. Native providers already bound their candidate lists, so ranking applies to returned candidates rather than every file in a large repository. The extension does not promise full fuzzy subsequence matching.
 
-## Live toggle
-
-`/file-search` toggles a boolean read by the registered provider wrapper. Explicit `on` and `off` arguments are idempotent; `status` only reports state. Invalid arguments leave state unchanged. When off, the wrapper delegates directly to the previous provider without broader searches or menu formatting. If a search finishes after the switch turns off, its extended results are discarded and the wrapper requests native results instead.
-
-The command does not add or remove providers, write configuration, or reload Pi. State resets to the validated `defaultEnabled` setting on `session_start` or extension reload. An omitted setting defaults to true; a non-boolean value rejects the configuration with a warning. A separate availability flag reports when no broader provider was registered. The startup `PI_FILE_SEARCH=0` override still prevents discovery and cannot be overridden by the command.
-
 ## Failure and lifecycle
 
 A malformed extra-root configuration does not disable the Git root. Missing configured folders warn once at session startup. A failed provider does not remove local results. Searches share Pi's abort signal; cancelled results are discarded. Native providers close their own search subprocesses, so the extension owns no session resources to release.
 
-Roots and configuration are discovered at session startup, including after `/reload` or session replacement. There is no working-directory mutation. `dot_pi/agent/extensions/file-search/config.json` tracks the startup configuration through chezmoi, with `defaultEnabled: false` and no additional roots. A live toggle does not modify that file.
+Roots and configuration are discovered at session startup, including after `/reload` or session replacement. There is no working-directory mutation. `dot_pi/agent/extensions/file-search/config.json` tracks the startup configuration through chezmoi, with no additional roots. To switch the extension off, use `/extensions`, which writes Pi settings instead of this file.
 
 ## Validation
 
-`test/check.ts` imports the installed native provider and uses the installed extension loader to load `index.ts`. Temporary repositories cover nested sessions, identical filenames, overlapping roots, spaces, quoted prompts, Unicode, `.gitignore`, `.git`, symlink escape, exact-match ranking, directory insertion, cancellation, missing folders, malformed configuration, a failing provider, result limits, non-TUI mode, and the off switch.
+`test/check.ts` imports the installed native provider and uses the installed extension loader to load `index.ts`. Temporary repositories cover nested sessions, identical filenames, overlapping roots, spaces, quoted prompts, Unicode, `.gitignore`, `.git`, symlink escape, exact-match ranking, directory insertion, cancellation, missing folders, malformed configuration, a failing provider, result limits, and non-TUI mode.
 
-The repository's `scripts/extensions/pi/check.sh` type-checks all extension entry points against the installed Pi and TUI declarations, then runs each extension's self-check. Loader checks use a temporary copy of the extension and modify only its adjacent configuration, not the source or installed configuration. A separate check loads the shipped `config.json` to verify the off-by-default setting.
+The repository's `scripts/extensions/pi/check.sh` type-checks all extension entry points against the installed Pi and TUI declarations, then runs each extension's self-check. Loader checks use a temporary copy of the extension and modify only its adjacent configuration, not the source or installed configuration. A separate check loads the shipped `config.json` and verifies Git-root search.
 
 The checks also render a long filename through Pi's native select list, verify narrow-terminal display width, and verify unchanged insertion and directory navigation after menu formatting. An interactive visual check is still needed after `/reload` to confirm the menu in the user's terminal.

@@ -7,36 +7,8 @@ import { CombinedAutocompleteProvider } from "@earendil-works/pi-tui";
 import { extendSearch, extraRoots, searchRoots } from "./search.ts";
 
 export default function fileSearch(pi: ExtensionAPI): void {
-  let enabled = true;
-  let available = false;
-  pi.registerCommand("file-search", {
-    description: "Toggle extended file search, or use on, off, or status",
-    handler: async (args, ctx) => {
-      const action = args.trim().toLowerCase();
-      if (!["", "on", "off", "status"].includes(action)) {
-        ctx.ui.notify("Usage: /file-search [on|off|status]", "warning");
-        return;
-      }
-      if (ctx.mode !== "tui" || process.env.PI_FILE_SEARCH === "0") {
-        ctx.ui.notify(
-          "File search is unavailable outside TUI mode or with PI_FILE_SEARCH=0",
-          "warning",
-        );
-        return;
-      }
-      if (action !== "status") enabled = action ? action === "on" : !enabled;
-      const detail = !enabled
-        ? "native search and display"
-        : available
-          ? "repository search and single-column paths"
-          : "no broader search roots available; using native completion";
-      ctx.ui.notify(`File search: ${enabled ? "on" : "off"} (${detail})`, "info");
-    },
-  });
   pi.on("session_start", async (_event, ctx) => {
-    enabled = true;
-    available = false;
-    if (ctx.mode !== "tui" || process.env.PI_FILE_SEARCH === "0") return;
+    if (ctx.mode !== "tui") return;
     const warn = (message: string) => ctx.ui.notify(`File search: ${message}`, "warning");
     const cwd = fs.realpathSync(ctx.cwd);
     const roots: string[] = [];
@@ -51,13 +23,7 @@ export default function fileSearch(pi: ExtensionAPI): void {
     const configPath = fileURLToPath(new URL("./config.json", import.meta.url));
     try {
       const config: unknown = JSON.parse(fs.readFileSync(configPath, "utf8"));
-      const configuredRoots = extraRoots(config);
-      const startup = (config as { defaultEnabled?: unknown }).defaultEnabled;
-      if (startup !== undefined && typeof startup !== "boolean") {
-        throw new Error("defaultEnabled must be a boolean");
-      }
-      enabled = startup ?? true;
-      roots.push(...configuredRoots);
+      roots.push(...extraRoots(config));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
         warn(`${configPath}: ${error instanceof Error ? error.message : String(error)}`);
@@ -90,9 +56,7 @@ export default function fileSearch(pi: ExtensionAPI): void {
       return {
         ...provider,
         async getSuggestions(...args) {
-          if (!enabled) return current.getSuggestions(...args);
           const result = await provider.getSuggestions(...args);
-          if (!enabled) return current.getSuggestions(...args);
           if (!result?.prefix.startsWith("@")) return result;
           return {
             ...result,
@@ -106,6 +70,5 @@ export default function fileSearch(pi: ExtensionAPI): void {
         },
       };
     });
-    available = true;
   });
 }

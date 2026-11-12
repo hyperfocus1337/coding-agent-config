@@ -18,11 +18,10 @@ The extension runs only in the terminal UI. It does not change the agent's tools
 
 ## Additional folders
 
-The tracked startup configuration is `dot_pi/agent/extensions/file-search/config.json`, installed as `~/.pi/agent/extensions/file-search/config.json` beside `index.ts`. It sets `defaultEnabled` to `false` and leaves `extraRoots` empty. To add folders later, use this structure:
+The tracked startup configuration is `dot_pi/agent/extensions/file-search/config.json`, installed as `~/.pi/agent/extensions/file-search/config.json` beside `index.ts`. It leaves `extraRoots` empty. To add folders later, use this structure:
 
 ```json
 {
-  "defaultEnabled": false,
   "extraRoots": ["~/projects/shared-docs"]
 }
 ```
@@ -35,20 +34,7 @@ Use `/reload` after changing the configuration. Missing folders produce a warnin
 
 chezmoi installs this directory under `~/.pi/agent/extensions/file-search/`; Pi discovers `index.ts` automatically. No settings entry is needed. Use `/reload` in an existing Pi session after installation.
 
-Use these commands to compare the extension with native Pi completion without restarting or reloading:
-
-| Command               | Effect                                               |
-| --------------------- | ---------------------------------------------------- |
-| `/file-search`        | Toggle the extension on or off.                      |
-| `/file-search on`     | Enable broader search and single-column paths.       |
-| `/file-search off`    | Use native search and the native two-column display. |
-| `/file-search status` | Show the current state without changing it.          |
-
-After switching, type the same `@` query again to compare results. The toggle changes neither files nor saved settings.
-
-Each new session or `/reload` reads `defaultEnabled` from `~/.pi/agent/extensions/file-search/config.json`. Set it to `false` to start with native completion and permit `/file-search on`, or `true` to start with extended completion. If the setting is omitted, the extension defaults to on. The value must be a JSON boolean, not a string. If no broader search roots are available, the status reports that native completion is in use even when the toggle is on.
-
-Set `PI_FILE_SEARCH=0` before starting Pi to disable startup discovery and registration of the completion wrapper. The command cannot override this environment variable. To uninstall the extension, remove its installed directory as well as its source; chezmoi does not remove deleted source files automatically.
+Use [`/extensions disable file-search`](../extension-manager/README.md) to switch back to native completion, and `/extensions enable file-search` to switch it on again. Both save settings and reload Pi. To uninstall the extension, remove its installed directory as well as its source; chezmoi does not remove deleted source files automatically.
 
 The extension uses Pi's managed `~/.pi/agent/bin/fd`, system `fd`, or `fdfind`. If none is available, it warns and keeps built-in completion. It does not download executables.
 
