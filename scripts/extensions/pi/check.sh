@@ -9,12 +9,21 @@ set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 EXTENSIONS="${REPO}/dot_pi/agent/extensions"
 
-for tool in node pi tsc; do
+for tool in node pi pnpm tsc; do
   command -v "${tool}" >/dev/null || {
     echo "missing: ${tool}" >&2
     exit 1
   }
 done
+
+# The Node types come from the @types/node that hooks/check.sh installs. A global pi install does
+# not bring them on every machine: the pnpm global virtual store links no dependencies of pi
+# beside it. Install when node_modules is missing or older than the lockfile.
+NODE_PACKAGE="${REPO}/scripts/extensions/hooks"
+if [[ ! -f ${NODE_PACKAGE}/node_modules/.modules.yaml || ${NODE_PACKAGE}/pnpm-lock.yaml -nt ${NODE_PACKAGE}/node_modules/.modules.yaml ]]; then
+  (cd "${NODE_PACKAGE}" && pnpm install --frozen-lockfile)
+fi
+NODE_TYPES="${NODE_PACKAGE}/node_modules/@types"
 
 # The installed pi package, found by package.sh. Set PI_PACKAGE to skip the
 # search.
@@ -59,7 +68,8 @@ cat >"${WORK}/tsconfig.json" <<JSON
     "noEmit": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
-    "types": [],
+    "typeRoots": ["${NODE_TYPES}"],
+    "types": ["node"],
     "paths": {
       "@earendil-works/pi-coding-agent": ["${PI_TYPES}"],
       "@earendil-works/pi-tui": ["${PI_TUI_TYPES}"]

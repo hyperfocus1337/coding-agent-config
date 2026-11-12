@@ -1,7 +1,7 @@
 {
   "name": "hooks-check",
   "private": true,
-  "description": "Type definitions for scripts/extensions/hooks/check.sh. chezmoi ignores scripts/.",
+  "description": "Type definitions for scripts/extensions/hooks/check.sh and scripts/extensions/pi/check.sh. chezmoi ignores scripts/.",
   "type": "module",
   "devDependencies": {
     "@types/node": "^26.6.6"
