@@ -56,7 +56,9 @@ Before that, it runs `git add -N -- <paths>` once: without an index entry, `git 
 
 A session can edit files in other git repositories, for example a sibling checkout. The Context block of each command runs in the working directory only, so without help the model does not see those changes and leaves them uncommitted.
 
-In their **Repositories** step, `conversation`, `multiple`, and `task` find the other repositories from the files the session edited, and `plan` applies that step: `git -C <dir> rev-parse --show-toplevel` on the nearest existing directory of each file. A top level other than the one for `.` is a candidate. A candidate that is a disposable fixture, such as a pilot repository made for a test, or that holds only generated output, stays out unless the user asks for it: discovery finds repositories, it does not make them commit targets. The commands run the same steps there, with `-C <repo>` after `git`, so the same staging methods and checks apply. `plan` prints one section per repository and numbers the commits across the sections, so "merge 1 and 2" still names commits without ambiguity.
+In their **Repositories** step, `conversation`, `multiple`, and `task` find the other repositories from the files the session edited, and `plan` applies that step: `git -C <dir> rev-parse --show-toplevel` on the nearest existing directory of each file. A top level other than the one for `.` is a candidate. A candidate that is a disposable fixture, such as a pilot repository made for a test, or that holds only generated output, stays out unless the user asks for it: discovery finds repositories, it does not make them commit targets. The commands run the same steps there, with `-C <repo>` after `git`, so the same staging methods and checks apply.
+
+`plan` prints one section per repository and numbers the commits across the sections, so "merge 1 and 2" still names commits without ambiguity. `conversation` and `task` list each edited path that they left out, in a fixture repository or in no repository, under a `Left out, <reason>:` group, so that a skipped path is visible.
 
 The method has these limits:
 
