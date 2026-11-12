@@ -44,6 +44,10 @@ README.md
 .pi/agent/extensions/**/test/**
 .pi/agent/test/**
 PLAN.md
+**/.ruff_cache
+**/.ruff_cache/**
+**/__pycache__
+**/__pycache__/**
 
 # Claude Code writes these beside each mod it loads. check.sh reads the types.
 .claude/hooks/*/tsconfig.json
