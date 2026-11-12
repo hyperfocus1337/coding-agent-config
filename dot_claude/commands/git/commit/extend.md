@@ -39,6 +39,6 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
 
 ## Output
 
-Print one line per target as inline code: `<short sha> <subject>` and how you folded it (amend or fixup). No other text.
-
-When the working tree is clean, fold nothing and print `Nothing to fold. Clean: <top level>`.
+- Print one line per target as inline code: `<short sha> <subject>` and how you folded it (amend or fixup).
+- No other text.
+- When the working tree is clean, fold nothing and print `Nothing to fold. Clean: <top level>`.

@@ -35,12 +35,14 @@ If `/git:commit:plan` made a plan for this command or for `conversation` in this
 
 ## Rules
 
-If a git command fails, stop and report the error. Do not run the next step. The only exceptions are steps 3.5 and 3.6.
-
-Never run `git commit`, `git stash`, `git checkout`, or `git restore`, and never write the working tree. They change the shared index or the files of other sessions.
+- If a git command fails, stop and report the error. Do not run the next step. The only exceptions are steps 3.5 and 3.6.
+- Never run `git commit`, `git stash`, `git checkout`, or `git restore`, and never write the working tree. They change the shared index or the files of other sessions.
 
 ## Output
 
-Print one line per commit as inline code: `<short sha> <subject>`, plus `left: <count> paths` when anything stayed uncommitted. No other text.
-
-When you make no commit, print `Nothing to commit. Clean: <top level>` if the working tree is clean. Otherwise print `Nothing to commit from this conversation` and the `left:` line.
+- Print one line per commit as inline code: `<short sha> <subject>`.
+- When anything stayed uncommitted, add `left: <count> paths`.
+- No other text.
+- When you make no commit:
+  - If the working tree is clean, print `Nothing to commit. Clean: <top level>`.
+  - Otherwise print `Nothing to commit from this conversation` and the `left:` line.

@@ -34,12 +34,18 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
 
 ## Rules
 
-Run git commands one at a time, each in its own Bash call or chained with `&&`, so that a failure stops the commands after it. If a git command fails, stop and report the error. Do not run the next step.
-
-The one exception is a staging command that fails with `Unable to create '<lock>': File exists`: another process holds the index lock. Run `sleep 10 && git diff --cached --name-only`. If the stage holds only your changes, run the failed command once more. Never touch the lock file, and never run `git commit` twice.
+- Run git commands one at a time, each in its own Bash call or chained with `&&`, so that a failure stops the commands after it.
+- If a git command fails, stop and report the error. Do not run the next step.
+- The one exception is a staging command that fails with `Unable to create '<lock>': File exists`: another process holds the index lock.
+  - Run `sleep 10 && git diff --cached --name-only`.
+  - If the stage holds only your changes, run the failed command once more.
+  - Never touch the lock file, and never run `git commit` twice.
 
 ## Output
 
-Print one line per commit as inline code: `<short sha> <subject>`. When you commit in more than one repository, print each top level on its own line before its lines, this repository first, with `~` for the home directory. Put a blank line before each top level after the first. No other text.
-
-When every repository is clean, commit nothing and print `Nothing to commit. Clean: <top level>, <top level>`, with each repository that you checked, this repository first.
+- Print one line per commit as inline code: `<short sha> <subject>`.
+- When you commit in more than one repository:
+  - Print each top level on its own line before its lines, this repository first, with `~` for the home directory.
+  - Put a blank line before each top level after the first.
+- No other text.
+- When every repository is clean, commit nothing and print `Nothing to commit. Clean: <top level>, <top level>`, with each repository that you checked, this repository first.

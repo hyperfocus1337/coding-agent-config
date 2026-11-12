@@ -49,16 +49,28 @@ If `/git:commit:plan` made a plan for this command in this conversation, use its
 
 ## Rules
 
-Run git commands one at a time, each in its own Bash call or chained with `&&`, so that a failure stops the commands after it. If a git command fails, stop and report the error. Do not run the next step.
-
-The one exception is a staging command that fails with `Unable to create '<lock>': File exists`: another process holds the index lock. Run `sleep 10 && git diff --cached --name-only`. If the stage holds only your changes, run the failed command once more. Never touch the lock file, and never run `git commit` twice.
-
-Do not edit files.
+- Run git commands one at a time, each in its own Bash call or chained with `&&`, so that a failure stops the commands after it.
+- If a git command fails, stop and report the error. Do not run the next step.
+- The one exception is a staging command that fails with `Unable to create '<lock>': File exists`: another process holds the index lock.
+  - Run `sleep 10 && git diff --cached --name-only`.
+  - If the stage holds only your changes, run the failed command once more.
+  - Never touch the lock file, and never run `git commit` twice.
+- Do not edit files.
 
 ## Output
 
-Print one line per commit as inline code: `<short sha> <subject>`, plus `left: <count> paths` when anything stayed uncommitted. When you commit in more than one repository, print each top level on its own line before its lines, this repository first, with `~` for the home directory, and put `left: <count> paths` under the repository that holds those paths. Put a blank line before each top level after the first, and before each `left:` line. Add only the left-out groups below, no other text.
-
-When you changed a path in scope that is in no git repository, or in a candidate that step 1 left out, list it after the other lines. Print `Left out, <reason>:` and one path per line under it, with `~` for the home directory. The reason is `not in a git repository` or `fixture repository <top level>`. Put a blank line before each group.
-
-When you make no commit, print `Nothing to commit. Clean: <top level>, <top level>` if every repository that you checked is clean, this repository first. Otherwise print `Nothing to commit for this scope`, then the top level and `left:` lines as above. In both cases, add the left-out groups.
+- Print one line per commit as inline code: `<short sha> <subject>`.
+- When anything stayed uncommitted, add `left: <count> paths`.
+- When you commit in more than one repository:
+  - Print each top level on its own line before its lines, this repository first, with `~` for the home directory.
+  - Put `left: <count> paths` under the repository that holds those paths.
+- Put a blank line before each top level after the first, and before each `left:` line.
+- Add only the left-out groups below, no other text.
+- When you changed a path in scope that is in no git repository, or in a candidate that step 1 left out, list it after the other lines:
+  - Print `Left out, <reason>:` and one path per line under it, with `~` for the home directory.
+  - The reason is `not in a git repository` or `fixture repository <top level>`.
+  - Put a blank line before each group.
+- When you make no commit:
+  - If every repository that you checked is clean, print `Nothing to commit. Clean: <top level>, <top level>`, this repository first.
+  - Otherwise print `Nothing to commit for this scope`, then the top level and `left:` lines as above.
+  - In both cases, add the left-out groups.
