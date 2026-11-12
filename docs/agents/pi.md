@@ -33,7 +33,7 @@ Rules without `paths:` go into the system prompt at session start, as one block 
 
 ## Settings drift
 
-pi writes model choices, `deviceId`, and `lastChangelogVersion` into `~/.pi/agent/settings.json` itself. `dot_pi/agent/modify_settings.json` is a chezmoi modify script: each apply sets the repository keys and keeps the keys the repository leaves out, with no prompt. A model change in the TUI lasts until the next apply, unless you add it to the script. [`dot_pi/agent/README.md`](../../dot_pi/agent/README.md#settings-drift) has the merge rules.
+pi writes model choices, `deviceId`, and `lastChangelogVersion` into `~/.pi/agent/settings.json` itself. `dot_pi/agent/modify_settings.json` is a chezmoi modify script: each apply sets the repository keys and keeps the keys the repository leaves out, with no prompt. A model change in the TUI lasts until the next apply, unless you add it to the script. [Settings drift](../../dot_pi/agent/docs/settings.md#settings-drift) has the merge rules.
 
 ## Out of scope
 

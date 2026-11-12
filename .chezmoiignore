@@ -37,6 +37,7 @@ README.md
 .config/git/hooks/**/docs/**
 .omp/agent/README.md
 .pi/agent/README.md
+.pi/agent/docs/**
 .pi/agent/extensions/README.md
 .pi/agent/extensions/**/README.md
 .pi/agent/extensions/**/docs/**
