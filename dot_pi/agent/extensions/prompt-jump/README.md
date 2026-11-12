@@ -2,7 +2,7 @@
 
 `Cmd+Up` moves to the start of the whole prompt. `Cmd+Down` moves to its end. These shortcuts do not scroll the transcript or browse prompt history. Ordinary arrows, undo, paste expansion, and slash-command tracking keep their existing behavior.
 
-Pi 1.4.0 has no built-in whole-prompt movement action. This extension wraps the existing editor instance instead of replacing it. It only runs in terminal UI mode and needs no Pi settings or keybindings file.
+Pi 1.5.2 has no built-in whole-prompt movement action. This extension wraps the existing editor instance instead of replacing it. It only runs in terminal UI mode and needs no Pi settings or keybindings file.
 
 ## cmux setup
 

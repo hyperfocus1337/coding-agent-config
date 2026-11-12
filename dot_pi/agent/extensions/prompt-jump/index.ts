@@ -2,7 +2,7 @@
 import { CustomEditor, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { matchesKey, truncateToWidth } from "@earendil-works/pi-tui";
 
-// shortcut: Pi 1.4 has no public cursor setter. Use guarded internal movement methods until it does.
+// shortcut: Pi 1.5.2 has no public cursor setter. Use guarded internal movement methods until it does.
 type JumpEditor = {
   handleInput(data: string): void;
   isInPaste: boolean;
