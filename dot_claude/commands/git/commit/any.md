@@ -28,7 +28,7 @@ Pick the commit command that fits the changes above and invoke it. Commit nothin
 3. **Scope.** Does the tree hold changes this conversation did not make? A path you cannot tie to something you did here is foreign.
    - Foreign paths exist: the scope is the conversation, so use `/git:commit:task` or `/git:commit:conversation`. They leave foreign changes uncommitted.
    - Every path is yours: the scope is the whole tree, so use `/git:commit:single` or `/git:commit:multiple`.
-   - No conversation history, because the session started at this command: you can tie no path to yourself, so use the working directory commands.
+   - No conversation history, because the session started at this command: you can tie no path to yourself, so the scope is the whole tree.
 4. **Count.** Count the distinct logical units in the diff. Group by concern, not by file.
 
    | Scope        | One unit             | Two or more                |

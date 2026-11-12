@@ -125,14 +125,14 @@ Summarize or rewrite existing commits.
 `rewrite:author`, `rewrite:attribution`, `rewrite:date`, and `rewrite:shift-dates` rewrite git history, so they all show current commits, warn about force-pushing, and confirm before running. There is no named-argument (`--flag`) syntax in slash commands, only positional slots and free text, so each command is written to be called three ways:
 
 - Bare, then interviewed: run the command with no arguments and answer the questions it asks. You never need to remember argument order, and you see the affected commits before anything changes. This is the safest default.
-- Natural language: describe the values after the command, e.g. `/git:rewrite:author "Jane Doe <jane@x.com>" last 5 commits`. The intent is parsed, so order does not have to be exact.
+- Natural language: describe the values after the command, for example `/git:rewrite:author "Jane Doe <jane@x.com>" last 5 commits`. The intent is parsed, so order does not have to be exact.
 - Positional: fastest for repeat use once you know the slots. Type the command and pause to see the `argument-hint` reminder.
 
 Argument slots per command:
 
-- `rewrite:author` — author string (quoted, `"Firstname Lastname <email>"`), then an optional commit count. Give `all` to rewrite the entire branch from the root. Without a count, the command asks for the scope.
+- `rewrite:author`: author string (quoted, `"Firstname Lastname <email>"`), then an optional commit count. Give `all` to rewrite the entire branch from the root. Without a count, the command asks for the scope.
 - `rewrite:attribution`: the same slots as `rewrite:author`. It also removes every co-author trailer, for agents and humans, and other agent lines such as `Claude-Session:` and "Generated with", unless you ask to keep them.
-- `rewrite:date` — a timestamp with a timezone offset, e.g. `"2026-07-14 09:30:00 +0200"`. Applies to the most recent commit only.
-- `rewrite:shift-dates` — signed hours (`+2`, `-3`), then how many commits back from HEAD to shift.
+- `rewrite:date`: a timestamp with a timezone offset, for example `"2026-07-14 09:30:00 +0200"`. Applies to the most recent commit only.
+- `rewrite:shift-dates`: signed hours (`+2`, `-3`), then how many commits back from HEAD to shift.
 
 Each command recommends creating a backup ref first (`git branch backup/<branch> HEAD`) so a bad rewrite is one `git reset --hard backup/<branch>` away. `rewrite:shift-dates` works on both GNU (Debian/Linux) and BSD (macOS) `date`.

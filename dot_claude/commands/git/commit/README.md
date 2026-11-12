@@ -23,7 +23,7 @@ Some text appears in more than one command. When you change it in one command, c
 
 ## Staging part of a file
 
-When one file holds changes of two units, each commit must stage only its own part, and the obvious methods fail without a terminal or place hunks in the wrong spot, so `conversation`, `multiple`, `split`, and `task` name the methods to avoid and the methods to use.
+When one file holds changes of two units, each commit must stage only its own part. The obvious methods fail without a terminal or place hunks in the wrong spot. So `conversation`, `multiple`, `split`, and `task` name the methods to avoid and the methods to use.
 
 ### Avoided
 

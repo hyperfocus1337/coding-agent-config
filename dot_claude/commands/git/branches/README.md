@@ -51,7 +51,7 @@ A branch that is merged but still published is kept on purpose. The stale class 
 
 Each candidate must exist as a local ref (`refs/heads/<name>`), so a repo whose `origin/HEAD` points at a branch it never checked out falls through to the next candidate. If no candidate exists, the merged class is skipped and every branch is reported as kept.
 
-The base is always the local ref, never `origin/<base>`. Merged candidates have no upstream, so they exist only in this clone, so any merge of them happened here, into the local base. A local base that is behind its remote cannot hide them.
+The base is always the local ref, never `origin/<base>`. Merged candidates have no upstream, so they exist only in this clone. Any merge of them happened here, into the local base. A local base that is behind its remote cannot hide them.
 
 ## Detection limit: squash and rebase merges
 

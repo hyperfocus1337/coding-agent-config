@@ -33,8 +33,8 @@ If `/git:commit:plan` made a plan for this command or for `conversation` in this
    3. Check. Compare `GIT_INDEX_FILE=<dir>/index git diff --cached --name-only <base>` against the unit. For each file, read `GIT_INDEX_FILE=<dir>/index git diff --cached <base> -- <path>` and confirm every hunk is in this unit and sits where it belongs. If anything is wrong, return to step 3.2.
    4. Commit. In a new Bash call, after you read the check, run `GIT_INDEX_FILE=<dir>/index git write-tree`, which prints `<tree>`. Run `git commit-tree <tree> -p <base> -m "<subject>"`, with one more `-m "<body>"` when the unit needs a body. It prints `<commit>`. Use Conventional Commits, and if the body needs "also", split the unit.
    5. Move the branch. Run `git update-ref -m "commit: <subject>" HEAD <commit> <base>`. If it fails with `but expected`, another session committed first: return to step 3.1. After 3 failures, stop and report.
-   6. Refresh the shared index. Run `git reset -q -- <unit paths>`, without `GIT_INDEX_FILE`. This sets only these paths to the new `HEAD`. If you skip it, a later commit from the shared index reverts this commit. If it fails with `index.lock`, another session writes the shared index: run it again. After 3 failures, stop and report the unit paths.
-4. **Verify.** Run `git status`. Every include path must be committed, every uncommitted path must be an exclude path or a change of another session. Return to step 3 for anything missed.
+   6. Refresh the shared index. Run `git reset -q -- <unit paths>`, without `GIT_INDEX_FILE`. This sets only these paths to the new `HEAD`. If you skip it, a later commit from the shared index reverts this commit. If it fails with `index.lock`, another session writes the shared index: run it again, and after 3 failures, stop and report the unit paths.
+4. **Verify.** Run `git status`. Every include path must be committed. Every uncommitted path must be an exclude path or a change of another session. Return to step 3 for anything missed.
 
 ## Rules
 

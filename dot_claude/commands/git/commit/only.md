@@ -22,13 +22,13 @@ $ARGUMENTS
 
 Read the text inside `<arguments>` as paths. Commit the changes under those paths and nothing else. A path is a file or a folder. If the arguments are empty, ask for the paths with AskUserQuestion, with the changed top-level paths as options.
 
-1. **Check.** Stop if a path has no changes, and name it.
+1. **Check.** If a path has no changes, name it and stop.
 2. **Group.** Group the changes under the paths by concern. One unit makes one commit. A file that holds two units stays whole in the first unit that needs it.
 3. **Commit.** Run `git add -N -- <paths>` once, so `git commit` sees new files. Then per unit, foundational units first: `git commit --only -m "<subject>" -- <unit paths>`. Use Conventional Commits.
 
 ## Rules
 
-Never run `git add` without `-N`, `git add -A`, or `git commit -a`.
+Never run `git add -A`, `git commit -a`, or `git add` without `-N`.
 
 If a git command fails, stop and report the error.
 

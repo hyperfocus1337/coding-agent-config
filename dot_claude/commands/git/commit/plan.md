@@ -24,7 +24,7 @@ Plan the commits that a commit command would make. Commit nothing, stage nothing
 
 1. **Target.** Read the text inside `<arguments>` as command arguments. Its first word selects the target: `conversation`, `parallel`, `multiple`, `task`, or `extend`. For `task`, the remaining text is its scope. For `extend`, the remaining text identifies the commit to extend.
 
-   Print only the block below and stop when the arguments are empty or the first word is not a valid target. A valid target needs no confirmation. Do not ask with AskUserQuestion, and do not pick a target.
+   When the arguments are empty or the first word is not a valid target, print only the block below and stop. A valid target needs no confirmation. Do not ask with AskUserQuestion, and do not pick a target.
 
    ```
    Give a target:

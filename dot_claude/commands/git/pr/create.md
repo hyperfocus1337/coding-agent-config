@@ -12,10 +12,11 @@ description: Commit, push, and open a PR
 
 ## Your task
 
-Based on the above changes:
+For the changes in Context:
 
 1. Create a new branch with `git switch -c` if on main
 2. Create a single commit with an appropriate message
 3. Push the branch to origin
 4. Create a pull request using `gh pr create`
-5. Run the four steps in one Bash call, chained with `&&`, so a failed step stops the rest. Do not use any other tools or send any other text.
+
+Run the four steps in one Bash call, chained with `&&`, so a failed step stops the rest. Use no other tool. Print no other text.

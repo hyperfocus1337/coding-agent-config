@@ -19,7 +19,7 @@ Set an explicit timestamp on the most recent commit (both committer and author d
 
 Arguments: `$ARGUMENTS`
 
-- `$timestamp` (required): the timestamp, e.g. `"2026-07-14 09:30:00 +0200"` or any format git accepts. Include a timezone offset to avoid it being read in the local zone. If missing, ask for it.
+- `$timestamp` (required): the timestamp, for example `"2026-07-14 09:30:00 +0200"` or any format git accepts. Include a timezone offset to avoid it being read in the local zone. If missing, ask for it.
 
 ## Safety
 
@@ -35,7 +35,7 @@ This rewrites the HEAD commit and changes its hash. Before running:
 GIT_COMMITTER_DATE="$timestamp" GIT_AUTHOR_DATE="$timestamp" git commit --amend --no-edit --reset-author
 ```
 
-Note: `--reset-author` also resets the author identity (name and email) to the current git config, not just the date. If the user only wants to change the date and keep the existing author, drop `--reset-author`:
+`--reset-author` also resets the author identity (name and email) to the current git config, not just the date. If the user only wants to change the date and keep the existing author, drop `--reset-author`:
 
 ```bash
 GIT_COMMITTER_DATE="$timestamp" GIT_AUTHOR_DATE="$timestamp" git commit --amend --no-edit --date "$timestamp"

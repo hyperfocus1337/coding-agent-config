@@ -54,4 +54,4 @@ GIT_SEQUENCE_EDITOR=true git rebase -i HEAD~$count \
   --exec 'git commit --amend --author="$author" --no-edit'
 ```
 
-Both values are already substituted in the commands above, so run them as written. After the rebase completes, run `git log --pretty=format:'%h %an <%ae> %s' -10` so the user can verify the new author.
+Run the command as written. After the rebase completes, run `git log --pretty=format:'%h %an <%ae> %s' -10` so the user can verify the new author.

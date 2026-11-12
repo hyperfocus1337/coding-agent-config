@@ -23,7 +23,7 @@ The rewrite also removes these agent lines:
 - The trailers `Assisted-by:`, `Claude-Session:`, `Amp-Thread-ID:`, `Agent-Logs-Url:`, and `Made-with:`.
 - A "Generated with" line that starts with an emoji, such as `🤖 Generated with [Claude Code](…)` or `💘 Generated with Crush`. A line without an emoji, such as "Generated with protoc", stays.
 
-The co-author rule needs no list of agents, but a human co-author also goes. When the user asks to keep the trailers, only the author changes.
+A human co-author also goes. When the user asks to keep the trailers, only the author changes.
 
 An agent that is the author, such as the Copilot cloud agent, goes with the author rewrite. The committer becomes the local git identity, so an agent committer such as `Jane Doe (aider)` also goes.
 

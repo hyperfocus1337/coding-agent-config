@@ -32,7 +32,7 @@ This command deletes local branches. A stale branch is deleted with `git branch 
 
 2. **Survey every local branch**
 
-   The survey deletes nothing. Run the block as one command: the classification needs `base` and `current` in the same shell.
+   Run the block as one command: the classification needs `base` and `current` in the same shell.
 
    ```bash
    default=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD)
@@ -84,7 +84,7 @@ This command deletes local branches. A stale branch is deleted with `git branch 
 
 4. **Delete only the approved branches**
 
-   Take the literal branch names from the approved rows. The deletion then matches the overview exactly. Do not run the survey again to build this list. Run only the command that applies. Omit a command that has no approved branch.
+   Take the literal branch names from the approved rows. The deletion then matches the overview exactly. Do not run the survey again to build this list. Omit a command that has no approved branch.
 
    ```bash
    git branch -D <approved stale branches>
@@ -104,7 +104,7 @@ Report the two classes separately. Include the `Deleted branch X (was <sha>)` li
 The classification enforces these rules:
 
 - Never delete the current branch or the default branch.
-- Never delete a branch whose remote branch still exists. The stale class covers a branch whose remote branch was deleted, so an upstream that still exists means the branch is still published. To delete a published branch after it merges, remove the `elif [ -n "$upstream" ]` test, and compare against `origin/$base` as well as `$base`. The merge reached the remote before it reached the local base.
+- Never delete a branch whose remote branch still exists. The stale class covers a branch whose remote branch was deleted, so an upstream that still exists means the branch is still published.
 - `git branch -d` and `git branch -D` both fail for a branch that has a worktree. Direct the user to `/git:worktrees:cleanup` for that branch.
 
 Detection limit: `--is-ancestor` finds a true merge and a fast-forward merge. A squash merge builds a new commit. A rebase merge writes new commit hashes. In both cases the commits of the branch are not ancestors of the base, and the test does not find them.

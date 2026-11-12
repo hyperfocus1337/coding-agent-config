@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Configure the current repository to store worktree links as relative paths. Git writes absolute paths into `.git/worktrees/<name>/gitdir` and into the worktree's `.git` file by default. The repository checkout is mounted at a different path in a container than on the host, so those absolute paths break on one side. Relative paths work on both.
 
-Requires git 2.48 or later. On older git, report the version and stop.
+Requires git 2.48 or later.
 
 ## Commands to Execute
 

@@ -6,25 +6,25 @@ disable-model-invocation: true
 
 ## Your Task
 
-You need to execute the following bash commands to remove worktrees tied to `[gone]` branches (deleted on the remote) and then delete those branches. For branches without worktrees, use `/branches` instead.
+Remove the worktrees of `[gone]` branches (deleted on the remote), then delete those branches. For branches without worktrees, use `/branches` instead.
 
 ## Commands to Execute
 
-1. **First, list branches to identify any with [gone] status** Execute this command:
+1. **List branches to identify any with [gone] status**
 
    ```bash
    git branch -v
    ```
 
-   Note: Branches with a '+' prefix have associated worktrees and must have their worktrees removed before deletion.
+   A `+` prefix marks a branch with a worktree. Remove the worktree before you delete the branch.
 
-2. **Next, identify worktrees that need to be removed for [gone] branches** Execute this command:
+2. **Identify worktrees that need to be removed for [gone] branches**
 
    ```bash
    git worktree list
    ```
 
-3. **Finally, remove worktrees and delete [gone] branches (handles both regular and worktree branches)** Execute this command:
+3. **Remove worktrees and delete [gone] branches**
    ```bash
    # Process all [gone] branches, removing '+' prefix if present
    git branch -v | grep '\[gone\]' | sed 's/^[+* ]//' | awk '{print $1}' | while read branch; do
@@ -43,11 +43,4 @@ You need to execute the following bash commands to remove worktrees tied to `[go
 
 ## Expected Behavior
 
-After executing these commands, you will:
-
-- See a list of all local branches with their status
-- Identify and remove any worktrees associated with [gone] branches
-- Delete all branches marked as [gone]
-- Provide feedback on which worktrees and branches were removed
-
-If no branches are marked as [gone], report that no cleanup was needed.
+Report which worktrees and branches were removed. If no branches are marked as [gone], report that no cleanup was needed.
