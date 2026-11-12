@@ -1,9 +1,9 @@
 #!/bin/sh
 # chezmoi modify script for ~/.pi/agent/settings.json: chezmoi sends the current
 # file on stdin and writes stdout back. This repo owns the keys in $ours and
-# they win. Keys pi writes itself and the repo leaves out (deviceId,
-# lastChangelogVersion) stay from the current file. Objects merge key by key;
-# arrays from $ours replace the current ones.
+# they win, except extension switches and filters on declared packages stay local.
+# Keys pi writes itself and the repo leaves out stay from the current file.
+# Objects merge key by key; other arrays from $ours replace the current ones.
 set -eu
 
 # ── Settings this repo owns ───────────────────────────────────────────────────
@@ -52,4 +52,11 @@ EOF
 # ── Merge over the current file ───────────────────────────────────────────────
 # Empty stdin (no ~/.pi/agent/settings.json yet) reads as {}.
 # Remove the retired pi-powerline-footer settings.
-jq -n --argjson ours "$ours" '(((try input catch {}) // {}) * $ours) | del(.powerline)'
+jq -n --argjson ours "$ours" '
+  ([inputs] | .[0] // {}) as $current
+  | ($current * $ours)
+  | .extensions = ($ours.extensions + [($current.extensions // [])[] | select(test("^[!+-]"))])
+  | .packages = [$ours.packages[] as $source
+      | ([$current.packages[]? | select(type == "object" and .source == $source)] | last) // $source]
+  | del(.powerline)
+'

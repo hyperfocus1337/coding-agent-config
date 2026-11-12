@@ -26,7 +26,9 @@ pi writes to `~/.pi/agent/settings.json` itself: a model change in the TUI updat
 
 ### Merge behavior
 
-`modify_settings.json` is a chezmoi modify script, so `chezmoi apply` does not stop to ask. It merges the repository keys over the current file with `jq`: a repository key wins, and a key the repository leaves out, such as `deviceId`, stays. Objects merge key by key, and a repository array replaces the current one. To keep a model change, add it to `modify_settings.json`; the next apply resets it otherwise.
+`modify_settings.json` is a chezmoi modify script, so `chezmoi apply` does not stop to ask. It merges the repository keys over the current file with `jq`: a repository key wins, and a key the repository leaves out, such as `deviceId`, stays. Objects merge key by key, and a repository array replaces the current one, with two exceptions: native extension switches (`!`, `+`, and `-` entries) stay after the repository declarations in their current order, and object declarations for repository-listed packages retain their resource filters. This lets [`/extensions`](../extensions/extension-manager/README.md) and `pi config` changes survive apply. Plain extension declarations and packages outside the repository list are not retained.
+
+Malformed JSON stops apply instead of resetting settings. To keep a model change, add it to `modify_settings.json`; the next apply resets it otherwise.
 
 ## File removal
 
