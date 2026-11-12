@@ -38,7 +38,7 @@ Arguments: `$ARGUMENTS`
 
 You can pass these positionally, describe them in plain language, or run the command bare. If the author is missing, ask for it. If no count was given and it is not clear the user wants the whole branch, confirm the scope (entire branch vs last N) before running.
 
-An argument you do not pass expands to nothing, so `HEAD~\$count` becomes `HEAD~`, which git reads as `HEAD~1`. When the count is `all`, run the entire-branch command. When the count is empty, confirm the scope first. Never run a `HEAD~` with no number or with `all`.
+An argument you do not pass expands to nothing, so `HEAD~\$count` becomes `HEAD~`, which git reads as `HEAD~1`. Never run a `HEAD~` with no number or with `all`.
 
 ## Safety
 

@@ -20,7 +20,7 @@ Parse the time period argument to determine the git log time filter:
 - If "$ARGUMENTS" is "month", use "--since='1 month ago'"
 - If "$ARGUMENTS" is "year", use "--since='1 year ago'"
 - If "$ARGUMENTS" is a number, use "--since='$ARGUMENTS days ago'"
-- It no argument provided, default to "week"
+- If no argument is given, use "week"
 
 Run `git log` with that filter to fetch all commits from the period:
 

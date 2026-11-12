@@ -24,7 +24,7 @@ $ARGUMENTS
 Split `HEAD` into one commit per logical unit. The text inside `<arguments>` gives the reason for the split. Use it to identify which changes do not belong together.
 
 1. **Check.** Stop if the tree is not clean, or if `HEAD` is pushed and the user has not confirmed a force-push. Stop if the arguments are empty and ask why the split is needed.
-2. **Undo.** `git reset --soft HEAD~1`, then `git restore --staged .` so every change of the commit is unstaged.
+2. **Undo.** Record the `HEAD` SHA as `<original sha>`. Then run `git reset --soft HEAD~1`, then `git restore --staged .` so every change of the commit is unstaged.
 3. **Group.** Group by concern, not by file. One file can hold two units. Order foundational changes first.
 4. **Commit.** Per unit:
    1. Stage the unit. Never `git add -A`, `git add .`, `git add -u`, `git commit -a`, or `git apply --unidiff-zero`.
