@@ -2,7 +2,7 @@
 
 [Agent directory](../README.md)
 
-[`modify_settings.json`](../modify_settings.json) is the chezmoi modify script for `~/.pi/agent/settings.json`.
+[`modify_settings.json`](../modify_settings.json) is the chezmoi modify script for `~/.pi/agent/settings.json`. See [public extensions](public-extensions.md) for the packages, their commands, and their configuration.
 
 | Setting                         | Value                                                                                                                                                                                                                                                                                                 | Effect                                                                                                 |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |

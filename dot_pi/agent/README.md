@@ -18,5 +18,6 @@ The symlink target is relative to the link, not to the home directory: chezmoi w
 ## Documentation
 
 - [Settings](docs/settings.md): configured values, settings drift, merge behavior, and file removal.
+- [Public extensions](docs/public-extensions.md): installed packages, commands, configuration, and updates.
 - [Footer and context usage](docs/footer-and-context.md): footer layout, Codex quotas, saved changes, and context inspection.
 - [Claude resources](docs/claude-resources.md): project approval, resource reloads, skill compatibility, and cache exclusions.
