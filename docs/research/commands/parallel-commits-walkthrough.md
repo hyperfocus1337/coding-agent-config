@@ -2,7 +2,7 @@
 
 This page follows one run of [`/git:commit:parallel`](../../../dot_claude/commands/git/commit/parallel.md) step by step, while a second session commits on the same branch. For why the command uses these git methods, see [parallel commits](parallel-commits.md).
 
-The file changes, object IDs, and Git output come from the original scratch run with git 2.55.0 on 2026-10-02. The steps now explain the current Python publish helper, not the original model-driven retry loop. Internal Git calls below are an explanatory trace, not a new captured helper run.
+The file changes, object IDs, and Git output come from the original scratch run with git 2.55.0 on 2026-10-02. The steps now explain the current Python publish helper, not the original model-driven retry loop. Internal Git calls below are an explanatory trace, not a new captured helper run. The page shows `mktemp -d` and each `git rev-parse HEAD` as its own step. The current command runs the first two in one Bash call and ends each publish call with `git rev-parse HEAD`, to save model turns: the outputs are the same.
 
 The page shortens SHAs to 7 characters. The command uses the full SHA that git prints. Both forms work in git commands.
 
