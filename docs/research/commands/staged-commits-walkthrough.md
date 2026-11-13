@@ -52,7 +52,7 @@ $ git diff HEAD --stat
 | Index        | base        | base         | you         |
 | `HEAD`       | base        | base         | base        |
 
-Step 1, **Repositories**, runs `git -C <dir> rev-parse --show-toplevel` for `.` and for the directory of each edited file. All edited files are in the scratch repository, so the run has no external repository and runs the next steps once. The step did not exist on 2026-10-02, but it does not change the output of this scenario.
+Step 1, **Repositories**, runs `git -C <dir> rev-parse --show-toplevel` for the directory of each edited file that the status of the Context block does not list. All edited files are in the scratch repository, so the run has no external repository and runs the next steps once. The step did not exist on 2026-10-02, but it does not change the output of this scenario.
 
 ### 2. Lists (step 2)
 

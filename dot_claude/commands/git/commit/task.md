@@ -1,11 +1,12 @@
 ---
-allowed-tools: Bash(git add:*), Bash(git restore --staged:*), Bash(git apply:*), Bash(git show:*), Bash(git hash-object:*), Bash(git update-index:*), Bash(git ls-files:*), Bash(git status:*), Bash(git --no-optional-locks status:*), Bash(sleep 10), Bash(git commit:*), Bash(git diff:*), Bash(git log:*), Bash(git -C * rev-parse *), Bash(git -C * add *), Bash(git -C * restore --staged *), Bash(git -C * apply *), Bash(git -C * show *), Bash(git -C * hash-object *), Bash(git -C * update-index *), Bash(git -C * ls-files *), Bash(git -C * status *), Bash(git -C * commit *), Bash(git -C * diff *), Bash(git -C * log *)
+allowed-tools: Bash(git add:*), Bash(git restore --staged:*), Bash(git apply:*), Bash(git show:*), Bash(git hash-object:*), Bash(git update-index:*), Bash(git ls-files:*), Bash(git status:*), Bash(git --no-optional-locks status:*), Bash(sleep 10), Bash(git commit:*), Bash(git diff:*), Bash(git log:*), Bash(git rev-parse:*), Bash(git -C * rev-parse *), Bash(git -C * add *), Bash(git -C * restore --staged *), Bash(git -C * apply *), Bash(git -C * show *), Bash(git -C * hash-object *), Bash(git -C * update-index *), Bash(git -C * ls-files *), Bash(git -C * status *), Bash(git -C * commit *), Bash(git -C * diff *), Bash(git -C * log *)
 argument-hint: [scope]
 description: Commit one task's changes
 ---
 
 ## Context
 
+- Top level: !`git rev-parse --show-toplevel`
 - Status: !`git --no-optional-locks status -sb`
 - Change size per file: !`git diff HEAD --stat 2>/dev/null || git diff --cached --stat`
 - Recent commits: !`git log --oneline -5 2>/dev/null || echo "no commits yet"`
@@ -33,8 +34,8 @@ A conversation is not a scope. Out of scope by default:
 
 If `/git:commit:plan` made a plan for this command in this conversation, use its include list and subject, with every change the user asked for since. Still run each step below to check it.
 
-1. **Repositories.** Run `git -C <dir> rev-parse --show-toplevel` for `.` and for the nearest existing directory of each file you edited.
-   - Each top level other than the one for `.` is a candidate.
+1. **Repositories.** A file that the status above lists is in this repository and needs no probe. For every other file you edited, run `git -C <dir> rev-parse --show-toplevel` for its nearest existing directory.
+   - Each top level other than the one above is a candidate.
    - `not a git repository` is an expected result, not a failure: the file is in no repository and stays out.
    - A candidate is an external repository. Leave out a candidate that is a disposable fixture, such as a test or pilot repository made to try something, or that holds only generated output, unless the user asks for it.
    - Run the next steps in this repository first, then in each external repository, with `-C <repo>` after `git` in every git command.

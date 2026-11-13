@@ -31,8 +31,8 @@ Split `HEAD` into one commit per logical unit. Use the text inside `<arguments>`
       - A whole file: `git add <path>`.
       - Part of a file: write `git diff -U3 -- <path>` to a patch outside the repository, copy this unit's hunks, picked by their text, to a new, unused patch file, and run `git apply --cached <new patch>`.
       - One hunk that mixes two units: write this unit's version of the file to a file outside the repository, starting from `git show :<path>`. Then run `git hash-object -w <file>` and `git update-index --cacheinfo <mode>,<sha>,<path>`, with `<mode>` from `git ls-files -s <path>`.
-   2. Check the stage. Compare `git diff --cached --name-only` against the unit and unstage anything extra with `git restore --staged <path>`. For each partly staged file, read `git diff --cached -- <path>` and confirm every hunk is in this unit and sits where it belongs.
-   3. In a new Bash call, after you read the check, commit with Conventional Commits. Reuse the original subject for the unit it describes.
+   2. Check the stage. For a unit of whole files, stage and check in one Bash call. Compare `git diff --cached --name-only` against the unit and unstage anything extra with `git restore --staged <path>`. For each partly staged file, read `git diff --cached -- <path>` and confirm every hunk is in this unit and sits where it belongs.
+   3. In a new Bash call, after you read the check, commit with Conventional Commits. Reuse the original subject for the unit it describes. To save a turn, continue that call with `&&`: stage and check the next unit, or after the last unit run the status of step 5. A call holds at most one `git commit`, as its first command.
 5. **Repeat.** Continue until `git status` is clean and `git diff <original sha>` is empty.
 
 ## Rules

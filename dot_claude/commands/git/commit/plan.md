@@ -1,11 +1,12 @@
 ---
-allowed-tools: Bash(git status:*), Bash(git --no-optional-locks status:*), Bash(git diff:*), Bash(git log:*), Read(~/.claude/commands/git/commit/**), Bash(git -C * rev-parse *), Bash(git -C * status *), Bash(git -C * diff *), Bash(git -C * log *)
+allowed-tools: Bash(git status:*), Bash(git --no-optional-locks status:*), Bash(git diff:*), Bash(git log:*), Read(~/.claude/commands/git/commit/**), Bash(git rev-parse:*), Bash(git -C * rev-parse *), Bash(git -C * status *), Bash(git -C * diff *), Bash(git -C * log *)
 argument-hint: <conversation|parallel|multiple|task [scope]|extend [commit]>
 description: Plan the commits a commit command would make, without committing
 ---
 
 ## Context
 
+- Top level: !`git rev-parse --show-toplevel`
 - Status: !`git --no-optional-locks status -sb`
 - Change size per file: !`git diff HEAD --stat 2>/dev/null || git diff --cached --stat`
 - Recent commits: !`git log --oneline -5 2>/dev/null || echo "no commits yet"`
