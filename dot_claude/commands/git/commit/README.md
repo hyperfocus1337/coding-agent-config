@@ -19,7 +19,7 @@ Some text appears in more than one command. When you change it in one command, c
 | **Repositories** step                 | `conversation`, `multiple`, `task`                  | The last bullet differs per command: what to commit in an external repository. `conversation` has none.                                                                                                                                    |
 | Sentence that follows a `plan` result | `conversation`, `multiple`, `task`, `extend`, `any` |                                                                                                                                                                                                                                            |
 
-`plan` holds no copy of these steps: a `cat` of the target command file in its last section puts the current text in the prompt. The file name comes from the first argument, so the shell sees that word: `plan` is for arguments that you type yourself.
+`plan` holds no copy of these steps: a `cat` of the target command file in its last section puts the current text in the prompt. The file name comes from the first argument, so the shell sees that word: `plan` is for arguments that you type yourself, so it has `disable-model-invocation: true`. A first word with a quote character stops the invocation with a shell error.
 
 ## Staging part of a file
 

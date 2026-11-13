@@ -2,6 +2,7 @@
 allowed-tools: Bash(git status:*), Bash(git --no-optional-locks status:*), Bash(git diff:*), Bash(git log:*), Bash(cat ~/.claude/commands/git/commit/*), Read(~/.claude/commands/git/commit/**), Bash(git rev-parse:*), Bash(git -C * rev-parse *), Bash(git -C * status *), Bash(git -C * diff *), Bash(git -C * log *)
 argument-hint: <conversation|parallel|multiple|task [scope]|extend [commit]>
 description: Plan the commits a commit command would make, without committing
+disable-model-invocation: true
 ---
 
 ## Context
