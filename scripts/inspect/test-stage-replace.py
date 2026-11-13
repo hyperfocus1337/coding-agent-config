@@ -3,6 +3,7 @@
 import importlib.util
 import os
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -63,6 +64,24 @@ class StageTest(unittest.TestCase):
             )
             self.assertIn("+Version: 2", self.git("diff", "--cached"))
         self.assertEqual(self.git("diff", "--cached"), "")
+
+    def test_command_line_takes_texts_that_start_with_a_dash(self):
+        self.file.write_text("--flag=2\n")
+        self.git("add", "--", "docs/notes.md")
+        self.git("commit", "-qm", "flag")
+        self.file.write_text("--flag=3\n")
+        args = [sys.executable, str(SOURCE), "-C", "docs", "notes.md", "--flag=2"]
+        result = subprocess.run([*args, "--flag=3"], cwd=self.repo, check=False)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(self.git("show", ":docs/notes.md"), "--flag=3\n")
+        odd = subprocess.run(args, cwd=self.repo, check=False, capture_output=True)
+        self.assertEqual(odd.returncode, 2)
+
+    def test_rejects_a_symlink(self):
+        (self.repo / "link").symlink_to("docs/notes.md")
+        self.git("add", "--", "link")
+        with self.assertRaises(RuntimeError):
+            stage_replace.stage(self.repo, "link", [("docs/notes.md", "Version: 2")])
 
     def test_rejects_wrong_texts_and_leaves_the_stage(self):
         cases = [

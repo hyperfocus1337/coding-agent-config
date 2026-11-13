@@ -9,8 +9,8 @@ python3 "$HOME/.claude/commands/git/commit/scripts/stage/stage-replace.py" [-C <
 Give one more pair per replacement. The helper stops with an error, and leaves the index as it was, in these cases:
 
 - An old text does not occur exactly once in the staged version.
-- A new text is not in the working file.
-- The path is not in the index, or it has a merge conflict.
+- A new text is not in the working file. This check catches a typing error only: the staged diff remains the check of the result.
+- The path is not in the index, it has a merge conflict, or it is a symlink or a submodule.
 
 Run the checks from the repository root:
 
