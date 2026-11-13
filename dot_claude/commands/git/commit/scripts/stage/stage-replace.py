@@ -1,0 +1,61 @@
+"""Stage text replacements on the staged version of one file; never write the working tree."""
+
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+
+def checked(repo, *args, data=None):
+    result = subprocess.run(
+        ["git", *args], cwd=repo, input=data, check=False, capture_output=True
+    )
+    if result.returncode:
+        raise RuntimeError(result.stderr.decode(errors="replace").strip())
+    return result.stdout
+
+
+def stage(repo, path, pairs):
+    entries = checked(repo, "ls-files", "-s", "-z", "--full-name", "--", path)
+    entries = [entry for entry in entries.split(b"\0") if entry]
+    if len(entries) != 1:
+        raise RuntimeError(f"{path}: need one staged file, found {len(entries)}")
+    meta, name = entries[0].split(b"\t", 1)
+    mode, sha, stage_number = meta.decode().split()
+    if stage_number != "0":
+        raise RuntimeError(f"{path}: the file has a merge conflict")
+    # shortcut: the texts are matched against the stored blob, so a file that a clean
+    # filter or CRLF conversion changes can fail to match; use the hand method for those.
+    text = checked(repo, "cat-file", "blob", sha)
+    working = (Path(repo) / path).read_bytes()
+    for old, new in pairs:
+        old, new = old.encode(), new.encode()
+        if text.count(old) != 1:
+            raise RuntimeError(
+                f"{path}: old text occurs {text.count(old)} times in the staged version, need 1:\n"
+                f"{old.decode()}"
+            )
+        # A new text that the working file does not hold is a typing error, not a session change.
+        if new not in working:
+            raise RuntimeError(
+                f"{path}: new text is not in the working file:\n{new.decode()}"
+            )
+        text = text.replace(old, new)
+    blob = checked(repo, "hash-object", "-w", "--no-filters", "--stdin", data=text)
+    info = f"{mode},{blob.decode().strip()},{name.decode()}"
+    checked(repo, "update-index", "--cacheinfo", info)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("-C", dest="repo", default=".", help="repository directory")
+    parser.add_argument("path", help="file, relative to the repository directory")
+    parser.add_argument("texts", nargs="+", help="pairs: <old text> <new text>")
+    args = parser.parse_args()
+    if len(args.texts) % 2:
+        parser.error("give the texts in pairs: <old text> <new text>")
+    try:
+        stage(args.repo, args.path, list(zip(args.texts[::2], args.texts[1::2])))
+    except (RuntimeError, OSError) as error:
+        print(error, file=sys.stderr)
+        sys.exit(1)
