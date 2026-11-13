@@ -1,6 +1,6 @@
 # Staging scripts
 
-[`stage-replace.py`](stage-replace.py) is the Python 3 staging helper for the partial-file step of [`/git:commit:conversation`](../../conversation.md), `multiple`, `split`, and `task`. It applies text replacements to the staged version of one file and writes the result to the index. It never writes the working tree.
+[`stage-replace.py`](stage-replace.py) is the Python 3 staging helper for the partial-file step of [`/git:commit:conversation`](../../conversation.md), `multiple`, `split`, and `task`, and of [`/git:commit:parallel`](../../parallel.md), which sets `GIT_INDEX_FILE` to its private index. It applies text replacements to the staged version of one file and writes the result to the index. It never writes the working tree.
 
 ```sh
 python3 "$HOME/.claude/commands/git/commit/scripts/stage/stage-replace.py" [-C <repo>] <path> '<old text>' '<new text>'

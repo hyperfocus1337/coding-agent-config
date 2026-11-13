@@ -1,10 +1,12 @@
 """Run: python3 scripts/inspect/test-stage-replace.py. Uses disposable Git repositories."""
 
 import importlib.util
+import os
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 SOURCE = (
     Path(__file__).resolve().parents[2]
@@ -51,6 +53,16 @@ class StageTest(unittest.TestCase):
             self.repo, "docs/notes.md", [("Status: draft", "Status: review")]
         )
         self.assertEqual(self.git("diff", "--", "docs/notes.md"), "")
+
+    def test_private_index_leaves_the_shared_index(self):
+        private = self.repo / ".git/private-index"
+        with patch.dict(os.environ, {"GIT_INDEX_FILE": str(private)}):
+            self.git("read-tree", "HEAD")
+            stage_replace.stage(
+                self.repo, "docs/notes.md", [("Version: 1", "Version: 2")]
+            )
+            self.assertIn("+Version: 2", self.git("diff", "--cached"))
+        self.assertEqual(self.git("diff", "--cached"), "")
 
     def test_rejects_wrong_texts_and_leaves_the_stage(self):
         cases = [
