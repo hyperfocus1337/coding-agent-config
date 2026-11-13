@@ -19,7 +19,7 @@ Some text appears in more than one command. When you change it in one command, c
 | **Repositories** step                 | `conversation`, `multiple`, `task`                  | The last bullet differs per command: what to commit in an external repository. `conversation` has none.                                                                                                                                    |
 | Sentence that follows a `plan` result | `conversation`, `multiple`, `task`, `extend`, `any` |                                                                                                                                                                                                                                            |
 
-`plan` holds no copy of these steps: it reads the target command file at run time.
+`plan` holds no copy of these steps: a `cat` of the target command file in its last section puts the current text in the prompt. The file name comes from the first argument, so the shell sees that word: `plan` is for arguments that you type yourself.
 
 ## Staging part of a file
 
@@ -66,7 +66,7 @@ The method has these limits:
 - In an external repository, `multiple` takes every change, also changes that were there before the session.
 - `parallel` and `audit` work in the working directory only.
 
-An external repository can have no commits, and then `git diff HEAD` fails. `plan` checks `HEAD` with `git rev-parse --verify --quiet HEAD` first and falls back to `git diff --cached --stat`. Neither diff shows untracked files, so `plan` takes them from `git status --untracked-files=all`. A probe result that the step expects, such as `not a git repository` or an empty `rev-parse --verify`, is not a failure. Any other failure stops `plan` with an error report instead of a plan: a failure listed under "Left out" looks like a complete plan.
+An external repository can have no commits, and then `git diff HEAD` fails. `plan` therefore reads `git diff --cached --stat` and `git diff --stat`, which need no commit, in one Bash call with the status. Neither diff shows untracked files, so `plan` takes them from `git status --untracked-files=all`. A probe result that the step expects, such as `not a git repository`, is not a failure. Any other failure stops `plan` with an error report instead of a plan: a failure listed under "Left out" looks like a complete plan.
 
 ## Parallel sessions
 

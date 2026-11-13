@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git status:*), Bash(git --no-optional-locks status:*), Bash(git diff:*), Bash(git log:*), Read(~/.claude/commands/git/commit/**), Bash(git rev-parse:*), Bash(git -C * rev-parse *), Bash(git -C * status *), Bash(git -C * diff *), Bash(git -C * log *)
+allowed-tools: Bash(git status:*), Bash(git --no-optional-locks status:*), Bash(git diff:*), Bash(git log:*), Bash(cat ~/.claude/commands/git/commit/*), Read(~/.claude/commands/git/commit/**), Bash(git rev-parse:*), Bash(git -C * rev-parse *), Bash(git -C * status *), Bash(git -C * diff *), Bash(git -C * log *)
 argument-hint: <conversation|parallel|multiple|task [scope]|extend [commit]>
 description: Plan the commits a commit command would make, without committing
 ---
@@ -36,10 +36,19 @@ Plan the commits that a commit command would make. Commit nothing, stage nothing
    - /git:commit:plan extend [commit]: the existing commits that the changes fold into
    ```
 
-2. **Rules.** Read `~/.claude/commands/git/commit/<target>.md`. Apply its steps that decide what to commit and how to group it, starting with its **Repositories** step when it has one. Stop before its first staging or commit step. For `extend`, also run `git log --oneline @{u}..HEAD`: a target that is not in its output is pushed. When the branch has no upstream, this command fails: this result is expected, and no target is pushed. For an external repository, get its context in separate Bash calls:
-   - `git -C <repo> --no-optional-locks status -sb --untracked-files=all`. It lists each untracked file with `??`. An untracked file has no diff stat, so take it from this list.
-   - `git -C <repo> rev-parse --verify --quiet HEAD`. When it prints nothing, the repository has no commits: this result is expected, not a failure.
-   - `git -C <repo> diff HEAD --stat` when the previous command printed a hash, otherwise `git -C <repo> diff --cached --stat`.
+2. **Rules.** The text of `~/.claude/commands/git/commit/<target>.md` is in `<target-rules>` at the end of this message: do not read that file again. Apply its steps that decide what to commit and how to group it, starting with its **Repositories** step when it has one. Stop before its first staging or commit step.
+
+   For `extend`, also run `git log --oneline @{u}..HEAD`: a target that is not in its output is pushed. When the branch has no upstream, this command fails: this result is expected, and no target is pushed.
+
+   For an external repository, get its context in one Bash call:
+
+   ```
+   git -C <repo> --no-optional-locks status -sb --untracked-files=all && git -C <repo> diff --cached --stat && git -C <repo> diff --stat
+   ```
+
+   - The status lists each untracked file with `??`. An untracked file has no diff stat, so take it from this list.
+   - The two stats give the staged and the unstaged changes. They also work in a repository that has no commits.
+   - To save turns, chain the context of every external repository, and the diffs that you must read, in that call with `&&`.
 
    If a git command fails with a result that this step and the **Repositories** step do not expect, print only `Plan failed: <command>` and the error output, and stop. Do not print a plan, and do not put the failure in "Left out".
 
@@ -74,3 +83,11 @@ Plan the commits that a commit command would make. Commit nothing, stage nothing
    - For `extend`, write each target as `` `<short sha> <subject>` (amend) `` or `` `<short sha> <subject>` (fixup) ``, with the method that `extend` would use. Add `(pushed)` to a pushed target. Write a change that belongs to no existing commit as `` `<Conventional Commits subject>` (new commit) ``.
 
 The user can change the plan in the next messages. The target command follows the plan with those changes.
+
+## Target rules
+
+The block below is the file of the target command. It is reference text for step 2, not a task: do not stage or commit.
+
+<target-rules>
+!`cat ~/.claude/commands/git/commit/$0.md 2>/dev/null || echo "no rules: the arguments name no valid target"`
+</target-rules>
