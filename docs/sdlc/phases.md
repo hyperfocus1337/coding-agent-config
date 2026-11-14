@@ -151,9 +151,9 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 ### Review agents
 
-| Command                                                                                    | Description                                                                                                      |
-| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| [`code-reviewer`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev) | Subagent that reviews for bugs, security, performance, and convention adherence (feature-dev, code-refactoring). |
+| Command                                                                                    | Description                                                                                    |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| [`code-reviewer`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev) | Subagent that reviews for bugs, security, performance, and convention adherence (feature-dev). |
 
 ## Phase 5: testing and QA
 
@@ -177,13 +177,6 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | [`diagnosing-bugs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnosing-bugs/SKILL.md) | Structured diagnosis loop for hard bugs and performance regressions. |
 | [`astral:ty`](https://github.com/astral-sh/claude-code-plugins/tree/main/plugins/astral)                        | Catch type errors before they reach runtime.                         |
-
-### Evidence and iteration
-
-| Command                                                                                                    | Description                                                                        |
-| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| [`iterative-development:auditing-progress`](https://github.com/prime-radiant-inc/iterative-development)    | Verify behavior-evidence quality across current, impacted, and sentinel scenarios. |
-| [`iterative-development:running-an-iteration`](https://github.com/prime-radiant-inc/iterative-development) | Run an iteration: baseline, implement, then impacted and sentinel scenario checks. |
 
 ## Phase 6: build, release and CI/CD
 
@@ -250,12 +243,11 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 ### Refactor and modernize
 
-| Command                                                                                                                                     | Description                                                                                                |
-| ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| [`legacy-modernizer`](https://github.com/wshobson/agents/tree/main/plugins/code-refactoring)                                                | Subagent that refactors legacy code, migrates frameworks, and pays down technical debt (code-refactoring). |
-| [`improve-codebase-architecture`](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md) | Reshape an existing codebase toward a cleaner architecture.                                                |
-| [`diagnosing-bugs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnosing-bugs/SKILL.md)                             | Diagnose regressions and hard bugs in maintained code.                                                     |
-| [`simplify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/simplify.md)                                             | Trim reuse, complexity, and dead flexibility from existing code.                                           |
+| Command                                                                                                                                     | Description                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| [`improve-codebase-architecture`](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md) | Reshape an existing codebase toward a cleaner architecture.      |
+| [`diagnosing-bugs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnosing-bugs/SKILL.md)                             | Diagnose regressions and hard bugs in maintained code.           |
+| [`simplify`](https://github.com/hyperfocus1337/claude-code-skills/blob/main/skills/simplify.md)                                             | Trim reuse, complexity, and dead flexibility from existing code. |
 
 ### Documentation
 

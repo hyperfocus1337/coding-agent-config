@@ -125,8 +125,6 @@ Bundled inside plugins from various marketplaces. Source of truth for the set: [
 | ---------------------------------------------------------------------------------------------------- | -------------------- | ---------------------------------------------------- | -------- |
 | [`feature-dev`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)             | official             | `/feature-dev:feature-dev`                           | command  |
 | [`feature-dev`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)             | official             | `code-architect`, `code-explorer`, `code-reviewer`   | subagent |
-| [`iterative-development`](https://github.com/prime-radiant-inc/iterative-development)                | prime-radiant        | `iterative-development:*`                            | skill    |
-| [`code-refactoring`](https://github.com/wshobson/agents/tree/main/plugins/code-refactoring)          | wshobson/agents      | `code-reviewer`, `legacy-modernizer`                 | subagent |
 | [`mattpocock-skills`](https://github.com/mattpocock/skills)                                          | mattpocock           | 25 engineering and productivity skills (table below) | skill    |
 | [`ast-grep`](https://github.com/ast-grep/agent-skill)                                                | ast-grep/agent-skill | `ast-grep:ast-grep`                                  | skill    |
 | [`astral`](https://github.com/astral-sh/claude-code-plugins/tree/main/plugins/astral)                | astral-sh            | `astral:ruff`, `astral:ty`, `astral:uv`              | skill    |
