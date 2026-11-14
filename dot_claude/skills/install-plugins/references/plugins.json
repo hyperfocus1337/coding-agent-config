@@ -105,6 +105,17 @@
       "use_when": "repo whose work tracking or docs live in Notion"
     },
     {
+      "id": "neon-postgres@neon",
+      "marketplace": {
+        "source": "neondatabase/agent-skills"
+      },
+      "url": "https://neon.com/docs/ai/agent-setup/claude-code",
+      "scope": "project",
+      "status": "project-candidate",
+      "why": "7 Neon skills plus the hosted Neon MCP server, which asks for an OAuth sign-in on first use. Same scope reason as cloudflare. Take this plugin when the repo needs the MCP server. For skills only, use the neondatabase/agent-skills APM row in install-skills, and do not install both. Install from this marketplace or from neon@claude-plugins-official, not both: the official listing is pinned to a commit and can lag.",
+      "use_when": "repo that connects to Neon Postgres and needs the Neon MCP server"
+    },
+    {
       "id": "watch@claude-video",
       "marketplace": {
         "source": "bradautomates/claude-video"
