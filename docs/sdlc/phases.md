@@ -67,11 +67,11 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 ### Codebase analysis
 
-| Command                                                                                             | Description                                                                                          |
-| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [`code-architect`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)         | Subagent that produces an implementation blueprint from existing codebase patterns (feature-dev).    |
-| [`code-explorer`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)          | Subagent that traces execution paths and maps the architecture of an existing feature (feature-dev). |
-| [`wayfinder`](https://github.com/mattpocock/skills/blob/main/skills/engineering/wayfinder/SKILL.md) | Map the terrain before proposing where a change fits.                                                |
+| Command                                                                                                 | Description                                                                                          |
+| ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [`code-architect`](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/feature-dev) | Subagent that produces an implementation blueprint from existing codebase patterns (feature-dev).    |
+| [`code-explorer`](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/feature-dev)  | Subagent that traces execution paths and maps the architecture of an existing feature (feature-dev). |
+| [`wayfinder`](https://github.com/mattpocock/skills/blob/main/skills/engineering/wayfinder/SKILL.md)     | Map the terrain before proposing where a change fits.                                                |
 
 ### Design inputs
 
@@ -86,12 +86,12 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 ### Building features
 
-| Command                                                                                               | Description                                                                    |
-| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| [`/feature-dev:feature-dev`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev) | Guided feature development with codebase understanding and architecture focus. |
-| [`implement`](https://github.com/mattpocock/skills/blob/main/skills/engineering/implement/SKILL.md)   | Build a single ticket to completion.                                           |
-| [`tdd`](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md)               | Test-driven development with a red-green-refactor loop.                        |
-| [`prototype`](https://github.com/mattpocock/skills/blob/main/skills/engineering/prototype/SKILL.md)   | Explore an approach with throwaway code before committing to it.               |
+| Command                                                                                                           | Description                                                                    |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| [`/feature-dev:feature-dev`](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/feature-dev) | Guided feature development with codebase understanding and architecture focus. |
+| [`implement`](https://github.com/mattpocock/skills/blob/main/skills/engineering/implement/SKILL.md)               | Build a single ticket to completion.                                           |
+| [`tdd`](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md)                           | Test-driven development with a red-green-refactor loop.                        |
+| [`prototype`](https://github.com/mattpocock/skills/blob/main/skills/engineering/prototype/SKILL.md)               | Explore an approach with throwaway code before committing to it.               |
 
 ### Code intelligence and search
 
@@ -151,9 +151,9 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 ### Review agents
 
-| Command                                                                                    | Description                                                                                    |
-| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| [`code-reviewer`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev) | Subagent that reviews for bugs, security, performance, and convention adherence (feature-dev). |
+| Command                                                                                                | Description                                                                                    |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| [`code-reviewer`](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/feature-dev) | Subagent that reviews for bugs, security, performance, and convention adherence (feature-dev). |
 
 ## Phase 5: testing and QA
 

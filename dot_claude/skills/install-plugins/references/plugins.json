@@ -47,6 +47,17 @@
       "use_when": "always available"
     },
     {
+      "id": "feature-dev@claude-plugins-official",
+      "marketplace": {
+        "source": "anthropics/claude-plugins-official"
+      },
+      "url": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/feature-dev",
+      "scope": "project",
+      "status": "project-candidate",
+      "why": "3 agents and 1 command at 207 resident tokens. Value comes from tracing an unfamiliar codebase, which is a per-repo need.",
+      "use_when": "onboarding onto a large codebase you did not write"
+    },
+    {
       "id": "glab@gitlab-skills",
       "marketplace": {
         "source": "https://gitlab.com/gitlab-org/ai/skills.git"

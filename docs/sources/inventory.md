@@ -123,8 +123,8 @@ Bundled inside plugins from various marketplaces. Source of truth for the set: [
 
 | Plugin                                                                                               | Marketplace          | Provides                                             | Kind     |
 | ---------------------------------------------------------------------------------------------------- | -------------------- | ---------------------------------------------------- | -------- |
-| [`feature-dev`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)             | official             | `/feature-dev:feature-dev`                           | command  |
-| [`feature-dev`](https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev)             | official             | `code-architect`, `code-explorer`, `code-reviewer`   | subagent |
+| [`feature-dev`](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/feature-dev) | official             | `/feature-dev:feature-dev`                           | command  |
+| [`feature-dev`](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/feature-dev) | official             | `code-architect`, `code-explorer`, `code-reviewer`   | subagent |
 | [`mattpocock-skills`](https://github.com/mattpocock/skills)                                          | mattpocock           | 25 engineering and productivity skills (table below) | skill    |
 | [`ast-grep`](https://github.com/ast-grep/agent-skill)                                                | ast-grep/agent-skill | `ast-grep:ast-grep`                                  | skill    |
 | [`astral`](https://github.com/astral-sh/claude-code-plugins/tree/main/plugins/astral)                | astral-sh            | `astral:ruff`, `astral:ty`, `astral:uv`              | skill    |
