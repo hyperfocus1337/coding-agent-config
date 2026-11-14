@@ -47,50 +47,6 @@
       "use_when": "always available"
     },
     {
-      "id": "cache-tax@claude-code-mods",
-      "marketplace": {
-        "source": "karanb192/claude-code-mods"
-      },
-      "url": "https://github.com/karanb192/cache-tax",
-      "scope": "user",
-      "status": "user-keep",
-      "why": "A mod: one hooks module that keeps the one-hour prompt cache warm with /keepwarm and drops a cold send once with its rewrite cost. The cache cost applies in every project. No skills, so no resident tokens, and APM cannot carry a hooks module.",
-      "use_when": "always available"
-    },
-    {
-      "id": "iterative-development@prime-radiant-marketplace",
-      "marketplace": {
-        "source": "prime-radiant-inc/prime-radiant-marketplace"
-      },
-      "url": "https://github.com/prime-radiant-inc/prime-radiant-marketplace",
-      "scope": "project",
-      "status": "project-candidate",
-      "why": "6 skills at 444 resident tokens for one delivery method. Its skills call bundled Python helpers, so it stays on the plugin CLI.",
-      "use_when": "greenfield build from a large or ambiguous spec"
-    },
-    {
-      "id": "feature-dev@claude-plugins-official",
-      "marketplace": {
-        "source": "anthropics/claude-plugins-official"
-      },
-      "url": "https://github.com/anthropics/claude-code/tree/main/plugins/feature-dev",
-      "scope": "project",
-      "status": "project-candidate",
-      "why": "3 agents and 1 command at 207 resident tokens. Value comes from tracing an unfamiliar codebase, which is a per-repo need.",
-      "use_when": "onboarding onto a large codebase you did not write"
-    },
-    {
-      "id": "code-refactoring@claude-code-workflows",
-      "marketplace": {
-        "source": "wshobson/agents"
-      },
-      "url": "https://github.com/wshobson/agents/tree/main/plugins/code-refactoring",
-      "scope": "project",
-      "status": "project-candidate",
-      "why": "2 agents at 159 resident tokens. Needed during a migration, not in every session.",
-      "use_when": "framework migration or a tech-debt push"
-    },
-    {
       "id": "glab@gitlab-skills",
       "marketplace": {
         "source": "https://gitlab.com/gitlab-org/ai/skills.git"
