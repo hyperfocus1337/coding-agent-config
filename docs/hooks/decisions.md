@@ -77,7 +77,7 @@ The 2 cores were the same except for the command, one file filter, and the advic
 
 ## tflint runs in the lint hook
 
-**Decision:** on 2026-10-21, `lint-code` runs tflint on each changed `.tf` file, in the folder of the file, with `--filter=<file>`. **Why:** tflint finds errors that `terraform fmt` does not, such as an unknown AWS instance type, and it reports a file that does not parse. The [entry above](#terraform-fmt-runs-in-a-format-hook-not-in-the-lint-hook) rejected tflint because it checks a whole module, but `--filter` keeps the issues of one file. **Cost:** about 200 ms for each `.tf` edit with the `aws` and `azurerm` plugins. Each machine needs `tflint --init` once, and a plugin that is not installed makes the hook skip Terraform files with no message.
+**Decision:** on 2026-10-21, `lint-code` runs tflint on each changed `.tf` file, in the folder of the file, with `--filter=<file>`. **Why:** tflint finds errors that `terraform fmt` does not, such as an unknown AWS instance type, and it reports a file that does not parse. The [entry above](#terraform-fmt-runs-in-a-format-hook-not-in-the-lint-hook) rejected tflint because it checks a whole module, but `--filter` keeps the issues of one file. **Cost:** about 200 ms for each `.tf` edit with the `aws` and `azurerm` plugins. Each machine needs `tflint --init` once, and a plugin that is not installed makes the hook skip the file and show a `Lint coverage incomplete` notice with the tflint error.
 
 ## format-code holds the formatters that are not Prettier
 
