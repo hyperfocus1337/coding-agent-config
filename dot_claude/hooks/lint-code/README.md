@@ -91,10 +91,11 @@ Run `node test/check.ts` from this directory, or `just hooks-check` from the rep
 
 ### Linters
 
-| Page                                | Content                                                                         |
-| ----------------------------------- | ------------------------------------------------------------------------------- |
-| [YAML](docs/linters/yaml.md)        | yamllint and ansible-lint: configuration discovery, routing, and Helm templates |
-| [Terraform](docs/linters/tflint.md) | tflint: module directory and configuration                                      |
+| Page                                 | Content                                                                         |
+| ------------------------------------ | ------------------------------------------------------------------------------- |
+| [YAML](docs/linters/yaml.md)         | yamllint and ansible-lint: configuration discovery, routing, and Helm templates |
+| [Terraform](docs/linters/tflint.md)  | tflint: module directory and configuration                                      |
+| [Markdown](docs/linters/markdown.md) | rumdl: the 3 rules for tables and links                                         |
 
 ### Hook
 
