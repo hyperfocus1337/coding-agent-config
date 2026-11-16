@@ -72,7 +72,7 @@ assert.deepEqual(routed.ran, [
     "--no-config",
     "--no-cache",
     "--enable",
-    "MD056,MD057,MD051",
+    "MD011,MD042,MD045,MD051,MD052,MD056,MD057,MD066,MD068,MD070,MD083,MD084,MD086,MD091,MD092,MD094,MD095",
     "--color",
     "never",
     "--quiet",

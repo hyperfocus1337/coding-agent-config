@@ -19,7 +19,7 @@ The hook finds the Git repository root and checks supported regular files from t
 | `.sh`, `.bash`                                               | `shellcheck -S warning`                              |
 | `.yml`, `.yaml`                                              | `yamllint --strict` or `ansible-lint -q`             |
 | `.tf`                                                        | `tflint --filter=<file> --format=compact --no-color` |
-| `.md`, `.markdown`                                           | `rumdl check --enable MD056,MD057,MD051`             |
+| `.md`, `.markdown`                                           | `rumdl check --enable <17 rules>`                    |
 
 `.tfvars` and prose are not checked. [`lint-prose`](../lint-prose/README.md) remains separate.
 
@@ -95,7 +95,7 @@ Run `node test/check.ts` from this directory, or `just hooks-check` from the rep
 | ------------------------------------ | ------------------------------------------------------------------------------- |
 | [YAML](docs/linters/yaml.md)         | yamllint and ansible-lint: configuration discovery, routing, and Helm templates |
 | [Terraform](docs/linters/tflint.md)  | tflint: module directory and configuration                                      |
-| [Markdown](docs/linters/markdown.md) | rumdl: the 3 rules for tables and links                                         |
+| [Markdown](docs/linters/markdown.md) | rumdl: the 17 rules it runs and why the other rules stay off                    |
 
 ### Hook
 
