@@ -1,10 +1,10 @@
 # lint-code tests
 
-Run `node test/check.ts` from `dot_claude/hooks/lint-code`, or `just hooks-check` from the repository. Tests need Node 23.6 or later, git, and sh. They use stand-in linters and need no installed Ruff, tsc, Pyrefly, shellcheck, or tflint.
+Run `node test/check.ts` from `dot_claude/hooks/lint-code`, or `just hooks-check` from the repository. Tests need Node 23.6 or later, git, and sh. They use stand-in linters and need no installed Ruff, tsc, Pyrefly, shellcheck, tflint, or rumdl.
 
 Fixtures live under `$HOME` because lint-code skips scratch directories. Fixture commits disable git hooks for that command only. A `finally` block removes the fixtures. The test clears `AGENT_HOOKS_DISABLE` so it can check a hook disabled in the parent session.
 
-`test/check.ts` imports the unit tests for each linter module that has its own logic: `test/yaml.ts` and `test/tflint.ts`. They call the `command` of the module with the stub `Io` of `test/stub.ts` and run first. The routing case in `check.ts` covers the one-line commands of ruff, oxlint, and shellcheck.
+`test/check.ts` imports the unit tests for each linter module that has its own logic: `test/yaml.ts` and `test/tflint.ts`. They call the `command` of the module with the stub `Io` of `test/stub.ts` and run first. The routing case in `check.ts` covers the one-line commands of ruff, oxlint, shellcheck, and rumdl.
 
 ## Coverage
 

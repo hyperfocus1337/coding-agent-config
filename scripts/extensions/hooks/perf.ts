@@ -624,7 +624,7 @@ const HOOK_LIST: Hook[] = [
   {
     name: "lint-code",
     on: { Stop: ["post"] },
-    tools: ["ruff", "oxlint", "shellcheck", "yamllint", "ansible-lint", "tflint"],
+    tools: ["ruff", "oxlint", "shellcheck", "yamllint", "ansible-lint", "tflint", "rumdl"],
     state: true,
     args: [],
     work: "reported lint errors",

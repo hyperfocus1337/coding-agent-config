@@ -66,8 +66,20 @@ assert.deepEqual(routed.ran, [
     "/r/roles/f.yaml",
   ],
   ["tflint", "--config=/cfg/.tflint.hcl", "--filter=main.tf", "--format=compact", "--no-color"],
+  [
+    "rumdl",
+    "check",
+    "--no-config",
+    "--no-cache",
+    "--enable",
+    "MD056,MD057,MD051",
+    "--color",
+    "never",
+    "--quiet",
+    "h.md",
+  ],
 ]);
-assert.equal(routed.dirs.at(-1), "/m");
+assert.equal(routed.dirs.at(-2), "/m");
 for (const output of [
   'Plugin missing. Did you run "tflint --init"?\n',
   "mise ERROR No version is set for shim: tflint\n",

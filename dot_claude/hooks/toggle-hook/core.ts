@@ -31,7 +31,7 @@ export const HOOKS = [
  */
 export const PARTS = new Map([
   ["format-code", ["oxfmt", "org-tables", "terraform", "shfmt", "ruff"]],
-  ["lint-code", ["ruff", "oxlint", "shellcheck", "yamllint", "ansible-lint", "tflint"]],
+  ["lint-code", ["ruff", "oxlint", "shellcheck", "yamllint", "ansible-lint", "tflint", "rumdl"]],
   ["type-check-code", ["tsc", "pyrefly"]],
 ]);
 

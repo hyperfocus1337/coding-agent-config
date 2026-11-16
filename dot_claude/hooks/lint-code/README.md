@@ -19,6 +19,7 @@ The hook finds the Git repository root and checks supported regular files from t
 | `.sh`, `.bash`                                               | `shellcheck -S warning`                              |
 | `.yml`, `.yaml`                                              | `yamllint --strict` or `ansible-lint -q`             |
 | `.tf`                                                        | `tflint --filter=<file> --format=compact --no-color` |
+| `.md`, `.markdown`                                           | `rumdl check --enable MD056,MD057,MD051`             |
 
 `.tfvars` and prose are not checked. [`lint-prose`](../lint-prose/README.md) remains separate.
 
@@ -61,6 +62,7 @@ uv tool install ruff
 uv tool install ansible-lint
 pnpm add -g oxlint
 mise use -g tflint@0.64.0
+mise use -g rumdl@0.3.4
 ```
 
 Install shellcheck and yamllint through the platform package manager. Initialize bundled tflint plugins on each machine:
@@ -75,8 +77,8 @@ After a Codex hook entry changes, trust it again in the Codex TUI on each machin
 
 - **Session:** `/toggle-hook lint-code`, or `AGENT_HOOKS_DISABLE=lint-code` at launch.
 - **Repository:** `/toggle-hook --repo lint-code`, or set Git config `agent-hook.lint-code.enabled` to `false`.
-- **Tool in a repository:** `/toggle-hook --repo lint-code.<tool>`, or set Git config `agent-hook.lint-code.<tool>` to `false`. The tools are `ruff`, `oxlint`, `shellcheck`, `yamllint`, `ansible-lint`, and `tflint`. With `ansible-lint` off, Ansible YAML gets the yamllint checks. A value that is not a boolean keeps the tool on.
-- **Language:** `CLAUDE_LINT_DISABLE` accepts `py`, `js`, `sh`, `yaml`, `tf`, or `all`, separated by spaces or commas.
+- **Tool in a repository:** `/toggle-hook --repo lint-code.<tool>`, or set Git config `agent-hook.lint-code.<tool>` to `false`. The tools are `ruff`, `oxlint`, `shellcheck`, `yamllint`, `ansible-lint`, `tflint`, and `rumdl`. With `ansible-lint` off, Ansible YAML gets the yamllint checks. A value that is not a boolean keeps the tool on.
+- **Language:** `CLAUDE_LINT_DISABLE` accepts `py`, `js`, `sh`, `yaml`, `tf`, `md`, or `all`, separated by spaces or commas.
 - **Removal:** remove the adapter entry from the corresponding agent configuration.
 
 ## Failure behavior and tests

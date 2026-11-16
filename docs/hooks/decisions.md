@@ -119,6 +119,12 @@ A formatter module returns its runs for the files of a call, so oxfmt and Emacs 
 
 **Decision:** on 2026-11-08, `agent-hook.lint-code.<tool>` turns off one linter in one repository, for `ruff`, `oxlint`, `shellcheck`, `yamllint`, `ansible-lint`, and `tflint`. With `ansible-lint` off, Ansible YAML gets the yamllint checks. **Why:** a repository can have a linter that it cannot run, such as ansible-lint without its collections, and the keys also apply in the explicit full check, so CI does not fail on that linter. `CLAUDE_LINT_DISABLE` keeps its language keys, so values that are in use now still work. **Cost:** each stop runs 6 more `git config` reads, in parallel.
 
+## rumdl checks Markdown tables and links
+
+**Decision:** on 2026-11-16, `lint-code` runs `rumdl check --no-config --enable MD056,MD057,MD051` on each changed `.md` and `.markdown` file, with the repo key `agent-hook.lint-code.rumdl`. The rules report a table row with a wrong cell count, a relative link to a missing file, and a link to a missing heading. **Why:** an agent edit dropped one `|` from a table row, and oxfmt aligned the row and kept it one cell short, so the text showed in the wrong columns and no tool reported it. Only the author knows where the pipe belongs, so the model gets the finding and no tool fixes it: `rumdl fmt` adds an empty cell at the end of the row. The other rumdl rules stay off because their fixes change content, see [the formatter research](../research/formatting/oxfmt-and-prettier-alternatives.md).
+
+**Cost:** one more tool to install, about 3 ms for each changed Markdown file plus the process start, and 1 more `git config` read at each stop.
+
 ## track-session-changes runs as a mod
 
 **Decision:** the core is async over an `Io` object, so that Claude Code runs it as a mod. The other option was to keep `node hook.ts` as a command hook. **Why:** the mod took 9 to 30 ms for each side of a Bash call, against 27 to 57 ms for the command hook. **Cost:** the mod runs `git hash-object`, `ln`, `cp -p`, `mv`, `rm -rf`, and `sh -c 'cat >>'` for what `$.fs` cannot do. See [`track-session-changes/docs/implementation.md`](../../dot_claude/hooks/track-session-changes/docs/implementation.md).

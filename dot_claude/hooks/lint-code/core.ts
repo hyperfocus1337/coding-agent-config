@@ -3,6 +3,7 @@
  * linters/; this file selects the files, runs the linters, and collects the output.
  */
 
+import { markdown } from "./linters/markdown.ts";
 import { oxlint } from "./linters/oxlint.ts";
 import { ruff } from "./linters/ruff.ts";
 import { shellcheck } from "./linters/shellcheck.ts";
@@ -26,7 +27,7 @@ export interface Io {
 export interface Settings {
   /** The folder of the bundled .yamllint, .ansible-lint, and .tflint.hcl. */
   configDir: string;
-  /** CLAUDE_LINT_DISABLE: keys (py js sh yaml tf) or "all", space or comma. */
+  /** CLAUDE_LINT_DISABLE: keys (py js sh yaml tf md) or "all", space or comma. */
   disable?: string;
   /** TMPDIR: files under it are throwaway and not linted. */
   tmpdir?: string;
@@ -68,7 +69,7 @@ export interface Linter {
   unavailable?: RegExp;
 }
 
-export const LINTERS: Linter[] = [ruff, oxlint, shellcheck, yaml, tflint];
+export const LINTERS: Linter[] = [ruff, oxlint, shellcheck, yaml, tflint, markdown];
 
 const linterOf = (file: string) => {
   const extension = /\.([^./]+)$/.exec(file)?.[1];
