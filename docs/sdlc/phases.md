@@ -182,14 +182,13 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 
 ### Commits and pull requests
 
-| Command                                                                                      | Description                                                           |
-| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| [`/git:commit:single`](../../dot_claude/commands/git/commit/single.md)                       | Create a git commit (stage all, single commit).                       |
-| [`/git:commit:session`](../../dot_claude/commands/git/commit/session.md)                     | Commit one task's changes from the current conversation.              |
-| [`/git:commit:multiple`](../../dot_claude/commands/git/commit/multiple.md)                   | Split changes into a logical sequence of commits.                     |
-| [`/git:commit:push`](../../dot_claude/commands/git/commit/push.md)                           | Commit and push.                                                      |
-| [`/git:pr:create`](../../dot_claude/commands/git/pr/create.md)                               | Commit, push, and open a pull request.                                |
-| [`/issues:github-coding-process`](../../dot_claude/commands/issues/github-coding-process.md) | Plan, implement, test, and ship a GitHub issue end to end using `gh`. |
+| Command                                                                    | Description                                              |
+| -------------------------------------------------------------------------- | -------------------------------------------------------- |
+| [`/git:commit:single`](../../dot_claude/commands/git/commit/single.md)     | Create a git commit (stage all, single commit).          |
+| [`/git:commit:task`](../../dot_claude/commands/git/commit/task.md)         | Commit one task's changes from the current conversation. |
+| [`/git:commit:multiple`](../../dot_claude/commands/git/commit/multiple.md) | Split changes into a logical sequence of commits.        |
+| [`/git:commit:push`](../../dot_claude/commands/git/commit/push.md)         | Commit and push.                                         |
+| [`/git:pr:create`](../../dot_claude/commands/git/pr/create.md)             | Commit, push, and open a pull request.                   |
 
 ### Branch and history hygiene
 

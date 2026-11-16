@@ -122,7 +122,7 @@ A `git add` of a file with unstaged changes would also stage those changes and p
 
 [`git-format-staged`](https://github.com/hallettj/git-format-staged), from the [Prettier pre-commit page](https://prettier.io/docs/precommit), formats the staged part instead: it sends the staged blob through the formatter on stdin and merges the change back into the working tree. The formatters of `format-code` read files, not stdin, and agents seldom stage part of a file, so this hook does not do that.
 
-### git commit \<path\>
+### `git commit <path>`
 
 `git commit <path>` and `git commit --only` build a temporary index for the commit, and write the real index before the `pre-commit` hook runs. The `git add` of the hook changes only the temporary index. Without the `post-commit` run, the commit and the working tree hold the formatted file, but the real index holds the unformatted one, and `git status` shows `MM`. The next `git commit -a` would then commit the unformatted text again.
 

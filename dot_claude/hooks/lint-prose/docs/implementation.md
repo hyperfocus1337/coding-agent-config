@@ -116,7 +116,7 @@ In Claude Code, this order also puts `lint-prose` outside the formatter mods. So
 
 An `error` alert makes Vale exit 1, and the hook then exits 2. A `PostToolUse` hook reaches the model only when it exits 2. On exit 0 its output goes to the transcript, and the model never sees it.
 
-[`lint-code`](../../lint-code/README.md#what-the-model-sees) gives the full reason.
+[`lint-code`](../../lint-code/README.md#correction-and-verification) gives the full reason.
 
 Vale exits 2 when it fails, for example on a rule it cannot load or on input it cannot parse. `check.sh` passes that code through, and the hook then exits 1 with `lint-prose: Vale failed` and Vale's error.
 

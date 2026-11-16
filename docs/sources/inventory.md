@@ -25,7 +25,7 @@ Prompt templates under [`dot_claude/commands/`](../../dot_claude/commands/README
 | [`/git:branches:cleanup`](../../dot_claude/commands/git/branches/cleanup.md)       | Delete local branches whose remote is gone, or that are merged into main or master, after confirming an overview. |
 | [`/git:changelog`](../../dot_claude/commands/git/changelog.md)                     | Generate a changelog for a time period.                                                                           |
 | [`/git:commit:multiple`](../../dot_claude/commands/git/commit/multiple.md)         | Split changes into a logical sequence of commits.                                                                 |
-| [`/git:commit:session`](../../dot_claude/commands/git/commit/session.md)           | Commit one task's changes from the current conversation.                                                          |
+| [`/git:commit:task`](../../dot_claude/commands/git/commit/task.md)                 | Commit one task's changes from the current conversation.                                                          |
 | [`/git:commit:single`](../../dot_claude/commands/git/commit/single.md)             | Create a git commit (stage all, single commit).                                                                   |
 | [`/git:pr:create`](../../dot_claude/commands/git/pr/create.md)                     | Commit, push, and open a pull request.                                                                            |
 | [`/git:commit:push`](../../dot_claude/commands/git/commit/push.md)                 | Commit and push.                                                                                                  |
@@ -37,11 +37,10 @@ Prompt templates under [`dot_claude/commands/`](../../dot_claude/commands/README
 
 #### GitHub issues
 
-| Command                                                                                        | Description                                                |
-| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| [`/issues:github-coding-process`](../../dot_claude/commands/issues/github-coding-process.md)   | Plan, implement, test, and ship a GitHub issue end to end. |
-| [`/issues:improve-issue`](../../dot_claude/commands/issues/improve-issue.md)                   | Rewrite a GitHub issue to be clearer (outputs text).       |
-| [`/issues:improve-issue-in-place`](../../dot_claude/commands/issues/improve-issue-in-place.md) | Same rewrite, applied to the issue via `gh`.               |
+| Command                                                                                        | Description                                          |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| [`/issues:improve-issue`](../../dot_claude/commands/issues/improve-issue.md)                   | Rewrite a GitHub issue to be clearer (outputs text). |
+| [`/issues:improve-issue-in-place`](../../dot_claude/commands/issues/improve-issue-in-place.md) | Same rewrite, applied to the issue via `gh`.         |
 
 #### Text
 

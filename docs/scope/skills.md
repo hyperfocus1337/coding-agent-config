@@ -26,7 +26,7 @@ Print the candidates to move off user scope, with the reason for each:
 just skill-candidates
 ```
 
-Both recipes are in the [`justfile`](../../justfile). They read the catalog in this repo, not the copy in `~/.claude/`.
+Both recipes are in the [`justfile`](../../Justfile). They read the catalog in this repo, not the copy in `~/.claude/`.
 
 ## Where Claude reads skills from
 

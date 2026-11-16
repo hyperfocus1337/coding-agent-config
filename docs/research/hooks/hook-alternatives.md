@@ -1,6 +1,6 @@
 # Official alternatives to the format, lint, and type-check hooks
 
-Can an official or maintained hook, plugin, or integration replace [`type-check-tsc`](../../../dot_claude/hooks/type-check-tsc/README.md), [`type-check-pyrefly`](../../../dot_claude/hooks/type-check-pyrefly/README.md), [`format-prettier`](../../../dot_claude/hooks/format-prettier/README.md), or [`lint-code`](../../../dot_claude/hooks/lint-code/README.md) in Claude Code, Codex, pi, and omp?
+Can an official or maintained hook, plugin, or integration replace [`type-check-tsc`](../../../dot_claude/hooks/type-check-code/README.md), [`type-check-pyrefly`](../../../dot_claude/hooks/type-check-code/README.md), [`format-prettier`](../../../dot_claude/hooks/format-code/README.md), or [`lint-code`](../../../dot_claude/hooks/lint-code/README.md) in Claude Code, Codex, pi, and omp?
 
 Read on 2026-10-19. "Local" means the installed copy in the devcontainer. Nothing was installed, enabled, or run as a live agent test.
 
@@ -72,7 +72,7 @@ The [hooks guide](https://code.claude.com/docs/en/hooks-guide) shows a `PostTool
 
 The [agentic loop post](https://pyrefly.org/blog/pyrefly-agentic-loop) (Kyle Into, 2026-04-13) recommends a Claude Code `Stop` hook with `"command": "pyrefly check >&2 || exit 2"` and `"timeout": 30`, "so it runs when the agent completes each task". It also shows an agent-type Stop hook and a skill, and says a skill alone is not reliable. It does not mention `PostToolUse`, LSP, MCP, or plugins. Codex appears only as a link to its docs.
 
-[`type-check-pyrefly`](../../../dot_claude/hooks/type-check-pyrefly/core.ts) already follows this post and names it in a comment. The post gives a snippet to copy. pyrefly ships no hook, plugin, MCP server, or Codex integration: the `facebook/pyrefly` tree has skills for its own developers and a [`/.well-known/agent-skills/index.json`](https://github.com/facebook/pyrefly/blob/main/website/static/.well-known/agent-skills/index.json) that points to `llms.txt`. The demo repo [`kinto0/pyrefly_hooks_demo`](https://github.com/kinto0/pyrefly_hooks_demo) is the author's personal repo, not a `facebook` repo.
+[`type-check-pyrefly`](../../../dot_claude/hooks/type-check-code/checkers/pyrefly.ts) already follows this post and names it in a comment. The post gives a snippet to copy. pyrefly ships no hook, plugin, MCP server, or Codex integration: the `facebook/pyrefly` tree has skills for its own developers and a [`/.well-known/agent-skills/index.json`](https://github.com/facebook/pyrefly/blob/main/website/static/.well-known/agent-skills/index.json) that points to `llms.txt`. The demo repo [`kinto0/pyrefly_hooks_demo`](https://github.com/kinto0/pyrefly_hooks_demo) is the author's personal repo, not a `facebook` repo.
 
 pyrefly has an LSP server: `pyrefly lsp` (local 1.3.2, and the [IDE docs](https://github.com/facebook/pyrefly/blob/main/website/docs/IDE.mdx)). No marketplace that I read has a pyrefly LSP plugin. A local `.lsp.json` with `pyrefly lsp` would work in the same way as `pyright-lsp`, but I did not test it. pyrefly 1.4.0 (2026-10-14) changes some behavior, for example it now checks uv workspace members, so it can show new errors after an upgrade.
 
@@ -86,7 +86,7 @@ From 7.0 the native binary is `tsc`. The name `tsgo` was used only in `@typescri
 
 Prettier publishes no agent hook, Claude Code plugin, MCP server, or agent docs page. The [prettier org](https://github.com/prettier), the [docs](https://github.com/prettier/prettier/tree/main/docs), and the [3.9 release post](https://prettier.io/blog/2026/06/27/3.9.0) have none. `precommit.md` covers git hooks only.
 
-`prettier --support-info` on 3.9.10 lists these native languages. The hook's list in [`core.ts`](../../../dot_claude/hooks/format-prettier/core.ts) covers only part of them:
+`prettier --support-info` on 3.9.10 lists these native languages. The hook's list in `format-prettier/core.ts` covers only part of them:
 
 | Native in Prettier 3.9.10                            | In the hook's list |
 | ---------------------------------------------------- | ------------------ |
