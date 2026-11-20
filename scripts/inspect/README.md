@@ -50,3 +50,15 @@ just clean-stale
 This runs the same report, then asks once before it removes every path from the first two sections with `rm -rf`. It exits 0 after the removal and 1 on abort. Read the report before you answer `y`: a file you added by hand in a scanned directory and never tracked in the repo also shows up in the first check. The third section (catalog rows) is never deleted; edit `skills.json` by hand.
 
 On the host, `just clean-stale-all` runs `clean-stale` locally, then inside the devcontainer with its own report and prompt. The devcontainer run starts even when the local run exits 1.
+
+## hooks-e2e
+
+`just hooks-e2e` runs [`hooks-e2e.sh`](hooks-e2e.sh). It starts one real interactive Claude Code session in code mode, with the deployed `~/.claude` settings and hooks, and checks the block-end format of `format-code`:
+
+1. Each call inside a `REPL` block has a `tool_use_id` that starts with `repl_`. Anthropic does not document this prefix, and `format-code` uses it to wait for the block end.
+2. An edit after a write in the same block does not fail.
+3. The file ends formatted, with the last edit in it.
+
+Run it after a Claude Code upgrade. It takes about 25 s and spends tokens. A failed run keeps its test repository under `~/.cache/hooks-e2e/`, its pty log, and its transcript, and prints their paths.
+
+[`nested-claude.py`](nested-claude.py) drives the session in a pty until the transcript shows `end_turn`. Use it for other end-to-end hook tests too: its docstring lists the arguments, the environment variables, and the dialogs and variables that block a nested session.

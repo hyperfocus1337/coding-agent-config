@@ -188,6 +188,11 @@ hooks-check:
 lint-code directory=".":
     node "{{ REPO }}/dot_claude/hooks/lint-code/repository.ts" "{{ directory }}"
 
+# Run one real Claude Code session in code mode and check the block-end format of format-code. Run it after a Claude Code upgrade; it spends tokens.
+[group('hooks')]
+hooks-e2e:
+    "{{ SCRIPTS }}/inspect/hooks-e2e.sh"
+
 # Time the TypeScript hooks on tool calls replayed from ~/.claude/projects, and update docs/hooks/performance/. Takes hours.
 [group('hooks')]
 hooks-perf:
