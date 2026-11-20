@@ -196,13 +196,14 @@ const binary = join(home, ".local", "bin", "dcg");
 rmSync(binary);
 assert.equal(shell().status, 2, "missing dcg");
 assert.equal(await check("ls", nodeIo(tmp, binary)), FAILURE);
+// Each fake reads stdin like the real dcg: an early exit makes the guard's write fail with EPIPE.
 for (const code of [0, 1, 2, 3, 127]) {
-  writeFileSync(binary, `#!/bin/sh\nexit ${code}\n`, { mode: 0o755 });
+  writeFileSync(binary, `#!/bin/sh\ncat >/dev/null\nexit ${code}\n`, { mode: 0o755 });
   assert.equal(shell().status, code === 0 ? 0 : 2, `dcg exit ${code}`);
 }
-writeFileSync(binary, '#!/bin/sh\nprintf "not json"\n', { mode: 0o755 });
+writeFileSync(binary, '#!/bin/sh\ncat >/dev/null\nprintf "not json"\n', { mode: 0o755 });
 assert.equal(shell().status, 2, "invalid JSON");
-writeFileSync(binary, `#!/bin/sh\nprintf '%s' '${deny}'\n`, { mode: 0o755 });
+writeFileSync(binary, `#!/bin/sh\ncat >/dev/null\nprintf '%s' '${deny}'\n`, { mode: 0o755 });
 assert.equal(shell().stdout, deny, "preserve JSON denials and approval codes");
 // --ask, from Claude Code: a confirmable denial goes to the agent with a hint,
 // and the same command again becomes a permission prompt, only in the modes
@@ -250,7 +251,7 @@ for (const mode of ["bypassPermissions", "dontAsk", undefined]) {
   assert.equal(ask(mode, input).stdout, deny, `${mode} keeps the denial`);
   assert.equal(ask(mode, input).stdout, deny, `${mode} keeps the denial on a retry`);
 }
-writeFileSync(binary, `#!/bin/sh\nprintf '%s' '${guardrails}'\n`, { mode: 0o755 });
+writeFileSync(binary, `#!/bin/sh\ncat >/dev/null\nprintf '%s' '${guardrails}'\n`, { mode: 0o755 });
 const again = JSON.stringify({
   tool_input: { command },
   permission_mode: "default",
@@ -258,7 +259,7 @@ const again = JSON.stringify({
 });
 assert.equal(ask("default", again).stdout, guardrails, "guardrails keeps the denial");
 assert.equal(ask("default", again).stdout, guardrails, "guardrails keeps it on a retry");
-writeFileSync(binary, `#!/bin/sh\nprintf '%s' '${deny}'\n`, { mode: 0o755 });
+writeFileSync(binary, `#!/bin/sh\ncat >/dev/null\nprintf '%s' '${deny}'\n`, { mode: 0o755 });
 assert.equal(ask("default", "not json").status, 2, "a malformed payload blocks");
 const hangs = '#!/bin/sh\ntrap "" TERM\nwhile :; do :; done\n';
 writeFileSync(binary, hangs, { mode: 0o755 });
