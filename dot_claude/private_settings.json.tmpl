@@ -15,7 +15,16 @@
     "sessionUrl": false
   },
   "permissions": {
-    "defaultMode": "{{ if or (stat `/.dockerenv`) (env `DEVCONTAINER`) }}bypassPermissions{{ else }}auto{{ end }}"
+    "defaultMode": "{{ if or (stat `/.dockerenv`) (env `DEVCONTAINER`) }}bypassPermissions{{ else }}auto{{ end }}",
+    "deny": [
+      "Read(//**/.env)",
+      "Read(//**/.env.local)",
+      "Read(//**/.env.*.local)",
+      "Read(//**/.env.development)",
+      "Read(//**/.env.production)",
+      "Read(//**/.env.staging)",
+      "Read(//**/.env.test)"
+    ]
   },
   "model": "opus",
   "skillOverrides": {
