@@ -1,11 +1,11 @@
 {
   "install-mcp": {
-    "version": "0.1.3",
-    "hash": "db9048e45dd9c5041d44ab767e96ded2c7c01569dc00517068d92992ae8f2ab1"
+    "version": "0.1.4",
+    "hash": "c60d803db1c68f7c28e79ee08eb93fe10871fd7bdf51fae210803e4ddcfb283c"
   },
   "meeting-summarizer": {
-    "version": "0.1.3",
-    "hash": "4ddd9bcd01487a1dacf363fe002f7df9769bfa09dfed68bed8ac6d18595e7bf2"
+    "version": "0.1.4",
+    "hash": "72d37275ad5bc89b2526322dccb67a8b7374760bf35bc5b5b6f0164f20dc5850"
   },
   "organize": {
     "version": "0.1.1",
@@ -20,20 +20,20 @@
     "hash": "9f9e41121da458c1746321de69768867abb06655409b7e1faf0ea37477a8177c"
   },
   "install-plugins": {
-    "version": "0.1.7",
-    "hash": "d90e203d0f70812a7e2d554ad7ba7196ebdd6a5649e7493f66c13f18b25e42ba"
+    "version": "0.1.8",
+    "hash": "d17112d1744673573e575f1649027b6f1e117956044fc5f8e44c21528875b5fc"
   },
   "install-skills": {
-    "version": "0.1.6",
-    "hash": "2c2e5832630d15b93427059d00337c038d8e7b3ac6751271ab82dfc40a30c3f1"
+    "version": "0.1.7",
+    "hash": "e1bd41bbcc4d39254450cbd2db91d20619aefda5508d7a3954be6004d9f56ea7"
   },
   "technical-writing": {
     "version": "0.1.2",
     "hash": "cec29f7a83fd44a7c71ed40b797b5abafebf922e7383630453c9d75692670566"
   },
   "markitdown": {
-    "version": "0.1.2",
-    "hash": "b67ae1efc03e73c1d4d4538b9a8acf3ab0cf79397eed57f6772df8212ab795c3"
+    "version": "0.1.3",
+    "hash": "ce08d857e4a0ce8e2e21195172dc16eef7a4e67eb2b072223dbcd6bf0a53d1da"
   },
   "explain-diff": {
     "version": "0.1.0",
