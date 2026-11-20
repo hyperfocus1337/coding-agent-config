@@ -225,6 +225,11 @@ cloud-tools-bump:
 # Lint & format
 # ──────────────────────────────────────────────────────────────────────────────
 
+# Lint the changed and untracked files: lint-code, Vale on Markdown, and oxfmt. Run it before you report a change as done.
+[group('lint & format')]
+check-changed:
+    "{{ SCRIPTS }}/lint/check-changed.sh"
+
 # Shellcheck all scripts. find recurses, so nested dirs (e.g. extensions/apm/, templates/web/) are covered.
 [group('lint & format')]
 lint-shell:
