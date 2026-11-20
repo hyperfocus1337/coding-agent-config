@@ -4,10 +4,16 @@
  * snapshotted before `next` and compared after it, and the snapshot stays in
  * memory between the two. Advisory: each step catches its own errors, so a
  * failure never stops or changes the tool call.
+ *
+ * Code mode: format-code formats the files of a REPL block after the block.
+ * The PostToolUse REPL command hook logs that format, and the end of a
+ * main-loop turn or of the session logs the format of a block that ended
+ * with no PostToolUse, such as an interrupted one (`reconcile`). This mod is
+ * outside format-code, so its code after `next` runs after that format.
  */
 
 import type { EngineInterface, Register } from "claude-code";
-import { beginCall, commandDirs, dropCall, endCall, prune, type Io } from "../core.ts";
+import { beginCall, commandDirs, dropCall, endCall, prune, reconcile, type Io } from "../core.ts";
 import { recordTool, type ToolResult } from "../claude.ts";
 
 const ok = (done: Promise<{ exitCode: number }>) =>
@@ -71,6 +77,24 @@ const modIo = ($: EngineInterface): Io => ({
     ),
 });
 
+/**
+ * The start of the first REPL block call since the last reconcile.
+ * shortcut: a module variable, which a lost worker resets, and then that turn logs no format.
+ * Upgrade path: `$.state`, with a contract in types/.
+ * shortcut: one window for all agents, so a main-loop reconcile during a write of a background
+ * subagent logs that write as Format. Upgrade path: format-code names the files that it changed.
+ */
+let blockSince: Date | undefined;
+
+/** Logs the format of the REPL block files since `blockSince`. */
+async function reconcileBlocks($: EngineInterface) {
+  const since = blockSince;
+  blockSince = undefined;
+  const home = await $.env.get("HOME");
+  if (!since || !home) return;
+  await reconcile(modIo($), { home, agent: "claude", session: await $.session.id() }, since);
+}
+
 export const register: Register = (on) => {
   on("session.start", async ($, e, next) => {
     const started = await next(e);
@@ -95,6 +119,8 @@ export const register: Register = (on) => {
     };
     const call = await begin().catch(() => undefined);
     if (!call) return next(e);
+    // The tool_use_id prefix of a call in a REPL block, not documented: 2.1.328.
+    if (e.tool_use_id?.startsWith("repl_")) blockSince ??= call.start;
 
     if (e.tool === "Bash") {
       const dirs = commandDirs(e.command, call.cwd, call.where.home, call.bashPaths);
@@ -126,5 +152,18 @@ export const register: Register = (on) => {
       new Date(),
     ).catch(() => undefined);
     return ran;
+  });
+
+  // A subagent turn can end while a main-loop block still runs, so only the main loop reconciles.
+  on("turn.complete", async ($, e, next) => {
+    const done = await next(e);
+    if (e.agentId === undefined) await reconcileBlocks($).catch(() => undefined);
+    return done;
+  });
+
+  on("session.end", async ($, e, next) => {
+    const done = await next(e);
+    await reconcileBlocks($).catch(() => undefined);
+    return done;
   });
 };

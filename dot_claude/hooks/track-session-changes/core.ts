@@ -599,6 +599,71 @@ export async function recordFiles(
   await append(io, where, tool, start, end, changes);
 }
 
+/**
+ * Logs the files that changed after their last log line, when a formatter ran after the call
+ * that the line logs: the format at the end of a Claude Code REPL block, see
+ * format-code/deferred.ts. For each file whose last line ended at `since` or later, and whose
+ * text on disk is no longer the after blob of that line, it logs an M line of the tool `Format`.
+ * Its before blob is that after blob, so the package joins the two lines.
+ * shortcut: any write between the line and this run counts as the format, also an editor save
+ * in that window. Upgrade path: format-code names the files that it changed.
+ */
+export async function reconcile(io: Io, where: Where, since: Date, end = new Date()) {
+  if (!safeName(where.agent, where.session)) return;
+  const from = since.toISOString();
+  // The last line of each path. An ISO time in UTC sorts as text.
+  const last = new Map<string, { stop: string; after: string }>();
+  for (const line of ((await io.read(logFile(where))) ?? "").split("\n")) {
+    const [, stop = "", , status, , path = "", , , after = ""] = line.split("\t");
+    if (path && status !== "C") last.set(path, { stop, after });
+  }
+  const files = [...last].filter(([, { stop, after }]) => after && stop >= from);
+  if (!files.length) return;
+  const repos = await cachedRepos(
+    io,
+    stateDir(where),
+    files.map(([path]) => dirname(path)),
+  );
+  // Two folders of one repo give two equal objects, so the top is the key.
+  const byRepo = new Map<string, { repo?: Repo; paths: string[] }>();
+  for (const [path] of files) {
+    const repo = repos.get(dirname(path));
+    const group = byRepo.get(repo?.top ?? "") ?? { repo, paths: [] };
+    group.paths.push(path);
+    byRepo.set(repo?.top ?? "", group);
+  }
+  const changes: Change[] = [];
+  for (const { repo, paths } of byRepo.values()) {
+    // One git start per repo; a file outside every repo goes alone.
+    const ids = repo ? await storeFiles(io, where, repo, paths) : undefined;
+    for (const path of paths) {
+      const before = last.get(path)?.after ?? "";
+      const after = ids
+        ? ids.get(path)
+        : (await storeBlobs(io, where, undefined, path, { after: true })).after;
+      if (!after || after === before) continue;
+      const diff = repo
+        ? await git(
+            io,
+            repo.top,
+            ["diff", "--no-ext-diff", "--no-textconv", "-U0", before, after],
+            objectEnv(objectsDir(where), repo),
+          )
+        : undefined;
+      const hunk = diff?.stdout.split("\n").find((text) => text.startsWith("@@ "));
+      changes.push({
+        status: "M",
+        path,
+        repo: repo?.top ?? "",
+        line: hunk ? hunkLine(hunk) : undefined,
+        before,
+        after,
+      });
+    }
+  }
+  await append(io, where, "Format", since, end, changes);
+}
+
 // ── Tools without a path: Bash and apply_patch ────────────────────────────────
 
 /**

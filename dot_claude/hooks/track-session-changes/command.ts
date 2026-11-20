@@ -1,7 +1,9 @@
 /**
  * Command hook for Codex: reads the hook payload on stdin and records the
  * files the tool call changed through ./core.ts. Claude Code runs the mod in
- * hooks/register.ts instead; this hook also takes its payloads.
+ * hooks/register.ts instead; this hook also takes its payloads. In Claude
+ * Code it runs at the end of a code mode REPL block, after format-code, and
+ * logs the format of the files of the block (`reconcile`).
  *
  * Run: node command.ts <agent>, with <agent> codex or claude. The agent names
  * the log directory. Advisory: always exits 0 and prints nothing.
@@ -16,6 +18,7 @@ import {
   endCall,
   pendingFile,
   prune,
+  reconcile,
   type Pending,
   type Where,
 } from "./core.ts";
@@ -47,6 +50,10 @@ async function run(agent: string, payload: Payload) {
   const io = nodeIo();
   const where: Where = { home: homedir(), agent, session };
   if (event === "SessionStart") return prune(io, where.home);
+  // The end of a Claude Code REPL block: format-code formatted the files of the block just before,
+  // in the same hook command.
+  if (tool === "REPL" && (event === "PostToolUse" || event === "PostToolUseFailure"))
+    return reconcile(io, where, new Date(Date.now() - (payload.duration_ms ?? 0)));
 
   // Bash and apply_patch name no file, or no line, so they snapshot the repos.
   // The snapshot waits in a file for the end event, which is another process.

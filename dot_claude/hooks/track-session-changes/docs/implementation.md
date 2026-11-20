@@ -178,6 +178,17 @@ The mod must hash the file after the formatter mods write it. The first folder o
 
 For a NotebookEdit, the file on disk is the after blob and not `updated_file`, because `updated_file` can format the JSON in another way. Then the after blob of a call is equal to the before blob of the next call by another tool, which the package needs to join calls into a run.
 
+### Format after a REPL block
+
+In code mode, `format-code` defers the calls of a `REPL` block and formats their files at the end of the block, see [format-code code mode](../../format-code/README.md#code-mode). The mod logged those calls before that format, so the after blob of each line is the unformatted text. Then agent-changed-files would find no session line on disk, as above.
+
+So `reconcile` in `core.ts` logs the format as a line of its own, with tool `Format` and status `M`. Its before blob is the after blob of the last line of the file, so the package joins the two lines. It takes each file whose last line ended in the window, and logs it only when the file on disk differs. `git diff -U0` of the two blobs gives the line. Three places call it:
+
+- The `PostToolUse` and `PostToolUseFailure` `REPL` command hook runs `command.ts claude` after `format-code`, in one command. The window is the block: `duration_ms` before the hook.
+- The mod, at `turn.complete` of the main loop and at `session.end`, after `next`. The mod is outside `format-code`, so `format-code` flushed its deferred calls in `next`. The window starts at the first `repl_` call since the last reconcile. A turn with no block does no work.
+
+Any write in the window counts as the format, also an editor save. The start of the mod window is a module variable, so a lost worker resets it, and that turn logs no format.
+
 ### Blob place
 
 The session `objects/` is beside the log, `~/.local/state/agent-changes/<agent>/<session id>/objects/`, and not in the state directory. In the devcontainer, the log tree is a bind mount, so the package on the host reads the blobs of a container session with no `docker exec`. The other option kept the objects in the state directory, and the package read each blob through the container shell.

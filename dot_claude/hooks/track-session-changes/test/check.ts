@@ -513,6 +513,39 @@ await check("Write outside a repo: the blob through the bare repo", () => {
   assert.equal(blobText(blobId("loose\n"), "b0", r1), "loose\n");
 });
 
+/** The end of a REPL block that ran `ms` long, as the PostToolUse REPL command hook sees it. */
+const blockEnd = (session: string, cwd: string, ms: number) =>
+  fire({
+    session_id: session,
+    tool_use_id: `r${++ids}`,
+    hook_event_name: "PostToolUse",
+    tool_name: "REPL",
+    cwd,
+    duration_ms: ms,
+  });
+
+await check("REPL end: logs the format after the block as one Format line", () => {
+  const rf = repo("rf", {});
+  const file = `${rf}/f.ts`;
+  fs.writeFileSync(file, "const  a = 1\n");
+  create("f1", rf, file);
+  // The format at the end of the block, after the Write logged its text.
+  fs.writeFileSync(file, "const a = 1;\n");
+  blockEnd("f1", rf, 60_000);
+  assert.deepEqual(logged("f1"), [`Write\tA\t${rf}\t${file}\t1`, `Format\tM\t${rf}\t${file}\t1`]);
+  // The before blob of the format is the after blob of the Write, so the two lines join.
+  assert.deepEqual(blobs("f1"), [
+    ["", blobId("const  a = 1\n")],
+    [blobId("const  a = 1\n"), blobId("const a = 1;\n")],
+  ]);
+  assert.equal(blobText(blobId("const a = 1;\n"), "f1", rf), "const a = 1;\n");
+  // No new change, or a change to a file logged before the block: no line.
+  blockEnd("f1", rf, 60_000);
+  fs.writeFileSync(file, "const b = 1;\n");
+  blockEnd("f1", rf, 0);
+  assert.equal(logged("f1").length, 2);
+});
+
 await check("Bash: the blobs before and after each file, readable", () => {
   const rb = repo("rb", { "m.txt": "one\n", "d.txt": "gone\n" });
   bash(rb, () => sh(rb, "echo two >m.txt; echo new >n.txt; rm d.txt"), {
@@ -754,6 +787,34 @@ await check("mod Bash: a snapshot before next, the log after it", async () => {
     [blobId(lines(3)), blobId("l1\ntwo\nl3\n")],
   ]);
   assert.deepEqual(callLinks("m1"), []);
+});
+
+await check("mod: a REPL block call, then the main-loop turn end logs its format", async () => {
+  const rr = repo("rr", {});
+  const file = `${rr}/g.ts`;
+  const write = (agentId?: string) =>
+    modCall(
+      "m5",
+      rr,
+      { tool: "Write", file_path: file, tool_use_id: "repl_1", agentId },
+      async () => {
+        fs.writeFileSync(file, "x  = 1\n");
+        return { result: { type: "create", filePath: file, structuredPatch: [] }, text: "" };
+      },
+    );
+  const turnEnd = (agentId?: string) =>
+    modHooks.get("turn.complete")?.(stub$("m5", rr), { agentId }, async () => ({ text: "" }));
+  await write();
+  fs.writeFileSync(file, "x = 1;\n");
+  // A subagent turn end leaves it: a main-loop block can still run.
+  await turnEnd("a1");
+  assert.equal(logged("m5").length, 1);
+  await turnEnd();
+  assert.deepEqual(logged("m5"), [`Write\tA\t${rr}\t${file}\t1`, `Format\tM\t${rr}\t${file}\t1`]);
+  // The reconcile cleared its start, so the next turn end with no block logs nothing.
+  fs.writeFileSync(file, "x = 2;\n");
+  await turnEnd();
+  assert.equal(logged("m5").length, 2);
 });
 
 await check("mod Bash: snapshots the repo of a cd in the command", async () => {

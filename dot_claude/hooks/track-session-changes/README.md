@@ -17,20 +17,23 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters:
 
 ### Tools and events
 
-| Agent and tool                              | Events                                                   | Files                                                    | Line                                                                             |
-| ------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Claude Code Edit, Write                     | `tool.call`, after `next`                                | `file_path` of the input                                 | First hunk of `structuredPatch` in the result. A new file has no hunks: line 1   |
-| Claude Code NotebookEdit                    | `tool.call`, after `next`                                | `notebook_path` of the input                             | First line that differs between `original_file` and `updated_file` of the result |
-| Claude Code Bash                            | `tool.call`, before and after `next`                     | Snapshot difference                                      | First hunk of `git diff-files -p -U0`                                            |
-| Codex Bash                                  | `PreToolUse`, `PostToolUse`, also after a failed command | Snapshot difference                                      | The same                                                                         |
-| Codex `apply_patch`                         | `PreToolUse`, `PostToolUse`                              | `*** Add/Update/Delete File`, `Move to`                  | From the snapshot. A new file outside it: 1                                      |
-| pi and omp `bash`                           | `tool_call`, `tool_result`                               | Snapshot difference                                      | The same as Bash                                                                 |
-| omp `eval`, and a `write` to `xd://resolve` | `tool_call`, `tool_result`                               | Snapshot difference                                      | The same as Bash                                                                 |
-| pi and omp `edit`                           | `tool_call`, `tool_result`                               | pi: the input `path`. omp: each file of the tool details | `firstChangedLine` of the details. An omp file it creates: 1                     |
-| pi and omp `write`                          | `tool_call`, `tool_result`                               | The input `path`                                         | The old file, read at the call, against the file after it                        |
-| Each agent                                  | Session start                                            | None: deletes logs and state after 30 days               | None                                                                             |
+| Agent and tool                              | Events                                                            | Files                                                    | Line                                                                             |
+| ------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Claude Code Edit, Write                     | `tool.call`, after `next`                                         | `file_path` of the input                                 | First hunk of `structuredPatch` in the result. A new file has no hunks: line 1   |
+| Claude Code NotebookEdit                    | `tool.call`, after `next`                                         | `notebook_path` of the input                             | First line that differs between `original_file` and `updated_file` of the result |
+| Claude Code Bash                            | `tool.call`, before and after `next`                              | Snapshot difference                                      | First hunk of `git diff-files -p -U0`                                            |
+| Codex Bash                                  | `PreToolUse`, `PostToolUse`, also after a failed command          | Snapshot difference                                      | The same                                                                         |
+| Codex `apply_patch`                         | `PreToolUse`, `PostToolUse`                                       | `*** Add/Update/Delete File`, `Move to`                  | From the snapshot. A new file outside it: 1                                      |
+| pi and omp `bash`                           | `tool_call`, `tool_result`                                        | Snapshot difference                                      | The same as Bash                                                                 |
+| omp `eval`, and a `write` to `xd://resolve` | `tool_call`, `tool_result`                                        | Snapshot difference                                      | The same as Bash                                                                 |
+| pi and omp `edit`                           | `tool_call`, `tool_result`                                        | pi: the input `path`. omp: each file of the tool details | `firstChangedLine` of the details. An omp file it creates: 1                     |
+| pi and omp `write`                          | `tool_call`, `tool_result`                                        | The input `path`                                         | The old file, read at the call, against the file after it                        |
+| Claude Code format after a REPL block       | `PostToolUse` `REPL` command hook, `turn.complete`, `session.end` | Files of the block that changed after their last line    | First hunk of the blob diff                                                      |
+| Each agent                                  | Session start                                                     | None: deletes logs and state after 30 days               | None                                                                             |
 
 A snapshot difference is the set of files that differ between the work tree after the call and a git index of the work tree before it, see [Snapshots](#snapshots).
+
+In code mode, `format-code` formats the files of a `REPL` block at the end of the block, after this hook logged them. Then `command.ts` runs in the same command entry and logs a `Format` line for each file of the block whose text differs from the after blob of its last line, see [Format after a REPL block](docs/implementation.md#format-after-a-repl-block).
 
 ### Failed and denied calls
 
