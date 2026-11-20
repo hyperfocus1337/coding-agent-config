@@ -227,7 +227,7 @@ cloud-tools-bump:
 
 # Shellcheck all scripts. find recurses, so nested dirs (e.g. extensions/apm/, templates/web/) are covered.
 [group('lint & format')]
-lint:
+lint-shell:
     find "{{ SCRIPTS }}" "{{ TEMPLATES }}" -name '*.sh' -print0 | xargs -0 shellcheck
 
 # Format scripts in place. shfmt walks the roots recursively (by shebang/.sh).
