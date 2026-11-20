@@ -35,8 +35,6 @@ The transcript may arrive as pasted text in the message, or as an uploaded file.
 
 ### Reading transcript files
 
-In an environment with file access (such as Cowork), look for the uploaded file (for example under the uploads directory) and read it before doing anything else.
-
 For plain text, `.vtt`, `.srt`, `.md`, and `.json`, read the file directly. For `.docx`, extract the text first, for example with `python-docx` (`pip install python-docx --break-system-packages`) or by unzipping the archive and reading `word/document.xml`. If a `docx` skill is available, use it to extract the text.
 
 If the transcript spans multiple files, read all of them and treat them as one continuous conversation in chronological order.
@@ -47,15 +45,7 @@ Scan the transcript for its language. If any portion is not in English, translat
 
 ## Workflow
 
-1. Locate and read the full transcript (file or pasted text).
-2. Detect the language; translate non-English content to English internally.
-3. Identify the participants and, where possible, their roles.
-4. Read through once to map the structure: what topics were covered, in what order, what was decided, and what was assigned.
-5. Group the discussion into a small number of logical sections with descriptive headings.
-6. Write each section as concise prose, attributing points to speakers and adding timestamps for the moments that matter.
-7. Extract every decision into its own section.
-8. Extract every action item into the action-items table.
-9. Review against the guardrails below before delivering.
+Read the whole transcript, and translate any non-English part, before you write. Then produce the output format below, and check the result against the guardrails before you deliver it.
 
 ## Output format
 
