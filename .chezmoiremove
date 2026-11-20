@@ -32,3 +32,4 @@
 .claude/launch.sh
 .claude/cli/commit-parallel.py
 .claude/commands/git/scripts/commit-parallel.py
+.claude/skills/install-mcp/rules/jcodemunch.md

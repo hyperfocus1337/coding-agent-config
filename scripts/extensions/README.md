@@ -42,7 +42,7 @@ Skills installed by a vendor CLI rather than a plugin or APM, because they ship 
 
 ## MCP Servers (User-Scoped)
 
-MCP servers are declared in `apm.yml` and deployed globally at user scope via `apm install -g`, available across all Claude sessions. The one user-scoped server, `context7`, reads a `CONTEXT7_API_KEY` from the environment at install time (`apm.yml` interpolates it via `${CONTEXT7_API_KEY}`). Project-scoped servers (tessl, stitch, directus, claude-design, orbit, jcodemunch, jdocmunch) are installed per-project with the `install-mcp` skill rather than deployed user-wide; see [`docs/scope/mcp-servers.md`](../../docs/scope/mcp-servers.md).
+MCP servers are declared in `apm.yml` and deployed globally at user scope via `apm install -g`, available across all Claude sessions. The one user-scoped server, `context7`, reads a `CONTEXT7_API_KEY` from the environment at install time (`apm.yml` interpolates it via `${CONTEXT7_API_KEY}`). Project-scoped servers (tessl, stitch, directus, claude-design, orbit) are installed per-project with the `install-mcp` skill rather than deployed user-wide; see [`docs/scope/mcp-servers.md`](../../docs/scope/mcp-servers.md).
 
 ### `context7`
 

@@ -6,7 +6,7 @@ Some MCP servers make sense only inside a single project rather than installed u
 
 Do not wire these up by hand. Ask Claude to "install the <server> MCP server in this project", or invoke the `install-agent-resources` skill and pick the MCP channel. That routes to `install-mcp`, which is also invocable by exact name. It prompts for the server, the scope, and the coding agent(s) to target, fills in any placeholder values, checks the required secrets and stdio commands, and installs through a project `apm.yml` with `apm mcp install`. The same manifest fans the server out to Claude Code, Cursor, Codex, and Gemini in one step, so there is no per-agent config to maintain.
 
-The skill needs `apm` and `uv` on `PATH`. It writes each agent's native config (Claude to the project root `.mcp.json`, Cursor to `.cursor/mcp.json`, Codex to `.codex/config.toml`, Gemini to `.gemini/settings.json`) and merges into any existing config rather than overwriting it.
+The skill needs `apm` on `PATH`. It writes each agent's native config (Claude to the project root `.mcp.json`, Cursor to `.cursor/mcp.json`, Codex to `.codex/config.toml`, Gemini to `.gemini/settings.json`) and merges into any existing config rather than overwriting it.
 
 ## Catalog
 
@@ -31,11 +31,3 @@ Anthropic's hosted design MCP, backing Claude's design and artifact styling tool
 ### orbit (http)
 
 GitLab Orbit tooling over the GitLab API. The endpoint URL is prompted for and defaults to `https://gitlab.com/api/v4/orbit/mcp`; point it at your own instance if you are not on gitlab.com. If your instance rejects unauthenticated requests, add an `Authorization: Bearer ${GITLAB_TOKEN}` header and export `GITLAB_TOKEN`.
-
-### jcodemunch (stdio)
-
-Deep code analysis and indexing across a codebase, useful for onboarding to unfamiliar repositories or cross-file analysis. Runs via `uvx` (must be on `PATH`), no secrets. It stores its index under `~/.code-index/`; run `index_folder` once per project before using the other tools. It ships a tool-selection rule ([`jcodemunch.md`](../../dot_claude/skills/install-mcp/rules/jcodemunch.md)), declared by the `rule` key of its registry row, that the skill offers to copy into the project's `.claude/rules/`. Docs: [github.com/jgravelle/jcodemunch-mcp](https://github.com/jgravelle/jcodemunch-mcp).
-
-### jdocmunch (stdio)
-
-Ingest and query documentation (markdown, HTML, or plain text), useful for reasoning over internal docs or runbooks that Context7 does not index. Runs via `uvx` (must be on `PATH`), no secrets. Index a documentation source once before querying it. Docs: [github.com/jgravelle/jdocmunch-mcp](https://github.com/jgravelle/jdocmunch-mcp).

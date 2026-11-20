@@ -1,6 +1,6 @@
 ---
 name: install-mcp
-description: Install a cross-agent MCP server at project, local, or user scope via apm.yml. Use when the user wants to add an MCP server (tessl, stitch, directus, claude-design, orbit, jcodemunch, jdocmunch, or a custom one) to a repo's .mcp.json / .cursor / .codex / .gemini config instead of copying templates by hand. Entry point is the install-agent-resources skill.
+description: Install a cross-agent MCP server at project, local, or user scope via apm.yml. Use when the user wants to add an MCP server (tessl, stitch, directus, claude-design, orbit, or a custom one) to a repo's .mcp.json / .cursor / .codex / .gemini config instead of copying templates by hand. Entry point is the install-agent-resources skill.
 disable-model-invocation: true
 ---
 
@@ -67,7 +67,7 @@ For each selected server, take its `dep` and apply its fields:
 | :-------- | :--------------------------------------------------------------------------------------------------- |
 | `prompts` | ask the user, offering `default` if present, and substitute the answer for the `{{KEY}}` placeholder |
 | `secrets` | leave every `${VAR}` exactly as written, then check whether it is set with `printenv VAR`            |
-| `notes`   | surface to the user: optional auth headers, post-install steps like jcodemunch's `index_folder`      |
+| `notes`   | surface to the user: optional auth headers and post-install steps                                    |
 
 A `prompts` answer is baked in as a literal. A `${VAR}` is not: the agent interpolates it from the environment at launch.
 
@@ -137,7 +137,7 @@ cp ~/.claude/skills/install-mcp/<rule> <project-dir>/.claude/rules/<name>.md
 
 Claude Code loads every file in `.claude/rules/` automatically, gated by the `paths:` glob in its frontmatter, so no import line is needed. Then ask whether to commit the file or gitignore it, matching the scope the user chose for the server itself.
 
-Only jcodemunch ships a rule today. The rule files live in [`rules/`](rules/).
+No server ships a rule today. A rule file goes in `rules/` in this skill's directory.
 
 ### 8. User scope
 
@@ -158,5 +158,5 @@ That script stages the manifest into `~/.apm/` and runs `apm install -g --update
 ## Notes
 
 - [`references/servers.json`](references/servers.json) is the source of truth for the server set; its human companion is [`docs/scope/mcp-servers.md`](../../../docs/scope/mcp-servers.md). Update both when adding a server or changing connection details.
-- A new rule file goes in [`rules/`](rules/) and reaches a project only through the `rule` key of a server row. Nothing else reads that directory.
+- A new rule file goes in `rules/` and reaches a project only through the `rule` key of a server row. Nothing else reads that directory.
 - Verified output paths (apm 0.25): Claude -> project `.mcp.json`, Cursor -> `.cursor/mcp.json`, Codex -> `.codex/config.toml`, Gemini -> `.gemini/settings.json`. Claude, Cursor, and Gemini need their dir pre-created (step 5); Codex does not. Always report apm's actual per-agent output rather than assuming.

@@ -82,35 +82,6 @@
         "transport": "http",
         "url": "{{ORBIT_URL}}"
       }
-    },
-    "jcodemunch": {
-      "summary": "Deep code analysis and indexing across a codebase (via uvx).",
-      "docs": "https://github.com/jgravelle/jcodemunch-mcp",
-      "secrets": [],
-      "prompts": [],
-      "notes": "uvx must be on PATH. Indexes under ~/.code-index/; run index_folder once per project.",
-      "rule": "rules/jcodemunch.md",
-      "dep": {
-        "name": "jcodemunch",
-        "registry": false,
-        "transport": "stdio",
-        "command": "uvx",
-        "args": ["jcodemunch-mcp"]
-      }
-    },
-    "jdocmunch": {
-      "summary": "Ingest and query documentation (markdown, HTML, plain text) via uvx.",
-      "docs": "https://github.com/jgravelle/jdocmunch-mcp",
-      "secrets": [],
-      "prompts": [],
-      "notes": "uvx must be on PATH. Index a documentation source once before querying it.",
-      "dep": {
-        "name": "jdocmunch",
-        "registry": false,
-        "transport": "stdio",
-        "command": "uvx",
-        "args": ["jdocmunch-mcp"]
-      }
     }
   }
 }
