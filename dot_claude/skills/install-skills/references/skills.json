@@ -138,6 +138,14 @@
       "status": "user-keep",
       "why": "carries disable-model-invocation, so it costs 0 resident tokens and runs only as /show-me. The repo is a Claude plugin marketplace, so the subpath ref takes the portable skill without the plugin wrapper. Its HTML step runs `open`, which exists on macOS only.",
       "use_when": "explaining code, flow, or layout visually in any repo"
+    },
+    {
+      "id": "cloudflare/security-audit-skill/skills/security-audit",
+      "channel": "apm",
+      "scope": "user",
+      "status": "user-keep",
+      "why": "model-invocable, about 90 resident tokens of description. The repo root has no SKILL.md or apm.yml, so the subpath ref takes the one skill under skills/. Guidance mode by default; the six-phase audit and its report files run only on an explicit full audit request.",
+      "use_when": "security questions, focused reviews, or a full codebase audit in any repo"
     }
   ]
 }

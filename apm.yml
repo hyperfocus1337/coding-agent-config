@@ -19,6 +19,9 @@ dependencies:
     # show-me: /show-me renders the current topic as diagrams or an HTML file.
     # Subpath ref: the skill lives inside a Claude plugin dir.
     - git: humanlayer/skills/plugins/show-me/skills/show-me
+    # security-audit: defensive source-first audit workflow. Subpath ref: the repo
+    # root has no SKILL.md or apm.yml.
+    - git: cloudflare/security-audit-skill/skills/security-audit
   # User-scoped MCP servers. Secrets come from the environment at install time
   # (${VAR}) so this manifest stays committable.
   mcp:
