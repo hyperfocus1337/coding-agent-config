@@ -130,6 +130,14 @@
       "status": "local-candidate",
       "why": "the repo root has no apm.yml or SKILL.md, so the bare ref manaflow-ai/cmux fails and each skill is one install of its subpath ref. Upstream ships 22 skills under skills/; the 7 in skills are the end-user set, about 480 resident tokens of personal terminal tooling. Never commit it into a shared repo. Optional end-user extras: cmux-markdown, cmux-diagnostics, cmux-custom-sidebar, cmux-cua. The other 11 target cmux contributors.",
       "use_when": "driving cmux panes or its browser from an agent"
+    },
+    {
+      "id": "humanlayer/skills/plugins/show-me/skills/show-me",
+      "channel": "apm",
+      "scope": "user",
+      "status": "user-keep",
+      "why": "carries disable-model-invocation, so it costs 0 resident tokens and runs only as /show-me. The repo is a Claude plugin marketplace, so the subpath ref takes the portable skill without the plugin wrapper. Its HTML step runs `open`, which exists on macOS only.",
+      "use_when": "explaining code, flow, or layout visually in any repo"
     }
   ]
 }

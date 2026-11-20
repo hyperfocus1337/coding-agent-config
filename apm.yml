@@ -16,6 +16,9 @@ dependencies:
     # Subpath ref to the skill dir: the repo root has only .codex-plugin/, and
     # apm 0.35+ refuses that native bundle unless the codex target is selected.
     - git: antonbabenko/terraform-skill/skills/terraform-skill
+    # show-me: /show-me renders the current topic as diagrams or an HTML file.
+    # Subpath ref: the skill lives inside a Claude plugin dir.
+    - git: humanlayer/skills/plugins/show-me/skills/show-me
   # User-scoped MCP servers. Secrets come from the environment at install time
   # (${VAR}) so this manifest stays committable.
   mcp:
