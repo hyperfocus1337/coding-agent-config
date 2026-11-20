@@ -6,8 +6,7 @@ disable-model-invocation: true
 Safely identify and remove dead code with test verification:
 
 1. Run dead code analysis tools:
-   - knip: Find unused exports and files
-   - depcheck: Find unused dependencies
+   - knip: Find unused exports, files, and dependencies
    - ts-prune: Find unused TypeScript exports
 
 2. Generate comprehensive report in .reports/dead-code-analysis.md
@@ -28,4 +27,4 @@ Safely identify and remove dead code with test verification:
 
 6. Show summary of cleaned items
 
-Never delete code without running tests first!
+Run the tests before and after each deletion, and roll back a deletion that makes them fail.

@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), SlashCommand, Skill
+allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Skill
 argument-hint: [scope, hint, or paths]
 description: Route to the commit command that fits the changes
 disable-model-invocation: true

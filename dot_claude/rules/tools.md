@@ -21,7 +21,7 @@ Which tool to use for search, code edits, documentation, and package work.
 - If no such command exists and the block says that a retry asks the user, tell the user why you need the command. Then retry it once, unchanged, in its original directory, and the user gets a prompt.
 - For any other dcg block, show the command, available reason and rule ID, and the actual `dcg allow-once <code>` command. Use `!` in Claude Code and pi; otherwise direct the user to a terminal in the same environment. If no code is provided, diagnose instead of inventing one. Retry the unchanged command only after the user's approval command succeeds, not after a conversational confirmation.
 - Never approve your own exception or bypass a block.
-- Prefer one-run approval over permanent exceptions or disabling packs. See `~/.claude/hooks/block-destructive-commands/README.md` for details.
+- Prefer one-run approval over permanent exceptions or disabling packs. The details are in `dot_claude/hooks/block-destructive-commands/README.md` in the config repository.
 
 **Documentation rules:**
 
