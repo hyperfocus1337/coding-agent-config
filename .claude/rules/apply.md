@@ -8,4 +8,6 @@ After a task that edits `dot_claude/`, `dot_config/`, or `dot_pi/` succeeds, app
 2. In the devcontainer, run `just chezmoi`. The devcontainer cannot reach the host home directory, so tell the user to run `just chezmoi` on the host.
 3. On the host, run `docker ps -q --filter name=coding-agent-sandbox-devcontainer`. If it prints a container ID, run `just chezmoi-all`. This applies to the host, then runs `just chezmoi-devcontainer`. If it prints nothing, run `just chezmoi` and report that the devcontainer did not get the change.
 
+To preview an apply, run `just chezmoi-diff <target>`. A bare `chezmoi` command fails in the devcontainer, because it has no source directory there.
+
 Do not apply after a failed task. Report the failure instead.
