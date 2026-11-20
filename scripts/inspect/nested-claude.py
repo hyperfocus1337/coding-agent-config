@@ -14,7 +14,15 @@ Gotchas, measured on Claude Code 2.1.328:
   --plugin-dir DIR in CLAUDE_ARGS.
 """
 
-import json, os, pty, re, select, sys, time, uuid
+import contextlib
+import json
+import os
+import pty
+import re
+import select
+import sys
+import time
+import uuid
 
 cwd, prompt = sys.argv[1], sys.argv[2]
 interrupt = float(os.environ.get("INTERRUPT_AFTER", "0"))
@@ -50,44 +58,52 @@ if pid == 0:
         ],
         env,
     )
-raw = open(os.environ["RAW"], "wb") if os.environ.get("RAW") else None
-buf, answered, start, done, sent_esc = "", set(), time.time(), False, False
-end_at = start + 540
-while time.time() < end_at:
-    r, _, _ = select.select([fd], [], [], 1)
-    if r:
-        try:
-            data = os.read(fd, 65536)
-        except OSError:
-            break
-        if raw:
-            raw.write(data)
-            raw.flush()
-        # Strip CSI and OSC escapes, then keep letters only, so dialog text matches across redraws.
-        text = re.sub(
-            r"\x1b(\[[0-9;?<>]*[A-Za-z]|\][^\x07]*\x07)",
-            "",
-            data.decode("utf-8", "replace"),
-        )
-        buf = (buf + re.sub(r"[^a-z]", "", text.lower()))[-4000:]
-        for key in ("trustthisfolder", "turnoncodemode"):
-            if key not in answered and key in buf and "entertoconfirm" in buf:
-                time.sleep(1)
-                os.write(fd, b"\x1b[B")
-                time.sleep(0.5)
-                os.write(fd, b"\r")
-                answered.add(key)
-                buf = ""
-    if interrupt and not sent_esc and time.time() - start > interrupt:
-        os.write(fd, b"\x1b")
-        sent_esc = True
-        end_at = time.time() + 25
-    if not done and os.path.exists(transcript):
-        for line in open(transcript):
-            m = json.loads(line).get("message", {})
-            if m.get("role") == "assistant" and m.get("stop_reason") == "end_turn":
-                done = True
-                end_at = min(end_at, time.time() + keep)
+with (
+    open(os.environ["RAW"], "wb")
+    if os.environ.get("RAW")
+    else contextlib.nullcontext() as raw
+):
+    buf, answered, start, done, sent_esc = "", set(), time.time(), False, False
+    end_at = start + 540
+    while time.time() < end_at:
+        r, _, _ = select.select([fd], [], [], 1)
+        if r:
+            try:
+                data = os.read(fd, 65536)
+            except OSError:
+                break
+            if raw:
+                raw.write(data)
+                raw.flush()
+            # Strip CSI and OSC escapes, then keep letters only, so dialog text matches across redraws.
+            text = re.sub(
+                r"\x1b(\[[0-9;?<>]*[A-Za-z]|\][^\x07]*\x07)",
+                "",
+                data.decode("utf-8", "replace"),
+            )
+            buf = (buf + re.sub(r"[^a-z]", "", text.lower()))[-4000:]
+            for key in ("trustthisfolder", "turnoncodemode"):
+                if key not in answered and key in buf and "entertoconfirm" in buf:
+                    time.sleep(1)
+                    os.write(fd, b"\x1b[B")
+                    time.sleep(0.5)
+                    os.write(fd, b"\r")
+                    answered.add(key)
+                    buf = ""
+        if interrupt and not sent_esc and time.time() - start > interrupt:
+            os.write(fd, b"\x1b")
+            sent_esc = True
+            end_at = time.time() + 25
+        if not done and os.path.exists(transcript):
+            with open(transcript) as f:
+                for line in f:
+                    m = json.loads(line).get("message", {})
+                    if (
+                        m.get("role") == "assistant"
+                        and m.get("stop_reason") == "end_turn"
+                    ):
+                        done = True
+                        end_at = min(end_at, time.time() + keep)
 os.write(fd, b"\x03")
 time.sleep(1)
 os.write(fd, b"\x03")
