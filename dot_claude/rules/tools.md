@@ -26,7 +26,7 @@ Which tool to use for search, code edits, documentation, and package work.
 **Documentation rules:**
 
 - Before you generate code, configuration, or setup steps, resolve the library id with Context7 and fetch the documentation. Do not wait to be asked. "Use c7" means the Context7 MCP server.
-- Do not read a PDF or other binary document directly. Tell the user to run `/markitdown <file>`, then read the Markdown output that it writes to the scratchpad directory. For a scanned PDF on an Apple Silicon Mac, tell the user to run `/unlimited-ocr <file>` instead.
+- Do not read a PDF or other binary document directly. Convert it with the `markitdown` skill, then read the Markdown. For a scanned PDF on an Apple Silicon Mac, tell the user to run `/unlimited-ocr <file>` instead.
 - The scratchpad directory is the one the harness names for the session. If it names none, use `/tmp/agent-scratch`, and create it with `mkdir -p` before the first write. Other sessions share that directory, so name each file after its source. Use the scratchpad only for files that you alone read: the system deletes temporary files, so a file the user keeps goes next to its source.
 
 **Package and CLI rules:**

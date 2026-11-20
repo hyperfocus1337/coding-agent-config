@@ -1,7 +1,6 @@
 ---
 name: markitdown
 description: Convert PDF, Office, image, audio, HTML, CSV, JSON, XML, ZIP and EPub files to Markdown with the markitdown CLI. Use before you read a PDF or other binary document, so you read a Markdown copy instead of the raw file. Also use when the user asks to convert a file, a directory, or a glob to Markdown, or says "markitdown", "extract the text from this PDF", or "turn these docx files into markdown".
-disable-model-invocation: true
 ---
 
 # markitdown

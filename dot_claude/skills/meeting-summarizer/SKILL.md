@@ -35,7 +35,7 @@ The transcript may arrive as pasted text in the message, or as an uploaded file.
 
 ### Reading transcript files
 
-For plain text, `.vtt`, `.srt`, `.md`, and `.json`, read the file directly. For `.docx`, extract the text first, for example with `python-docx` (`pip install python-docx --break-system-packages`) or by unzipping the archive and reading `word/document.xml`. If a `docx` skill is available, use it to extract the text.
+For plain text, `.vtt`, `.srt`, `.md`, and `.json`, read the file directly. For `.docx`, convert it with `markitdown <file> -o <scratchpad>/<name>.md` and read the Markdown.
 
 If the transcript spans multiple files, read all of them and treat them as one continuous conversation in chronological order.
 
