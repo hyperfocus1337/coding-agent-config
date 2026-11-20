@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/scripts/extensions/hooks/check-changed-hooks.sh",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
