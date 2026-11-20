@@ -16,14 +16,13 @@ Ten one-shot commands that write my text back in another form, then wait until I
 | `/restate:outline`     | The text in order under short headings and bullets, nothing removed or added.  |
 | `/restate:prompt`      | The text rewritten as one clean prompt, then done as the task after I confirm. |
 
-Three commands combine parts of the commands above in one reply.
+Two commands combine parts of the commands above in one reply.
 
-| Command                                | Description                                                                      |
-| -------------------------------------- | -------------------------------------------------------------------------------- |
-| `/restate:assumptions-gaps`            | The assumptions and the gaps, without the goal.                                  |
-| `/restate:goal-assumptions-gaps`       | The goal, the assumptions, and what the code and the conversation cannot settle. |
-| `/restate:goal-scope-assumptions-gaps` | The goal, what is in and out of scope, the assumptions, and the gaps.            |
+| Command                          | Description                                                                      |
+| -------------------------------- | -------------------------------------------------------------------------------- |
+| `/restate:assumptions-gaps`      | The assumptions and the gaps, without the goal.                                  |
+| `/restate:goal-assumptions-gaps` | The goal, the assumptions, and what the code and the conversation cannot settle. |
 
-`goal`, `assumptions`, and `gaps` each give one part. `assumptions-gaps` gives the last two when the goal is already clear, `goal-assumptions-gaps` gives all three in one reply, and `goal-scope-assumptions-gaps` adds what is in and out of scope. Use `goal` for the fastest check, and `goal-scope-assumptions-gaps` when a wrong reading costs the most. `decisions` stays out of the combinations: an implied decision is an assumption and an open decision is a gap, so it would only repeat them. `outline` and `prompt` change the form of the text, not only its summary: `outline` keeps every point, and `prompt` also removes repeats and replaces vague references.
+`goal`, `assumptions`, and `gaps` each give one part. `assumptions-gaps` gives the last two when the goal is already clear, and `goal-assumptions-gaps` gives all three in one reply. Use `goal` for the fastest check, and `goal-assumptions-gaps` when a wrong reading costs the most. `decisions` stays out of the combinations: an implied decision is an assumption and an open decision is a gap, so it would only repeat them. `outline` and `prompt` change the form of the text, not only its summary: `outline` keeps every point, and `prompt` also removes repeats and replaces vague references.
 
 Every command except `outline` reads the code, the repository, and the conversation before it writes back. The text goes on the last line of each command file, after the instructions, so a long dump cannot hide an instruction.

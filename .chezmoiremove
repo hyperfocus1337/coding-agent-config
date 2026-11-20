@@ -38,3 +38,4 @@
 .claude/commands/answer/tabular.md
 .claude/commands/answer/reset.md
 .claude/commands/git/pr
+.claude/commands/restate/goal-scope-assumptions-gaps.md
