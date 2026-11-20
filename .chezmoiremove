@@ -33,3 +33,4 @@
 .claude/cli/commit-parallel.py
 .claude/commands/git/scripts/commit-parallel.py
 .claude/skills/install-mcp/rules/jcodemunch.md
+.claude/commands/answer/caveman.md

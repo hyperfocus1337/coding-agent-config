@@ -14,7 +14,7 @@ In this mode:
 
 - Give the result only: the answer, the changed paths, and the next action.
 - Leave out the reasoning, the process, and the rejected options.
-- Cut whole parts of the answer, not words inside a sentence. `/answer:caveman` cuts words.
+- Cut whole parts of the answer, not words inside a sentence.
 
 This mode replaces an active `/answer:thoroughly`: for one answer without `keep`, and for every later response with `keep`.
 

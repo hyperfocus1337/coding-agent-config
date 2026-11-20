@@ -26,14 +26,13 @@ Two more results matter for how a rules file should be written. Instruction posi
 
 Counting each imperative that changes behaviour as one directive:
 
-| Source                                  |     Chars | Directives | Loads                            |
-| --------------------------------------- | --------: | ---------: | -------------------------------- |
-| `dot_claude/CLAUDE.md`                  |       259 |          0 | session start                    |
-| `dot_claude/rules/writing.md`           |     1,533 |         15 | session start                    |
-| `dot_claude/rules/tools.md`             |     1,292 |         10 | session start                    |
-| `dot_claude/rules/code.md`              |     1,325 |         13 | session start                    |
-| **Authored here**                       | **4,409** |     **38** |                                  |
-| `dot_claude/commands/answer/caveman.md` |     1,316 |          9 | only when `/answer:caveman` runs |
+| Source                        |     Chars | Directives | Loads         |
+| ----------------------------- | --------: | ---------: | ------------- |
+| `dot_claude/CLAUDE.md`        |       259 |          0 | session start |
+| `dot_claude/rules/writing.md` |     1,533 |         15 | session start |
+| `dot_claude/rules/tools.md`   |     1,292 |         10 | session start |
+| `dot_claude/rules/code.md`    |     1,325 |         13 | session start |
+| **Authored here**             | **4,409** |     **38** |               |
 
 `CLAUDE.md` contributes zero directives. It is an index that points at `rules/`, which is the correct shape and costs nothing in adherence.
 
@@ -43,15 +42,15 @@ Every directive in the standing load is authored here, and no plugin injects ins
 
 Raw directive count is the wrong unit, because most directives are conditional. `tools.md` fires `findReferences` only before a rename, Context7 only before generating library code, `markitdown` only before a PDF read, `pnpm` only on Node work. A typical turn activates two or three of its ten. That file is comfortable. `code.md` is conditional in the same way: its 13 directives apply on a coding turn and are silent on the rest.
 
-`writing.md` is different. All 15 of its directives apply to any prose output, which is every turn. `/answer:caveman` adds nine more constraints to the same channel while it is active, which puts a plain answer under **about 24 simultaneous, heterogeneous, judgement-shaped constraints**, the exact regime ManyIFEval measures. That is the reason the mode is opt-in: the prose channel carries 15 by default and reaches 24 only when the mode is asked for.
+`writing.md` is different. All 15 of its directives apply to any prose output, which is every turn. That puts a plain answer under **15 simultaneous, heterogeneous, judgement-shaped constraints**, the regime ManyIFEval measures.
 
 Applying `p^N` to the prose channel:
 
-| Per-directive adherence | 15 directives (writing.md alone) | 24 directives (with `/answer:caveman`) |
-| ----------------------- | -------------------------------: | -------------------------------------: |
-| 0.99                    |                             86 % |                                   79 % |
-| 0.98                    |                             74 % |                                   62 % |
-| 0.95                    |                             46 % |                                   29 % |
+| Per-directive adherence | 15 directives (writing.md) |
+| ----------------------- | -------------------------: |
+| 0.99                    |                       86 % |
+| 0.98                    |                       74 % |
+| 0.95                    |                       46 % |
 
 These are projections from the benchmark model, not measurements of this setup. They are directional: the tools channel is nowhere near its ceiling, the prose channel already is.
 
@@ -59,15 +58,15 @@ These are projections from the benchmark model, not measurements of this setup. 
 
 `p^N` assumes the directives are independent. Contradictory directives break that assumption, because satisfying one guarantees failing the other, so every rule that overrides another states what it overrides and where the override stops.
 
-One override is live. `commands/answer/caveman.md` suspends the sentence-level rules in `writing.md`, active voice and one main idea per full sentence, and says so in the file. The formatting rules keep applying while it runs: no em dashes, line and paragraph limits, sentence case in headings. Code, commits, and pull request text stay normal prose. The precedence sits in the file that takes the exception, so it arrives with the exception rather than loading in the index for every session that never uses it.
+No override is live: no file suspends a rule of another. If one is added, its precedence sits in the file that takes the exception, so it arrives with the exception rather than loading in the index for every session that never uses it.
 
-One competition is live and worth knowing: `tools.md:5` says to use `rg` and `fd` **instead of** the Grep and Glob tools, while the Claude Code system prompt says to prefer the dedicated file and search tools over shell commands. The repo rule is the more specific one and normally wins, but it competes rather than composes.
+One competition is live and worth knowing: `tools.md:9` says to use `rg` and `fd` **instead of** the Grep and Glob tools, while the Claude Code system prompt says to prefer the dedicated file and search tools over shell commands. The repo rule is the more specific one and normally wins, but it competes rather than composes.
 
 ## What to change
 
 Ranked by adherence recovered per unit of effort.
 
-**1. Move enforceable rules out of the prompt and into hooks.** A hook has p = 1.0 and costs no adherence budget. `enforce-cli-tools/rules` covers `npm` and `yarn`, which is why that directive is reliable. Adding `grep rg` and `find fd` rows would retire `tools.md:5` the same way. Caveat before doing it: the hook matches the command position after a pipe as well, so `git log | grep x` would be blocked. Worth it only if that friction is acceptable.
+**1. Move enforceable rules out of the prompt and into hooks.** A hook has p = 1.0 and costs no adherence budget. `enforce-cli-tools/rules` covers `npm` and `yarn`, which is why that directive is reliable. Adding `grep rg` and `find fd` rows would retire `tools.md:9` the same way. Caveat before doing it: the hook matches the command position after a pipe as well, so `git log | grep x` would be blocked. Worth it only if that friction is acceptable.
 
 **2. Leave `rules/` as it is otherwise.** 38 directives across three files is not bloat: the files state decisions rather than procedures, and two of the three are conditional.
 
@@ -82,9 +81,6 @@ Condensing a directive set is a separate lever from where the text loads, and it
 ```sh
 # Authored load
 wc -c ~/.claude/CLAUDE.md ~/.claude/rules/*.md
-
-# A command or skill body, which costs nothing until invoked
-wc -c ~/.claude/commands/answer/caveman.md
 ```
 
 Directive counts are hand-counted, one per imperative that changes behaviour.
