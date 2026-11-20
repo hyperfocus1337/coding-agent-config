@@ -27,7 +27,6 @@ Prompt templates under [`dot_claude/commands/`](../../dot_claude/commands/README
 | [`/git:commit:multiple`](../../dot_claude/commands/git/commit/multiple.md)         | Split changes into a logical sequence of commits.                                                                 |
 | [`/git:commit:task`](../../dot_claude/commands/git/commit/task.md)                 | Commit one task's changes from the current conversation.                                                          |
 | [`/git:commit:single`](../../dot_claude/commands/git/commit/single.md)             | Create a git commit (stage all, single commit).                                                                   |
-| [`/git:pr:create`](../../dot_claude/commands/git/pr/create.md)                     | Commit, push, and open a pull request.                                                                            |
 | [`/git:commit:push`](../../dot_claude/commands/git/commit/push.md)                 | Commit and push.                                                                                                  |
 | [`/git:rewrite:author`](../../dot_claude/commands/git/rewrite/author.md)           | Rewrite the author of the whole branch or the last N commits.                                                     |
 | [`/git:rewrite:date`](../../dot_claude/commands/git/rewrite/date.md)               | Set an absolute commit and author date on the most recent commit.                                                 |

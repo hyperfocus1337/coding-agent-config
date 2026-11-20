@@ -37,3 +37,4 @@
 .claude/commands/answer/thoroughly.md
 .claude/commands/answer/tabular.md
 .claude/commands/answer/reset.md
+.claude/commands/git/pr

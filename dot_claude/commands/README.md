@@ -4,7 +4,7 @@ disable-model-invocation: true
 
 # slash commands
 
-Slash commands are prompt templates Claude Code runs when you type `/<namespace>:<name>` (e.g. `/git:changelog`, or `/git:pr:create` for a nested group). Each lives as its own file at `commands/<namespace>/<name>.md`, and the file's frontmatter `description` is what shows in the command picker. They deploy via chezmoi to `~/.claude/commands/`. Each namespace folder has a `README.md` that lists its commands.
+Slash commands are prompt templates Claude Code runs when you type `/<namespace>:<name>` (e.g. `/git:changelog`, or `/git:commit:single` for a nested group). Each lives as its own file at `commands/<namespace>/<name>.md`, and the file's frontmatter `description` is what shows in the command picker. They deploy via chezmoi to `~/.claude/commands/`. Each namespace folder has a `README.md` that lists its commands.
 
 ## where `$ARGUMENTS` goes
 

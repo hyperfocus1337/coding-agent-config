@@ -188,7 +188,6 @@ A set of cross-cutting tools that apply to every phase (output compression, simp
 | [`/git:commit:task`](../../dot_claude/commands/git/commit/task.md)         | Commit one task's changes from the current conversation. |
 | [`/git:commit:multiple`](../../dot_claude/commands/git/commit/multiple.md) | Split changes into a logical sequence of commits.        |
 | [`/git:commit:push`](../../dot_claude/commands/git/commit/push.md)         | Commit and push.                                         |
-| [`/git:pr:create`](../../dot_claude/commands/git/pr/create.md)             | Commit, push, and open a pull request.                   |
 
 ### Branch and history hygiene
 

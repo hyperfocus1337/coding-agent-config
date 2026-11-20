@@ -86,14 +86,13 @@ The report has up to four tables. `Identified commits` holds one verdict per com
 
 See [`commit/README.md`](commit/README.md) for how the commit commands stage part of a file, check a commit, and load context.
 
-## Push and pull requests
+## Push
 
-Send commits to a remote and open pull requests.
+Send commits to a remote.
 
-| Command     | Description                                                |
-| ----------- | ---------------------------------------------------------- |
-| `push`      | Push the current branch to origin, ask about other remotes |
-| `pr:create` | Commit, push, and open a PR                                |
+| Command | Description                                                |
+| ------- | ---------------------------------------------------------- |
+| `push`  | Push the current branch to origin, ask about other remotes |
 
 ## Branches and worktrees
 
