@@ -16,12 +16,6 @@ dependencies:
     # Subpath ref to the skill dir: the repo root has only .codex-plugin/, and
     # apm 0.35+ refuses that native bundle unless the codex target is selected.
     - git: antonbabenko/terraform-skill/skills/terraform-skill
-    # Cursor's team kit, nested plugin layout. Subpath ref (owner/repo/plugin)
-    # resolves .cursor-plugin/plugin.json, so apm finds the nested skills/ dir.
-    # No `agents:` subset key exists, so this also deploys the kit's 2 agents.
-    - git: cursor/plugins/cursor-team-kit
-      skills:
-        - thermo-nuclear-code-quality-review
   # User-scoped MCP servers. Secrets come from the environment at install time
   # (${VAR}) so this manifest stays committable.
   mcp:

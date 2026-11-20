@@ -99,14 +99,6 @@
       "use_when": "writing or reviewing Terraform"
     },
     {
-      "id": "cursor/plugins/cursor-team-kit",
-      "channel": "apm",
-      "scope": "user",
-      "status": "user-keep",
-      "why": "its skill carries disable-model-invocation, so it costs 0 in the skills listing. The 75 tokens are the 2 agents it also deploys.",
-      "use_when": "deep code quality audit"
-    },
-    {
       "id": "neondatabase/agent-skills",
       "channel": "apm",
       "scope": "project",
