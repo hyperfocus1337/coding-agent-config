@@ -4,36 +4,27 @@ disable-model-invocation: true
 
 # answer slash commands
 
-Six modes that change how an answer is written, and one command that clears them. Each mode controls one axis of the answer. `thoroughly` and `sourced` also add work: `thoroughly` looks for edge cases and alternatives, and `sourced` reads every file and runs every command it cites. The other modes change only the answer.
+Four modes that change how one answer is written. Each mode controls one axis of the answer. `sourced` also adds work: it reads every file and runs every command it cites. The other modes change only the answer.
 
-| Command              | Axis     | Description                                                                    |
-| -------------------- | -------- | ------------------------------------------------------------------------------ |
-| `/answer:concisely`  | depth    | The result only: no reasoning, no process, no rejected options.                |
-| `/answer:thoroughly` | depth    | Full depth: the reasoning, the edge cases, and the rejected options.           |
-| `/answer:simply`     | register | Plain language for a non-expert, every technical fact kept.                    |
-| `/answer:stepwise`   | form     | Prerequisites, numbered steps in the order they occur, and a check at the end. |
-| `/answer:tabular`    | form     | Anything that compares items on shared attributes goes in a table.             |
-| `/answer:sourced`    | evidence | Check each factual claim and tag it with its source.                           |
-| `/answer:reset`      | -        | Clear every answer mode and return to `rules/writing.md` alone.                |
+| Command             | Axis     | Description                                                                    |
+| ------------------- | -------- | ------------------------------------------------------------------------------ |
+| `/answer:concisely` | depth    | The result only: no reasoning, no process, no rejected options.                |
+| `/answer:simply`    | register | Plain language for a non-expert, every technical fact kept.                    |
+| `/answer:stepwise`  | form     | Prerequisites, numbered steps in the order they occur, and a check at the end. |
+| `/answer:sourced`   | evidence | Check each factual claim and tag it with its source.                           |
 
 ## Scope
 
-The argument sets how long a mode applies. `simply` stands for any mode.
+A mode applies to one answer. The argument sets which one. `simply` stands for any mode.
 
-| Call                             | Scope                                                                     |
-| -------------------------------- | ------------------------------------------------------------------------- |
-| `/answer:simply`                 | Rewrite the previous answer in the mode, once.                            |
-| `/answer:simply <question>`      | Answer the question in the mode, once.                                    |
-| `/answer:simply keep`            | Apply the mode to every response until `/answer:reset` runs.              |
-| `/answer:simply keep <question>` | Answer the question in the mode, and apply it to every response after it. |
+| Call                        | Scope                                          |
+| --------------------------- | ---------------------------------------------- |
+| `/answer:simply`            | Rewrite the previous answer in the mode, once. |
+| `/answer:simply <question>` | Answer the question in the mode, once.         |
 
 ## Combining modes
 
-Modes on different axes stack. For example, `concisely` and `tabular` together give only the result, with any comparison in a table.
-
-The depth axis holds two opposite modes. The later call replaces the earlier one: for one answer without `keep`, and for every later response with `keep`. No reset is necessary between them.
-
-The two form modes do not conflict. `stepwise` writes a comparison as prose, and `tabular` writes a sequence of steps as prose, so each mode formats only its own content.
+Modes on different axes stack. For example, `concisely` and `simply` together give only the result, in plain language.
 
 ## When to use
 
@@ -41,12 +32,6 @@ The two form modes do not conflict. `stepwise` writes a comparison as prose, and
 
 - You read answers between other work and want only the result.
 - A long task where you check progress often.
-
-### `/answer:thoroughly`
-
-- Before an action you cannot undo: a history rewrite, a migration, a deletion.
-- A decision you must defend to a reviewer. The rejected options are the questions they will ask.
-- You want to learn the area, not only get the result.
 
 ### `/answer:simply`
 
@@ -58,19 +43,10 @@ The two form modes do not conflict. `stepwise` writes a comparison as prose, and
 - You do a procedure by hand: a setup, a migration, a recovery.
 - You will copy the answer into a runbook.
 
-### `/answer:tabular`
-
-- A session that is mostly comparisons: libraries, a setting across environments, CLI flags.
-- For one answer, run `/answer:tabular <question>`. For text you already have, use `/docs:table`.
-
 ### `/answer:sourced`
 
 - You will act on the answer without checking it yourself: an incident, an audit, a security review.
 - You suspect that the previous answer was a guess. Run `/answer:sourced` without an argument to check it claim by claim.
-
-### `/answer:reset`
-
-- A mode you started with `keep` no longer fits. A one-off call needs no reset, and a mode on the same axis replaces the active one.
 
 ## Background
 
