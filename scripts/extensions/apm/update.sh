@@ -6,7 +6,12 @@ set -e
 # to /usr/local/bin, but the apm on PATH usually lives elsewhere and shadows it,
 # so the update never takes and every run loops. Update through the channel that
 # owns the on-PATH binary instead.
-if command -v brew >/dev/null 2>&1 && brew list --formula apm >/dev/null 2>&1; then
+if command -v uv >/dev/null 2>&1 &&
+  [[ "$(readlink -f "$(command -v apm)")" == "$(uv tool dir)"/* ]]; then
+  # uv tool: `uv tool upgrade` installs only a newer release and is a no-op otherwise.
+  echo "==> Updating APM (via uv)"
+  uv tool upgrade apm-cli
+elif command -v brew >/dev/null 2>&1 && brew list --formula apm >/dev/null 2>&1; then
   # macOS: apm is a Homebrew formula under the brew prefix. Upgrade via brew so
   # the binary that actually gets updated is the one on PATH.
   if [ -n "$(brew outdated --formula apm)" ]; then
