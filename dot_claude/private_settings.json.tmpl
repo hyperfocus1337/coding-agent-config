@@ -3,6 +3,7 @@
   "syncClaudeAiSkills": false,
   "env": {
     "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1",
+    "CLAUDE_CODE_EXPERIMENTAL_CODE_MODE": "1",
     "CLAUDE_CODE_PLUGIN_DIRS": "{{ range $i, $hook := list "lint-prose" "enforce-cli-tools" "track-session-changes" "format-code" "toggle-hook" }}{{ if $i }}:{{ end }}{{ $.chezmoi.homeDir }}/.claude/hooks/{{ $hook }}{{ end }}",
     "CLAUDE_CODE_PLUGIN_GIT_TIMEOUT_MS": "300000",
     "ENABLE_LSP_TOOL": "1",
@@ -32,6 +33,30 @@
             "command": "sh \"$HOME/.claude/hooks/block-destructive-commands/guard.sh\" --ask",
             "timeout": 10,
             "onFailure": "block"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "REPL",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null || exit 0; export NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\"; payload=$(cat); printf '%s' \"$payload\" | node \"$HOME/.claude/hooks/format-code/command.ts\"; printf '%s' \"$payload\" | node \"$HOME/.claude/hooks/track-session-changes/command.ts\" claude",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "REPL",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null || exit 0; export NODE_COMPILE_CACHE=\"$HOME/.cache/node-compile-cache\"; payload=$(cat); printf '%s' \"$payload\" | node \"$HOME/.claude/hooks/format-code/command.ts\"; printf '%s' \"$payload\" | node \"$HOME/.claude/hooks/track-session-changes/command.ts\" claude",
+            "timeout": 60
           }
         ]
       }

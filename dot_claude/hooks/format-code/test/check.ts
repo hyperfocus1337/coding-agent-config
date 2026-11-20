@@ -23,7 +23,7 @@ import * as path from "node:path";
 import { register } from "../hooks/register.ts";
 import ompExtension from "../omp.ts";
 import extension from "../pi.ts";
-import { bash, check, edit, finish, git, has, quiet, read, tmp } from "./harness.ts";
+import { bash, check, edit, finish, git, has, hookRun, quiet, read, tmp } from "./harness.ts";
 
 const missing = ["terraform", "shfmt", "ruff"].filter((program) => !has(program));
 if (missing.length) {
@@ -380,14 +380,18 @@ await check("omp.ts: leaves the calls of pi.ts alone", async () => {
 });
 
 type Hook = (...args: unknown[]) => Promise<unknown>;
-let modHook: Hook | undefined;
+const modHooks = new Map<string, Hook>();
 register(
-  ((_event: string, _matcher: unknown, hook: Hook) => (modHook = hook)) as never,
+  ((event: string, ...rest: unknown[]) => modHooks.set(event, rest.at(-1) as Hook)) as never,
   {} as never,
 );
+const modHook = modHooks.get("tool.call");
+// The deferred calls of code mode go under $HOME/.cache.
+const home = `${tmp}/home`;
+fs.mkdirSync(home);
 const stub$ = {
-  session: { cwd: async () => repo },
-  env: { get: async () => undefined },
+  session: { cwd: async () => repo, id: async () => "s1" },
+  env: { get: async (name: string) => (name === "HOME" ? home : undefined) },
   fs: {
     stat: async (file: string) => {
       const found = fs.statSync(file);
@@ -446,6 +450,73 @@ await check("register.ts: leaves a file that changed before the Bash call", asyn
 await check("register.ts: passes a deny through", async () => {
   const denied = { deny: "no" };
   assert.equal(await modHook?.(stub$, { tool: "Bash", command: "x" }, async () => denied), denied);
+});
+
+// --- Code mode: deferred.ts, through the mod and command.ts ---
+
+/** A call of the mod inside a REPL block; the call writes `file` unformatted. */
+const inBlock = (file: string, extra: object = {}) =>
+  modHook?.(
+    stub$,
+    { tool: "Write", file_path: file, tool_use_id: "repl_1", ...extra },
+    async () => {
+      unformatted(file);
+      return result;
+    },
+  );
+/** The PostToolUse REPL command hook at the end of a block. */
+const blockEnd = (extra: object = {}) =>
+  hookRun(
+    { cwd: repo, hook_event_name: "PostToolUse", tool_name: "REPL", session_id: "s1", ...extra },
+    { HOME: home },
+  );
+const turnEnd = (agentId?: string) =>
+  modHooks.get("turn.complete")?.(stub$, { agentId }, async () => ({ text: "" }));
+
+await check("deferred: a REPL block call waits for the block end", async () => {
+  await inBlock(`${repo}/block.tf`);
+  assert.equal(read(`${repo}/block.tf`), RAW);
+  const ran = blockEnd();
+  assert.equal(ran.stdout + ran.stderr, "");
+  assert.equal(read(`${repo}/block.tf`), FORMATTED);
+  assert.deepEqual(fs.readdirSync(`${home}/.cache/format-code/s1`), []);
+});
+await check("deferred: the block end of an agent formats only its own calls", async () => {
+  await inBlock(`${repo}/agent.tf`, { agentId: "a1" });
+  blockEnd();
+  assert.equal(read(`${repo}/agent.tf`), RAW);
+  blockEnd({ agent_id: "a1" });
+  assert.equal(read(`${repo}/agent.tf`), FORMATTED);
+});
+await check("deferred: a turn end formats only the calls of its own agent", async () => {
+  await inBlock(`${repo}/left.tf`, { agentId: "a2" });
+  await inBlock(`${repo}/main.tf`);
+  await turnEnd("a1");
+  assert.deepEqual([read(`${repo}/main.tf`), read(`${repo}/left.tf`)], [RAW, RAW]);
+  await turnEnd();
+  assert.deepEqual([read(`${repo}/main.tf`), read(`${repo}/left.tf`)], [FORMATTED, RAW]);
+  await turnEnd("a2");
+  assert.equal(read(`${repo}/left.tf`), FORMATTED);
+});
+await check("deferred: the session end formats what is left and removes the folder", async () => {
+  await inBlock(`${repo}/end.tf`);
+  await modHooks.get("session.end")?.(stub$, {}, async () => ({}));
+  assert.equal(read(`${repo}/end.tf`), FORMATTED);
+  assert.equal(fs.existsSync(`${home}/.cache/format-code/s1`), false);
+});
+await check("deferred: the session start removes empty folders older than one day", async () => {
+  const [old, fresh, full] = ["old", "fresh", "full"].map(
+    (id) => `${home}/.cache/format-code/${id}`,
+  );
+  for (const dir of [old!, fresh!, full!]) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(`${full}/main.jsonl`, "");
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 3600 * 1000);
+  for (const dir of [old!, full!]) fs.utimesSync(dir, twoDaysAgo, twoDaysAgo);
+  await modHooks.get("session.start")?.(stub$, {}, async () => ({}));
+  assert.deepEqual(
+    [old!, fresh!, full!].map((dir) => fs.existsSync(dir)),
+    [false, true, true],
+  );
 });
 
 finish();

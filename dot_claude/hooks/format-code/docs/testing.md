@@ -69,5 +69,6 @@ The last cases in `test/check.ts` run the adapters with stubs over the real file
 - **`pi.ts`:** formats the file of an edit and of a parent-relative edit path, leaves other tools alone, appends the amend hint to the result, and leaves a file that changed before the bash call.
 - **`omp.ts`:** formats each file of an edit of more than one file and of an applied `ast_edit`, leaves the calls of `pi.ts` alone, and leaves a file that changed before an `eval` call.
 - **`hooks/register.ts`:** formats the file and passes the result, adds the amend hint as context, leaves a file that changed before the Bash call, and passes a deny through.
+- **Code mode, `deferred.ts`:** a REPL block call stays unformatted until the `REPL` hook of `command.ts` runs, the block end of an agent formats only the calls of that agent, a turn end formats only the calls of its own agent, the session end formats what is left and removes the folder, and the session start removes only the empty folders older than one day.
 
 The commit-time format is in the [`format-staged-files`](../../../../dot_config/git/hooks/format-staged-files/docs/testing.md) check.

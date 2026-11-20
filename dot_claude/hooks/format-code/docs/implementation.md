@@ -93,6 +93,28 @@ One argument favours a later format: a format directly after a Write makes the c
 
 A turn end has no tool call, so `format` would get neither a file path nor a command. A `Stop` wiring needs new code, not only a new entry.
 
+## Code mode: format at the end of a REPL block
+
+Measured on 2026-11-19 with Claude Code 2.1.328, in interactive sessions in scratch repos:
+
+- The inner calls of a `REPL` block reach the mod as normal `tool.call` events. Their `tool_use_id` starts with `repl_`, which no document names, and no field names the block. A subagent call carries `agentId`.
+- With a format after each call, a block that writes a file and then edits it fails at the edit with "File has been modified since read" or "String to replace not found in file".
+- The mod gets no event for the `REPL` call itself. The `classic.*` hooks of a user mod do not run: the built-in `cc-plugin-sec-default` bypasses them. Only a settings command hook sees the block: `PreToolUse` before the first inner call, and `PostToolUse` after the last.
+- A format in the `PostToolUse` `REPL` command hook works: the model got the `edited_text_file` notice before its next block, and that block's edit passed.
+
+Options not taken:
+
+- **A format at `turn.complete` only:** the settings `Stop` hooks, `lint-code` and `type-check-code`, run before it and see unformatted files.
+- **A format at the start of each `turn.step`:** the model gets the change notice one request too late, so the next block works on stale text.
+- **A separate settings entry for `track-session-changes`:** settings hooks that match the same event run in parallel, so the log step must follow the format in one command.
+
+Limits:
+
+- The `repl_` prefix is not documented. If it changes, the mod formats each call again, as before code mode.
+- An interrupted inner call can end after `turn.complete`. Its file waits for the next block end, turn end, or session end.
+- `session.end` gives all hooks 1.5 s, so a long format there can stop halfway.
+- A turn that ends with deferred calls formats them after `lint-code` and `type-check-code` ran.
+
 ## Why a failed Bash call is formatted too
 
 A Claude Code `PostToolUse` command hook fires only after a tool call succeeds. A Bash command that exits with a code other than 0 raises `PostToolUseFailure`, a separate event. [`research.md`](research.md#a-bash-command-that-fails) gives the measurement.

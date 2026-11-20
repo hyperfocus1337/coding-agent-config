@@ -18,7 +18,7 @@ One core, [`core.ts`](core.ts), serves four agents through three adapters. A mod
 
 | Agent       | Adapter                                                                                                                                                                 | Loaded by                                                                            |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash formats after `next`                                                              | `CLAUDE_CODE_PLUGIN_DIRS` in `private_settings.json.tmpl`                            |
+| Claude Code | [`hooks/register.ts`](hooks/register.ts), a mod: `tool.call` on Write, Edit, and Bash formats after `next`. In code mode, see [Code mode](#code-mode)                   | `CLAUDE_CODE_PLUGIN_DIRS` in `private_settings.json.tmpl`                            |
 | pi          | [`pi.ts`](pi.ts): `tool_result` on write, edit, and bash                                                                                                                | `extensions` in `dot_pi/agent/modify_settings.json`                                  |
 | omp         | [`pi.ts`](pi.ts) as in pi, and [`omp.ts`](omp.ts): `tool_result` on an omp edit of more than one file, an `ast_edit` that a write to `xd://resolve` applies, and `eval` | `extensions` in `dot_omp/private_agent/private_config.yml`                           |
 | Codex       | [`command.ts`](command.ts), a command hook: the amend hint as `hookSpecificOutput` JSON on stdout                                                                       | `PostToolUse` on Bash, and on `apply_patch` through `dot_codex/hooks/apply-patch.ts` |
@@ -74,6 +74,16 @@ pnpm add -g oxfmt@0.74.0
 5. When the call is a Bash command that commits, it keeps the text of each file.
 6. It runs each formatter on its files. oxfmt and Emacs take all their files in one run. terraform fmt, shfmt, and ruff take one file for each run, in the folder of the file. Each run stops after 10 s, oxfmt after 20 s.
 7. When it kept the text in step 5, it sends the amend hint for each file that a formatter changed and that the last commit holds.
+
+### Code mode
+
+In Claude Code code mode (`CLAUDE_CODE_EXPERIMENTAL_CODE_MODE`), the model writes a block of JavaScript for the `REPL` tool. Each `write()`, `edit()`, or `` $`...` `` in the block reaches the mod as a Write, Edit, or Bash call with a `tool_use_id` that starts with `repl_`. A format between two such calls makes a later `edit()` of the same block fail, because the text that it expects changed. So the mod does not format these calls. [`deferred.ts`](deferred.ts) appends each one to `~/.cache/format-code/<session id>/<agent id or main>.jsonl`, and these steps format them:
+
+1. **The end of the block:** the `PostToolUse` and `PostToolUseFailure` command hooks with matcher `REPL` in `private_settings.json.tmpl` run `command.ts`. It formats the calls of the agent of the block, and sends the amend hint as `additionalContext`. The model gets the change notice before it writes its next block.
+2. **The end of a turn:** `turn.complete` in the mod formats the calls of the agent of the turn, main loop or subagent. It catches a block that was interrupted or moved to the background, which gets no `PostToolUse`. It does not format the calls of other agents, because a block of another agent, such as a background subagent, can still run.
+3. **The end of the session:** `session.end` in the mod formats what is left and removes the folder. A session that does not end, such as a killed one, leaves its folder, and `session.start` removes each empty folder older than one day.
+
+The same command entry then runs [`track-session-changes`](../track-session-changes/README.md), which logs the format. [Code mode](docs/implementation.md#code-mode-format-at-the-end-of-a-repl-block) gives the measurements and the options not taken.
 
 ## What the model sees
 
@@ -188,7 +198,8 @@ ruff format does not sort imports. That is the lint rule `I` of `ruff check --fi
 | [`formatters/`](formatters)                                      | One module for each formatter: its extensions, key, and runs              |
 | [`sweep.ts`](sweep.ts)                                           | The files of a Bash call                                                  |
 | [`io.ts`](io.ts)                                                 | The file and process functions of the core under Node                     |
-| [`command.ts`](command.ts)                                       | The command hook for Codex and `format-staged-files`                      |
+| [`command.ts`](command.ts)                                       | The command hook for Codex, `format-staged-files`, and a REPL block end   |
+| [`deferred.ts`](deferred.ts)                                     | The calls of a code mode REPL block, formatted at the end of the block    |
 | [`pi.ts`](pi.ts)                                                 | The pi extension, which omp also loads                                    |
 | [`omp.ts`](omp.ts)                                               | The omp extension, after `pi.ts`: the omp calls that `pi.ts` does not see |
 | [`hooks/register.ts`](hooks/register.ts), `hooks/hooks.json`     | The Claude Code mod                                                       |
